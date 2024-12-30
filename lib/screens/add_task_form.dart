@@ -29,8 +29,8 @@ class AddTaskFormState extends State<AddTaskForm> {
           FocusScope.of(context).unfocus();
         },
         child: DraggableScrollableSheet(
-          initialChildSize: 0.4,
-          minChildSize: 0.2,
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
           maxChildSize: 0.8,
           builder: (context, scrollController) {
             return Container(

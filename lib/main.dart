@@ -10,10 +10,12 @@ import 'blocs/calendar/calendar_cubit.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Register the adapter for the Event model
+  Hive.registerAdapter(EventAdapter());
   // Инициализация Hive
   await Hive.initFlutter();
 
-  // Открытие "коробки" (box) для хранения событий
+  // Open the box for events
   Box<Event> eventBox;
 
   if (kIsWeb) {

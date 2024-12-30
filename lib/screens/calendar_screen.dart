@@ -119,6 +119,10 @@ class EventDataSource extends CalendarDataSource {
         return Colors.green;
       case 'Workout':
         return Colors.red;
+        case 'Meeting':
+        return Colors.orange;
+        case 'Presentation':
+        return Colors.purple;
       default:
         return Colors.grey;
     }
