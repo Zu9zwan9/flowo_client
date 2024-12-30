@@ -36,32 +36,36 @@ class CalendarScreen extends StatelessWidget {
                 ),
               ),
               Expanded(
-                child: FutureBuilder<List<Event>>(
-                  future: context.read<CalendarCubit>().getEventsForSelectedDate(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Center(child: CircularProgressIndicator());
-                    } else if (snapshot.hasError) {
-                      return Center(child: Text('Error: ${snapshot.error}'));
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Center(child: Text('No events found'));
-                    } else {
-                      final events = snapshot.data!;
-                      return ListView.builder(
-                        itemCount: events.length,
-                        itemBuilder: (context, index) {
-                          final event = events[index];
-                          return EventCard(event: event);
-                        },
-                      );
-                    }
-                  },
-                ),
+                child: _buildEventsList(context, state),
               ),
             ],
           );
         },
       ),
+    );
+  }
+
+  FutureBuilder<List<Event>> _buildEventsList(BuildContext context, CalendarState state) {
+    return FutureBuilder<List<Event>>(
+      future: context.read<CalendarCubit>().getEventsForSelectedDate(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('No events found'));
+        } else {
+          final events = snapshot.data!;
+          return ListView.builder(
+            itemCount: events.length,
+            itemBuilder: (context, index) {
+              final event = events[index];
+              return EventCard(event: event);
+            },
+          );
+        }
+      },
     );
   }
 
@@ -83,6 +87,7 @@ class CalendarScreen extends StatelessWidget {
     );
   }
 }
+
 
 class EventDataSource extends CalendarDataSource {
   EventDataSource(List<Event> events) {

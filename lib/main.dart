@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:isar/isar.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 import 'models/event_model.dart';
@@ -9,29 +9,35 @@ import 'blocs/calendar/calendar_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Isar isar;
+
+  // Инициализация Hive
+  await Hive.initFlutter();
+
+  // Открытие "коробки" (box) для хранения событий
+  Box<Event> eventBox;
 
   if (kIsWeb) {
-    isar = await Isar.open([EventSchema], directory: 'isar');
+    eventBox = await Hive.openBox<Event>('events');
   } else {
     final dir = await getApplicationDocumentsDirectory();
-    isar = await Isar.open([EventSchema], directory: dir.path);
+    eventBox = await Hive.openBox<Event>('events');
   }
 
-  runApp(MyApp(isar: isar));
+  // Запуск приложения с доступом к Box
+  runApp(MyApp(eventBox: eventBox));
 }
 
 class MyApp extends StatelessWidget {
-  final Isar isar;
+  final Box<Event> eventBox;
 
-  const MyApp({super.key, required this.isar});
+  const MyApp({super.key, required this.eventBox});
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
         BlocProvider<CalendarCubit>(
-          create: (context) => CalendarCubit(isar),
+          create: (context) => CalendarCubit(eventBox),
         ),
       ],
       child: MaterialApp(
