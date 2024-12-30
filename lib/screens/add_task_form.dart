@@ -4,7 +4,9 @@ import '../models/event_model.dart';
 import '../blocs/calendar/calendar_cubit.dart';
 
 class AddTaskForm extends StatefulWidget {
-  const AddTaskForm({super.key});
+  final DateTime selectedDate;
+
+  const AddTaskForm({super.key, required this.selectedDate});
 
   @override
   AddTaskFormState createState() => AddTaskFormState();
@@ -14,12 +16,18 @@ class AddTaskFormState extends State<AddTaskForm> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  DateTime _selectedDate = DateTime.now();
+  late DateTime _selectedDate;
   TimeOfDay _startTime = TimeOfDay.now();
   TimeOfDay? _endTime;
   String _selectedCategory = 'Brainstorm';
   String _urgency = 'Low';
   String _priority = 'Normal';
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = widget.selectedDate;
+  }
 
   @override
   Widget build(BuildContext context) {

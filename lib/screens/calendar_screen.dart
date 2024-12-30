@@ -88,7 +88,6 @@ class CalendarScreen extends StatelessWidget {
   }
 }
 
-
 class EventDataSource extends CalendarDataSource {
   EventDataSource(List<Event> events) {
     appointments = events;
@@ -119,9 +118,9 @@ class EventDataSource extends CalendarDataSource {
         return Colors.green;
       case 'Workout':
         return Colors.red;
-        case 'Meeting':
+      case 'Meeting':
         return Colors.orange;
-        case 'Presentation':
+      case 'Presentation':
         return Colors.purple;
       default:
         return Colors.grey;
