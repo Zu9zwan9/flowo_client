@@ -1,16 +1,23 @@
 import 'package:flowo_client/models/event_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:isar/isar.dart';
 import 'package:flowo_client/main.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+void main() async {
+  // Initialize Hive
+  await Hive.initFlutter();
+
+  // Register the adapter for the Event model
+  Hive.registerAdapter(EventAdapter());
+
+  // Open the box for events
+  final eventBox = await Hive.openBox<Event>('events');
+
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Create a mock or real instance of Isar
-    final isar = await Isar.open([EventSchema], directory: './isar');
-
     // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp(isar: isar));
+    await tester.pumpWidget(MyApp(eventBox: eventBox));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

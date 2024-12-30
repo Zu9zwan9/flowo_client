@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'calendar_screen.dart';
 import 'task_list_screen.dart';
 import '../screens/add_task_form.dart';
+import '../blocs/calendar/calendar_cubit.dart';
+import '../blocs/calendar/calendar_state.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,12 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          _screens[_selectedIndex],
-          if (_selectedIndex == 2) const AddTaskForm(),
-        ],
-      ),
+      body: _screens[_selectedIndex],
       bottomNavigationBar: CurvedNavigationBar(
         index: _selectedIndex,
         height: 60.0,
@@ -46,9 +44,10 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Colors.transparent,
         onTap: (index) async {
           if (index == 2) {
+            final selectedDate = context.read<CalendarCubit>().state.selectedDate;
             final event = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const AddTaskForm()),
+              MaterialPageRoute(builder: (context) => AddTaskForm(selectedDate: selectedDate)),
             );
             if (event != null) {
               setState(() {
@@ -61,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           }
         },
-        letIndexChange: (index) => true,
+        letIndexChange: (index) => index < _screens.length,
       ),
     );
   }
