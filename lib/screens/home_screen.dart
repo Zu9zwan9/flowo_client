@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _screens = [
     const CalendarScreen(),
     const TaskListScreen(),
+    const Center(child: Text('Add Task')),
     const Center(child: Text('Profile')),
     const Center(child: Text('Settings')),
   ];
@@ -59,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           }
         },
-        letIndexChange: (index) => true,
+        letIndexChange: (index) => index < _screens.length,
       ),
     );
   }
