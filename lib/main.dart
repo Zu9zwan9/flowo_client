@@ -1,91 +1,41 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'package:isar/isar.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
+import 'models/event_model.dart';
+import 'screens/home_screen.dart';
 import 'blocs/calendar/calendar_cubit.dart';
-import 'blocs/event_form/event_form_cubit.dart';
-import 'screens/calendar_screen.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  Isar isar;
+
+  if (kIsWeb) {
+    isar = await Isar.open([EventSchema], directory: 'isar');
+  } else {
+    final dir = await getApplicationDocumentsDirectory();
+    isar = await Isar.open([EventSchema], directory: dir.path);
+  }
+
+  runApp(MyApp(isar: isar));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final Isar isar;
+
+  const MyApp({super.key, required this.isar});
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (context) => CalendarCubit()),
-        BlocProvider(create: (context) => EventFormCubit()),
+        BlocProvider<CalendarCubit>(
+          create: (context) => CalendarCubit(isar),
+        ),
       ],
       child: MaterialApp(
-        title: 'Calendar App',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF6750A4), // Purple color from design
-          ),
-          useMaterial3: true,
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.white,
-            elevation: 0,
-          ),
-          floatingActionButtonTheme: FloatingActionButtonThemeData(
-            backgroundColor: const Color(0xFF6750A4),
-            foregroundColor: Colors.white,
-          ),
-          chipTheme: ChipThemeData(
-            selectedColor: const Color(0xFF6750A4),
-            secondarySelectedColor: Colors.purple.shade100,
-          ),
-        ),
         home: const HomeScreen(),
-      ),
-    );
-  }
-}
-
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
-  final List<Widget> _screens = [
-    const CalendarScreen(),
-    const Center(child: Text('Tasks')),
-    const Center(child: Text('Profile')),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.calendar_today),
-            label: 'Calendar',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.task),
-            label: 'Tasks',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
       ),
     );
   }

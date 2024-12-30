@@ -16,4 +16,16 @@ class EventFormCubit extends Cubit<EventFormState> {
       emit(EventFormFailure(e.toString()));
     }
   }
+
+  void updateEvent(Event event) {
+    emit(EventFormLoading());
+    try {
+      // Simulate a delay for event update
+      Future.delayed(Duration(seconds: 1), () {
+        emit(EventFormSuccess(event));
+      });
+    } catch (e) {
+      emit(EventFormFailure(e.toString()));
+    }
+  }
 }

@@ -11,7 +11,14 @@ class EventCard extends StatelessWidget {
     return Card(
       child: ListTile(
         title: Text(event.title),
-        subtitle: Text(event.description ?? ''),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (event.description != null) Text(event.description!),
+            Text('Start: ${event.startTime}'),
+            Text('End: ${event.endTime}'),
+          ],
+        ),
       ),
     );
   }
