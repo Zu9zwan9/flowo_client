@@ -6,6 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'models/event_model.dart';
 import 'screens/home_screen.dart';
 import 'blocs/calendar/calendar_cubit.dart';
+import 'package:provider/provider.dart';
+import 'theme_notifier.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,7 +28,12 @@ void main() async {
   }
 
   // Запуск приложения с доступом к Box
-  runApp(MyApp(eventBox: eventBox));
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeNotifier(),
+      child: MyApp(eventBox: eventBox),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -42,8 +49,13 @@ class MyApp extends StatelessWidget {
           create: (context) => CalendarCubit(eventBox),
         ),
       ],
-      child: MaterialApp(
-        home: const HomeScreen(),
+      child: Consumer<ThemeNotifier>(
+        builder: (context, themeNotifier, child) {
+          return MaterialApp(
+            theme: themeNotifier.currentTheme,
+            home: const HomeScreen(),
+          );
+        },
       ),
     );
   }

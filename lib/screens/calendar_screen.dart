@@ -16,32 +16,66 @@ class CalendarScreen extends StatelessWidget {
       navigationBar: const CupertinoNavigationBar(
         middle: Text('Calendar'),
       ),
-      child: BlocBuilder<CalendarCubit, CalendarState>(
-        builder: (context, state) {
-          return Column(
-            children: [
-              Expanded(
-                child: SfCalendar(
-                  view: CalendarView.month,
-                  dataSource: EventDataSource(state.events),
-                  onTap: (details) {
-                    if (details.appointments != null && details.appointments!.isNotEmpty) {
-                      final event = details.appointments!.first as Event;
-                      _showEventDialog(context, event);
-                    }
-                  },
-                  onSelectionChanged: (details) {
-                    context.read<CalendarCubit>().selectDate(details.date!);
-                  },
+      child: Padding(
+        padding: const EdgeInsets.only(top: 50.0), // Add padding to avoid overlap
+        child: BlocBuilder<CalendarCubit, CalendarState>(
+          builder: (context, state) {
+            return Column(
+              children: [
+                _buildHeader(context, state),
+                Expanded(
+                  child: SfCalendar(
+                    view: CalendarView.month,
+                    dataSource: EventDataSource(state.events),
+                    onTap: (details) {
+                      if (details.appointments != null && details.appointments!.isNotEmpty) {
+                        final event = details.appointments!.first as Event;
+                      }
+                    },
+                    onSelectionChanged: (details) {
+                      context.read<CalendarCubit>().selectDate(details.date!);
+                    },
+                  ),
                 ),
-              ),
-              Expanded(
-                child: _buildEventsList(context, state),
-              ),
-            ],
-          );
-        },
+                Expanded(
+                  child: _buildEventsList(context, state),
+                ),
+              ],
+            );
+          },
+        ),
       ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, CalendarState state) {
+    final selectedDate = state.selectedDate;
+    final monthYear = "${selectedDate.month}/${selectedDate.year}";
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          icon: Icon(Icons.arrow_left),
+          onPressed: () {
+            context.read<CalendarCubit>().selectDate(
+              DateTime(selectedDate.year, selectedDate.month - 1, selectedDate.day),
+            );
+          },
+        ),
+        Text(
+          monthYear,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        IconButton(
+          icon: Icon(Icons.arrow_right),
+          onPressed: () {
+            context.read<CalendarCubit>().selectDate(
+              DateTime(selectedDate.year, selectedDate.month + 1, selectedDate.day),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -65,24 +99,6 @@ class CalendarScreen extends StatelessWidget {
             },
           );
         }
-      },
-    );
-  }
-
-  void _showEventDialog(BuildContext context, Event? event) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) {
-        return CupertinoAlertDialog(
-          title: Text(event?.title ?? 'Event'),
-          content: Text(event?.description ?? 'No description'),
-          actions: [
-            CupertinoDialogAction(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
       },
     );
   }

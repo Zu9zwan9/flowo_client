@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import '../models/event_model.dart';
-import '../blocs/calendar/calendar_cubit.dart';
 
 class TaskBreakdownScreen extends StatelessWidget {
   final Event event;

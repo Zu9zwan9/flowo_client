@@ -1,6 +1,9 @@
+import 'package:flowo_client/screens/profile_screen.dart';
+import 'package:flowo_client/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../models/event_model.dart';
 import 'calendar_screen.dart';
 import 'task_list_screen.dart';
 import '../screens/add_task_form.dart';
@@ -21,8 +24,8 @@ class _HomeScreenState extends State<HomeScreen> {
     const CalendarScreen(),
     const TaskListScreen(),
     const Center(child: Text('Add Task')),
-    const Center(child: Text('Profile')),
-    const Center(child: Text('Settings')),
+    const ProfileScreen(),
+    const SettingsScreen(),
   ];
 
   @override
@@ -41,18 +44,34 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         color: Colors.white,
         buttonBackgroundColor: Colors.white,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         onTap: (index) async {
           if (index == 2) {
             final selectedDate = context.read<CalendarCubit>().state.selectedDate;
-            final event = await Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => AddTaskForm(selectedDate: selectedDate)),
+            final event = await showModalBottomSheet<Event>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => DraggableScrollableSheet(
+                initialChildSize: 0.5,
+                minChildSize: 0.4,
+                maxChildSize: 0.8,
+                builder: (context, scrollController) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    child: AddTaskForm(
+                      selectedDate: selectedDate,
+                      scrollController: scrollController,
+                    ),
+                  );
+                },
+              ),
             );
             if (event != null) {
-              setState(() {
-                _selectedIndex = 0;
-              });
+              context.read<CalendarCubit>().addEvent(event);
             }
           } else {
             setState(() {
