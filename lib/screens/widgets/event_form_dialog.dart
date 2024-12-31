@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../models/event_model.dart';
-import '../blocs/calendar/calendar_cubit.dart';
+import '../../models/event_model.dart';
+import '../../blocs/calendar/calendar_cubit.dart';
 
 class EventFormDialog extends StatefulWidget {
   const EventFormDialog({super.key});

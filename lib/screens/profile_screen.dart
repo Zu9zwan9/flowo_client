@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../theme_notifier.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../utils/logger.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -23,6 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _avatarImage = File(pickedFile.path);
       });
+      logInfo('Avatar image changed');
     }
   }
 
@@ -34,6 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Profile updated successfully')),
     );
+    logInfo('Profile updated: $name, $email');
   }
 
   void _deleteAccount() async {
@@ -45,11 +48,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text('Delete'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -59,6 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Account deleted successfully')),
       );
+      logWarning('Account deleted');
 
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/login');
@@ -69,11 +73,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _changeAppearance(String? value) {
     if (value != null) {
       Provider.of<ThemeNotifier>(context, listen: false).setTheme(value);
+      logInfo('Appearance changed to: $value');
+    }
+  }
+
+  void _changeFont(String? value) {
+    if (value != null) {
+      Provider.of<ThemeNotifier>(context, listen: false).setFont(value);
+      logInfo('Font changed to: $value');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -87,13 +100,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 50,
-                    backgroundImage: _avatarImage != null ? FileImage(_avatarImage!) : AssetImage('assets/avatar.png'),
+                    backgroundImage: _avatarImage != null ? FileImage(_avatarImage!) : const AssetImage('assets/avatar.png'),
                   ),
                   Positioned(
                     bottom: 0,
                     right: 0,
                     child: IconButton(
-                      icon: Icon(Icons.camera_alt),
+                      icon: const Icon(Icons.camera_alt),
                       onPressed: _changeAvatar,
                     ),
                   ),
@@ -103,26 +116,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Name',
                 border: OutlineInputBorder(),
+                labelStyle: TextStyle(color: themeNotifier.textColor),
               ),
+              style: TextStyle(color: themeNotifier.textColor),
             ),
             const SizedBox(height: 20),
             TextFormField(
               controller: _emailController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Email',
                 border: OutlineInputBorder(),
+                labelStyle: TextStyle(color: themeNotifier.textColor),
               ),
+              style: TextStyle(color: themeNotifier.textColor),
             ),
             const SizedBox(height: 20),
             TextFormField(
               controller: _passwordController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Password',
                 border: OutlineInputBorder(),
+                labelStyle: TextStyle(color: themeNotifier.textColor),
               ),
+              style: TextStyle(color: themeNotifier.textColor),
               obscureText: true,
             ),
             const SizedBox(height: 20),
@@ -142,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ListTile(
               title: const Text('Appearance'),
               trailing: DropdownButton<String>(
-                value: Provider.of<ThemeNotifier>(context).currentTheme.brightness == Brightness.light ? 'Light' : 'Dark',
+                value: themeNotifier.currentTheme.brightness == Brightness.light ? 'Light' : 'Dark',
                 items: const [
                   DropdownMenuItem(value: 'Light', child: Text('Light')),
                   DropdownMenuItem(value: 'Dark', child: Text('Dark')),
@@ -150,6 +169,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   DropdownMenuItem(value: 'ADHD', child: Text('ADHD-friendly')),
                 ],
                 onChanged: _changeAppearance,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              title: const Text('Font'),
+              trailing: DropdownButton<String>(
+                value: themeNotifier.currentFont,
+                items: const [
+                  DropdownMenuItem(value: 'Roboto', child: Text('Roboto')),
+                  DropdownMenuItem(value: 'Arial', child: Text('Arial')),
+                  DropdownMenuItem(value: 'Times New Roman', child: Text('Times New Roman')),
+                ],
+                onChanged: _changeFont,
               ),
             ),
           ],

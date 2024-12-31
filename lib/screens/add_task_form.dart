@@ -1,11 +1,14 @@
+// lib/screens/add_task_form.dart
+
 import 'package:flutter/material.dart';
 import '../models/event_model.dart';
 
 class AddTaskForm extends StatefulWidget {
   final DateTime selectedDate;
   final ScrollController scrollController;
+  final Event? event; // Add this line
 
-  const AddTaskForm({super.key, required this.selectedDate, required this.scrollController});
+  const AddTaskForm({super.key, required this.selectedDate, required this.scrollController, this.event}); // Update constructor
 
   @override
   AddTaskFormState createState() => AddTaskFormState();
@@ -26,6 +29,14 @@ class AddTaskFormState extends State<AddTaskForm> {
   void initState() {
     super.initState();
     _selectedDate = widget.selectedDate;
+    if (widget.event != null) {
+      _titleController.text = widget.event!.title;
+      _descriptionController.text = widget.event!.description ?? '';
+      _selectedDate = widget.event!.startTime;
+      _startTime = TimeOfDay.fromDateTime(widget.event!.startTime);
+      _endTime = TimeOfDay.fromDateTime(widget.event!.endTime);
+      _selectedCategory = widget.event!.category;
+    }
   }
 
   @override

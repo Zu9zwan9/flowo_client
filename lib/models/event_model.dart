@@ -1,11 +1,11 @@
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
-part 'event_model.g.dart'; // Генерация кода Hive для модели
+part 'event_model.g.dart';
 
-@HiveType(typeId: 0) // Указываем уникальный идентификатор типа данных
+@HiveType(typeId: 0)
 class Event {
-  @HiveField(0) // Указываем номер поля
+  @HiveField(0)
   late String title;
 
   @HiveField(1)
@@ -21,7 +21,7 @@ class Event {
   late String category;
 
   @HiveField(5)
-  late String id; // Уникальный идентификатор
+  late String id;
 
   Event({
     required this.title,
@@ -29,5 +29,5 @@ class Event {
     required this.startTime,
     required this.endTime,
     required this.category,
-  }) : id = Uuid().v4(); // Генерация уникального ID через UUID
+  }) : id = Uuid().v4();
 }
