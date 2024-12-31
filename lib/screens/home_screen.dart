@@ -2,13 +2,14 @@ import 'package:flowo_client/screens/profile_screen.dart';
 import 'package:flowo_client/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import '../models/event_model.dart';
 import 'calendar_screen.dart';
 import 'task_list_screen.dart';
 import '../screens/add_task_form.dart';
 import '../blocs/calendar/calendar_cubit.dart';
-import '../blocs/calendar/calendar_state.dart';
+import '../utils/logger.dart';
+import '../theme_notifier.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,21 +31,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    logInfo('Building HomeScreen');
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: CurvedNavigationBar(
         index: _selectedIndex,
         height: 60.0,
-        items: const <Widget>[
-          Icon(Icons.calendar_today, size: 30),
-          Icon(Icons.list, size: 30),
+        items: <Widget>[
+          Icon(Icons.calendar_today, size: 30, color: themeNotifier.iconColor),
+          Icon(Icons.list, size: 30, color: themeNotifier.iconColor),
           Icon(Icons.add, size: 30, color: Colors.blueAccent),
-          Icon(Icons.person, size: 30),
-          Icon(Icons.settings, size: 30),
+          Icon(Icons.person, size: 30, color: themeNotifier.iconColor),
+          Icon(Icons.settings, size: 30, color: themeNotifier.iconColor),
         ],
-        color: Colors.white,
-        buttonBackgroundColor: Colors.white,
-        backgroundColor: Colors.white,
+        color: themeNotifier.menuBackgroundColor,
+        buttonBackgroundColor: themeNotifier.menuBackgroundColor,
+        backgroundColor: themeNotifier.menuBackgroundColor,
         onTap: (index) async {
           if (index == 2) {
             final selectedDate = context.read<CalendarCubit>().state.selectedDate;
@@ -59,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (context, scrollController) {
                   return Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: themeNotifier.menuBackgroundColor,
                       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                     ),
                     child: AddTaskForm(
@@ -70,13 +73,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             );
-            if (event != null) {
+            if (mounted && event != null) {
               context.read<CalendarCubit>().addEvent(event);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Event added: ${event.title}')),
+              );
+            } else if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Event addition cancelled')),
+              );
             }
           } else {
-            setState(() {
-              _selectedIndex = index;
-            });
+            if (mounted) {
+              setState(() {
+                _selectedIndex = index;
+              });
+              logDebug('Navigation index changed: $_selectedIndex');
+            }
           }
         },
         letIndexChange: (index) => index < _screens.length,

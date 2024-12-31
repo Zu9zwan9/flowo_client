@@ -8,16 +8,14 @@ import 'screens/home_screen.dart';
 import 'blocs/calendar/calendar_cubit.dart';
 import 'package:provider/provider.dart';
 import 'theme_notifier.dart';
+import 'utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Register the adapter for the Event model
   Hive.registerAdapter(EventAdapter());
-  // Инициализация Hive
   await Hive.initFlutter();
 
-  // Open the box for events
   Box<Event> eventBox;
 
   if (kIsWeb) {
@@ -27,7 +25,8 @@ void main() async {
     eventBox = await Hive.openBox<Event>('events');
   }
 
-  // Запуск приложения с доступом к Box
+  logger.i('Hive initialized and event box opened');
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeNotifier(),
@@ -43,6 +42,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    logger.i('Building MyApp');
     return MultiBlocProvider(
       providers: [
         BlocProvider<CalendarCubit>(
