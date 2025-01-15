@@ -1,6 +1,6 @@
-# Flowo Client
+# Flowo
 
-Flowo Client is a task management application built with Flutter and Dart. It helps users manage their tasks, schedules, and notifications efficiently.
+Flowo is a task management application built with Flutter and Dart. It helps users manage their tasks, schedules, and notifications efficiently.
 
 ## Features
 
