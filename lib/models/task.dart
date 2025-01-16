@@ -1,12 +1,16 @@
+// lib/models/task.dart
+
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:hive/hive.dart';
+import 'category.dart';
+import 'coordinates.dart';
+import 'days.dart';
+import 'repeat_rule.dart';
 
-// Подключение кастомных типов, если они используются
 part 'task.g.dart';
 
-@HiveType(typeId: 0) // Уникальный ID для класса Task
+@HiveType(typeId: 0)
 class Task extends HiveObject {
-  // Required fields
   @HiveField(0)
   String title;
 
@@ -14,15 +18,14 @@ class Task extends HiveObject {
   int priority;
 
   @HiveField(2)
-  int deadline; // В миллисекундах с начала эпохи (Unix time)
+  int deadline;
 
   @HiveField(3)
-  int estimatedTime; // Ожидаемое время выполнения в миллисекундах
+  int estimatedTime;
 
   @HiveField(4)
   Category category;
 
-  // Optional fields
   @HiveField(5)
   String? notes;
 
@@ -30,12 +33,11 @@ class Task extends HiveObject {
   Coordinates? location;
 
   @HiveField(7)
-  String? image; // Сохраняем путь к изображению
+  String? image;
 
   @HiveField(8)
-  List<DaySchedule>? frequency;
+  List<Days>? frequency;
 
-  // System fields
   @HiveField(9)
   List<Task> subtasks;
 
@@ -51,7 +53,20 @@ class Task extends HiveObject {
   @HiveField(13)
   bool overdue;
 
-  // Constructor
+  @HiveField(14)
+  double urgency;
+
+  @HiveField(15)
+  int minSession;
+
+  // Add the missing getters
+  DateTime get startDate => DateTime.now(); // Example getter
+  DateTime get endDate =>
+      DateTime.now().add(Duration(days: 1)); // Example getter
+  RepeatRule get repeatRule =>
+      RepeatRule(frequency: 'daily', interval: 1); // Example getter
+  List<DateTime> get exceptions => []; // Example getter
+
   Task({
     required this.title,
     required this.priority,
@@ -67,41 +82,7 @@ class Task extends HiveObject {
     this.isDone = false,
     this.order = 0,
     this.overdue = false,
+    this.urgency = 0.0,
+    this.minSession = 0,
   });
-}
-
-// Category class
-@HiveType(typeId: 1) // Уникальный ID для категории
-class Category extends HiveObject {
-  @HiveField(0)
-  String name;
-
-  @HiveField(1)
-  String color; // HEX-код цвета
-
-  Category({required this.name, required this.color});
-}
-
-// Coordinates class
-@HiveType(typeId: 2) // Уникальный ID для координат
-class Coordinates extends HiveObject {
-  @HiveField(0)
-  double latitude;
-
-  @HiveField(1)
-  double longitude;
-
-  Coordinates({required this.latitude, required this.longitude});
-}
-
-// DaySchedule class (для расписания по дням недели)
-@HiveType(typeId: 3)
-class DaySchedule extends HiveObject {
-  @HiveField(0)
-  String day; // День недели (например, "Monday")
-
-  @HiveField(1)
-  List<int> timeRange; // Список [start, end] в миллисекундах
-
-  DaySchedule({required this.day, required this.timeRange});
 }
