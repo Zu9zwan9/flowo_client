@@ -4,6 +4,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
 import 'models/event_model.dart';
+import 'models/category.dart';
+import 'models/coordinates.dart';
+import 'models/days.dart';
+import 'models/notification_type.dart';
+import 'models/scheduled_task.dart';
+import 'models/scheduled_task_type.dart';
 import 'screens/home_screen.dart';
 import 'blocs/calendar/calendar_cubit.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +19,16 @@ import 'utils/logger.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Register Hive adapters
   Hive.registerAdapter(EventAdapter());
+  Hive.registerAdapter(CategoryAdapter());
+  Hive.registerAdapter(CoordinatesAdapter());
+  Hive.registerAdapter(DaysAdapter());
+  Hive.registerAdapter(TimeRangeAdapter());
+  Hive.registerAdapter(NotificationTypeAdapter());
+  Hive.registerAdapter(ScheduledTaskAdapter());
+  Hive.registerAdapter(ScheduledTaskTypeAdapter());
+
   await Hive.initFlutter();
 
   Box<Event> eventBox;
