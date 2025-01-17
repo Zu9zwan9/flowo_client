@@ -6,96 +6,66 @@ import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/coordinates.dart';
 import 'package:hive/hive.dart';
 
-import '../models/repeat_rule.dart';
-
 class Scheduler {
   final Box<Days> daysDB;
   final Box<Task> tasksDB;
 
   Scheduler(this.daysDB, this.tasksDB);
 
-  void scheduleHabitTasks(List<Task> habitTasks) {
-    for (var habitTask in habitTasks) {
-      List<DateTime> dates = _calculateHabitDates(habitTask);
-      for (var date in dates) {
-        _createScheduledTaskForHabit(habitTask, date);
-      }
-    }
-  }
-
-  List<DateTime> _calculateHabitDates(Task habitTask) {
-    List<DateTime> dates = [];
-    DateTime currentDate = habitTask.startDate;
-    DateTime? endDate = habitTask.endDate;
-
-    while (currentDate.isBefore(endDate)) {
-      if (!_isExceptionDate(habitTask, currentDate)) {
-        dates.add(currentDate);
-      }
-      currentDate = _getNextDate(currentDate, habitTask.repeatRule);
-    }
-
-    return dates;
-  }
-
-  bool _isExceptionDate(Task habitTask, DateTime date) {
-    return habitTask.exceptions.contains(date);
-  }
-
-  DateTime _getNextDate(DateTime currentDate, RepeatRule repeatRule) {
-    switch (repeatRule.frequency) {
-      case 'daily':
-        return currentDate.add(Duration(days: repeatRule.interval));
-      case 'weekly':
-        return currentDate.add(Duration(days: 7 * repeatRule.interval));
-      case 'monthly':
-        return DateTime(currentDate.year,
-            (currentDate.month + repeatRule.interval), currentDate.day);
-      case 'yearly':
-        return DateTime((currentDate.year + repeatRule.interval),
-            currentDate.month, currentDate.day);
-      default:
-        throw Exception('Invalid frequency');
-    }
-  }
-
-  void _createScheduledTaskForHabit(Task task, DateTime date) {
-    final scheduledTask = ScheduledTask(
-      parentTask: task,
-      startTime: date,
-      endTime: date.add(Duration(hours: 1)), // Example duration
-      urgency: 0,
-      type: ScheduledTaskType.defaultType,
-      travelingTime: 0,
-      breakTime: 0,
-      notification: NotificationType.none,
-    );
-    task.scheduledTask.add(scheduledTask);
-    tasksDB.put(task.key, task); // Store the task in the tasksDB
-  }
-
-  void scheduleTask(Task task,
-      {List<String>? availableDates, int? partSession}) {
+  void scheduleTask(Task task,double urgency, int minSession,
+      {int? partSession, List<String>? availableDates}) { // TODO: Use availableDates parameter
     int remainingTime = partSession ?? task.estimatedTime;
-    DateTime start = DateTime.now();
-    DateTime end = start.add(Duration(milliseconds: remainingTime));
+    DateTime currentDate = DateTime.now();
 
     while (remainingTime > 0) {
-      for (String dateKey in _getAllDates(availableDates)) {
-        Days day = _getOrCreateDay(dateKey);
-        for (TimeRange timeRange in day.timeRanges) {
-          if (end.difference(start).inMilliseconds >= task.minSession) {
-            _createScheduledTask(task, start, end);
-            remainingTime -= end.difference(start).inMilliseconds;
-            start = end;
+      String dateKey = _formatDateKey(currentDate);
+      Days day = _getOrCreateDay(dateKey);
+      DateTime start = DateTime.parse('$dateKey 00:00:00');
+      if (start.isBefore(DateTime.now())) {
+        start = DateTime.now();
+      }
+      DateTime end = start;
+      var sortedScheduledTasks = _sortScheduledTasksByTime(day.scheduledTasks);
+
+      for (ScheduledTask scheduledTask in sortedScheduledTasks) {
+        end = scheduledTask.startTime;
+        int possibleSessionTime = end.difference(start).inMilliseconds;
+        if (possibleSessionTime >= minSession) {
+          if (possibleSessionTime > remainingTime) {
             end = start.add(Duration(milliseconds: remainingTime));
-          } else {
-            start = timeRange.end;
-            end = start.add(Duration(milliseconds: remainingTime));
+            possibleSessionTime = remainingTime;
           }
+
+          _createScheduledTask(task, urgency, start, end);
+          remainingTime -= possibleSessionTime;
+          start = end;
+        } else {
+          start = scheduledTask.endTime;
         }
       }
+
+      if (remainingTime > 0) {
+        end = DateTime.parse('$dateKey 23:59:59');
+        if (end.difference(start).inMilliseconds >= minSession) {
+          int sessionTime = end.difference(start).inMilliseconds;
+          if (sessionTime > remainingTime) {
+            end = start.add(Duration(milliseconds: remainingTime));
+            sessionTime = remainingTime;
+          }
+
+          _createScheduledTask(task, urgency, start, end);
+          remainingTime -= sessionTime;
+        }
+      }
+
+      currentDate = currentDate.add(Duration(days: 1));
     }
+  }
+
+  List<ScheduledTask> _sortScheduledTasksByTime(
+      List<ScheduledTask> scheduledTasks) {
+    scheduledTasks.sort((a, b) => a.startTime.compareTo(b.startTime));
+    return scheduledTasks;
   }
 
   Days _getOrCreateDay(String dateKey) {
@@ -103,17 +73,23 @@ class Scheduler {
   }
 
   Days _createDay(String dateKey) {
-    final day = Days(day: dateKey, timeRanges: []);
+    final day = Days(day: dateKey, scheduledTasks: []);
+    // TODO: Add connection to FreeTimeManager, and create pinned tasks
     daysDB.put(dateKey, day);
     return day;
   }
 
-  void _createScheduledTask(Task task, DateTime start, DateTime end) {
+  void _createScheduledTask(
+    Task task,
+    double urgency,
+    DateTime start,
+    DateTime end,
+  ) {
     final scheduledTask = ScheduledTask(
       parentTask: task,
       startTime: start,
       endTime: end,
-      urgency: task.priority,
+      urgency: urgency,
       type: ScheduledTaskType.defaultType,
       travelingTime: _getTravelTime(task.location),
       breakTime: _getBreakTime(),
@@ -134,15 +110,6 @@ class Scheduler {
   int _getBreakTime() {
     // Example logic: retrieve break time from user settings or a default value
     return 30 * 60 * 1000; // 30 minutes in milliseconds
-  }
-
-  List<String> _getAllDates(List<String>? availableDates) {
-    if (availableDates != null && availableDates.isNotEmpty) {
-      return availableDates;
-    }
-    // Example logic: generate a list of dates
-    return List.generate(7,
-        (index) => _formatDateKey(DateTime.now().add(Duration(days: index))));
   }
 
   String _formatDateKey(DateTime date) {
