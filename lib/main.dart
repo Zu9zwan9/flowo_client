@@ -1,3 +1,6 @@
+import 'package:flowo_client/models/habit_task.dart';
+import 'package:flowo_client/models/repeat_rule.dart';
+import 'package:flowo_client/models/task.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -10,6 +13,7 @@ import 'models/days.dart';
 import 'models/notification_type.dart';
 import 'models/scheduled_task.dart';
 import 'models/scheduled_task_type.dart';
+import 'models/user_settings.dart';
 import 'screens/home_screen.dart';
 import 'blocs/calendar/calendar_cubit.dart';
 import 'package:provider/provider.dart';
@@ -20,14 +24,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Register Hive adapters
-  Hive.registerAdapter(EventAdapter());
   Hive.registerAdapter(CategoryAdapter());
   Hive.registerAdapter(CoordinatesAdapter());
   Hive.registerAdapter(DaysAdapter());
-  Hive.registerAdapter(TimeRangeAdapter());
+  Hive.registerAdapter(EventAdapter());
+  Hive.registerAdapter(HabitTaskAdapter());
   Hive.registerAdapter(NotificationTypeAdapter());
+  Hive.registerAdapter(RepeatRuleAdapter());
   Hive.registerAdapter(ScheduledTaskAdapter());
   Hive.registerAdapter(ScheduledTaskTypeAdapter());
+  Hive.registerAdapter(TaskAdapter());
+  Hive.registerAdapter(UserSettingsAdapter());
 
   await Hive.initFlutter();
 

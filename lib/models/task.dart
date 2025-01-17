@@ -53,12 +53,6 @@ class Task extends HiveObject {
   @HiveField(13)
   bool overdue;
 
-  @HiveField(14)
-  double urgency;
-
-  @HiveField(15)
-  int minSession;
-
   // Add the missing getters
   DateTime get startDate => DateTime.now(); // Example getter
   DateTime get endDate =>
@@ -81,8 +75,6 @@ class Task extends HiveObject {
     this.scheduledTask = const [],
     this.isDone = false,
     this.order = 0,
-    this.overdue = false,
-    this.urgency = 0.0,
-    this.minSession = 0,
+    this.overdue = false
   });
 }

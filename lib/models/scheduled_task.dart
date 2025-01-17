@@ -18,7 +18,7 @@ class ScheduledTask extends HiveObject {
   DateTime endTime;
 
   @HiveField(3)
-  int urgency;
+  double urgency;
 
   @HiveField(4)
   ScheduledTaskType type;
