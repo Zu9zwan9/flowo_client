@@ -20,7 +20,7 @@ class ScheduledTaskAdapter extends TypeAdapter<ScheduledTask> {
       parentTask: fields[0] as Task,
       startTime: fields[1] as DateTime,
       endTime: fields[2] as DateTime,
-      urgency: fields[3] as double,
+      urgency: fields[3] as double?,
       type: fields[4] as ScheduledTaskType,
       travelingTime: fields[5] as int,
       breakTime: fields[6] as int,
