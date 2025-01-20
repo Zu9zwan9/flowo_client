@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/days.dart';
@@ -12,13 +14,31 @@ class Scheduler {
 
   Scheduler(this.daysDB, this.tasksDB);
 
-  void scheduleTask(Task task,double urgency, int minSession,
-      {int? partSession, List<String>? availableDates}) { // TODO: Use availableDates parameter
+  void scheduleTask(Task task, int minSession,
+      {double? urgency, int? partSession, List<String>? availableDates}) {
     int remainingTime = partSession ?? task.estimatedTime;
     DateTime currentDate = DateTime.now();
+    int dateIndex = 0;
+    bool isFirstIteration = true;
 
     while (remainingTime > 0) {
-      String dateKey = _formatDateKey(currentDate);
+      String dateKey;
+      if (availableDates != null && dateIndex < availableDates.length) {
+        dateKey = availableDates[dateIndex];
+        dateIndex++;
+      } else {
+        if (availableDates != null) {
+          // Signal that all available dates are exhausted
+          log('Not enough available dates to schedule the task.'); // TODO: make this a proper error message
+          return;
+        }
+        dateKey = _formatDateKey(currentDate);
+        if (!isFirstIteration) {
+          currentDate = currentDate.add(Duration(days: 1));
+        }
+        isFirstIteration = false;
+      }
+
       Days day = _getOrCreateDay(dateKey);
       DateTime start = DateTime.parse('$dateKey 00:00:00');
       if (start.isBefore(DateTime.now())) {
@@ -81,7 +101,7 @@ class Scheduler {
 
   void _createScheduledTask(
     Task task,
-    double urgency,
+    double? urgency,
     DateTime start,
     DateTime end,
   ) {
