@@ -31,7 +31,8 @@ class TaskManager {
       final Task mostUrgentTask = taskUrgencyMap.entries
           .reduce((a, b) => a.value > b.value ? a : b)
           .key;
-      scheduler.scheduleTask(mostUrgentTask, userSettings.minSession, urgency: taskUrgencyMap[mostUrgentTask]);
+      scheduler.scheduleTask(mostUrgentTask, userSettings.minSession,
+          urgency: taskUrgencyMap[mostUrgentTask]);
       tasks.remove(mostUrgentTask);
     }
   }
@@ -57,47 +58,59 @@ class TaskManager {
   List<DateTime> _calculateHabitDates(Task habit) {
     List<DateTime> dates = [];
     DateTime currentDate = habit.startDate;
-    DateTime endDate = habit.endDate ??
-        DateTime.now()
-            .add(Duration(days: 365)); // Default to 1 year if no end date
-    RepeatRule rule = habit.repeatRule;
+    RepeatRule repeatRule = habit.repeatRule;
 
-    while (currentDate.isBefore(endDate)) {
-      if (!_isExceptionDate(habit, currentDate) &&
-          !_isCompletedDate(habit, currentDate)) {
-        dates.add(currentDate);
+    while (
+        (repeatRule.until != null && currentDate.isBefore(repeatRule.until!)) ||
+            (repeatRule.count != null && dates.length < repeatRule.count!) ||
+            (repeatRule.until == null &&
+                repeatRule.count == null &&
+                currentDate
+                    .isBefore(DateTime.now().add(Duration(days: 365 * 3))))) {
+      switch (repeatRule.frequency) {
+        case 'daily':
+          dates.add(currentDate);
+          currentDate = currentDate.add(Duration(days: repeatRule.interval));
+          break;
+        case 'weekly':
+          if (repeatRule.byDay != null &&
+              repeatRule.byDay!.contains(currentDate.weekday % 7)) {
+            dates.add(currentDate);
+          }
+          currentDate = currentDate.add(Duration(days: 1));
+          break;
+        case 'monthly':
+          if (repeatRule.byMonthDay != null) {
+            if (repeatRule.byMonthDay!.contains(currentDate.day)) {
+              dates.add(currentDate);
+            } else if (repeatRule.byMonthDay!.contains(-currentDate.day)) {
+              DateTime lastDayOfMonth =
+                  DateTime(currentDate.year, currentDate.month + 1, 0);
+              int dayFromEnd = lastDayOfMonth.day +
+                  repeatRule.byMonthDay!.firstWhere((day) => day < 0) +
+                  1;
+              if (currentDate.day == dayFromEnd) {
+                dates.add(currentDate);
+              }
+            }
+          }
+          if (repeatRule.bySetPos != null &&
+              (currentDate.day - 1) ~/ 7 + 1 == repeatRule.bySetPos) {
+            dates.add(currentDate); //To review (31-1 ~/7 + 1 = 5)
+          }
+          currentDate = DateTime(currentDate.year,
+              currentDate.month + repeatRule.interval, currentDate.day);
+          break;
+        case 'yearly':
+          dates.add(currentDate);
+          currentDate = DateTime(currentDate.year + repeatRule.interval,
+              currentDate.month, currentDate.day);
+          break;
+        default:
+          throw ArgumentError('Invalid frequency: ${repeatRule.frequency}');
       }
-
-      currentDate = _getNextDate(currentDate, rule);
     }
 
     return dates;
-  }
-
-  bool _isExceptionDate(Task habit, DateTime date) {
-    return habit.exceptions.contains(date);
-  }
-
-  bool _isCompletedDate(Task habit, DateTime date) {
-    return habit.scheduledTask
-        .any((scheduledTask) => scheduledTask.startTime.isAtSameMomentAs(date));
-  }
-
-  DateTime _getNextDate(DateTime currentDate, RepeatRule rule) {
-    // TODO: work on implementing daysOfWeek, daysOfMonth, weekOfMonth
-    switch (rule.frequency) {
-      case 'daily':
-        return currentDate.add(Duration(days: rule.interval));
-      case 'weekly':
-        return currentDate.add(Duration(days: 7 * rule.interval));
-      case 'monthly':
-        return DateTime(currentDate.year, currentDate.month + rule.interval,
-            currentDate.day);
-      case 'yearly':
-        return DateTime(currentDate.year + rule.interval, currentDate.month,
-            currentDate.day);
-      default:
-        throw ArgumentError('Invalid frequency: ${rule.frequency}');
-    }
   }
 }

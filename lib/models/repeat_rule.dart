@@ -11,19 +11,31 @@ class RepeatRule {
   int interval;
 
   @HiveField(2)
-  List<int>? daysOfWeek;
+  int? count;
 
   @HiveField(3)
-  List<int>? daysOfMonth;
+  DateTime? until;
 
   @HiveField(4)
-  int? weekOfMonth;
+  List<int>? byDay; // monday - 1, tuesday - 2, ..., sunday - 7
+
+  @HiveField(5)
+  List<int>? byMonthDay;
+
+  @HiveField(6)
+  List<int>? byMonth;
+
+  @HiveField(7)
+  int? bySetPos;
 
   RepeatRule({
     required this.frequency,
     required this.interval,
-    this.daysOfWeek,
-    this.daysOfMonth,
-    this.weekOfMonth,
+    this.count,
+    this.until,
+    this.byDay,
+    this.byMonthDay,
+    this.byMonth,
+    this.bySetPos,
   });
 }

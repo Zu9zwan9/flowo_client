@@ -19,26 +19,35 @@ class RepeatRuleAdapter extends TypeAdapter<RepeatRule> {
     return RepeatRule(
       frequency: fields[0] as String,
       interval: fields[1] as int,
-      daysOfWeek: (fields[2] as List?)?.cast<int>(),
-      daysOfMonth: (fields[3] as List?)?.cast<int>(),
-      weekOfMonth: fields[4] as int?,
+      count: fields[2] as int?,
+      until: fields[3] as DateTime?,
+      byDay: (fields[4] as List?)?.cast<int>(),
+      byMonthDay: (fields[5] as List?)?.cast<int>(),
+      byMonth: (fields[6] as List?)?.cast<int>(),
+      bySetPos: fields[7] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, RepeatRule obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.frequency)
       ..writeByte(1)
       ..write(obj.interval)
       ..writeByte(2)
-      ..write(obj.daysOfWeek)
+      ..write(obj.count)
       ..writeByte(3)
-      ..write(obj.daysOfMonth)
+      ..write(obj.until)
       ..writeByte(4)
-      ..write(obj.weekOfMonth);
+      ..write(obj.byDay)
+      ..writeByte(5)
+      ..write(obj.byMonthDay)
+      ..writeByte(6)
+      ..write(obj.byMonth)
+      ..writeByte(7)
+      ..write(obj.bySetPos);
   }
 
   @override
