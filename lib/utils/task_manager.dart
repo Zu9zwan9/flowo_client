@@ -60,6 +60,13 @@ class TaskManager {
     DateTime currentDate = habit.startDate;
     RepeatRule repeatRule = habit.repeatRule;
 
+    bool isLeapYear(int year) {
+      if (year % 4 != 0) return false;
+      if (year % 100 != 0) return true;
+      if (year % 400 != 0) return false;
+      return true;
+    }
+
     while (
         (repeatRule.until != null && currentDate.isBefore(repeatRule.until!)) ||
             (repeatRule.count != null && dates.length < repeatRule.count!) ||
@@ -103,8 +110,22 @@ class TaskManager {
           break;
         case 'yearly':
           dates.add(currentDate);
-          currentDate = DateTime(currentDate.year + repeatRule.interval,
-              currentDate.month, currentDate.day);
+          if (repeatRule.byMonth != null && repeatRule.byMonth!.isNotEmpty) {
+            for (int month in repeatRule.byMonth!) {
+              int day = currentDate.day;
+              if (day > DateTime(currentDate.year, month + 1, 0).day) {
+                day = DateTime(currentDate.year, month + 1, 0).day;
+              }
+              DateTime newDate =
+                  DateTime(currentDate.year + repeatRule.interval, month, day);
+              if (newDate.isAfter(currentDate)) {
+                dates.add(newDate);
+              }
+            }
+          } else {
+            currentDate = DateTime(currentDate.year + repeatRule.interval,
+                currentDate.month, currentDate.day);
+          }
           break;
         default:
           throw ArgumentError('Invalid frequency: ${repeatRule.frequency}');
