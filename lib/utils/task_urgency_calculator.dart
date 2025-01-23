@@ -6,7 +6,7 @@ import 'package:hive/hive.dart';
 import '../models/scheduled_task.dart';
 
 class TaskUrgencyCalculator {
-  final Box<Days> daysDB;
+  final Box<Day> daysDB;
 
   TaskUrgencyCalculator(this.daysDB);
 
@@ -53,7 +53,8 @@ class TaskUrgencyCalculator {
       for (var scheduledTask in day.scheduledTasks) {
         if (scheduledTask.type == ScheduledTaskType.timeSensitive &&
             scheduledTask.startTime.millisecondsSinceEpoch >= now &&
-            scheduledTask.endTime.millisecondsSinceEpoch <= deadline) {
+            scheduledTask.endTime.millisecondsSinceEpoch <=
+                deadline) {
           _timeSensitiveTasksList.add(scheduledTask);
           busyTime += scheduledTask.endTime
               .difference(scheduledTask.startTime)

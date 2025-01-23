@@ -4,7 +4,7 @@ import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:hive/hive.dart';
 import 'category.dart';
 import 'coordinates.dart';
-import 'days.dart';
+import 'day.dart';
 import 'repeat_rule.dart';
 
 part 'task.g.dart';
@@ -36,13 +36,13 @@ class Task extends HiveObject {
   String? image;
 
   @HiveField(8)
-  List<Days>? frequency;
+  List<Day>? frequency;
 
   @HiveField(9)
   List<Task> subtasks;
 
   @HiveField(10)
-  List<ScheduledTask> scheduledTask;
+  List<ScheduledTask> scheduledTasks;
 
   @HiveField(11)
   bool isDone;
@@ -72,7 +72,7 @@ class Task extends HiveObject {
     this.image,
     this.frequency,
     this.subtasks = const [],
-    this.scheduledTask = const [],
+    this.scheduledTasks = const [],
     this.isDone = false,
     this.order = 0,
     this.overdue = false

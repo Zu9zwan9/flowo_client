@@ -19,17 +19,29 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
     return UserSettings(
       name: fields[0] as String,
       minSession: fields[1] as int,
+      breakTime: fields[2] as int?,
+      mealBreaks: (fields[3] as List).cast<TimeFrame>(),
+      sleepTime: (fields[4] as List).cast<TimeFrame>(),
+      freeTime: (fields[5] as List).cast<TimeFrame>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, UserSettings obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
-      ..write(obj.minSession);
+      ..write(obj.minSession)
+      ..writeByte(2)
+      ..write(obj.breakTime)
+      ..writeByte(3)
+      ..write(obj.mealBreaks)
+      ..writeByte(4)
+      ..write(obj.sleepTime)
+      ..writeByte(5)
+      ..write(obj.freeTime);
   }
 
   @override

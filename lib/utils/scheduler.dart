@@ -1,18 +1,32 @@
 import 'dart:developer';
 
+import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
-import 'package:flowo_client/models/days.dart';
+import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/notification_type.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/coordinates.dart';
+import 'package:flowo_client/models/user_settings.dart';
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
-class Scheduler {
-  final Box<Days> daysDB;
-  final Box<Task> tasksDB;
+import '../models/time_frame.dart';
 
-  Scheduler(this.daysDB, this.tasksDB);
+class Scheduler {
+  final Box<Day> daysDB;
+  final Box<Task> tasksDB;
+  final UserSettings userSettings;
+  final Task freeTimeManager;
+
+  Scheduler(this.daysDB, this.tasksDB, this.userSettings)
+      : freeTimeManager = Task(
+          title: 'Free Time',
+          priority: 0,
+          estimatedTime: 0,
+          deadline: 0,
+          category: Category(name: 'Free Time Manager'),
+        );
 
   void scheduleTask(Task task, int minSession,
       {double? urgency, int? partSession, List<String>? availableDates}) {
@@ -39,7 +53,7 @@ class Scheduler {
         isFirstIteration = false;
       }
 
-      Days day = _getOrCreateDay(dateKey);
+      Day day = _getOrCreateDay(dateKey);
       DateTime start = DateTime.parse('$dateKey 00:00:00');
       if (start.isBefore(DateTime.now())) {
         start = DateTime.now();
@@ -56,7 +70,13 @@ class Scheduler {
             possibleSessionTime = remainingTime;
           }
 
-          _createScheduledTask(task, urgency, start, end);
+          _createScheduledTask(
+              task: task,
+              urgency: urgency,
+              start: start,
+              end: end,
+              dateKey: dateKey);
+
           remainingTime -= possibleSessionTime;
           start = end;
         } else {
@@ -73,7 +93,12 @@ class Scheduler {
             sessionTime = remainingTime;
           }
 
-          _createScheduledTask(task, urgency, start, end);
+          _createScheduledTask(
+              task: task,
+              urgency: urgency,
+              start: start,
+              end: end,
+              dateKey: dateKey);
           remainingTime -= sessionTime;
         }
       }
@@ -88,35 +113,82 @@ class Scheduler {
     return scheduledTasks;
   }
 
-  Days _getOrCreateDay(String dateKey) {
+  Day _getOrCreateDay(String dateKey) {
     return daysDB.get(dateKey) ?? _createDay(dateKey);
   }
 
-  Days _createDay(String dateKey) {
-    final day = Days(day: dateKey, scheduledTasks: []);
-    // TODO: Add connection to FreeTimeManager, and create pinned tasks
+  Day _createDay(String dateKey) {
+    final day = Day(day: dateKey);
     daysDB.put(dateKey, day);
+
+    // Add meal breaks
+    for (TimeFrame timeFrame in userSettings.mealBreaks) {
+      DateTime start =
+          _combineDateKeyAndTimeOfDay(dateKey, timeFrame.startTime);
+      DateTime end = _combineDateKeyAndTimeOfDay(dateKey, timeFrame.endTime);
+
+      _createScheduledTask(
+        task: freeTimeManager,
+        type: ScheduledTaskType.mealBreak,
+        start: start,
+        end: end,
+        dateKey: dateKey,
+      );
+    }
+
+    // Add sleep times
+    for (TimeFrame timeFrame in userSettings.sleepTime) {
+      DateTime start =
+          _combineDateKeyAndTimeOfDay(dateKey, timeFrame.startTime);
+      DateTime end = _combineDateKeyAndTimeOfDay(dateKey, timeFrame.endTime);
+
+      _createScheduledTask(
+          task: freeTimeManager,
+          type: ScheduledTaskType.sleep,
+          start: start,
+          end: end,
+          dateKey: dateKey);
+    }
+
+    // Add free times
+    for (TimeFrame timeFrame in userSettings.freeTime) {
+      DateTime start =
+          _combineDateKeyAndTimeOfDay(dateKey, timeFrame.startTime);
+      DateTime end = _combineDateKeyAndTimeOfDay(dateKey, timeFrame.endTime);
+
+      _createScheduledTask(
+        task: freeTimeManager,
+        type: ScheduledTaskType.rest,
+        start: start,
+        end: end,
+        dateKey: dateKey,
+      );
+    }
+
+
     return day;
   }
 
   void _createScheduledTask(
-    Task task,
-    double? urgency,
-    DateTime start,
-    DateTime end,
-  ) {
+      {required Task task,
+      required DateTime start,
+      required DateTime end,
+      required String dateKey,
+      double? urgency,
+      ScheduledTaskType? type}) {
     final scheduledTask = ScheduledTask(
       parentTask: task,
       startTime: start,
       endTime: end,
       urgency: urgency,
-      type: ScheduledTaskType.defaultType,
+      type: type ?? ScheduledTaskType.defaultType,
       travelingTime: _getTravelTime(task.location),
-      breakTime: _getBreakTime(),
+      breakTime: userSettings.breakTime ?? 5 * 60 * 1000,
+      // 5 minutes in ms
       notification: NotificationType.none,
     );
-    task.scheduledTask.add(scheduledTask);
-    tasksDB.put(task.key, task);
+    task.scheduledTasks.add(scheduledTask);
+    daysDB.get(dateKey)!.scheduledTasks.add(scheduledTask);
   }
 
   int _getTravelTime(Coordinates? location) {
@@ -127,12 +199,14 @@ class Scheduler {
     return (location.latitude.abs() + location.longitude.abs()).toInt() * 10;
   }
 
-  int _getBreakTime() {
-    // Example logic: retrieve break time from user settings or a default value
-    return 30 * 60 * 1000; // 30 minutes in milliseconds
-  }
-
   String _formatDateKey(DateTime date) {
     return '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+  }
+
+  DateTime _combineDateKeyAndTimeOfDay(String dateKey, TimeOfDay timeOfDay) {
+    final year = int.parse(dateKey.substring(0, 4));
+    final month = int.parse(dateKey.substring(4, 6));
+    final day = int.parse(dateKey.substring(6, 8));
+    return DateTime(year, month, day, timeOfDay.hour, timeOfDay.minute);
   }
 }

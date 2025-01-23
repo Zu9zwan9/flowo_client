@@ -11,14 +11,14 @@ class TaskManager {
   final Scheduler scheduler;
   final TaskUrgencyCalculator taskUrgencyCalculator;
   final UserSettings userSettings;
-  final Box<Days> daysDB;
+  final Box<Day> daysDB;
   final Box<Task> tasksDB;
 
   TaskManager({
     required this.daysDB,
     required this.tasksDB,
     required this.userSettings,
-  })  : scheduler = Scheduler(daysDB, tasksDB),
+  })  : scheduler = Scheduler(daysDB, tasksDB, userSettings),
         taskUrgencyCalculator = TaskUrgencyCalculator(daysDB);
 
   void manageTasks() {

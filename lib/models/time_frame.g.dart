@@ -1,35 +1,35 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'days.dart';
+part of 'time_frame.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class DaysAdapter extends TypeAdapter<Days> {
+class TimeFrameAdapter extends TypeAdapter<TimeFrame> {
   @override
-  final int typeId = 4;
+  final int typeId = 12;
 
   @override
-  Days read(BinaryReader reader) {
+  TimeFrame read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Days(
-      day: fields[0] as String,
-      scheduledTasks: (fields[1] as List).cast<ScheduledTask>(),
+    return TimeFrame(
+      startTime: fields[0] as TimeOfDay,
+      endTime: fields[1] as TimeOfDay,
     );
   }
 
   @override
-  void write(BinaryWriter writer, Days obj) {
+  void write(BinaryWriter writer, TimeFrame obj) {
     writer
       ..writeByte(2)
       ..writeByte(0)
-      ..write(obj.day)
+      ..write(obj.startTime)
       ..writeByte(1)
-      ..write(obj.scheduledTasks);
+      ..write(obj.endTime);
   }
 
   @override
@@ -38,7 +38,7 @@ class DaysAdapter extends TypeAdapter<Days> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is DaysAdapter &&
+      other is TimeFrameAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

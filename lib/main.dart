@@ -26,7 +26,7 @@ void main() async {
   // Register Hive adapters
   Hive.registerAdapter(CategoryAdapter());
   Hive.registerAdapter(CoordinatesAdapter());
-  Hive.registerAdapter(DaysAdapter());
+  Hive.registerAdapter(DayAdapter());
   Hive.registerAdapter(EventAdapter());
   Hive.registerAdapter(HabitTaskAdapter());
   Hive.registerAdapter(NotificationTypeAdapter());
