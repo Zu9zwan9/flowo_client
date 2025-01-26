@@ -1,9 +1,11 @@
+import 'package:flowo_client/models/category.dart';
+import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/utils/scheduler.dart';
 import 'package:flowo_client/utils/task_urgency_calculator.dart';
 import 'package:hive/hive.dart';
 
-import '../models/days.dart';
+import '../models/day.dart';
 import '../models/repeat_rule.dart';
 import '../models/task.dart';
 
@@ -21,20 +23,63 @@ class TaskManager {
   })  : scheduler = Scheduler(daysDB, tasksDB, userSettings),
         taskUrgencyCalculator = TaskUrgencyCalculator(daysDB);
 
+  createTask(String title, int priority, int estimatedTime, int deadline,
+      Category category, Task? parentTask) {
+    Task task = Task(
+      title: title,
+      priority: priority,
+      estimatedTime: estimatedTime,
+      deadline: deadline,
+      category: category,
+    );
+    tasksDB.put(task.key, task);
+    if (parentTask != null) {
+      task.parentTask = parentTask;
+      parentTask.subtasks.add(task);
+    }
+  }
+
   void manageTasks() {
     List<Task> tasks = tasksDB.values
-        .where((task) => task.frequency == null || task.frequency!.isEmpty)
+        .where((task) =>
+            (task.frequency == null || task.frequency!.isEmpty) &&
+            task.subtasks.isEmpty)
         .toList();
+
+    List<ScheduledTask> justScheduledTasks = [];
+
     while (tasks.isNotEmpty) {
-      final Map<Task, double> taskUrgencyMap =
-          taskUrgencyCalculator.calculateUrgency(tasks);
-      final Task mostUrgentTask = taskUrgencyMap.entries
+      final taskUrgencyMap =
+          taskUrgencyCalculator.calculateUrgency(tasks, justScheduledTasks);
+      Task mostUrgentTask = taskUrgencyMap.entries
+          .where((entry) => _isOrderCorrect(entry.key))
           .reduce((a, b) => a.value > b.value ? a : b)
           .key;
-      scheduler.scheduleTask(mostUrgentTask, userSettings.minSession,
+
+      ScheduledTask? scheduledTask = scheduler.scheduleTask(
+          mostUrgentTask, userSettings.minSession,
           urgency: taskUrgencyMap[mostUrgentTask]);
+      if (scheduledTask != null) {
+        justScheduledTasks.add(scheduledTask);
+      }
       tasks.remove(mostUrgentTask);
     }
+  }
+
+  _isOrderCorrect(Task task) {
+    if (task.order != null && task.order! > 0) {
+      Task? parentTask = task.parentTask;
+      if (parentTask != null) {
+        if (parentTask.subtasks.any((subtask) =>
+            subtask.order != null &&
+            subtask.order != 0 &&
+            subtask.order! < task.order! &&
+            subtask.scheduledTasks.isEmpty)) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   void manageHabits() {
@@ -55,17 +100,17 @@ class TaskManager {
     }
   }
 
+  bool _isLeapYear(int year) {
+    if (year % 4 != 0) return false;
+    if (year % 100 != 0) return true;
+    if (year % 400 != 0) return false;
+    return true;
+  }
+
   List<DateTime> _calculateHabitDates(Task habit) {
     List<DateTime> dates = [];
     DateTime currentDate = habit.startDate;
     RepeatRule repeatRule = habit.repeatRule;
-
-    bool isLeapYear(int year) {
-      if (year % 4 != 0) return false;
-      if (year % 100 != 0) return true;
-      if (year % 400 != 0) return false;
-      return true;
-    }
 
     while (
         (repeatRule.until != null && currentDate.isBefore(repeatRule.until!)) ||

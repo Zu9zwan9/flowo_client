@@ -28,12 +28,12 @@ class Scheduler {
           category: Category(name: 'Free Time Manager'),
         );
 
-  void scheduleTask(Task task, int minSession,
-      {double? urgency, int? partSession, List<String>? availableDates}) {
+  ScheduledTask? scheduleTask(Task task, int minSession, {double? urgency, int? partSession, List<String>? availableDates}) {
     int remainingTime = partSession ?? task.estimatedTime;
     DateTime currentDate = DateTime.now();
     int dateIndex = 0;
     bool isFirstIteration = true;
+    ScheduledTask? createdTask;
 
     while (remainingTime > 0) {
       String dateKey;
@@ -44,7 +44,7 @@ class Scheduler {
         if (availableDates != null) {
           // Signal that all available dates are exhausted
           log('Not enough available dates to schedule the task.'); // TODO: make this a proper error message
-          return;
+          return null;
         }
         dateKey = _formatDateKey(currentDate);
         if (!isFirstIteration) {
@@ -70,7 +70,7 @@ class Scheduler {
             possibleSessionTime = remainingTime;
           }
 
-          _createScheduledTask(
+          createdTask = _createScheduledTask(
               task: task,
               urgency: urgency,
               start: start,
@@ -93,7 +93,7 @@ class Scheduler {
             sessionTime = remainingTime;
           }
 
-          _createScheduledTask(
+          createdTask = _createScheduledTask(
               task: task,
               urgency: urgency,
               start: start,
@@ -105,6 +105,7 @@ class Scheduler {
 
       currentDate = currentDate.add(Duration(days: 1));
     }
+    return createdTask;
   }
 
   List<ScheduledTask> _sortScheduledTasksByTime(
@@ -169,7 +170,7 @@ class Scheduler {
     return day;
   }
 
-  void _createScheduledTask(
+  ScheduledTask _createScheduledTask(
       {required Task task,
       required DateTime start,
       required DateTime end,
@@ -189,6 +190,7 @@ class Scheduler {
     );
     task.scheduledTasks.add(scheduledTask);
     daysDB.get(dateKey)!.scheduledTasks.add(scheduledTask);
+    return scheduledTask;
   }
 
   int _getTravelTime(Coordinates? location) {

@@ -9,7 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'models/event_model.dart';
 import 'models/category.dart';
 import 'models/coordinates.dart';
-import 'models/days.dart';
+import 'models/day.dart';
 import 'models/notification_type.dart';
 import 'models/scheduled_task.dart';
 import 'models/scheduled_task_type.dart';

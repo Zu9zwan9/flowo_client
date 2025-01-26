@@ -42,15 +42,18 @@ class Task extends HiveObject {
   List<Task> subtasks;
 
   @HiveField(10)
-  List<ScheduledTask> scheduledTasks;
+  Task? parentTask;
 
   @HiveField(11)
-  bool isDone;
+  List<ScheduledTask> scheduledTasks;
 
   @HiveField(12)
-  int order;
+  bool isDone;
 
   @HiveField(13)
+  int? order;
+
+  @HiveField(14)
   bool overdue;
 
   // Add the missing getters
@@ -61,20 +64,20 @@ class Task extends HiveObject {
       RepeatRule(frequency: 'daily', interval: 1); // Example getter
   List<DateTime> get exceptions => []; // Example getter
 
-  Task({
-    required this.title,
-    required this.priority,
-    required this.deadline,
-    required this.estimatedTime,
-    required this.category,
-    this.notes,
-    this.location,
-    this.image,
-    this.frequency,
-    this.subtasks = const [],
-    this.scheduledTasks = const [],
-    this.isDone = false,
-    this.order = 0,
-    this.overdue = false
-  });
+  Task(
+      {required this.title,
+      required this.priority,
+      required this.deadline,
+      required this.estimatedTime,
+      required this.category,
+      this.parentTask,
+      this.notes,
+      this.location,
+      this.image,
+      this.frequency,
+      this.subtasks = const [],
+      this.scheduledTasks = const [],
+      this.isDone = false,
+      this.order, // 1,2,3 - is order of subtask, if 0 - order is not important
+      this.overdue = false});
 }
