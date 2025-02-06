@@ -1,4 +1,3 @@
-import 'package:flowo_client/models/habit_task.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flutter/material.dart';
@@ -6,7 +5,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path_provider/path_provider.dart';
-import 'models/event_model.dart';
 import 'models/category.dart';
 import 'models/coordinates.dart';
 import 'models/day.dart';
@@ -27,8 +25,6 @@ void main() async {
   Hive.registerAdapter(CategoryAdapter());
   Hive.registerAdapter(CoordinatesAdapter());
   Hive.registerAdapter(DayAdapter());
-  Hive.registerAdapter(EventAdapter());
-  Hive.registerAdapter(HabitTaskAdapter());
   Hive.registerAdapter(NotificationTypeAdapter());
   Hive.registerAdapter(RepeatRuleAdapter());
   Hive.registerAdapter(ScheduledTaskAdapter());
@@ -38,29 +34,33 @@ void main() async {
 
   await Hive.initFlutter();
 
-  Box<Event> eventBox;
+  Box<Task> taskBox;
+  Box<ScheduledTask> scheduledTaskBox;
 
   if (kIsWeb) {
-    eventBox = await Hive.openBox<Event>('events');
+    taskBox = await Hive.openBox<Task>('tasks');
+    scheduledTaskBox = await Hive.openBox<ScheduledTask>('scheduled_tasks');
   } else {
     final dir = await getApplicationDocumentsDirectory();
-    eventBox = await Hive.openBox<Event>('events');
+    taskBox = await Hive.openBox<Task>('tasks');
+    scheduledTaskBox = await Hive.openBox<ScheduledTask>('scheduled_tasks');
   }
 
-  logger.i('Hive initialized and event box opened');
+  logger.i('Hive initialized and task boxes opened');
 
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeNotifier(),
-      child: MyApp(eventBox: eventBox),
+      child: MyApp(taskBox: taskBox, scheduledTaskBox: scheduledTaskBox),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final Box<Event> eventBox;
+  final Box<Task> taskBox;
+  final Box<ScheduledTask> scheduledTaskBox;
 
-  const MyApp({super.key, required this.eventBox});
+  const MyApp({super.key, required this.taskBox, required this.scheduledTaskBox});
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +68,7 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<CalendarCubit>(
-          create: (context) => CalendarCubit(eventBox),
+          create: (context) => CalendarCubit(taskBox, scheduledTaskBox),
         ),
       ],
       child: Consumer<ThemeNotifier>(

@@ -3,10 +3,12 @@ import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/utils/scheduler.dart';
 import 'package:flowo_client/utils/task_urgency_calculator.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
 import '../models/day.dart';
 import '../models/repeat_rule.dart';
+import '../models/scheduled_task_type.dart';
 import '../models/task.dart';
 
 class TaskManager {
@@ -26,6 +28,7 @@ class TaskManager {
   createTask(String title, int priority, int estimatedTime, int deadline,
       Category category, Task? parentTask) {
     Task task = Task(
+      id: UniqueKey().toString(),
       title: title,
       priority: priority,
       estimatedTime: estimatedTime,
@@ -97,6 +100,23 @@ class TaskManager {
           availableDates: [date.toIso8601String().split('T').first],
         );
       }
+    }
+  }
+
+  void removeScheduledTasks() {
+    final now = DateTime.now();
+
+    for (Day day in daysDB.values) {
+      final dayDate = DateTime.parse(day.day);
+      if (dayDate.isBefore(now)) continue;
+
+      day.scheduledTasks.removeWhere((scheduledTask) {
+        if (scheduledTask.type == ScheduledTaskType.defaultType) {
+          scheduledTask.parentTask.scheduledTasks.remove(scheduledTask);
+          return true;
+        }
+        return false;
+      });
     }
   }
 

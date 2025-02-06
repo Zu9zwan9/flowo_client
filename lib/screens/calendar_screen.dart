@@ -2,10 +2,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import '../models/event_model.dart';
+import '../models/task.dart';
+import '../models/scheduled_task.dart';
 import '../blocs/calendar/calendar_cubit.dart';
 import '../blocs/calendar/calendar_state.dart';
-import 'widgets/event_card.dart';
+import 'widgets/task_card.dart';
 import '../utils/logger.dart';
 
 class CalendarScreen extends StatelessWidget {
@@ -29,11 +30,11 @@ class CalendarScreen extends StatelessWidget {
                 Expanded(
                   child: SfCalendar(
                     view: CalendarView.month,
-                    dataSource: EventDataSource(state.events),
+                    dataSource: TaskDataSource(state.tasks),
                     onTap: (details) {
                       if (details.appointments != null && details.appointments!.isNotEmpty) {
-                        final event = details.appointments!.first as Event;
-                        logDebug('Tapped on event: ${event.title}');
+                        final task = details.appointments!.first as Task;
+                        logDebug('Tapped on task: ${task.title}');
                       }
                     },
                     onSelectionChanged: (details) {
@@ -43,7 +44,7 @@ class CalendarScreen extends StatelessWidget {
                   ),
                 ),
                 Expanded(
-                  child: _buildEventsList(context, state),
+                  child: _buildTasksList(context, state),
                 ),
               ],
             );
@@ -86,25 +87,25 @@ class CalendarScreen extends StatelessWidget {
     );
   }
 
-  FutureBuilder<List<Event>> _buildEventsList(BuildContext context, CalendarState state) {
-    return FutureBuilder<List<Event>>(
-      future: context.read<CalendarCubit>().getEventsForSelectedDate(),
+  FutureBuilder<List<ScheduledTask>> _buildTasksList(BuildContext context, CalendarState state) {
+    return FutureBuilder<List<ScheduledTask>>(
+      future: context.read<CalendarCubit>().getTasksForSelectedDate(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
-          logError('Error loading events: ${snapshot.error}');
+          logError('Error loading tasks: ${snapshot.error}');
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(child: Text('No events found'));
+          return Center(child: Text('No tasks found'));
         } else {
-          final events = snapshot.data!;
-          logDebug('Loaded ${events.length} events');
+          final tasks = snapshot.data!;
+          logDebug('Loaded ${tasks.length} tasks');
           return ListView.builder(
-            itemCount: events.length,
+            itemCount: tasks.length,
             itemBuilder: (context, index) {
-              final event = events[index];
-              return EventCard(event: event);
+              final task = tasks[index];
+              return TaskCard(task: task.parentTask);
             },
           );
         }
@@ -113,19 +114,19 @@ class CalendarScreen extends StatelessWidget {
   }
 }
 
-class EventDataSource extends CalendarDataSource {
-  EventDataSource(List<Event> events) {
-    appointments = events;
+class TaskDataSource extends CalendarDataSource {
+  TaskDataSource(List<Task> tasks) {
+    appointments = tasks;
   }
 
   @override
   DateTime getStartTime(int index) {
-    return appointments![index].startTime;
+    return appointments![index].startDate;
   }
 
   @override
   DateTime getEndTime(int index) {
-    return appointments![index].endTime;
+    return appointments![index].endDate;
   }
 
   @override
@@ -135,7 +136,7 @@ class EventDataSource extends CalendarDataSource {
 
   @override
   Color getColor(int index) {
-    switch (appointments![index].category) {
+    switch (appointments![index].category.name) {
       case 'Brainstorm':
         return Colors.blue;
       case 'Design':

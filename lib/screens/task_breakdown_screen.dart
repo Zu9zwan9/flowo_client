@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import '../models/event_model.dart';
-import '../models/subtask_model.dart';
+import '../models/category.dart';
+import '../models/task.dart';
 
 class TaskBreakdownScreen extends StatelessWidget {
-  final Event event;
+  final Task task;
 
-  const TaskBreakdownScreen({required this.event, super.key});
+  const TaskBreakdownScreen({required this.task, super.key});
 
-  Future<List<Subtask>> generateTaskBreakdown(String taskDescription) async {
+  Future<List<Task>> generateTaskBreakdown(String taskDescription) async {
     // Simulate an API call to generate task breakdown
     await Future.delayed(Duration(seconds: 2));
     return [
-      Subtask(title: 'Subtask 1'),
-      Subtask(title: 'Subtask 2'),
-      Subtask(title: 'Subtask 3'),
+      Task(id: UniqueKey().toString(), title: 'Subtask 1', priority: 1, deadline: 0, estimatedTime: 0, category: Category(name: 'General')),
+      Task(id: UniqueKey().toString(), title: 'Subtask 2', priority: 1, deadline: 0, estimatedTime: 0, category: Category(name: 'General')),
+      Task(id: UniqueKey().toString(), title: 'Subtask 3', priority: 1, deadline: 0, estimatedTime: 0, category: Category(name: 'General')),
     ];
   }
 
@@ -21,10 +21,10 @@ class TaskBreakdownScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('${event.title} - Subtasks'),
+        title: Text('${task.title} - Subtasks'),
       ),
-      body: FutureBuilder<List<Subtask>>(
-        future: generateTaskBreakdown(event.description ?? ''),
+      body: FutureBuilder<List<Task>>(
+        future: generateTaskBreakdown(task.notes ?? ''),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());

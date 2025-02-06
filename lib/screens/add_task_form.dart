@@ -1,14 +1,13 @@
-// lib/screens/add_task_form.dart
-
 import 'package:flutter/material.dart';
-import '../models/event_model.dart';
+import '../models/category.dart';
+import '../models/task.dart';
 
 class AddTaskForm extends StatefulWidget {
   final DateTime selectedDate;
   final ScrollController scrollController;
-  final Event? event; // Add this line
+  final Task? task; // Update this line
 
-  const AddTaskForm({super.key, required this.selectedDate, required this.scrollController, this.event}); // Update constructor
+  const AddTaskForm({super.key, required this.selectedDate, required this.scrollController, this.task}); // Update constructor
 
   @override
   AddTaskFormState createState() => AddTaskFormState();
@@ -29,13 +28,13 @@ class AddTaskFormState extends State<AddTaskForm> {
   void initState() {
     super.initState();
     _selectedDate = widget.selectedDate;
-    if (widget.event != null) {
-      _titleController.text = widget.event!.title;
-      _descriptionController.text = widget.event!.description ?? '';
-      _selectedDate = widget.event!.startTime;
-      _startTime = TimeOfDay.fromDateTime(widget.event!.startTime);
-      _endTime = TimeOfDay.fromDateTime(widget.event!.endTime);
-      _selectedCategory = widget.event!.category;
+    if (widget.task != null) {
+      _titleController.text = widget.task!.title;
+      _descriptionController.text = widget.task!.notes ?? '';
+      _selectedDate = DateTime.fromMillisecondsSinceEpoch(widget.task!.deadline);
+      _startTime = TimeOfDay.fromDateTime(DateTime.fromMillisecondsSinceEpoch(widget.task!.deadline));
+      _endTime = TimeOfDay.fromDateTime(DateTime.fromMillisecondsSinceEpoch(widget.task!.deadline + widget.task!.estimatedTime));
+      _selectedCategory = widget.task!.category.name;
     }
   }
 
@@ -57,12 +56,12 @@ class AddTaskFormState extends State<AddTaskForm> {
                 TextFormField(
                   controller: _titleController,
                   decoration: const InputDecoration(
-                    labelText: 'Event name*',
+                    labelText: 'Task name*',
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter an event name';
+                      return 'Please enter a task name';
                     }
                     return null;
                   },
@@ -261,14 +260,20 @@ class AddTaskFormState extends State<AddTaskForm> {
                         return;
                       }
 
-                      final event = Event(
+                      final task = Task(
+                        id: UniqueKey().toString(),
                         title: _titleController.text,
-                        description: _descriptionController.text.isEmpty ? null : _descriptionController.text,
-                        startTime: startTime,
-                        endTime: endTime,
-                        category: _selectedCategory,
+                        notes: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+                        deadline: startTime.millisecondsSinceEpoch,
+                        estimatedTime: endTime.difference(startTime).inMilliseconds,
+                        category: Category(name: _selectedCategory),
+                        priority: 1, // Example priority
+                        subtasks: [],
+                        scheduledTasks: [],
+                        isDone: false,
+                        overdue: false,
                       );
-                      Navigator.pop(context, event);
+                      Navigator.pop(context, task);
                     }
                   },
                   child: const Text('Save'),

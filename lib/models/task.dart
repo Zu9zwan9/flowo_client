@@ -12,48 +12,51 @@ part 'task.g.dart';
 @HiveType(typeId: 0)
 class Task extends HiveObject {
   @HiveField(0)
-  String title;
+  String id;
 
   @HiveField(1)
-  int priority;
+  String title;
 
   @HiveField(2)
-  int deadline;
+  int priority;
 
   @HiveField(3)
-  int estimatedTime;
+  int deadline;
 
   @HiveField(4)
-  Category category;
+  int estimatedTime;
 
   @HiveField(5)
-  String? notes;
+  Category category;
 
   @HiveField(6)
-  Coordinates? location;
+  String? notes;
 
   @HiveField(7)
-  String? image;
+  Coordinates? location;
 
   @HiveField(8)
-  List<Day>? frequency;
+  String? image;
 
   @HiveField(9)
-  List<Task> subtasks;
+  List<Day>? frequency;
 
   @HiveField(10)
-  Task? parentTask;
+  List<Task> subtasks;
 
   @HiveField(11)
-  List<ScheduledTask> scheduledTasks;
+  Task? parentTask;
 
   @HiveField(12)
-  bool isDone;
+  List<ScheduledTask> scheduledTasks;
 
   @HiveField(13)
-  int? order;
+  bool isDone;
 
   @HiveField(14)
+  int? order;
+
+  @HiveField(15)
   bool overdue;
 
   // Add the missing getters
@@ -65,7 +68,8 @@ class Task extends HiveObject {
   List<DateTime> get exceptions => []; // Example getter
 
   Task(
-      {required this.title,
+      {required this.id,
+      required this.title,
       required this.priority,
       required this.deadline,
       required this.estimatedTime,

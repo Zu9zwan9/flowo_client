@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/calendar/calendar_cubit.dart';
-import '../models/event_model.dart';
+import '../models/task.dart';
 import 'task_breakdown_screen.dart';
 
 class TaskListScreen extends StatelessWidget {
@@ -13,8 +13,8 @@ class TaskListScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Task List'),
       ),
-      body: FutureBuilder<Map<String, List<Event>>>(
-        future: context.read<CalendarCubit>().getEventsGroupedByCategory(),
+      body: FutureBuilder<Map<String, List<Task>>>(
+        future: context.read<CalendarCubit>().getTasksGroupedByCategory(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -23,20 +23,20 @@ class TaskListScreen extends StatelessWidget {
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
             return Center(child: Text('No tasks found'));
           } else {
-            final groupedEvents = snapshot.data!;
+            final groupedTasks = snapshot.data!;
             return ListView(
-              children: groupedEvents.keys.map((category) {
+              children: groupedTasks.keys.map((category) {
                 return ExpansionTile(
                   title: Text(category),
-                  children: groupedEvents[category]!.map((event) {
+                  children: groupedTasks[category]!.map((task) {
                     return ListTile(
-                      title: Text(event.title),
-                      subtitle: Text(event.description ?? ''),
+                      title: Text(task.title),
+                      subtitle: Text(task.notes ?? ''),
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => TaskBreakdownScreen(event: event),
+                            builder: (context) => TaskBreakdownScreen(task: task),
                           ),
                         );
                       },

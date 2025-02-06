@@ -3,7 +3,7 @@ import 'package:flowo_client/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:provider/provider.dart';
-import '../models/event_model.dart';
+import '../models/task.dart';
 import 'calendar_screen.dart';
 import 'task_list_screen.dart';
 import '../screens/add_task_form.dart';
@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) async {
           if (index == 2) {
             final selectedDate = context.read<CalendarCubit>().state.selectedDate;
-            final event = await showModalBottomSheet<Event>(
+            final task = await showModalBottomSheet<Task>(
               context: context,
               isScrollControlled: true,
               backgroundColor: Colors.transparent,
@@ -73,14 +73,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 },
               ),
             );
-            if (mounted && event != null) {
-              context.read<CalendarCubit>().addEvent(event);
+            if (mounted && task != null) {
+              context.read<CalendarCubit>().addTask(task);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Event added: ${event.title}')),
+                SnackBar(content: Text('Task added: ${task.title}')),
               );
             } else if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Event addition cancelled')),
+                SnackBar(content: Text('Task addition cancelled')),
               );
             }
           } else {

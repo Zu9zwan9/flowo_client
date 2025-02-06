@@ -21,6 +21,7 @@ class Scheduler {
 
   Scheduler(this.daysDB, this.tasksDB, this.userSettings)
       : freeTimeManager = Task(
+          id: UniqueKey().toString(),
           title: 'Free Time',
           priority: 0,
           estimatedTime: 0,
