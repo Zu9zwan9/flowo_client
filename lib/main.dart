@@ -74,6 +74,7 @@ class MyApp extends StatelessWidget {
       child: Consumer<ThemeNotifier>(
         builder: (context, themeNotifier, child) {
           return MaterialApp(
+            debugShowCheckedModeBanner: false,
             theme: themeNotifier.currentTheme,
             home: const HomeScreen(),
           );

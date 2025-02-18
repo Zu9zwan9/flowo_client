@@ -5,7 +5,7 @@ import '../models/task.dart';
 class AddTaskForm extends StatefulWidget {
   final DateTime selectedDate;
   final ScrollController scrollController;
-  final Task? task; // Update this line
+  final Task? task;
 
   const AddTaskForm({super.key, required this.selectedDate, required this.scrollController, this.task}); // Update constructor
 

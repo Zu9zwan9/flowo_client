@@ -20,30 +20,56 @@ class CalendarScreen extends StatelessWidget {
         middle: Text('Calendar'),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(top: 50.0),
+        padding: const EdgeInsets.only(top: 50.0, left: 12.0, right: 12.0),
         child: BlocBuilder<CalendarCubit, CalendarState>(
           builder: (context, state) {
             logDebug('CalendarState updated: ${state.status}');
             return Column(
               children: [
                 _buildHeader(context, state),
+                const SizedBox(height: 20),
                 Expanded(
-                  child: SfCalendar(
-                    view: CalendarView.month,
-                    dataSource: TaskDataSource(state.tasks),
-                    onTap: (details) {
-                      if (details.appointments != null && details.appointments!.isNotEmpty) {
-                        final task = details.appointments!.first as Task;
-                        logDebug('Tapped on task: ${task.title}');
-                      }
-                    },
-                    onSelectionChanged: (details) {
-                      context.read<CalendarCubit>().selectDate(details.date!);
-                      logDebug('Date selected: ${details.date}');
-                    },
+                  flex: 2,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.lightBackgroundGray,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    clipBehavior: Clip.hardEdge,
+                    child: SfCalendar(
+                      view: CalendarView.month,
+                      dataSource: TaskDataSource(state.tasks),
+                      headerHeight: 0,
+                      onTap: (details) {
+                        if (details.appointments != null &&
+                            details.appointments!.isNotEmpty) {
+                          final task = details.appointments!.first as Task;
+                          logDebug('Tapped on task: ${task.title}');
+                        }
+                      },
+                      onSelectionChanged: (details) {
+                        if (details.date != null) {
+                          context.read<CalendarCubit>().selectDate(details.date!);
+                          logDebug('Date selected: ${details.date}');
+                        }
+                      },
+                      monthViewSettings: const MonthViewSettings(
+                        appointmentDisplayMode:
+                        MonthAppointmentDisplayMode.indicator,
+                      ),
+                    ),
                   ),
                 ),
+                const SizedBox(height: 20),
                 Expanded(
+                  flex: 1,
                   child: _buildTasksList(context, state),
                 ),
               ],
@@ -56,61 +82,117 @@ class CalendarScreen extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context, CalendarState state) {
     final selectedDate = state.selectedDate;
-    final monthYear = "${selectedDate.month}/${selectedDate.year}";
+    final monthYear = "${_getMonthName(selectedDate.month)} ${selectedDate.year}";
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: Icon(Icons.arrow_left),
-          onPressed: () {
-            context.read<CalendarCubit>().selectDate(
-              DateTime(selectedDate.year, selectedDate.month - 1, selectedDate.day),
-            );
-            logDebug('Previous month selected');
-          },
-        ),
-        Text(
-          monthYear,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        IconButton(
-          icon: Icon(Icons.arrow_right),
-          onPressed: () {
-            context.read<CalendarCubit>().selectDate(
-              DateTime(selectedDate.year, selectedDate.month + 1, selectedDate.day),
-            );
-            logDebug('Next month selected');
-          },
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      decoration: BoxDecoration(
+        color: CupertinoColors.extraLightBackgroundGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              final newDate = _changeMonth(selectedDate, -1);
+              context.read<CalendarCubit>().selectDate(newDate);
+              logDebug('Previous month selected: $newDate');
+            },
+            child: const Icon(CupertinoIcons.left_chevron, size: 28),
+          ),
+          Text(
+            monthYear,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () {
+              final newDate = _changeMonth(selectedDate, 1);
+              context.read<CalendarCubit>().selectDate(newDate);
+              logDebug('Next month selected: $newDate');
+            },
+            child: const Icon(CupertinoIcons.right_chevron, size: 28),
+          ),
+        ],
+      ),
     );
   }
 
-  FutureBuilder<List<ScheduledTask>> _buildTasksList(BuildContext context, CalendarState state) {
+  // Adjusts the month considering year changes and day overflow.
+  DateTime _changeMonth(DateTime date, int delta) {
+    int newYear = date.year;
+    int newMonth = date.month + delta;
+
+    if (newMonth < 1) {
+      newYear -= 1;
+      newMonth = 12;
+    } else if (newMonth > 12) {
+      newYear += 1;
+      newMonth = 1;
+    }
+    // Calculate last day of the new month
+    int lastDay = DateTime(newYear, newMonth + 1, 0).day;
+    int newDay = date.day > lastDay ? lastDay : date.day;
+    return DateTime(newYear, newMonth, newDay);
+  }
+
+  Widget _buildTasksList(BuildContext context, CalendarState state) {
     return FutureBuilder<List<ScheduledTask>>(
       future: context.read<CalendarCubit>().getTasksForSelectedDate(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CupertinoActivityIndicator());
         } else if (snapshot.hasError) {
           logError('Error loading tasks: ${snapshot.error}');
           return Center(child: Text('Error: ${snapshot.error}'));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(child: Text('No tasks found'));
+          return const Center(
+            child: Text(
+              'No tasks found',
+              style: TextStyle(fontSize: 20, color: CupertinoColors.inactiveGray),
+            ),
+          );
         } else {
           final tasks = snapshot.data!;
           logDebug('Loaded ${tasks.length} tasks');
-          return ListView.builder(
+          return ListView.separated(
             itemCount: tasks.length,
+            separatorBuilder: (context, index) => const Divider(
+              height: 1,
+              color: CupertinoColors.systemGrey,
+            ),
             itemBuilder: (context, index) {
               final task = tasks[index];
-              return TaskCard(task: task.parentTask);
+              return Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TaskCard(task: task.parentTask),
+              );
             },
           );
         }
       },
     );
+  }
+
+  // Helper to get month name from month number
+  String _getMonthName(int month) {
+    const List<String> monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+    return monthNames[month - 1];
   }
 }
 
