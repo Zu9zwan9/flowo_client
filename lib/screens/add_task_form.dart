@@ -1,13 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../models/category.dart';
 import '../models/task.dart';
 
 class AddTaskForm extends StatefulWidget {
-  final DateTime selectedDate;
-  final ScrollController scrollController;
+  final DateTime? selectedDate;
   final Task? task;
 
-  const AddTaskForm({super.key, required this.selectedDate, required this.scrollController, this.task}); // Update constructor
+  const AddTaskForm({Key? key, this.selectedDate, this.task}) : super(key: key);
 
   @override
   AddTaskFormState createState() => AddTaskFormState();
@@ -18,8 +17,8 @@ class AddTaskFormState extends State<AddTaskForm> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   late DateTime _selectedDate;
-  TimeOfDay _startTime = TimeOfDay.now();
-  TimeOfDay? _endTime;
+  DateTime _startTime = DateTime.now();
+  DateTime? _endTime;
   String _selectedCategory = 'Brainstorm';
   String _urgency = 'Low';
   String _priority = 'Normal';
@@ -27,258 +26,369 @@ class AddTaskFormState extends State<AddTaskForm> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.selectedDate;
+    _selectedDate = widget.selectedDate ?? DateTime.now();
+
+    // Populate fields if a task exists.
     if (widget.task != null) {
       _titleController.text = widget.task!.title;
       _descriptionController.text = widget.task!.notes ?? '';
       _selectedDate = DateTime.fromMillisecondsSinceEpoch(widget.task!.deadline);
-      _startTime = TimeOfDay.fromDateTime(DateTime.fromMillisecondsSinceEpoch(widget.task!.deadline));
-      _endTime = TimeOfDay.fromDateTime(DateTime.fromMillisecondsSinceEpoch(widget.task!.deadline + widget.task!.estimatedTime));
+      _startTime = DateTime.fromMillisecondsSinceEpoch(widget.task!.deadline);
+      _endTime = DateTime.fromMillisecondsSinceEpoch(
+        widget.task!.deadline + widget.task!.estimatedTime,
+      );
       _selectedCategory = widget.task!.category.name;
     }
+  }
+
+  /// Helper method to format a time value.
+  String _formatTime(DateTime? time) {
+    if (time == null) return 'Not set';
+    return time.toString().split(' ')[1].split('.')[0];
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-      },
-      child: SingleChildScrollView(
-        controller: widget.scrollController,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextFormField(
-                  controller: _titleController,
-                  decoration: const InputDecoration(
-                    labelText: 'Task name*',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a task name';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16.0),
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(
-                    labelText: 'Type the note here...',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16.0),
-                ListTile(
-                  title: Text('Date: ${_selectedDate.toString().split(' ')[0]}'),
-                  trailing: const Icon(Icons.calendar_today),
-                  onTap: () async {
-                    final DateTime? picked = await showDatePicker(
-                      context: context,
-                      initialDate: _selectedDate,
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2125),
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        _selectedDate = picked;
-                      });
-                    }
-                  },
-                ),
-                ListTile(
-                  title: Text('Start Time: ${_startTime.format(context)}'),
-                  trailing: const Icon(Icons.access_time),
-                  onTap: () async {
-                    final TimeOfDay? picked = await showTimePicker(
-                      context: context,
-                      initialTime: _startTime,
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        _startTime = picked;
-                      });
-                    }
-                  },
-                ),
-                ListTile(
-                  title: Text('End Time: ${_endTime?.format(context) ?? 'Not set'}'),
-                  trailing: const Icon(Icons.access_time),
-                  onTap: () async {
-                    final TimeOfDay? picked = await showTimePicker(
-                      context: context,
-                      initialTime: _endTime ?? _startTime,
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        _endTime = picked;
-                      });
-                    }
-                  },
-                ),
-                const SizedBox(height: 16.0),
-                const Text('Select Category'),
-                Wrap(
-                  spacing: 8.0,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Brainstorm'),
-                      selected: _selectedCategory == 'Brainstorm',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _selectedCategory = 'Brainstorm';
-                        });
-                      },
-                    ),
-                    ChoiceChip(
-                      label: const Text('Design'),
-                      selected: _selectedCategory == 'Design',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _selectedCategory = 'Design';
-                        });
-                      },
-                    ),
-                    ChoiceChip(
-                      label: const Text('Workout'),
-                      selected: _selectedCategory == 'Workout',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _selectedCategory = 'Workout';
-                        });
-                      },
-                    ),
-                    ChoiceChip(
-                      label: const Text('Add Category'),
-                      selected: false,
-                      onSelected: (bool selected) {
-                        _showAddCategoryDialog(context);
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16.0),
-                const Text('Select Urgency'),
-                Wrap(
-                  spacing: 8.0,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Low'),
-                      selected: _urgency == 'Low',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _urgency = 'Low';
-                        });
-                      },
-                    ),
-                    ChoiceChip(
-                      label: const Text('Medium'),
-                      selected: _urgency == 'Medium',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _urgency = 'Medium';
-                        });
-                      },
-                    ),
-                    ChoiceChip(
-                      label: const Text('High'),
-                      selected: _urgency == 'High',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _urgency = 'High';
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16.0),
-                const Text('Select Priority'),
-                Wrap(
-                  spacing: 8.0,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Low'),
-                      selected: _priority == 'Low',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _priority = 'Low';
-                        });
-                      },
-                    ),
-                    ChoiceChip(
-                      label: const Text('Normal'),
-                      selected: _priority == 'Normal',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _priority = 'Normal';
-                        });
-                      },
-                    ),
-                    ChoiceChip(
-                      label: const Text('High'),
-                      selected: _priority == 'High',
-                      onSelected: (bool selected) {
-                        setState(() {
-                          _priority = 'High';
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16.0),
-                ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      final startTime = DateTime(
-                        _selectedDate.year,
-                        _selectedDate.month,
-                        _selectedDate.day,
-                        _startTime.hour,
-                        _startTime.minute,
-                      );
-                      final endTime = _endTime != null
-                          ? DateTime(
-                        _selectedDate.year,
-                        _selectedDate.month,
-                        _selectedDate.day,
-                        _endTime!.hour,
-                        _endTime!.minute,
-                      )
-                          : startTime.add(Duration(minutes: 1));
-
-                      if (endTime.isBefore(startTime)) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('End time must be after start time')),
-                        );
-                        return;
+      // Dismiss keyboard on tapping outside the inputs.
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: CupertinoPageScaffold(
+        navigationBar: const CupertinoNavigationBar(
+          middle: Text('Add Task'),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CupertinoTextFormFieldRow(
+                    controller: _titleController,
+                    placeholder: 'Task name*',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter a task name';
                       }
-
-                      final task = Task(
-                        id: UniqueKey().toString(),
-                        title: _titleController.text,
-                        notes: _descriptionController.text.isEmpty ? null : _descriptionController.text,
-                        deadline: startTime.millisecondsSinceEpoch,
-                        estimatedTime: endTime.difference(startTime).inMilliseconds,
-                        category: Category(name: _selectedCategory),
-                        priority: 1, // Example priority
-                        subtasks: [],
-                        scheduledTasks: [],
-                        isDone: false,
-                        overdue: false,
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16.0),
+                  CupertinoTextFormFieldRow(
+                    controller: _descriptionController,
+                    placeholder: 'Type the note here...',
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 16.0),
+                  CupertinoButton(
+                    padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+                    onPressed: () async {
+                      await showCupertinoModalPopup(
+                        context: context,
+                        builder: (context) {
+                          return Container(
+                            height: 250,
+                            color: CupertinoColors.systemBackground,
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  height: 200,
+                                  child: CupertinoDatePicker(
+                                    mode: CupertinoDatePickerMode.date,
+                                    initialDateTime: _selectedDate,
+                                    onDateTimeChanged: (val) {
+                                      setState(() {
+                                        _selectedDate = val;
+                                      });
+                                    },
+                                  ),
+                                ),
+                                CupertinoButton(
+                                  child: const Text('OK'),
+                                  onPressed: () => Navigator.of(context).pop(),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       );
-                      Navigator.pop(context, task);
-                    }
-                  },
-                  child: const Text('Save'),
-                ),
-              ],
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Date: ${_selectedDate.toString().split(' ')[0]}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16.0),
+                  CupertinoButton(
+                    padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+                    onPressed: () async {
+                      await showCupertinoModalPopup(
+                        context: context,
+                        builder: (context) {
+                          return Container(
+                            height: 250,
+                            color: CupertinoColors.systemBackground,
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  height: 200,
+                                  child: CupertinoTimerPicker(
+                                    mode: CupertinoTimerPickerMode.hm,
+                                    initialTimerDuration: Duration(
+                                      hours: _startTime.hour,
+                                      minutes: _startTime.minute,
+                                    ),
+                                    onTimerDurationChanged: (duration) {
+                                      setState(() {
+                                        _startTime = DateTime(
+                                          _selectedDate.year,
+                                          _selectedDate.month,
+                                          _selectedDate.day,
+                                          duration.inHours,
+                                          duration.inMinutes % 60,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                ),
+                                CupertinoButton(
+                                  child: const Text('OK'),
+                                  onPressed: () => Navigator.of(context).pop(),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Start Time: ${_formatTime(_startTime)}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16.0),
+                  CupertinoButton(
+                    padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
+                    onPressed: () async {
+                      await showCupertinoModalPopup(
+                        context: context,
+                        builder: (context) {
+                          return Container(
+                            height: 250,
+                            color: CupertinoColors.systemBackground,
+                            child: Column(
+                              children: [
+                                SizedBox(
+                                  height: 200,
+                                  child: CupertinoTimerPicker(
+                                    mode: CupertinoTimerPickerMode.hm,
+                                    initialTimerDuration: Duration(
+                                      hours: _endTime?.hour ?? _startTime.hour,
+                                      minutes: _endTime?.minute ?? _startTime.minute,
+                                    ),
+                                    onTimerDurationChanged: (duration) {
+                                      setState(() {
+                                        _endTime = DateTime(
+                                          _selectedDate.year,
+                                          _selectedDate.month,
+                                          _selectedDate.day,
+                                          duration.inHours,
+                                          duration.inMinutes % 60,
+                                        );
+                                      });
+                                    },
+                                  ),
+                                ),
+                                CupertinoButton(
+                                  child: const Text('OK'),
+                                  onPressed: () => Navigator.of(context).pop(),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      );
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'End Time: ${_formatTime(_endTime)}',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16.0),
+                  const Text(
+                    'Select Category',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 8.0),
+                  CupertinoSegmentedControl<String>(
+                    children: const {
+                      'Brainstorm': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('Brainstorm'),
+                      ),
+                      'Design': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('Design'),
+                      ),
+                      'Workout': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('Workout'),
+                      ),
+                      'Add Category': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('Add Category'),
+                      ),
+                    },
+                    groupValue: _selectedCategory,
+                    onValueChanged: (String value) {
+                      if (value == 'Add Category') {
+                        _showAddCategoryDialog(context);
+                      } else {
+                        setState(() {
+                          _selectedCategory = value;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 16.0),
+                  const Text(
+                    'Select Urgency',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 8.0),
+                  CupertinoSegmentedControl<String>(
+                    children: const {
+                      'Low': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('Low'),
+                      ),
+                      'Medium': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('Medium'),
+                      ),
+                      'High': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('High'),
+                      ),
+                    },
+                    groupValue: _urgency,
+                    onValueChanged: (String value) {
+                      setState(() {
+                        _urgency = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16.0),
+                  const Text(
+                    'Select Priority',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 8.0),
+                  CupertinoSegmentedControl<String>(
+                    children: const {
+                      'Low': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('Low'),
+                      ),
+                      'Normal': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('Normal'),
+                      ),
+                      'High': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('High'),
+                      ),
+                    },
+                    groupValue: _priority,
+                    onValueChanged: (String value) {
+                      setState(() {
+                        _priority = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 24.0),
+                  Center(
+                    child: CupertinoButton.filled(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          final startTime = DateTime(
+                            _selectedDate.year,
+                            _selectedDate.month,
+                            _selectedDate.day,
+                            _startTime.hour,
+                            _startTime.minute,
+                          );
+                          final endTime = _endTime != null
+                              ? DateTime(
+                            _selectedDate.year,
+                            _selectedDate.month,
+                            _selectedDate.day,
+                            _endTime!.hour,
+                            _endTime!.minute,
+                          )
+                              : startTime.add(const Duration(minutes: 1));
+
+                          if (endTime.isBefore(startTime)) {
+                            showCupertinoDialog(
+                              context: context,
+                              builder: (context) {
+                                return CupertinoAlertDialog(
+                                  title: const Text('Invalid Time'),
+                                  content: const Text('End time must be after start time'),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      child: const Text('OK'),
+                                      onPressed: () => Navigator.of(context).pop(),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                            return;
+                          }
+                          final task = Task(
+                            id: UniqueKey().toString(),
+                            title: _titleController.text,
+                            notes: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+                            deadline: startTime.millisecondsSinceEpoch,
+                            estimatedTime: endTime.difference(startTime).inMilliseconds,
+                            category: Category(name: _selectedCategory),
+                            priority: 1, // Example mapping for priority.
+                            subtasks: [],
+                            scheduledTasks: [],
+                            isDone: false,
+                            overdue: false,
+                          );
+                          Navigator.pop(context, task);
+                        }
+                      },
+                      child: const Text('Save'),
+                    ),
+                  )
+                ],
+              ),
             ),
           ),
         ),
@@ -288,26 +398,24 @@ class AddTaskFormState extends State<AddTaskForm> {
 
   void _showAddCategoryDialog(BuildContext context) {
     final categoryController = TextEditingController();
-    showDialog(
+    showCupertinoDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
+        return CupertinoAlertDialog(
           title: const Text('Add Category'),
-          content: TextField(
-            controller: categoryController,
-            decoration: const InputDecoration(
-              labelText: 'Category name',
-              border: OutlineInputBorder(),
+          content: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: CupertinoTextField(
+              controller: categoryController,
+              placeholder: 'Category name',
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            CupertinoDialogAction(
               onPressed: () {
                 setState(() {
                   _selectedCategory = categoryController.text;

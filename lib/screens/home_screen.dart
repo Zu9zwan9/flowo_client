@@ -1,4 +1,5 @@
 import 'package:cupertino_sidebar/cupertino_sidebar.dart';
+import 'package:flowo_client/screens/add_task_form.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flowo_client/screens/profile_screen.dart';
 import 'package:flowo_client/screens/settings_screen.dart';
@@ -20,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _pages = const [
     CalendarScreen(),
     TaskListScreen(),
-    Center(child: Text('Add Task')),
+    AddTaskForm(),
     ProfileScreen(),
     SettingsScreen(),
   ];
