@@ -15,7 +15,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-
   bool isExpanded = false;
 
   final _pages = const [
@@ -31,52 +30,49 @@ class _HomeScreenState extends State<HomeScreen> {
     return CupertinoPageScaffold(
       child: Stack(
         children: [
-          Row(
-            children: [
-              CupertinoSidebarCollapsible(
-                isExpanded: isExpanded,
-                child: CupertinoSidebar(
-                  selectedIndex: _selectedIndex,
-                  onDestinationSelected: (value) {
-                    setState(() {
-                      _selectedIndex = value;
-                    });
-                  },
-                  navigationBar: const SidebarNavigationBar(
-                    title: Text('Sidebar'),
-                  ),
-                  children: const [
-                    SidebarDestination(
-                      icon: Icon(CupertinoIcons.calendar),
-                      label: Text('Calendar'),
-                    ),
-                    SidebarDestination(
-                      icon: Icon(CupertinoIcons.list_bullet),
-                      label: Text('Tasks'),
-                    ),
-                    SidebarDestination(
-                      icon: Icon(CupertinoIcons.add),
-                      label: Text('Add Task'),
-                    ),
-                    SidebarDestination(
-                      icon: Icon(CupertinoIcons.person),
-                      label: Text('Profile'),
-                    ),
-                    SidebarDestination(
-                      icon: Icon(CupertinoIcons.settings),
-                      label: Text('Settings'),
-                    ),
-                  ],
-                ),
+          Center(
+            child: _pages.elementAt(_selectedIndex),
+          ),
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            left: isExpanded ? 0 : -320,
+            top: 0,
+            bottom: 0,
+            child: CupertinoSidebar(
+              selectedIndex: _selectedIndex,
+              maxWidth: 200,
+              onDestinationSelected: (value) {
+                setState(() {
+                  _selectedIndex = value;
+                  isExpanded = false;
+                });
+              },
+              navigationBar: const SidebarNavigationBar(
+                title: Text('Sidebar'),
               ),
-              Expanded(
-                child: Center(
-                  child: CupertinoTabTransitionBuilder(
-                    child: _pages.elementAt(_selectedIndex),
-                  ),
+              children: const [
+                SidebarDestination(
+                  icon: Icon(CupertinoIcons.calendar),
+                  label: Text('Calendar'),
                 ),
-              ),
-            ],
+                SidebarDestination(
+                  icon: Icon(CupertinoIcons.list_bullet),
+                  label: Text('Tasks'),
+                ),
+                SidebarDestination(
+                  icon: Icon(CupertinoIcons.add),
+                  label: Text('Add Task'),
+                ),
+                SidebarDestination(
+                  icon: Icon(CupertinoIcons.person),
+                  label: Text('Profile'),
+                ),
+                SidebarDestination(
+                  icon: Icon(CupertinoIcons.settings),
+                  label: Text('Settings'),
+                ),
+              ],
+            ),
           ),
           SafeArea(
             child: Padding(
@@ -91,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Icon(CupertinoIcons.sidebar_left),
               ),
             ),
-          )
+          ),
         ],
       ),
     );

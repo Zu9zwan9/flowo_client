@@ -36,7 +36,7 @@ class CalendarScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Color.fromRGBO(0, 0, 0, 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         ),
@@ -45,8 +45,9 @@ class CalendarScreen extends StatelessWidget {
                     clipBehavior: Clip.hardEdge,
                     child: SfCalendar(
                       view: CalendarView.month,
+                      showNavigationArrow: true,
+                      showDatePickerButton: true,
                       dataSource: TaskDataSource(state.tasks),
-                      headerHeight: 0,
                       onTap: (details) {
                         if (details.appointments != null &&
                             details.appointments!.isNotEmpty) {
@@ -102,9 +103,13 @@ class CalendarScreen extends StatelessWidget {
             },
             child: const Icon(CupertinoIcons.left_chevron, size: 28),
           ),
-          Text(
-            monthYear,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          Expanded(
+            child: Center(
+              child: Text(
+                monthYear,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
           ),
           CupertinoButton(
             padding: EdgeInsets.zero,
@@ -151,9 +156,14 @@ class CalendarScreen extends StatelessWidget {
           return const Center(
             child: Text(
               'No tasks found',
-              style: TextStyle(fontSize: 20, color: CupertinoColors.inactiveGray),
+              style: TextStyle(
+                fontSize: 20,
+                color: CupertinoColors.systemGrey,
+                decoration: TextDecoration.none,
+              ),
             ),
           );
+
         } else {
           final tasks = snapshot.data!;
           logDebug('Loaded ${tasks.length} tasks');

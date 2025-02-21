@@ -58,6 +58,7 @@ class _CreateTaskPageState extends State<CreateTaskPage> {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a priority';
                       }
+                      return null;
                     },
                   ),
                   TextFormField(

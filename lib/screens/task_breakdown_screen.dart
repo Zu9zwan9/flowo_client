@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import '../models/category.dart';
 import '../models/task.dart';
 
@@ -19,15 +19,15 @@ class TaskBreakdownScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('${task.title} - Subtasks'),
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text('${task.title} - Subtasks'),
       ),
-      body: FutureBuilder<List<Task>>(
+      child: FutureBuilder<List<Task>>(
         future: generateTaskBreakdown(task.notes ?? ''),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
+            return Center(child: CupertinoActivityIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -37,13 +37,38 @@ class TaskBreakdownScreen extends StatelessWidget {
             return ListView.builder(
               itemCount: subtasks.length,
               itemBuilder: (context, index) {
-                return ListTile(
+                return CupertinoListTile(
                   title: Text(subtasks[index].title),
                 );
               },
             );
           }
         },
+      ),
+    );
+  }
+}
+
+class CupertinoListTile extends StatelessWidget {
+  final Widget title;
+
+  const CupertinoListTile({required this.title, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: CupertinoColors.separator,
+            width: 0.0,
+          ),
+        ),
+      ),
+      child: DefaultTextStyle(
+        style: CupertinoTheme.of(context).textTheme.textStyle,
+        child: title,
       ),
     );
   }

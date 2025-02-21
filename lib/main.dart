@@ -1,5 +1,6 @@
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/task.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -73,10 +74,15 @@ class MyApp extends StatelessWidget {
       ],
       child: Consumer<ThemeNotifier>(
         builder: (context, themeNotifier, child) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            theme: themeNotifier.currentTheme,
-            home: const HomeScreen(),
+          return CupertinoApp(
+              debugShowCheckedModeBanner: false,
+              theme: CupertinoThemeData(
+              brightness: themeNotifier.currentTheme.brightness,
+              primaryColor: themeNotifier.currentTheme.primaryColor,
+              scaffoldBackgroundColor: themeNotifier.currentTheme.scaffoldBackgroundColor,
+
+            ),
+            home: HomeScreen(),
           );
         },
       ),

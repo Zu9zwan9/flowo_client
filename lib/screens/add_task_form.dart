@@ -6,7 +6,7 @@ class AddTaskForm extends StatefulWidget {
   final DateTime? selectedDate;
   final Task? task;
 
-  const AddTaskForm({Key? key, this.selectedDate, this.task}) : super(key: key);
+  const AddTaskForm({super.key, this.selectedDate, this.task});
 
   @override
   AddTaskFormState createState() => AddTaskFormState();
@@ -16,9 +16,11 @@ class AddTaskFormState extends State<AddTaskForm> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+
   late DateTime _selectedDate;
   DateTime _startTime = DateTime.now();
   DateTime? _endTime;
+
   String _selectedCategory = 'Brainstorm';
   String _urgency = 'Low';
   String _priority = 'Normal';
@@ -28,7 +30,7 @@ class AddTaskFormState extends State<AddTaskForm> {
     super.initState();
     _selectedDate = widget.selectedDate ?? DateTime.now();
 
-    // Populate fields if a task exists.
+    // If a task was passed in, populate its fields.
     if (widget.task != null) {
       _titleController.text = widget.task!.title;
       _descriptionController.text = widget.task!.notes ?? '';
@@ -41,7 +43,19 @@ class AddTaskFormState extends State<AddTaskForm> {
     }
   }
 
-  /// Helper method to format a time value.
+  /// Helper to convert priority selection to int if needed.
+  int _mapPriorityToInt(String priority) {
+    switch (priority) {
+      case 'Low':
+        return 0;
+      case 'High':
+        return 2;
+      default:
+        return 1; // 'Normal'
+    }
+  }
+
+  /// Format a DateTime to "HH:MM:SS" or sets it to "Not set" if null.
   String _formatTime(DateTime? time) {
     if (time == null) return 'Not set';
     return time.toString().split(' ')[1].split('.')[0];
@@ -53,35 +67,41 @@ class AddTaskFormState extends State<AddTaskForm> {
       // Dismiss keyboard on tapping outside the inputs.
       onTap: () => FocusScope.of(context).unfocus(),
       child: CupertinoPageScaffold(
-        navigationBar: const CupertinoNavigationBar(
+        navigationBar: CupertinoNavigationBar(
           middle: Text('Add Task'),
+          backgroundColor: CupertinoColors.systemGrey.withOpacity(0.5),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Form(
+              autovalidateMode: AutovalidateMode.always,
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    'Task Info',
+                    style: CupertinoTheme.of(context).textTheme.navLargeTitleTextStyle,
+                  ),
+                  const SizedBox(height: 16.0),
                   CupertinoTextFormFieldRow(
                     controller: _titleController,
-                    placeholder: 'Task name*',
+                    placeholder: 'Task name *',
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a task name';
                       }
                       return null;
                     },
-                  ),
-                  const SizedBox(height: 16.0),
-                  CupertinoTextFormFieldRow(
-                    controller: _descriptionController,
-                    placeholder: 'Type the note here...',
-                    maxLines: 3,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: CupertinoColors.systemGrey),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
                   ),
                   const SizedBox(height: 16.0),
                   CupertinoButton(
+                    color: CupertinoColors.activeBlue,
                     padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
                     onPressed: () async {
                       await showCupertinoModalPopup(
@@ -90,25 +110,27 @@ class AddTaskFormState extends State<AddTaskForm> {
                           return Container(
                             height: 250,
                             color: CupertinoColors.systemBackground,
-                            child: Column(
-                              children: [
-                                SizedBox(
-                                  height: 200,
-                                  child: CupertinoDatePicker(
-                                    mode: CupertinoDatePickerMode.date,
-                                    initialDateTime: _selectedDate,
-                                    onDateTimeChanged: (val) {
-                                      setState(() {
-                                        _selectedDate = val;
-                                      });
-                                    },
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    height: 200,
+                                    child: CupertinoDatePicker(
+                                      mode: CupertinoDatePickerMode.date,
+                                      initialDateTime: _selectedDate,
+                                      onDateTimeChanged: (val) {
+                                        setState(() {
+                                          _selectedDate = val;
+                                        });
+                                      },
+                                    ),
                                   ),
-                                ),
-                                CupertinoButton(
-                                  child: const Text('OK'),
-                                  onPressed: () => Navigator.of(context).pop(),
-                                ),
-                              ],
+                                  CupertinoButton(
+                                    child: const Text('OK'),
+                                    onPressed: () => Navigator.of(context).pop(),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -128,6 +150,7 @@ class AddTaskFormState extends State<AddTaskForm> {
                   ),
                   const SizedBox(height: 16.0),
                   CupertinoButton(
+                    color: CupertinoColors.activeGreen,
                     padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
                     onPressed: () async {
                       await showCupertinoModalPopup(
@@ -136,34 +159,36 @@ class AddTaskFormState extends State<AddTaskForm> {
                           return Container(
                             height: 250,
                             color: CupertinoColors.systemBackground,
-                            child: Column(
-                              children: [
-                                SizedBox(
-                                  height: 200,
-                                  child: CupertinoTimerPicker(
-                                    mode: CupertinoTimerPickerMode.hm,
-                                    initialTimerDuration: Duration(
-                                      hours: _startTime.hour,
-                                      minutes: _startTime.minute,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    height: 200,
+                                    child: CupertinoTimerPicker(
+                                      mode: CupertinoTimerPickerMode.hm,
+                                      initialTimerDuration: Duration(
+                                        hours: _startTime.hour,
+                                        minutes: _startTime.minute,
+                                      ),
+                                      onTimerDurationChanged: (duration) {
+                                        setState(() {
+                                          _startTime = DateTime(
+                                            _selectedDate.year,
+                                            _selectedDate.month,
+                                            _selectedDate.day,
+                                            duration.inHours,
+                                            duration.inMinutes % 60,
+                                          );
+                                        });
+                                      },
                                     ),
-                                    onTimerDurationChanged: (duration) {
-                                      setState(() {
-                                        _startTime = DateTime(
-                                          _selectedDate.year,
-                                          _selectedDate.month,
-                                          _selectedDate.day,
-                                          duration.inHours,
-                                          duration.inMinutes % 60,
-                                        );
-                                      });
-                                    },
                                   ),
-                                ),
-                                CupertinoButton(
-                                  child: const Text('OK'),
-                                  onPressed: () => Navigator.of(context).pop(),
-                                ),
-                              ],
+                                  CupertinoButton(
+                                    child: const Text('OK'),
+                                    onPressed: () => Navigator.of(context).pop(),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -183,6 +208,7 @@ class AddTaskFormState extends State<AddTaskForm> {
                   ),
                   const SizedBox(height: 16.0),
                   CupertinoButton(
+                    color: CupertinoColors.activeOrange,
                     padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0),
                     onPressed: () async {
                       await showCupertinoModalPopup(
@@ -191,34 +217,36 @@ class AddTaskFormState extends State<AddTaskForm> {
                           return Container(
                             height: 250,
                             color: CupertinoColors.systemBackground,
-                            child: Column(
-                              children: [
-                                SizedBox(
-                                  height: 200,
-                                  child: CupertinoTimerPicker(
-                                    mode: CupertinoTimerPickerMode.hm,
-                                    initialTimerDuration: Duration(
-                                      hours: _endTime?.hour ?? _startTime.hour,
-                                      minutes: _endTime?.minute ?? _startTime.minute,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  SizedBox(
+                                    height: 200,
+                                    child: CupertinoTimerPicker(
+                                      mode: CupertinoTimerPickerMode.hm,
+                                      initialTimerDuration: Duration(
+                                        hours: _endTime?.hour ?? _startTime.hour,
+                                        minutes: _endTime?.minute ?? _startTime.minute,
+                                      ),
+                                      onTimerDurationChanged: (duration) {
+                                        setState(() {
+                                          _endTime = DateTime(
+                                            _selectedDate.year,
+                                            _selectedDate.month,
+                                            _selectedDate.day,
+                                            duration.inHours,
+                                            duration.inMinutes % 60,
+                                          );
+                                        });
+                                      },
                                     ),
-                                    onTimerDurationChanged: (duration) {
-                                      setState(() {
-                                        _endTime = DateTime(
-                                          _selectedDate.year,
-                                          _selectedDate.month,
-                                          _selectedDate.day,
-                                          duration.inHours,
-                                          duration.inMinutes % 60,
-                                        );
-                                      });
-                                    },
                                   ),
-                                ),
-                                CupertinoButton(
-                                  child: const Text('OK'),
-                                  onPressed: () => Navigator.of(context).pop(),
-                                ),
-                              ],
+                                  CupertinoButton(
+                                    child: const Text('OK'),
+                                    onPressed: () => Navigator.of(context).pop(),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },
@@ -239,26 +267,26 @@ class AddTaskFormState extends State<AddTaskForm> {
                   const SizedBox(height: 16.0),
                   const Text(
                     'Select Category',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8.0),
                   CupertinoSegmentedControl<String>(
                     children: const {
                       'Brainstorm': Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Brainstorm'),
+                        child: Text('Brainstorm', style: TextStyle(fontSize: 14)),
                       ),
                       'Design': Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Design'),
+                        child: Text('Design', style: TextStyle(fontSize: 14)),
                       ),
                       'Workout': Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Workout'),
+                        child: Text('Workout', style: TextStyle(fontSize: 14)),
                       ),
                       'Add Category': Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Add Category'),
+                        child: Text('Add Category', style: TextStyle(fontSize: 14)),
                       ),
                     },
                     groupValue: _selectedCategory,
@@ -271,26 +299,27 @@ class AddTaskFormState extends State<AddTaskForm> {
                         });
                       }
                     },
+
                   ),
                   const SizedBox(height: 16.0),
                   const Text(
                     'Select Urgency',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8.0),
                   CupertinoSegmentedControl<String>(
                     children: const {
                       'Low': Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Low'),
+                        child: Text('Low', style: TextStyle(fontSize: 14)),
                       ),
                       'Medium': Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Medium'),
+                        child: Text('Medium', style: TextStyle(fontSize: 14)),
                       ),
                       'High': Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('High'),
+                        child: Text('High', style: TextStyle(fontSize: 14)),
                       ),
                     },
                     groupValue: _urgency,
@@ -303,22 +332,22 @@ class AddTaskFormState extends State<AddTaskForm> {
                   const SizedBox(height: 16.0),
                   const Text(
                     'Select Priority',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8.0),
                   CupertinoSegmentedControl<String>(
                     children: const {
                       'Low': Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Low'),
+                        child: Text('Low', style: TextStyle(fontSize: 14)),
                       ),
                       'Normal': Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Normal'),
+                        child: Text('Normal', style: TextStyle(fontSize: 14)),
                       ),
                       'High': Padding(
                         padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('High'),
+                        child: Text('High', style: TextStyle(fontSize: 14)),
                       ),
                     },
                     groupValue: _priority,
@@ -368,14 +397,17 @@ class AddTaskFormState extends State<AddTaskForm> {
                             );
                             return;
                           }
+
                           final task = Task(
                             id: UniqueKey().toString(),
                             title: _titleController.text,
-                            notes: _descriptionController.text.isEmpty ? null : _descriptionController.text,
+                            notes: _descriptionController.text.isEmpty
+                                ? null
+                                : _descriptionController.text,
                             deadline: startTime.millisecondsSinceEpoch,
                             estimatedTime: endTime.difference(startTime).inMilliseconds,
                             category: Category(name: _selectedCategory),
-                            priority: 1, // Example mapping for priority.
+                            priority: _mapPriorityToInt(_priority),
                             subtasks: [],
                             scheduledTasks: [],
                             isDone: false,
@@ -384,9 +416,9 @@ class AddTaskFormState extends State<AddTaskForm> {
                           Navigator.pop(context, task);
                         }
                       },
-                      child: const Text('Save'),
+                      child: const Text('Save Task'),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -418,7 +450,9 @@ class AddTaskFormState extends State<AddTaskForm> {
             CupertinoDialogAction(
               onPressed: () {
                 setState(() {
-                  _selectedCategory = categoryController.text;
+                  if (categoryController.text.isNotEmpty) {
+                    _selectedCategory = categoryController.text;
+                  }
                 });
                 Navigator.of(context).pop();
               },
