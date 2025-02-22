@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:flowo_client/blocs/calendar/calendar_cubit.dart';
 import 'package:flowo_client/models/task.dart';
+import 'package:flowo_client/utils/date_time_formatter.dart';
 import '../blocs/calendar/calendar_state.dart';
 
 class CalendarScreen extends StatefulWidget {
@@ -15,6 +16,7 @@ class CalendarScreen extends StatefulWidget {
 
 class _CalendarScreenState extends State<CalendarScreen> {
   DateTime selectedDate = DateTime.now();
+  bool _showTaskList = true;
 
   void _onDateSelected(DateTime newDate) {
     setState(() {
@@ -23,21 +25,63 @@ class _CalendarScreenState extends State<CalendarScreen> {
     context.read<CalendarCubit>().selectDate(newDate);
   }
 
+  void _toggleTaskList() {
+    setState(() {
+      _showTaskList = !_showTaskList;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: Text(
-          "Calendar",
+        middle: const Text('Calendar'),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _toggleTaskList,
+          child: Text(
+            _showTaskList ? 'Agenda' : 'List',
+            style: const TextStyle(fontSize: 16),
+          ),
         ),
       ),
       child: SafeArea(
-        child: _buildCalendar(),
+        child: _showTaskList ? _buildSplitView() : _buildAgendaView(),
       ),
     );
   }
 
-  Widget _buildCalendar() {
+  Widget _buildSplitView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 400,
+          child: _buildCalendar(showAgenda: false),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+          child: Text(
+            '${_weekdayName(selectedDate.weekday)}, ${_monthName(selectedDate.month)} ${selectedDate.day}',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: CupertinoColors.label,
+            ),
+          ),
+        ),
+        Expanded(
+          child: _buildCustomAgenda(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAgendaView() {
+    return _buildCalendar(showAgenda: true);
+  }
+
+  Widget _buildCalendar({required bool showAgenda}) {
     return BlocBuilder<CalendarCubit, CalendarState>(
       builder: (context, state) {
         return SfCalendar(
@@ -51,22 +95,20 @@ class _CalendarScreenState extends State<CalendarScreen> {
               _onDateSelected(details.date!);
             }
           },
-          monthViewSettings: const MonthViewSettings(
+          monthViewSettings: MonthViewSettings(
             appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
-            showAgenda: true, // Display tasks in the agenda view
-            agendaStyle: AgendaStyle(
+            showAgenda: showAgenda,
+            agendaStyle: const AgendaStyle(
               appointmentTextStyle:
                   TextStyle(fontSize: 14, color: CupertinoColors.black),
               dateTextStyle:
                   TextStyle(fontSize: 12, color: CupertinoColors.systemGrey),
-              dayTextStyle: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: CupertinoColors.label),
+              dayTextStyle:
+                  TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
           selectionDecoration: BoxDecoration(
-            shape: BoxShape.circle,
+            shape: BoxShape.rectangle,
             color: CupertinoColors.activeBlue.withOpacity(0.2),
           ),
           todayHighlightColor: CupertinoColors.activeBlue,
@@ -80,6 +122,143 @@ class _CalendarScreenState extends State<CalendarScreen> {
           appointmentTextStyle:
               const TextStyle(fontSize: 14), // Ensure valid font size
         );
+      },
+    );
+  }
+
+  Widget _buildCustomAgenda() {
+    return FutureBuilder<List<Task>>(
+      future: context.read<CalendarCubit>().getTasksForDay(selectedDate),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CupertinoActivityIndicator());
+        } else if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error: ${snapshot.error}',
+              style: const TextStyle(color: CupertinoColors.systemGrey),
+            ),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(
+            child: Text(
+              'No tasks scheduled',
+              style: TextStyle(fontSize: 16, color: CupertinoColors.systemGrey),
+            ),
+          );
+        } else {
+          final tasks = snapshot.data!
+            ..sort((a, b) =>
+                a.deadline.compareTo(b.deadline)); // Sort by start time
+          return CupertinoScrollbar(
+            child: ListView.builder(
+              itemCount: tasks.length,
+              itemBuilder: (context, index) {
+                final task = tasks[index];
+                final startTime =
+                    DateTime.fromMillisecondsSinceEpoch(task.deadline);
+                final endTime = DateTime.fromMillisecondsSinceEpoch(
+                    task.deadline + task.estimatedTime);
+
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 50,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            SizedBox(height: 6),
+                            Text(
+                              DateTimeFormatter.formatTime(startTime),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: CupertinoColors.label,
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              DateTimeFormatter.formatTime(endTime),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: CupertinoColors.label,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 1),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: CupertinoColors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border:
+                                Border.all(color: CupertinoColors.systemGrey4),
+                            boxShadow: [
+                              BoxShadow(
+                                color: CupertinoColors.black.withOpacity(0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 40,
+                                color: _getCategoryColor(task.category.name),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      task.title,
+                                      style: CupertinoTheme.of(context)
+                                          .textTheme
+                                          .textStyle
+                                          .copyWith(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                    if (task.notes != null &&
+                                        task.notes!.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        task.notes!,
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: CupertinoColors.systemGrey,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          );
+        }
       },
     );
   }

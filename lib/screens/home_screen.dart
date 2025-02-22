@@ -1,10 +1,15 @@
+// lib/screens/home_screen.dart
 import 'package:cupertino_sidebar/cupertino_sidebar.dart';
-import 'package:flowo_client/screens/add_task_form.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flowo_client/screens/add_task_page.dart';
+import 'package:flowo_client/screens/add_event_page.dart';
+import 'package:flowo_client/screens/add_habit_page.dart';
 import 'package:flowo_client/screens/profile_screen.dart';
 import 'package:flowo_client/screens/settings_screen.dart';
 import 'package:flowo_client/screens/task_list_screen.dart';
 import 'calendar_screen.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flowo_client/blocs/calendar/calendar_cubit.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,7 +25,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final _pages = const [
     CalendarScreen(),
     TaskListScreen(),
-    AddTaskForm(),
+    AddTaskPage(),
+    AddEventPage(),
+    AddHabitPage(),
     ProfileScreen(),
     SettingsScreen(),
   ];
@@ -31,7 +38,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Stack(
         children: [
           Center(
-            child: _pages.elementAt(_selectedIndex),
+            child: BlocProvider.value(
+              value: context.read<CalendarCubit>(),
+              child: _pages.elementAt(_selectedIndex),
+            ),
           ),
           AnimatedPositioned(
             duration: const Duration(milliseconds: 300),
@@ -60,6 +70,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 SidebarDestination(
                   icon: Icon(CupertinoIcons.add),
                   label: Text('Add Task'),
+                ),
+                SidebarDestination(
+                  icon: Icon(CupertinoIcons.calendar_today),
+                  label: Text('Add Event'),
+                ),
+                SidebarDestination(
+                  icon: Icon(CupertinoIcons.repeat),
+                  label: Text('Add Habit'),
                 ),
                 SidebarDestination(
                   icon: Icon(CupertinoIcons.person),

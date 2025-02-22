@@ -13,6 +13,8 @@ class ThemeNotifier extends ChangeNotifier {
   Color get textColor => _textColor;
   Color get menuBackgroundColor => _menuBackgroundColor;
 
+  get themeMode => null;
+
   void setTheme(String theme) {
     switch (theme) {
       case 'Light':
