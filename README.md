@@ -1,16 +1,26 @@
-# flowo_client
+# Flowo
 
-A new Flutter project.
+Flowo is a task management application built with Flutter and Dart. It helps users manage their tasks, schedules, and notifications efficiently.
+
+## Features
+
+- **Task Management**: Create, update, and delete tasks with various attributes.
+- **Scheduling**: Schedule tasks with start and end times.
+- **Notifications**: Set notifications for tasks.
+- **Categorization**: Categorize tasks for better organization.
+- **Location Tracking**: Add location coordinates to tasks.
+- **Image Attachments**: Attach images to tasks.
+- **Frequency Scheduling**: Schedule tasks on specific days and times.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Prerequisites
 
-A few resources to get you started if this is your first Flutter project:
+- Flutter SDK
+- Dart SDK
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+### Installation
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Zu9zwan9/flowo_client.git
