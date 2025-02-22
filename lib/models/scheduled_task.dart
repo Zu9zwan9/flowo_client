@@ -18,7 +18,7 @@ class ScheduledTask extends HiveObject {
   DateTime endTime;
 
   @HiveField(3)
-  int urgency;
+  double? urgency;
 
   @HiveField(4)
   ScheduledTaskType type;
@@ -37,7 +37,7 @@ class ScheduledTask extends HiveObject {
     required this.parentTask,
     required this.startTime,
     required this.endTime,
-    required this.urgency,
+    this.urgency,
     required this.type,
     required this.travelingTime,
     required this.breakTime,

@@ -1,53 +1,53 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'scheduled_task.dart';
+part of 'repeat_rule.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class ScheduledTaskAdapter extends TypeAdapter<ScheduledTask> {
+class RepeatRuleAdapter extends TypeAdapter<RepeatRule> {
   @override
-  final int typeId = 5;
+  final int typeId = 9;
 
   @override
-  ScheduledTask read(BinaryReader reader) {
+  RepeatRule read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return ScheduledTask(
-      parentTask: fields[0] as Task,
-      startTime: fields[1] as DateTime,
-      endTime: fields[2] as DateTime,
-      urgency: fields[3] as double?,
-      type: fields[4] as ScheduledTaskType,
-      travelingTime: fields[5] as int,
-      breakTime: fields[6] as int,
-      notification: fields[7] as NotificationType,
+    return RepeatRule(
+      frequency: fields[0] as String,
+      interval: fields[1] as int,
+      count: fields[2] as int?,
+      until: fields[3] as DateTime?,
+      byDay: (fields[4] as List?)?.cast<int>(),
+      byMonthDay: (fields[5] as List?)?.cast<int>(),
+      byMonth: (fields[6] as List?)?.cast<int>(),
+      bySetPos: fields[7] as int?,
     );
   }
 
   @override
-  void write(BinaryWriter writer, ScheduledTask obj) {
+  void write(BinaryWriter writer, RepeatRule obj) {
     writer
       ..writeByte(8)
       ..writeByte(0)
-      ..write(obj.parentTask)
+      ..write(obj.frequency)
       ..writeByte(1)
-      ..write(obj.startTime)
+      ..write(obj.interval)
       ..writeByte(2)
-      ..write(obj.endTime)
+      ..write(obj.count)
       ..writeByte(3)
-      ..write(obj.urgency)
+      ..write(obj.until)
       ..writeByte(4)
-      ..write(obj.type)
+      ..write(obj.byDay)
       ..writeByte(5)
-      ..write(obj.travelingTime)
+      ..write(obj.byMonthDay)
       ..writeByte(6)
-      ..write(obj.breakTime)
+      ..write(obj.byMonth)
       ..writeByte(7)
-      ..write(obj.notification);
+      ..write(obj.bySetPos);
   }
 
   @override
@@ -56,7 +56,7 @@ class ScheduledTaskAdapter extends TypeAdapter<ScheduledTask> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ScheduledTaskAdapter &&
+      other is RepeatRuleAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

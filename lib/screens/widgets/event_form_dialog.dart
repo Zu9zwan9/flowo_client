@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../models/event_model.dart';
+import '../../models/category.dart';
+import '../../models/task.dart';
 import '../../blocs/calendar/calendar_cubit.dart';
 
-class EventFormDialog extends StatefulWidget {
-  const EventFormDialog({super.key});
+class TaskFormDialog extends StatefulWidget {
+  const TaskFormDialog({super.key});
 
   @override
-  EventFormDialogState createState() => EventFormDialogState();
+  TaskFormDialogState createState() => TaskFormDialogState();
 }
 
-class EventFormDialogState extends State<EventFormDialog> {
+class TaskFormDialogState extends State<TaskFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late String _title;
   String? _description;
@@ -104,14 +105,20 @@ class EventFormDialogState extends State<EventFormDialog> {
                       onPressed: () {
                         if (_formKey.currentState!.validate()) {
                           _formKey.currentState!.save();
-                          final event = Event(
+                          final task = Task(
+                            id: UniqueKey().toString(),
                             title: _title,
-                            description: _description,
-                            startTime: _startTime,
-                            endTime: _endTime,
-                            category: _selectedCategory,
+                            notes: _description,
+                            deadline: _startTime.millisecondsSinceEpoch,
+                            estimatedTime: _endTime.difference(_startTime).inMilliseconds,
+                            category: Category(name: _selectedCategory),
+                            priority: 1, // Example priority
+                            subtasks: [],
+                            scheduledTasks: [],
+                            isDone: false,
+                            overdue: false,
                           );
-                          context.read<CalendarCubit>().addEvent(event);
+                          context.read<CalendarCubit>().addTask(task);
                           Navigator.pop(context);
                         }
                       },

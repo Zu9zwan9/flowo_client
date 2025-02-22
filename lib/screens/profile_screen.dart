@@ -1,9 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../theme_notifier.dart';
 import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
-import '../utils/logger.dart';
+import 'package:flowo_client/utils/logger.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -13,178 +11,317 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   File? _avatarImage;
+  bool _isUploading = false;
 
-  void _changeAvatar() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changeAvatar() async {
+    try {
+      setState(() => _isUploading = true);
+      final pickedFile =
+          await ImagePicker().pickImage(source: ImageSource.gallery);
+      if (pickedFile != null && mounted) {
+        setState(() {
+          _avatarImage = File(pickedFile.path);
+          _isUploading = false;
+        });
+        logInfo('Avatar image uploaded: ${pickedFile.path}');
+      } else {
+        setState(() => _isUploading = false);
+      }
+    } catch (e) {
+      setState(() => _isUploading = false);
+      logError('Failed to upload avatar: $e');
+      if (mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder: (_) => CupertinoAlertDialog(
+            title: const Text('Error'),
+            content: Text('Failed to upload image: $e'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  void _generateAvatar() {
+    if (mounted) {
       setState(() {
-        _avatarImage = File(pickedFile.path);
+        _avatarImage = null; // Reset to trigger initials-based avatar
       });
-      logInfo('Avatar image changed');
+      final name = _nameController.text.trim();
+      logInfo('Avatar reset to auto-generated with name: "$name"');
     }
   }
 
   void _updateProfile() {
-    final name = _nameController.text;
-    final email = _emailController.text;
-    final password = _passwordController.text;
+    if (_formKey.currentState!.validate()) {
+      final name = _nameController.text;
+      final email = _emailController.text;
+      final password = _passwordController.text;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Profile updated successfully')),
-    );
-    logInfo('Profile updated: $name, $email');
+      showCupertinoDialog(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('Profile Updated'),
+          content: const Text('Your profile has been updated successfully.'),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text('OK'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
+        ),
+      );
+      logInfo('Profile updated: Name: $name, Email: $email');
+    }
   }
 
-  void _deleteAccount() async {
-    final confirm = await showDialog<bool>(
+  Future<void> _deleteAccount() async {
+    final confirm = await showCupertinoDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete Account'),
-        content: Text('Are you sure you want to delete your account and all data?'),
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+            'Are you sure you want to delete your account and all associated data? This action cannot be undone.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+          CupertinoDialogAction(
             child: const Text('Cancel'),
+            onPressed: () => Navigator.of(context).pop(false),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
             child: const Text('Delete'),
+            onPressed: () => Navigator.of(context).pop(true),
           ),
         ],
       ),
     );
 
-    if (confirm == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Account deleted successfully')),
+    if (confirm == true && mounted) {
+      showCupertinoDialog(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('Account Deleted'),
+          content: const Text('Your account has been deleted successfully.'),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                if (mounted) {
+                  Navigator.of(context).pushReplacementNamed('/login');
+                }
+              },
+            ),
+          ],
+        ),
       );
       logWarning('Account deleted');
-
-      if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
-    }
-  }
-
-  void _changeAppearance(String? value) {
-    if (value != null) {
-      Provider.of<ThemeNotifier>(context, listen: false).setTheme(value);
-      logInfo('Appearance changed to: $value');
-    }
-  }
-
-  void _changeFont(String? value) {
-    if (value != null) {
-      Provider.of<ThemeNotifier>(context, listen: false).setFont(value);
-      logInfo('Font changed to: $value');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final themeNotifier = Provider.of<ThemeNotifier>(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Profile'),
+        backgroundColor: CupertinoColors.systemBackground,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ListView(
-          children: [
-            Center(
-              child: Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 50,
-                    backgroundImage: _avatarImage != null ? FileImage(_avatarImage!) : const AssetImage('assets/avatar.png'),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: IconButton(
-                      icon: const Icon(Icons.camera_alt),
-                      onPressed: _changeAvatar,
-                    ),
-                  ),
-                ],
-              ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _buildAvatarSection(),
+                const SizedBox(height: 24),
+                _buildTextField(
+                  controller: _nameController,
+                  placeholder: 'Name',
+                  validator: (value) =>
+                      value!.isEmpty ? 'Name is required' : null,
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _emailController,
+                  placeholder: 'Email',
+                  validator: (value) => value!.isEmpty ||
+                          !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)
+                      ? 'Enter a valid email'
+                      : null,
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _passwordController,
+                  placeholder: 'Password',
+                  obscureText: true,
+                  validator: (value) => value!.isEmpty || value.length < 6
+                      ? 'Password must be at least 6 characters'
+                      : null,
+                ),
+                const SizedBox(height: 32),
+                _buildActionButton(
+                  text: 'Update Profile',
+                  color: CupertinoColors.activeBlue,
+                  onPressed: _updateProfile,
+                ),
+                const SizedBox(height: 16),
+                _buildActionButton(
+                  text: 'Delete Account',
+                  color: CupertinoColors.systemRed,
+                  onPressed: _deleteAccount,
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
-                labelStyle: TextStyle(color: themeNotifier.textColor),
-              ),
-              style: TextStyle(color: themeNotifier.textColor),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarSection() {
+    final initials = _nameController.text.trim().isNotEmpty
+        ? _nameController.text
+            .split(' ')
+            .map((e) => e[0])
+            .take(2)
+            .join()
+            .toUpperCase()
+        : '??';
+
+    return Column(
+      children: [
+        GestureDetector(
+          onTap: _showAvatarOptions,
+          child: Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: CupertinoColors.systemGrey4,
+              boxShadow: [
+                BoxShadow(
+                  color: CupertinoColors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: _emailController,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-                labelStyle: TextStyle(color: themeNotifier.textColor),
-              ),
-              style: TextStyle(color: themeNotifier.textColor),
-            ),
-            const SizedBox(height: 20),
-            TextFormField(
-              controller: _passwordController,
-              decoration: InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-                labelStyle: TextStyle(color: themeNotifier.textColor),
-              ),
-              style: TextStyle(color: themeNotifier.textColor),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _updateProfile,
-              child: const Text('Update Profile'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _deleteAccount,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
-              child: const Text('Delete Account and All Data'),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              title: const Text('Appearance'),
-              trailing: DropdownButton<String>(
-                value: themeNotifier.currentTheme.brightness == Brightness.light ? 'Light' : 'Dark',
-                items: const [
-                  DropdownMenuItem(value: 'Light', child: Text('Light')),
-                  DropdownMenuItem(value: 'Dark', child: Text('Dark')),
-                  DropdownMenuItem(value: 'Night', child: Text('Night')),
-                  DropdownMenuItem(value: 'ADHD', child: Text('ADHD-friendly')),
-                ],
-                onChanged: _changeAppearance,
-              ),
-            ),
-            const SizedBox(height: 20),
-            ListTile(
-              title: const Text('Font'),
-              trailing: DropdownButton<String>(
-                value: themeNotifier.currentFont,
-                items: const [
-                  DropdownMenuItem(value: 'Roboto', child: Text('Roboto')),
-                  DropdownMenuItem(value: 'Arial', child: Text('Arial')),
-                  DropdownMenuItem(value: 'Times New Roman', child: Text('Times New Roman')),
-                ],
-                onChanged: _changeFont,
-              ),
-            ),
-          ],
+            clipBehavior: Clip.antiAlias,
+            child: _isUploading
+                ? const CupertinoActivityIndicator(radius: 20)
+                : _avatarImage != null
+                    ? Image.file(_avatarImage!, fit: BoxFit.cover)
+                    : Center(
+                        child: Text(
+                          initials,
+                          style: const TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: CupertinoColors.black,
+                          ),
+                        ),
+                      ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          child: const Text('Change Avatar',
+              style: TextStyle(color: CupertinoColors.activeBlue)),
+          onPressed: _showAvatarOptions,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String placeholder,
+    bool obscureText = false,
+    String? Function(String?)? validator,
+  }) {
+    return CupertinoTextField(
+      controller: controller,
+      placeholder: placeholder,
+      obscureText: obscureText,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: CupertinoColors.systemGrey6,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: CupertinoColors.systemGrey4),
+      ),
+      style: const TextStyle(fontSize: 16),
+      placeholderStyle: const TextStyle(color: CupertinoColors.systemGrey2),
+    );
+  }
+
+  Widget _buildActionButton({
+    required String text,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      color: color,
+      borderRadius: BorderRadius.circular(10),
+      onPressed: onPressed,
+      child: Text(
+        text,
+        style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: CupertinoColors.white),
+      ),
+    );
+  }
+
+  void _showAvatarOptions() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: const Text('Avatar Options'),
+        actions: [
+          CupertinoActionSheetAction(
+            child: const Text('Upload from Gallery'),
+            onPressed: () {
+              _changeAvatar();
+              Navigator.pop(context);
+            },
+          ),
+          CupertinoActionSheetAction(
+            child: const Text('Generate from Initials'),
+            onPressed: () {
+              _generateAvatar();
+              Navigator.pop(context);
+            },
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          child: const Text('Cancel'),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
     );

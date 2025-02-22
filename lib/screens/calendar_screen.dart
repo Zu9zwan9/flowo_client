@@ -2,152 +2,177 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import '../models/event_model.dart';
-import '../blocs/calendar/calendar_cubit.dart';
+import 'package:flowo_client/blocs/calendar/calendar_cubit.dart';
+import 'package:flowo_client/models/task.dart';
 import '../blocs/calendar/calendar_state.dart';
-import 'widgets/event_card.dart';
-import '../utils/logger.dart';
 
-class CalendarScreen extends StatelessWidget {
+class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
   @override
+  _CalendarScreenState createState() => _CalendarScreenState();
+}
+
+class _CalendarScreenState extends State<CalendarScreen> {
+  DateTime selectedDate = DateTime.now();
+
+  void _onDateSelected(DateTime newDate) {
+    setState(() {
+      selectedDate = newDate;
+    });
+    context.read<CalendarCubit>().selectDate(newDate);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    logInfo('Building CalendarScreen');
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Calendar'),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.only(top: 50.0),
-        child: BlocBuilder<CalendarCubit, CalendarState>(
-          builder: (context, state) {
-            logDebug('CalendarState updated: ${state.status}');
-            return Column(
-              children: [
-                _buildHeader(context, state),
-                Expanded(
-                  child: SfCalendar(
-                    view: CalendarView.month,
-                    dataSource: EventDataSource(state.events),
-                    onTap: (details) {
-                      if (details.appointments != null && details.appointments!.isNotEmpty) {
-                        final event = details.appointments!.first as Event;
-                        logDebug('Tapped on event: ${event.title}');
-                      }
-                    },
-                    onSelectionChanged: (details) {
-                      context.read<CalendarCubit>().selectDate(details.date!);
-                      logDebug('Date selected: ${details.date}');
-                    },
-                  ),
-                ),
-                Expanded(
-                  child: _buildEventsList(context, state),
-                ),
-              ],
-            );
-          },
-        ),
+      navigationBar: CupertinoNavigationBar(),
+      child: SafeArea(
+        child: _buildCalendar(),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, CalendarState state) {
-    final selectedDate = state.selectedDate;
-    final monthYear = "${selectedDate.month}/${selectedDate.year}";
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        IconButton(
-          icon: Icon(Icons.arrow_left),
-          onPressed: () {
-            context.read<CalendarCubit>().selectDate(
-              DateTime(selectedDate.year, selectedDate.month - 1, selectedDate.day),
-            );
-            logDebug('Previous month selected');
+  Widget _buildCalendar() {
+    return BlocBuilder<CalendarCubit, CalendarState>(
+      builder: (context, state) {
+        return SfCalendar(
+          view: CalendarView.month,
+          showNavigationArrow: true,
+          showDatePickerButton: true,
+          dataSource: TaskDataSource(state.tasks),
+          initialSelectedDate: selectedDate,
+          onTap: (details) {
+            if (details.date != null) {
+              _onDateSelected(details.date!);
+            }
           },
-        ),
-        Text(
-          monthYear,
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        IconButton(
-          icon: Icon(Icons.arrow_right),
-          onPressed: () {
-            context.read<CalendarCubit>().selectDate(
-              DateTime(selectedDate.year, selectedDate.month + 1, selectedDate.day),
-            );
-            logDebug('Next month selected');
-          },
-        ),
-      ],
-    );
-  }
-
-  FutureBuilder<List<Event>> _buildEventsList(BuildContext context, CalendarState state) {
-    return FutureBuilder<List<Event>>(
-      future: context.read<CalendarCubit>().getEventsForSelectedDate(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        } else if (snapshot.hasError) {
-          logError('Error loading events: ${snapshot.error}');
-          return Center(child: Text('Error: ${snapshot.error}'));
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(child: Text('No events found'));
-        } else {
-          final events = snapshot.data!;
-          logDebug('Loaded ${events.length} events');
-          return ListView.builder(
-            itemCount: events.length,
-            itemBuilder: (context, index) {
-              final event = events[index];
-              return EventCard(event: event);
-            },
-          );
-        }
+          monthViewSettings: const MonthViewSettings(
+            appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
+            showAgenda: true, // Display tasks in the agenda view
+            agendaStyle: AgendaStyle(
+              appointmentTextStyle:
+                  TextStyle(fontSize: 14, color: CupertinoColors.black),
+              dateTextStyle:
+                  TextStyle(fontSize: 12, color: CupertinoColors.systemGrey),
+              dayTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: CupertinoColors.label),
+            ),
+          ),
+          selectionDecoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: CupertinoColors.activeBlue.withOpacity(0.2),
+          ),
+          todayHighlightColor: CupertinoColors.activeBlue,
+          headerStyle: const CalendarHeaderStyle(
+            textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          viewHeaderStyle: const ViewHeaderStyle(
+            dayTextStyle:
+                TextStyle(fontSize: 12, color: CupertinoColors.systemGrey),
+          ),
+          appointmentTextStyle:
+              const TextStyle(fontSize: 14), // Ensure valid font size
+        );
       },
     );
   }
+
+  String _weekdayName(int weekday) {
+    const names = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday'
+    ];
+    return names[weekday - 1];
+  }
+
+  String _monthName(int month) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+    return months[month - 1];
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category) {
+      case 'Brainstorm':
+        return CupertinoColors.systemBlue;
+      case 'Design':
+        return CupertinoColors.systemGreen;
+      case 'Workout':
+        return CupertinoColors.systemRed;
+      case 'Meeting':
+        return CupertinoColors.systemOrange;
+      case 'Presentation':
+        return CupertinoColors.systemPurple;
+      default:
+        return CupertinoColors.systemGrey;
+    }
+  }
 }
 
-class EventDataSource extends CalendarDataSource {
-  EventDataSource(List<Event> events) {
-    appointments = events;
+class TaskDataSource extends CalendarDataSource {
+  TaskDataSource(List<Task> tasks) {
+    appointments = tasks;
   }
 
   @override
   DateTime getStartTime(int index) {
-    return appointments![index].startTime;
+    return DateTime.fromMillisecondsSinceEpoch(appointments![index].deadline);
   }
 
   @override
   DateTime getEndTime(int index) {
-    return appointments![index].endTime;
+    final task = appointments![index];
+    return DateTime.fromMillisecondsSinceEpoch(
+        task.deadline + task.estimatedTime);
   }
 
   @override
   String getSubject(int index) {
-    return appointments![index].title;
+    return appointments![index].title.isNotEmpty
+        ? appointments![index].title
+        : 'Untitled';
   }
 
   @override
   Color getColor(int index) {
-    switch (appointments![index].category) {
-      case 'Brainstorm':
-        return Colors.blue;
-      case 'Design':
-        return Colors.green;
-      case 'Workout':
-        return Colors.red;
-      case 'Meeting':
-        return Colors.orange;
-      case 'Presentation':
-        return Colors.purple;
-      default:
-        return Colors.grey;
-    }
+    return _getCategoryColor(appointments![index].category.name);
+  }
+}
+
+// Helper method to avoid duplication in CalendarScreen and TaskDataSource
+Color _getCategoryColor(String category) {
+  switch (category) {
+    case 'Brainstorm':
+      return CupertinoColors.systemBlue;
+    case 'Design':
+      return CupertinoColors.systemGreen;
+    case 'Workout':
+      return CupertinoColors.systemRed;
+    case 'Meeting':
+      return CupertinoColors.systemOrange;
+    case 'Presentation':
+      return CupertinoColors.systemPurple;
+    default:
+      return CupertinoColors.systemGrey;
   }
 }

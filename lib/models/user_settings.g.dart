@@ -1,46 +1,47 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'event_model.dart';
+part of 'user_settings.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class EventAdapter extends TypeAdapter<Event> {
+class UserSettingsAdapter extends TypeAdapter<UserSettings> {
   @override
-  final int typeId = 0;
+  final int typeId = 11;
 
   @override
-  Event read(BinaryReader reader) {
+  UserSettings read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Event(
-      title: fields[0] as String,
-      description: fields[1] as String?,
-      startTime: fields[2] as DateTime,
-      endTime: fields[3] as DateTime,
-      category: fields[4] as String,
-    )..id = fields[5] as String;
+    return UserSettings(
+      name: fields[0] as String,
+      minSession: fields[1] as int,
+      breakTime: fields[2] as int?,
+      mealBreaks: (fields[3] as List).cast<TimeFrame>(),
+      sleepTime: (fields[4] as List).cast<TimeFrame>(),
+      freeTime: (fields[5] as List).cast<TimeFrame>(),
+    );
   }
 
   @override
-  void write(BinaryWriter writer, Event obj) {
+  void write(BinaryWriter writer, UserSettings obj) {
     writer
       ..writeByte(6)
       ..writeByte(0)
-      ..write(obj.title)
+      ..write(obj.name)
       ..writeByte(1)
-      ..write(obj.description)
+      ..write(obj.minSession)
       ..writeByte(2)
-      ..write(obj.startTime)
+      ..write(obj.breakTime)
       ..writeByte(3)
-      ..write(obj.endTime)
+      ..write(obj.mealBreaks)
       ..writeByte(4)
-      ..write(obj.category)
+      ..write(obj.sleepTime)
       ..writeByte(5)
-      ..write(obj.id);
+      ..write(obj.freeTime);
   }
 
   @override
@@ -49,7 +50,7 @@ class EventAdapter extends TypeAdapter<Event> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is EventAdapter &&
+      other is UserSettingsAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

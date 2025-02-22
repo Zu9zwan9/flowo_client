@@ -17,26 +17,24 @@ class ThemeNotifier extends ChangeNotifier {
     switch (theme) {
       case 'Light':
         _currentTheme = ThemeData.light().copyWith(
-          textTheme: _currentTheme.textTheme.apply(fontFamily: _currentFont),
+          textTheme: _currentTheme.textTheme.apply(
+            fontFamily: _currentFont,
+            decoration: TextDecoration.none,
+          ),
         );
         _iconColor = Colors.black;
         _textColor = Colors.black;
         _menuBackgroundColor = Colors.white;
-        break;
-      case 'Dark':
-        _currentTheme = ThemeData.dark().copyWith(
-          textTheme: _currentTheme.textTheme.apply(fontFamily: _currentFont),
-        );
-        _iconColor = Colors.white;
-        _textColor = Colors.white;
-        _menuBackgroundColor = Colors.black;
         break;
       case 'Night':
         _currentTheme = ThemeData(
           brightness: Brightness.dark,
           primaryColor: Colors.blueGrey,
         ).copyWith(
-          textTheme: _currentTheme.textTheme.apply(fontFamily: _currentFont),
+          textTheme: _currentTheme.textTheme.apply(
+            fontFamily: _currentFont,
+            decoration: TextDecoration.none,
+          ),
         );
         _iconColor = Colors.white;
         _textColor = Colors.white;
@@ -48,7 +46,10 @@ class ThemeNotifier extends ChangeNotifier {
           primaryColor: Colors.yellow,
           hintColor: Colors.orange,
         ).copyWith(
-          textTheme: _currentTheme.textTheme.apply(fontFamily: _currentFont),
+          textTheme: _currentTheme.textTheme.apply(
+            fontFamily: _currentFont,
+            decoration: TextDecoration.none,
+          ),
         );
         _iconColor = Colors.black;
         _textColor = Colors.black;
@@ -56,7 +57,10 @@ class ThemeNotifier extends ChangeNotifier {
         break;
       default:
         _currentTheme = ThemeData.light().copyWith(
-          textTheme: _currentTheme.textTheme.apply(fontFamily: _currentFont),
+          textTheme: _currentTheme.textTheme.apply(
+            fontFamily: _currentFont,
+            decoration: TextDecoration.none,
+          ),
         );
         _iconColor = Colors.black;
         _textColor = Colors.black;
@@ -68,7 +72,10 @@ class ThemeNotifier extends ChangeNotifier {
   void setFont(String font) {
     _currentFont = font;
     _currentTheme = _currentTheme.copyWith(
-      textTheme: _currentTheme.textTheme.apply(fontFamily: _currentFont),
+      textTheme: _currentTheme.textTheme.apply(
+        fontFamily: _currentFont,
+        decoration: TextDecoration.none,
+      ),
     );
     notifyListeners();
   }
