@@ -5,6 +5,7 @@ import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/task.dart';
 
 import 'calendar_screen.dart';
+import 'home_screen.dart';
 
 class AddTaskForm extends StatefulWidget {
   final DateTime? selectedDate;
@@ -424,8 +425,13 @@ class AddTaskFormState extends State<AddTaskForm> {
         _startTime.minute,
       );
       final endTime = _endTime != null
-          ? DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day,
-              _endTime!.hour, _endTime!.minute)
+          ? DateTime(
+              _selectedDate.year,
+              _selectedDate.month,
+              _selectedDate.day,
+              _endTime!.hour,
+              _endTime!.minute,
+            )
           : startTime.add(const Duration(minutes: 30));
 
       if (endTime.isBefore(startTime)) {
@@ -465,7 +471,12 @@ class AddTaskFormState extends State<AddTaskForm> {
       final cubit = context.read<CalendarCubit>();
       widget.task != null ? cubit.updateTask(task) : cubit.addTask(task);
       Navigator.pushReplacement(
-          context, CupertinoPageRoute(builder: (_) => const CalendarScreen()));
+        context,
+        CupertinoPageRoute(
+          builder: (context) => const HomeScreen(),
+        ),
+      ).then((_) =>
+          cubit.selectDate(startTime)); // Update selected date after navigation
     }
   }
 }
