@@ -29,7 +29,8 @@ class Scheduler {
           category: Category(name: 'Free Time Manager'),
         );
 
-  ScheduledTask? scheduleTask(Task task, int minSession, {double? urgency, int? partSession, List<String>? availableDates}) {
+  ScheduledTask? scheduleTask(Task task, int minSession,
+      {double? urgency, int? partSession, List<String>? availableDates}) {
     int remainingTime = partSession ?? task.estimatedTime;
     DateTime currentDate = DateTime.now();
     int dateIndex = 0;
@@ -138,7 +139,7 @@ class Scheduler {
       );
     }
 
-    // Add sleep times
+    // Add sleep time
     for (TimeFrame timeFrame in userSettings.sleepTime) {
       DateTime start =
           _combineDateKeyAndTimeOfDay(dateKey, timeFrame.startTime);
@@ -152,7 +153,7 @@ class Scheduler {
           dateKey: dateKey);
     }
 
-    // Add free times
+    // Add free time
     for (TimeFrame timeFrame in userSettings.freeTime) {
       DateTime start =
           _combineDateKeyAndTimeOfDay(dateKey, timeFrame.startTime);
@@ -167,17 +168,18 @@ class Scheduler {
       );
     }
 
-
     return day;
   }
 
-  ScheduledTask _createScheduledTask(
-      {required Task task,
-      required DateTime start,
-      required DateTime end,
-      required String dateKey,
-      double? urgency,
-      ScheduledTaskType? type}) {
+// dart
+  ScheduledTask _createScheduledTask({
+    required Task task,
+    required DateTime start,
+    required DateTime end,
+    required String dateKey,
+    double? urgency,
+    ScheduledTaskType? type,
+  }) {
     final scheduledTask = ScheduledTask(
       parentTask: task,
       startTime: start,
@@ -186,11 +188,17 @@ class Scheduler {
       type: type ?? ScheduledTaskType.defaultType,
       travelingTime: _getTravelTime(task.location),
       breakTime: userSettings.breakTime ?? 5 * 60 * 1000,
-      // 5 minutes in ms
       notification: NotificationType.none,
     );
     task.scheduledTasks.add(scheduledTask);
-    daysDB.get(dateKey)!.scheduledTasks.add(scheduledTask);
+
+    // Use the same day key for consistency.
+    final day = daysDB.get(dateKey) ?? _createDay(dateKey);
+    day.scheduledTasks.add(scheduledTask);
+
+    // Verify that the scheduled task falls on the expected day.
+    log('Created scheduled task from ${scheduledTask.startTime} to ${scheduledTask.endTime} for dateKey: $dateKey');
+
     return scheduledTask;
   }
 
@@ -198,8 +206,10 @@ class Scheduler {
     if (location == null) {
       return 0;
     }
-    // Example logic: calculate travel time based on coordinates
-    return (location.latitude.abs() + location.longitude.abs()).toInt() * 10;
+    if (location.latitude == 0 && location.longitude == 0) {
+      return 0;
+    }
+    return ((location.latitude.abs() + location.longitude.abs()) * 10).toInt();
   }
 
   String _formatDateKey(DateTime date) {

@@ -26,17 +26,6 @@ class ThemeNotifier extends ChangeNotifier {
         _textColor = Colors.black;
         _menuBackgroundColor = Colors.white;
         break;
-      case 'Dark':
-        _currentTheme = ThemeData.dark().copyWith(
-          textTheme: _currentTheme.textTheme.apply(
-            fontFamily: _currentFont,
-            decoration: TextDecoration.none,
-          ),
-        );
-        _iconColor = Colors.white;
-        _textColor = Colors.white;
-        _menuBackgroundColor = Colors.black;
-        break;
       case 'Night':
         _currentTheme = ThemeData(
           brightness: Brightness.dark,

@@ -28,10 +28,6 @@ class SettingsScreen extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: 8.0),
                   child: Text('Light'),
                 ),
-                'Dark': Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('Dark'),
-                ),
                 'Night': Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8.0),
                   child: Text('Night'),

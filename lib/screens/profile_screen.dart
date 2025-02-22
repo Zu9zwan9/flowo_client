@@ -109,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onPressed: _changeAvatar,
                     child: _avatarImage != null
                         ? Image.file(_avatarImage!, width: 100, height: 100)
-                        : const Image(image: AssetImage('assets/avatar.png'), width: 100, height: 100),
+                        : const Icon(CupertinoIcons.person_circle, size: 100),
                   ),
                   CupertinoButton(
                     padding: EdgeInsets.zero,

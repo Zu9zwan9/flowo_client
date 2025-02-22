@@ -9,9 +9,18 @@ class CalendarCubit extends Cubit<CalendarState> {
   final Box<Task> taskBox;
   final Box<ScheduledTask> scheduledTaskBox;
 
-  CalendarCubit(this.taskBox, this.scheduledTaskBox) : super(CalendarState(selectedDate: DateTime.now())) {
+  CalendarCubit(this.taskBox, this.scheduledTaskBox)
+      : super(CalendarState(selectedDate: DateTime.now())) {
     logInfo('CalendarCubit initialized');
     _loadTasks();
+  }
+  Future<List<Task>> getTasksForDay(DateTime day) async {
+    return taskBox.values.where((task) {
+      final taskDeadline = DateTime.fromMillisecondsSinceEpoch(task.deadline);
+      return taskDeadline.year == day.year &&
+          taskDeadline.month == day.month &&
+          taskDeadline.day == day.day;
+    }).toList();
   }
 
   void _loadTasks() {
@@ -47,14 +56,33 @@ class CalendarCubit extends Cubit<CalendarState> {
   }
 
   Future<List<ScheduledTask>> getTasksForSelectedDate() async {
-    final startOfDay = DateTime(state.selectedDate.year, state.selectedDate.month, state.selectedDate.day);
-    final endOfDay = DateTime(state.selectedDate.year, state.selectedDate.month, state.selectedDate.day, 23, 59, 59);
+    final startOfDay = DateTime(
+      state.selectedDate.year,
+      state.selectedDate.month,
+      state.selectedDate.day,
+    );
+    final endOfDay = DateTime(
+      state.selectedDate.year,
+      state.selectedDate.month,
+      state.selectedDate.day,
+      23,
+      59,
+      59,
+    );
 
     final tasksForSelectedDate = scheduledTaskBox.values.where((scheduledTask) {
-      return scheduledTask.startTime.isAfter(startOfDay) && scheduledTask.startTime.isBefore(endOfDay);
+      final taskStartTime = scheduledTask.startTime;
+      return taskStartTime
+              .isAfter(startOfDay.subtract(const Duration(seconds: 1))) &&
+          taskStartTime.isBefore(endOfDay.add(const Duration(seconds: 1)));
     }).toList();
 
-    logDebug('Tasks for selected date: ${tasksForSelectedDate.length}');
+    if (tasksForSelectedDate.isEmpty) {
+      logDebug('No tasks found for ${state.selectedDate}');
+    } else {
+      logDebug(
+          'Found ${tasksForSelectedDate.length} tasks for ${state.selectedDate}');
+    }
     return tasksForSelectedDate;
   }
 

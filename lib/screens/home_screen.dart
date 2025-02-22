@@ -47,9 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   isExpanded = false;
                 });
               },
-              navigationBar: const SidebarNavigationBar(
-                title: Text('Sidebar'),
-              ),
+              padding: const EdgeInsets.symmetric(vertical: 80),
               children: const [
                 SidebarDestination(
                   icon: Icon(CupertinoIcons.calendar),
