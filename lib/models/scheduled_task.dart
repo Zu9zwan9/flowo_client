@@ -1,5 +1,6 @@
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:hive/hive.dart';
+
 import 'notification_type.dart';
 import 'task.dart';
 

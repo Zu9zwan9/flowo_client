@@ -1,19 +1,18 @@
 // lib/screens/add_habit_page.dart
-import 'dart:io';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flowo_client/blocs/calendar/calendar_cubit.dart';
+import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/home_screen.dart';
-import 'package:flowo_client/utils/date_time_formatter.dart';
 import 'package:flowo_client/utils/logger.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AddHabitPage extends StatefulWidget {
   final DateTime? selectedDate;
+
   const AddHabitPage({super.key, this.selectedDate});
+
   @override
   AddHabitPageState createState() => AddHabitPageState();
 }
@@ -51,6 +50,7 @@ class AddHabitPageState extends State<AddHabitPage> {
   }
 
   String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
+
   String _formatTime(DateTime? time) => time != null
       ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
       : 'Not set';
@@ -61,7 +61,6 @@ class AddHabitPageState extends State<AddHabitPage> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('New Habit')),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -83,7 +82,7 @@ class AddHabitPageState extends State<AddHabitPage> {
                     placeholder: 'Notes',
                     maxLines: 3),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Timing'),
+                _buildSectionTitle('Deadline'),
                 const SizedBox(height: 12),
                 _buildDateButton(context),
                 const SizedBox(height: 12),

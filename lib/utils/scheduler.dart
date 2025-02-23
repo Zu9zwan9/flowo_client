@@ -1,12 +1,12 @@
 import 'dart:developer';
 
 import 'package:flowo_client/models/category.dart';
-import 'package:flowo_client/models/task.dart';
-import 'package:flowo_client/models/scheduled_task.dart';
+import 'package:flowo_client/models/coordinates.dart';
 import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/notification_type.dart';
+import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
-import 'package:flowo_client/models/coordinates.dart';
+import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -44,8 +44,7 @@ class Scheduler {
         dateIndex++;
       } else {
         if (availableDates != null) {
-          // Signal that all available dates are exhausted
-          log('Not enough available dates to schedule the task.'); // TODO: make this a proper error message
+          log('All available dates are exhausted for task: ${task.title}');
           return null;
         }
         dateKey = _formatDateKey(currentDate);
@@ -171,7 +170,6 @@ class Scheduler {
     return day;
   }
 
-// dart
   ScheduledTask _createScheduledTask({
     required Task task,
     required DateTime start,

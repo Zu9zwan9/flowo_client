@@ -1,16 +1,16 @@
-import 'dart:io';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flowo_client/blocs/calendar/calendar_cubit.dart';
+import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AddTaskPage extends StatefulWidget {
   final DateTime? selectedDate;
+
   const AddTaskPage({super.key, this.selectedDate});
+
   @override
   AddTaskPageState createState() => AddTaskPageState();
 }
@@ -19,12 +19,12 @@ class AddTaskPageState extends State<AddTaskPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
+  late var _estimatedTime = 0;
 
   late DateTime _selectedDate;
-  late DateTime _startTime;
-  DateTime? _endTime;
+  late DateTime _selectedTime;
   String _selectedCategory = 'Brainstorm';
-  String _priority = 'Normal';
+  int _priority = 1;
   final List<String> _categoryOptions = [
     'Brainstorm',
     'Design',
@@ -36,7 +36,7 @@ class AddTaskPageState extends State<AddTaskPage> {
   void initState() {
     super.initState();
     _selectedDate = widget.selectedDate ?? DateTime.now();
-    _startTime = _selectedDate;
+    _selectedTime = _selectedDate;
   }
 
   @override
@@ -47,17 +47,14 @@ class AddTaskPageState extends State<AddTaskPage> {
   }
 
   String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
+
   String _formatTime(DateTime? time) => time != null
       ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
       : 'Not set';
 
-  int _mapPriorityToInt(String priority) =>
-      {'Low': 0, 'Normal': 1, 'High': 2}[priority] ?? 1;
-
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('New Task')),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -79,13 +76,15 @@ class AddTaskPageState extends State<AddTaskPage> {
                     placeholder: 'Notes',
                     maxLines: 3),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Timing'),
+                _buildSectionTitle('Deadline'),
                 const SizedBox(height: 12),
                 _buildDateButton(context),
                 const SizedBox(height: 12),
-                _buildTimeButton(context, isStart: true),
+                _buildTimeButton(context),
+                const SizedBox(height: 20),
+                _buildSectionTitle('Estimated Time'),
                 const SizedBox(height: 12),
-                _buildTimeButton(context, isStart: false),
+                _buildEstimatedTimeButton(context),
                 const SizedBox(height: 20),
                 _buildSectionTitle('Category'),
                 const SizedBox(height: 12),
@@ -95,14 +94,18 @@ class AddTaskPageState extends State<AddTaskPage> {
                   onChanged: _handleCategoryChange,
                 ),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Priority'),
-                const SizedBox(height: 12),
-                _buildSegmentedControl(
-                  options: const ['Low', 'Normal', 'High'],
-                  value: _priority,
-                  onChanged: (value) => setState(() => _priority = value),
-                  selectedColor: CupertinoColors.systemOrange,
+                Row(
+                  children: [
+                    _buildSectionTitle('Priority '),
+                    Text(
+                      _priority.toString(),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 12),
+                _buildPrioritySlider(),
                 const SizedBox(height: 32),
                 _buildSaveButton(context, 'Task'),
               ],
@@ -164,28 +167,21 @@ class AddTaskPageState extends State<AddTaskPage> {
         ),
       );
 
-  Widget _buildTimeButton(BuildContext context, {required bool isStart}) =>
-      GestureDetector(
-        onTap: () => _showTimePicker(context, isStart: isStart),
+  Widget _buildTimeButton(BuildContext context) => GestureDetector(
+        onTap: () => _showTimePicker(context),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
-            color: (isStart
-                    ? CupertinoColors.systemGreen
-                    : CupertinoColors.systemOrange)
-                .withOpacity(0.1),
+            color: (CupertinoColors.systemBlue).withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(isStart ? 'Start Time' : 'End Time',
+              Text('Time',
                   style: TextStyle(
-                      fontSize: 16,
-                      color: isStart
-                          ? CupertinoColors.systemGreen
-                          : CupertinoColors.systemOrange)),
-              Text(_formatTime(isStart ? _startTime : _endTime),
+                      fontSize: 16, color: CupertinoColors.systemBlue)),
+              Text(_formatTime(_selectedTime),
                   style: const TextStyle(
                       fontSize: 16, color: CupertinoColors.label)),
             ],
@@ -204,7 +200,8 @@ class AddTaskPageState extends State<AddTaskPage> {
           for (var item in options)
             item: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(item, style: const TextStyle(fontSize: 14)),
+              child:
+                  Text(item.toString(), style: const TextStyle(fontSize: 14)),
             ),
         },
         groupValue: options.contains(value) ? value : null,
@@ -221,6 +218,46 @@ class AddTaskPageState extends State<AddTaskPage> {
           onPressed: () => _saveTask(context, type),
           child: const Text('Save',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+        ),
+      );
+
+  Widget _buildEstimatedTimeButton(BuildContext context) => GestureDetector(
+        onTap: () async {
+          final estimatedTime = await _showEstimatedTimePicker(context);
+          if (mounted) {
+            setState(() => _estimatedTime = estimatedTime);
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: CupertinoColors.systemBlue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Estimated Time',
+                  style: TextStyle(
+                      fontSize: 16, color: CupertinoColors.systemBlue)),
+              Text(
+                  '${(_estimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_estimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+                  style: const TextStyle(
+                      fontSize: 16, color: CupertinoColors.label)),
+            ],
+          ),
+        ),
+      );
+
+  Widget _buildPrioritySlider() => SizedBox(
+        width: double.infinity,
+        child: CupertinoSlider(
+          min: 1,
+          max: 10,
+          divisions: 9,
+          value: _priority.toDouble(),
+          onChanged: (value) => setState(() => _priority = value.toInt()),
+          activeColor: CupertinoColors.systemOrange,
         ),
       );
 
@@ -246,12 +283,14 @@ class AddTaskPageState extends State<AddTaskPage> {
         ),
       ),
     );
-    if (pickedDate != null && mounted)
+    if (pickedDate != null && mounted) {
       setState(() => _selectedDate = pickedDate!);
+    }
   }
 
-  Future<void> _showTimePicker(BuildContext context,
-      {required bool isStart}) async {
+  Future<void> _showTimePicker(
+    BuildContext context,
+  ) async {
     Duration? pickedDuration;
     await showCupertinoModalPopup(
       context: context,
@@ -265,9 +304,8 @@ class AddTaskPageState extends State<AddTaskPage> {
               child: CupertinoTimerPicker(
                 mode: CupertinoTimerPickerMode.hm,
                 initialTimerDuration: Duration(
-                    hours: (isStart ? _startTime : _endTime ?? _startTime).hour,
-                    minutes:
-                        (isStart ? _startTime : _endTime ?? _startTime).minute),
+                    hours: (_selectedTime).hour,
+                    minutes: (_selectedTime).minute),
                 onTimerDurationChanged: (duration) => pickedDuration = duration,
               ),
             ),
@@ -284,12 +322,48 @@ class AddTaskPageState extends State<AddTaskPage> {
             _selectedDate.day,
             pickedDuration!.inHours,
             pickedDuration!.inMinutes % 60);
-        if (isStart)
-          _startTime = time;
-        else
-          _endTime = time;
+        _selectedTime = time;
       });
     }
+  }
+
+  Future<int> _showEstimatedTimePicker(BuildContext context) async {
+    int? pickedHours;
+    int? pickedMinutes;
+    await showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        height: 300,
+        color: CupertinoColors.systemBackground,
+        child: Row(
+          children: [
+            Expanded(
+              child: CupertinoPicker(
+                itemExtent: 32,
+                onSelectedItemChanged: (index) {
+                  pickedHours = index;
+                },
+                children: [
+                  for (var i = 0; i <= 120; i++) Text('$i hours'),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoPicker(
+                itemExtent: 32,
+                onSelectedItemChanged: (index) {
+                  pickedMinutes = index * 15;
+                },
+                children: [
+                  for (var i = 0; i < 4; i++) Text('${i * 15} minutes'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return (pickedHours ?? 0) * 3600000 + (pickedMinutes ?? 0) * 60000;
   }
 
   Widget _buildPickerActions(BuildContext context) => Row(
@@ -333,9 +407,10 @@ class AddTaskPageState extends State<AddTaskPage> {
               final newCategory = controller.text.trim();
               if (newCategory.isNotEmpty && mounted) {
                 setState(() {
-                  if (!_categoryOptions.contains(newCategory))
+                  if (!_categoryOptions.contains(newCategory)) {
                     _categoryOptions.insert(
                         _categoryOptions.length - 1, newCategory);
+                  }
                   _selectedCategory = newCategory;
                 });
                 logInfo('Custom category added: $newCategory');
@@ -349,13 +424,14 @@ class AddTaskPageState extends State<AddTaskPage> {
   }
 
   void _handleCategoryChange(String value) {
-    if (value == 'Add')
+    if (value == 'Add') {
       _showAddCategoryDialog(context);
-    else
+    } else {
       setState(() => _selectedCategory = value);
+    }
   }
 
-  void _saveTask(BuildContext context, String type) {
+  Future<void> _saveTask(BuildContext context, String type) async {
     if (!_formKey.currentState!.validate()) {
       showCupertinoDialog(
         context: context,
@@ -372,37 +448,17 @@ class AddTaskPageState extends State<AddTaskPage> {
       return;
     }
 
-    final startTime = DateTime(_selectedDate.year, _selectedDate.month,
-        _selectedDate.day, _startTime.hour, _startTime.minute);
-    final endTime = _endTime != null
-        ? DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day,
-            _endTime!.hour, _endTime!.minute)
-        : startTime.add(const Duration(minutes: 60));
-
-    if (endTime.isBefore(startTime)) {
-      showCupertinoDialog(
-        context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Invalid Time'),
-          content: const Text('End time must be after start time.'),
-          actions: [
-            CupertinoDialogAction(
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(context))
-          ],
-        ),
-      );
-      return;
-    }
+    final selectedTime = DateTime(_selectedDate.year, _selectedDate.month,
+        _selectedDate.day, _selectedTime.hour, _selectedTime.minute);
 
     final task = Task(
       id: UniqueKey().toString(),
       title: _titleController.text,
-      priority: _mapPriorityToInt(_priority),
-      deadline: startTime.millisecondsSinceEpoch,
-      estimatedTime: endTime.difference(startTime).inMilliseconds,
+      priority: _priority,
+      deadline: selectedTime.millisecondsSinceEpoch,
+      estimatedTime: _estimatedTime,
       category: Category(name: _selectedCategory),
-      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+      // notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       subtasks: const [],
       scheduledTasks: const [],
       isDone: false,
@@ -413,7 +469,7 @@ class AddTaskPageState extends State<AddTaskPage> {
     context.read<CalendarCubit>().addTask(task);
     Navigator.pushReplacement(
             context, CupertinoPageRoute(builder: (_) => const HomeScreen()))
-        .then((_) => context.read<CalendarCubit>().selectDate(startTime));
+        .then((_) => context.read<CalendarCubit>().selectDate(selectedTime));
     logInfo('Saved $type: ${task.title}');
   }
 }

@@ -1,8 +1,8 @@
-import 'package:flowo_client/models/scheduled_task.dart';
+import 'package:flowo_client/main.dart';
+import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flowo_client/main.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 void main() async {
@@ -13,12 +13,12 @@ void main() async {
   Hive.registerAdapter(TaskAdapter());
 
   // Open the box for tasks
-  final taskBox = await Hive.openBox<Task>('tasks');
-  final scheduledTaskBox = await Hive.openBox<ScheduledTask>('scheduled_tasks');
+  final tasksDB = await Hive.openBox<Task>('tasks');
+  final daysDB = await Hive.openBox<Day>('scheduled_tasks');
 
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(MyApp(taskBox: taskBox, scheduledTaskBox: scheduledTaskBox));
+    await tester.pumpWidget(MyApp(tasksDB: tasksDB, daysDB: daysDB));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

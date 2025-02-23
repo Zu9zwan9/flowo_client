@@ -1,27 +1,25 @@
 {
-  "buildCommand" : {
-    "command" : "build",
-    "skipDependencies" : false,
-    "style" : "buildOnly"
+  "buildCommand": {
+    "command": "build",
+    "skipDependencies": false,
+    "style": "buildOnly"
   },
-  "configuredTargets" : [
-
+  "configuredTargets": [
   ],
-  "continueBuildingAfterErrors" : false,
-  "dependencyScope" : "workspace",
-  "enableIndexBuildArena" : false,
-  "hideShellScriptEnvironment" : false,
-  "parameters" : {
-    "action" : "build",
-    "overrides" : {
-
+  "continueBuildingAfterErrors": false,
+  "dependencyScope": "workspace",
+  "enableIndexBuildArena": false,
+  "hideShellScriptEnvironment": false,
+  "parameters": {
+    "action": "build",
+    "overrides": {
     }
   },
-  "qos" : "utility",
-  "schemeCommand" : "launch",
-  "showNonLoggedProgress" : true,
-  "useDryRun" : false,
-  "useImplicitDependencies" : false,
-  "useLegacyBuildLocations" : false,
-  "useParallelTargets" : true
+  "qos": "utility",
+  "schemeCommand": "launch",
+  "showNonLoggedProgress": true,
+  "useDryRun": false,
+  "useImplicitDependencies": false,
+  "useLegacyBuildLocations": false,
+  "useParallelTargets": true
 }

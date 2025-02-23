@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../../models/category.dart';
 import '../../models/task.dart';
-import '../../blocs/calendar/calendar_cubit.dart';
 
 class TaskFormDialog extends StatefulWidget {
   const TaskFormDialog({super.key});
@@ -18,8 +19,6 @@ class TaskFormDialogState extends State<TaskFormDialog> {
   late DateTime _startTime;
   late DateTime _endTime;
   String _selectedCategory = 'Brainstorm';
-  final String _urgency = 'Low';
-  final String _priority = 'Normal';
 
   @override
   void initState() {
@@ -110,9 +109,11 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                             title: _title,
                             notes: _description,
                             deadline: _startTime.millisecondsSinceEpoch,
-                            estimatedTime: _endTime.difference(_startTime).inMilliseconds,
+                            estimatedTime:
+                                _endTime.difference(_startTime).inMilliseconds,
                             category: Category(name: _selectedCategory),
-                            priority: 1, // Example priority
+                            priority: 1,
+                            // Example priority
                             subtasks: [],
                             scheduledTasks: [],
                             isDone: false,

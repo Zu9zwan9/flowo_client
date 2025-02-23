@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
+
 import '../theme_notifier.dart';
 
 class SettingsScreen extends StatelessWidget {

@@ -1,30 +1,23 @@
+import 'package:flowo_client/models/day.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
-import '../../models/task.dart';
 import '../../models/scheduled_task.dart';
-import 'calendar_state.dart';
+import '../../models/task.dart';
 import '../../utils/logger.dart';
+import 'tasks_controller_state.dart';
 
 class CalendarCubit extends Cubit<CalendarState> {
-  final Box<Task> taskBox;
-  final Box<ScheduledTask> scheduledTaskBox;
+  final Box<Task> tasksDB;
+  final Box<Day> daysDB;
 
-  CalendarCubit(this.taskBox, this.scheduledTaskBox)
+  CalendarCubit(this.tasksDB, this.daysDB)
       : super(CalendarState(selectedDate: DateTime.now())) {
     logInfo('CalendarCubit initialized');
     _loadTasks();
   }
-  Future<List<Task>> getTasksForDay(DateTime day) async {
-    return taskBox.values.where((task) {
-      final taskDeadline = DateTime.fromMillisecondsSinceEpoch(task.deadline);
-      return taskDeadline.year == day.year &&
-          taskDeadline.month == day.month &&
-          taskDeadline.day == day.day;
-    }).toList();
-  }
 
   void _loadTasks() {
-    final tasks = taskBox.values.toList();
+    final tasks = tasksDB.values.toList();
     logDebug('Loaded ${tasks.length} tasks from Hive');
     emit(state.copyWith(tasks: tasks, status: CalendarStatus.success));
   }
@@ -36,46 +29,33 @@ class CalendarCubit extends Cubit<CalendarState> {
 
   Future<void> addTask(Task task) async {
     logInfo('Adding task: ${task.title}');
-    await taskBox.add(task);
+    await tasksDB.add(task);
     logDebug('Task added: ${task.title}');
     _loadTasks();
   }
 
   Future<void> updateTask(Task task) async {
     logInfo('Updating task: ${task.title}');
-    await taskBox.put(task.id, task);
+    await tasksDB.put(task.id, task);
     logDebug('Task updated: ${task.title}');
     _loadTasks();
   }
 
   Future<void> deleteTask(String taskId) async {
     logWarning('Deleting task with ID: $taskId');
-    await taskBox.delete(taskId);
+    await tasksDB.delete(taskId);
     logDebug('Task deleted with ID: $taskId');
     _loadTasks();
   }
 
-  Future<List<ScheduledTask>> getTasksForSelectedDate() async {
-    final startOfDay = DateTime(
-      state.selectedDate.year,
-      state.selectedDate.month,
-      state.selectedDate.day,
-    );
-    final endOfDay = DateTime(
-      state.selectedDate.year,
-      state.selectedDate.month,
-      state.selectedDate.day,
-      23,
-      59,
-      59,
-    );
-
-    final tasksForSelectedDate = scheduledTaskBox.values.where((scheduledTask) {
-      final taskStartTime = scheduledTask.startTime;
-      return taskStartTime
-              .isAfter(startOfDay.subtract(const Duration(seconds: 1))) &&
-          taskStartTime.isBefore(endOfDay.add(const Duration(seconds: 1)));
-    }).toList();
+  Future<List<ScheduledTask>> getScheduledTasksForSelectedDate() async {
+    final date = _formatDateKey(state.selectedDate);
+    List<ScheduledTask> tasksForSelectedDate = [];
+    for (Day day in daysDB.values) {
+      if (day.day == date) {
+        tasksForSelectedDate = day.scheduledTasks;
+      }
+    }
 
     if (tasksForSelectedDate.isEmpty) {
       logDebug('No tasks found for ${state.selectedDate}');
@@ -86,8 +66,17 @@ class CalendarCubit extends Cubit<CalendarState> {
     return tasksForSelectedDate;
   }
 
+  Future<List<Task>> getTasksForDay(DateTime day) async {
+    return tasksDB.values.where((task) {
+      final taskDeadline = DateTime.fromMillisecondsSinceEpoch(task.deadline);
+      return taskDeadline.year == day.year &&
+          taskDeadline.month == day.month &&
+          taskDeadline.day == day.day;
+    }).toList();
+  }
+
   Future<Map<String, List<Task>>> getTasksGroupedByCategory() async {
-    final tasks = taskBox.values.toList();
+    final tasks = tasksDB.values.toList();
     final Map<String, List<Task>> groupedTasks = {};
     for (var task in tasks) {
       if (!groupedTasks.containsKey(task.category.name)) {
@@ -97,5 +86,9 @@ class CalendarCubit extends Cubit<CalendarState> {
     }
     logDebug('Tasks grouped by category: ${groupedTasks.keys.length}');
     return groupedTasks;
+  }
+
+  String _formatDateKey(DateTime date) {
+    return '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
   }
 }

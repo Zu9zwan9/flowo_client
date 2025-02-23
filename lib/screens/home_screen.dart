@@ -1,15 +1,14 @@
 // lib/screens/home_screen.dart
 import 'package:cupertino_sidebar/cupertino_sidebar.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flowo_client/screens/add_task_page.dart';
-import 'package:flowo_client/screens/add_event_page.dart';
-import 'package:flowo_client/screens/add_habit_page.dart';
+import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
+import 'package:flowo_client/screens/add_item_screen.dart';
 import 'package:flowo_client/screens/profile_screen.dart';
 import 'package:flowo_client/screens/settings_screen.dart';
 import 'package:flowo_client/screens/task_list_screen.dart';
-import 'calendar_screen.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flowo_client/blocs/calendar/calendar_cubit.dart';
+
+import 'calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -25,9 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _pages = const [
     CalendarScreen(),
     TaskListScreen(),
-    AddTaskPage(),
-    AddEventPage(),
-    AddHabitPage(),
+    AddItemScreen(),
     ProfileScreen(),
     SettingsScreen(),
   ];
@@ -69,15 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SidebarDestination(
                   icon: Icon(CupertinoIcons.add),
-                  label: Text('Add Task'),
-                ),
-                SidebarDestination(
-                  icon: Icon(CupertinoIcons.calendar_today),
-                  label: Text('Add Event'),
-                ),
-                SidebarDestination(
-                  icon: Icon(CupertinoIcons.repeat),
-                  label: Text('Add Habit'),
+                  label: Text('Add Task'), // Single entry for all add pages
                 ),
                 SidebarDestination(
                   icon: Icon(CupertinoIcons.person),

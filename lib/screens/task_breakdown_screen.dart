@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+
 import '../models/category.dart';
 import '../models/task.dart';
 
@@ -11,9 +12,27 @@ class TaskBreakdownScreen extends StatelessWidget {
     // Simulate an API call to generate task breakdown
     await Future.delayed(Duration(seconds: 2));
     return [
-      Task(id: UniqueKey().toString(), title: 'Subtask 1', priority: 1, deadline: 0, estimatedTime: 0, category: Category(name: 'General')),
-      Task(id: UniqueKey().toString(), title: 'Subtask 2', priority: 1, deadline: 0, estimatedTime: 0, category: Category(name: 'General')),
-      Task(id: UniqueKey().toString(), title: 'Subtask 3', priority: 1, deadline: 0, estimatedTime: 0, category: Category(name: 'General')),
+      Task(
+          id: UniqueKey().toString(),
+          title: 'Subtask 1',
+          priority: 1,
+          deadline: 0,
+          estimatedTime: 0,
+          category: Category(name: 'General')),
+      Task(
+          id: UniqueKey().toString(),
+          title: 'Subtask 2',
+          priority: 1,
+          deadline: 0,
+          estimatedTime: 0,
+          category: Category(name: 'General')),
+      Task(
+          id: UniqueKey().toString(),
+          title: 'Subtask 3',
+          priority: 1,
+          deadline: 0,
+          estimatedTime: 0,
+          category: Category(name: 'General')),
     ];
   }
 

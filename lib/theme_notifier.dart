@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 class ThemeNotifier extends ChangeNotifier {
   ThemeData _currentTheme = ThemeData.light();
+  String _currentThemeName = 'Light';
   String _currentFont = 'Roboto';
   Color _iconColor = Colors.black;
   Color _textColor = Colors.black;
   Color _menuBackgroundColor = Colors.white;
 
   ThemeData get currentTheme => _currentTheme;
+  String get currentThemeName => _currentThemeName;
   String get currentFont => _currentFont;
   Color get iconColor => _iconColor;
   Color get textColor => _textColor;
@@ -16,6 +18,7 @@ class ThemeNotifier extends ChangeNotifier {
   get themeMode => null;
 
   void setTheme(String theme) {
+    _currentThemeName = theme;
     switch (theme) {
       case 'Light':
         _currentTheme = ThemeData.light().copyWith(

@@ -1,6 +1,6 @@
+import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
-import 'package:flowo_client/models/day.dart';
 import 'package:hive/hive.dart';
 
 import '../models/scheduled_task.dart';
