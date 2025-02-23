@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../models/task.dart';
+import 'add_item_screen.dart';
 import 'task_breakdown_screen.dart';
 
 enum TaskFilterType { all, event, task, habit }
@@ -307,7 +308,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
         ),
         onPressed: () {
           // Navigate to AddItemScreen or similar
-          // Example: Navigator.push(context, CupertinoPageRoute(builder: (_) => const AddItemScreen()));
+          Navigator.push(context,
+              CupertinoPageRoute(builder: (_) => const AddItemScreen()));
         },
       );
 

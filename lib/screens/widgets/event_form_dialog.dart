@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../../models/category.dart';
 import '../../models/task.dart';
