@@ -332,6 +332,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 class TaskDataSource extends CalendarDataSource {
   TaskDataSource(List<ScheduledTask> scheduledTasks) {
     appointments = scheduledTasks;
+
     logDebug('Scheduled tasks: ${scheduledTasks.length}');
   }
 
