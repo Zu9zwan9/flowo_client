@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 
+import '../../models/day.dart';
 import '../../models/task.dart';
 
 enum CalendarStatus { initial, loading, success, failure }
@@ -7,12 +8,14 @@ enum CalendarStatus { initial, loading, success, failure }
 class CalendarState extends Equatable {
   final CalendarStatus status;
   final List<Task> tasksDB;
+  final List<Day> daysDB;
   final DateTime selectedDate;
   final String? errorMessage;
 
   const CalendarState({
     this.status = CalendarStatus.initial,
     this.tasksDB = const [],
+    this.daysDB = const [],
     required this.selectedDate,
     this.errorMessage,
   });

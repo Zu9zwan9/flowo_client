@@ -2,10 +2,15 @@ import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart'
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/utils/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
+import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/tasks_controller_state.dart';
+import '../models/day.dart';
+import '../models/scheduled_task.dart';
+import '../utils/logger.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -57,7 +62,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
       children: [
         SizedBox(
           height: 400,
-          child: _buildCalendar(showAgenda: false),
+          child: _buildCalendar(showAgenda: false, context: context),
         ),
         Padding(
           padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
@@ -78,17 +83,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   Widget _buildAgendaView() {
-    return _buildCalendar(showAgenda: true);
+    return _buildCalendar(showAgenda: true, context: context);
   }
 
-  Widget _buildCalendar({required bool showAgenda}) {
+  Widget _buildCalendar(
+      {required bool showAgenda, required BuildContext context}) {
     return BlocBuilder<CalendarCubit, CalendarState>(
       builder: (context, state) {
         return SfCalendar(
           view: CalendarView.month,
           showNavigationArrow: true,
           showDatePickerButton: true,
-          dataSource: TaskDataSource(state.tasksDB),
+          dataSource: TaskDataSource(
+              context.read<TaskManagerCubit>().getScheduledTasks()),
           initialSelectedDate: selectedDate,
           onTap: (details) {
             if (details.date != null) {
@@ -323,32 +330,31 @@ class _CalendarScreenState extends State<CalendarScreen> {
 }
 
 class TaskDataSource extends CalendarDataSource {
-  TaskDataSource(List<Task> tasks) {
-    appointments = tasks;
+  TaskDataSource(List<ScheduledTask> scheduledTasks) {
+    appointments = scheduledTasks;
+    logDebug('Scheduled tasks: ${scheduledTasks.length}');
   }
 
   @override
   DateTime getStartTime(int index) {
-    return DateTime.fromMillisecondsSinceEpoch(appointments![index].deadline);
+    return appointments![index].startTime;
   }
 
   @override
   DateTime getEndTime(int index) {
-    final task = appointments![index];
-    return DateTime.fromMillisecondsSinceEpoch(
-        task.deadline + task.estimatedTime);
+    return appointments![index].endTime;
   }
 
   @override
   String getSubject(int index) {
-    return appointments![index].title.isNotEmpty
-        ? appointments![index].title
+    return appointments![index].parentTask.title.isNotEmpty
+        ? appointments![index].parentTask.title
         : 'Untitled';
   }
 
   @override
   Color getColor(int index) {
-    return _getCategoryColor(appointments![index].category.name);
+    return _getCategoryColor(appointments![index].parentTask.category.name);
   }
 }
 

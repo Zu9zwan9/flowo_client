@@ -11,15 +11,29 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final dynamic initialIndex;
+  final bool initialExpanded;
+
+  const HomeScreen({
+    super.key,
+    this.initialIndex = 0,
+    this.initialExpanded = false,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-  bool isExpanded = false;
+  late int _selectedIndex;
+  late bool isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+    isExpanded = widget.initialExpanded;
+  }
 
   final _pages = const [
     CalendarScreen(),
@@ -66,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SidebarDestination(
                   icon: Icon(CupertinoIcons.add),
-                  label: Text('Add Task'), // Single entry for all add pages
+                  label: Text('Add Task'),
                 ),
                 SidebarDestination(
                   icon: Icon(CupertinoIcons.person),

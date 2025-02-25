@@ -4,13 +4,15 @@ import 'package:hive/hive.dart';
 import '../../models/scheduled_task.dart';
 import '../../models/task.dart';
 import '../../utils/logger.dart';
+import '../../utils/task_manager.dart';
 import 'tasks_controller_state.dart';
 
 class CalendarCubit extends Cubit<CalendarState> {
   final Box<Task> tasksDB;
   final Box<Day> daysDB;
+  final TaskManager taskManager;
 
-  CalendarCubit(this.tasksDB, this.daysDB)
+  CalendarCubit(this.tasksDB, this.daysDB, this.taskManager)
       : super(CalendarState(selectedDate: DateTime.now())) {
     logInfo('CalendarCubit initialized');
     _loadTasks();

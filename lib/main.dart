@@ -1,5 +1,6 @@
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/task.dart';
+import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import 'blocs/tasks_controller/task_manager_cubit.dart';
 import 'blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'models/category.dart';
 import 'models/coordinates.dart';
@@ -37,56 +39,72 @@ void main() async {
 
   Box<Task> tasksDB;
   Box<Day> daysDB;
+  Box<UserSettings> profiles;
 
   if (kIsWeb) {
     tasksDB = await Hive.openBox<Task>('tasks');
     daysDB = await Hive.openBox<Day>('scheduled_tasks');
+    profiles = await Hive.openBox<UserSettings>('user_settings');
   } else {
     final dir = await getApplicationDocumentsDirectory();
     Hive.init(dir.path);
     tasksDB = await Hive.openBox<Task>('tasks');
     daysDB = await Hive.openBox<Day>('scheduled_tasks');
+    profiles = await Hive.openBox<UserSettings>('user_settings');
   }
+
+  var selectedProfile = profiles.values.isNotEmpty
+      ? profiles.values.first
+      : UserSettings(name: 'Default', minSession: 15);
+
+  final taskManager = TaskManager(
+    daysDB: daysDB,
+    tasksDB: tasksDB,
+    userSettings: selectedProfile,
+  );
 
   logger.i('Hive initialized and task boxes opened');
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeNotifier(),
-      child: MyApp(tasksDB: tasksDB, daysDB: daysDB),
+    MultiProvider(
+      providers: [
+        Provider<TaskManager>.value(value: taskManager),
+        ChangeNotifierProvider(create: (_) => ThemeNotifier()),
+        BlocProvider<CalendarCubit>(
+          create: (context) => CalendarCubit(
+            tasksDB,
+            daysDB,
+            taskManager,
+          ),
+        ),
+        BlocProvider<TaskManagerCubit>(
+          create: (context) => TaskManagerCubit(taskManager),
+        ),
+      ],
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final Box<Task> tasksDB;
-  final Box<Day> daysDB;
-
-  const MyApp({super.key, required this.tasksDB, required this.daysDB});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     logger.i('Building MyApp');
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider<CalendarCubit>(
-          create: (context) => CalendarCubit(tasksDB, daysDB),
-        ),
-      ],
-      child: Consumer<ThemeNotifier>(
-        builder: (context, themeNotifier, child) {
-          return CupertinoApp(
-            debugShowCheckedModeBanner: false,
-            theme: CupertinoThemeData(
-              brightness: themeNotifier.currentTheme.brightness,
-              primaryColor: themeNotifier.currentTheme.primaryColor,
-              scaffoldBackgroundColor:
-                  themeNotifier.currentTheme.scaffoldBackgroundColor,
-            ),
-            home: HomeScreen(),
-          );
-        },
-      ),
+    return Consumer<ThemeNotifier>(
+      builder: (context, themeNotifier, child) {
+        return CupertinoApp(
+          debugShowCheckedModeBanner: false,
+          theme: CupertinoThemeData(
+            brightness: themeNotifier.currentTheme.brightness,
+            primaryColor: themeNotifier.currentTheme.primaryColor,
+            scaffoldBackgroundColor:
+                themeNotifier.currentTheme.scaffoldBackgroundColor,
+          ),
+          home: HomeScreen(),
+        );
+      },
     );
   }
 }

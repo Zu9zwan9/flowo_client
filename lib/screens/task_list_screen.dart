@@ -1,8 +1,10 @@
+import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../models/task.dart';
-import 'add_item_screen.dart';
 import 'task_breakdown_screen.dart';
 
 enum TaskFilterType { all, event, task, habit }
@@ -76,7 +78,13 @@ class _TaskListScreenState extends State<TaskListScreen> {
           Positioned(
             bottom: 16,
             right: 16,
-            child: _buildFAB(context),
+            child: Column(
+              children: [
+                _buildFAB(context),
+                const SizedBox(height: 16),
+                _buildScheduleButton(context),
+              ],
+            ),
           ),
         ],
       ),
@@ -288,6 +296,16 @@ class _TaskListScreenState extends State<TaskListScreen> {
                       : CupertinoColors.systemGrey,
                   size: 24,
                 ),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: const Icon(CupertinoIcons.pencil, size: 24),
+                  onPressed: () => _editTask(context, task),
+                ),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: const Icon(CupertinoIcons.delete, size: 24),
+                  onPressed: () => _deleteTask(context, task),
+                ),
               ],
             ),
           ),
@@ -308,10 +326,58 @@ class _TaskListScreenState extends State<TaskListScreen> {
         ),
         onPressed: () {
           // Navigate to AddItemScreen or similar
-          Navigator.push(context,
-              CupertinoPageRoute(builder: (_) => const AddItemScreen()));
+          Navigator.pushReplacement(
+            context,
+            CupertinoPageRoute(builder: (_) => HomeScreen(initialIndex: 2)),
+          );
         },
       );
+
+  Widget _buildScheduleButton(BuildContext context) => CupertinoButton(
+        padding: EdgeInsets.zero,
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: CupertinoColors.activeGreen,
+          ),
+          child: const Icon(CupertinoIcons.calendar,
+              color: CupertinoColors.white, size: 28),
+        ),
+        onPressed: () {
+          _scheduleTasks();
+          context.read<TaskManagerCubit>().manageTasks();
+          _scheduleTasks();
+        },
+      );
+
+  void _scheduleTasks() {
+    showCupertinoDialog(
+      context: context,
+      builder: (_) => CupertinoAlertDialog(
+        title: const Text('Schedule Tasks'),
+        content: const Text('Tasks have been scheduled successfully.'),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editTask(BuildContext context, Task task) {
+    // Implement your edit task logic here
+    // For example, navigate to a task edit screen
+  }
+
+  void _deleteTask(BuildContext context, Task task) {
+    context.read<TaskManagerCubit>().deleteTask(task);
+    setState(() {});
+  }
 
   Color _getCategoryColor(String category) {
     switch (category.toLowerCase()) {
