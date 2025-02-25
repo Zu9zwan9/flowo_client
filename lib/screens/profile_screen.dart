@@ -1,7 +1,8 @@
 import 'dart:io';
+
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flowo_client/utils/logger.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,7 +15,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   File? _avatarImage;
   bool _isUploading = false;
 
@@ -22,7 +22,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
@@ -75,8 +74,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_formKey.currentState!.validate()) {
       final name = _nameController.text;
       final email = _emailController.text;
-      final password = _passwordController.text;
-
       showCupertinoDialog(
         context: context,
         builder: (_) => CupertinoAlertDialog(
@@ -170,15 +167,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   validator: (value) => value!.isEmpty ||
                           !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)
                       ? 'Enter a valid email'
-                      : null,
-                ),
-                const SizedBox(height: 16),
-                _buildTextField(
-                  controller: _passwordController,
-                  placeholder: 'Password',
-                  obscureText: true,
-                  validator: (value) => value!.isEmpty || value.length < 6
-                      ? 'Password must be at least 6 characters'
                       : null,
                 ),
                 const SizedBox(height: 32),

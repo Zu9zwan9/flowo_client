@@ -1,26 +1,44 @@
+// lib/screens/home_screen.dart
 import 'package:cupertino_sidebar/cupertino_sidebar.dart';
-import 'package:flowo_client/screens/add_task_form.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
+import 'package:flowo_client/screens/add_item_screen.dart';
 import 'package:flowo_client/screens/profile_screen.dart';
 import 'package:flowo_client/screens/settings_screen.dart';
 import 'package:flowo_client/screens/task_list_screen.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final dynamic initialIndex;
+  final bool initialExpanded;
+
+  const HomeScreen({
+    super.key,
+    this.initialIndex = 0,
+    this.initialExpanded = false,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-  bool isExpanded = false;
+  late int _selectedIndex;
+  late bool isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+    isExpanded = widget.initialExpanded;
+  }
 
   final _pages = const [
     CalendarScreen(),
     TaskListScreen(),
-    AddTaskForm(),
+    AddItemScreen(),
     ProfileScreen(),
     SettingsScreen(),
   ];
@@ -31,7 +49,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Stack(
         children: [
           Center(
-            child: _pages.elementAt(_selectedIndex),
+            child: BlocProvider.value(
+              value: context.read<CalendarCubit>(),
+              child: _pages.elementAt(_selectedIndex),
+            ),
           ),
           AnimatedPositioned(
             duration: const Duration(milliseconds: 300),

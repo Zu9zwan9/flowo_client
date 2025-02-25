@@ -2,6 +2,7 @@
 
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:hive/hive.dart';
+
 import 'category.dart';
 import 'coordinates.dart';
 import 'day.dart';
@@ -59,13 +60,10 @@ class Task extends HiveObject {
   @HiveField(15)
   bool overdue;
 
-  // Add the missing getters
-  DateTime get startDate => DateTime.now(); // Example getter
-  DateTime get endDate =>
-      DateTime.now().add(Duration(days: 1)); // Example getter
-  RepeatRule get repeatRule =>
-      RepeatRule(frequency: 'daily', interval: 1); // Example getter
-  List<DateTime> get exceptions => []; // Example getter
+  DateTime get startDate => DateTime.now();
+  DateTime get endDate => DateTime.now().add(Duration(days: 1));
+  RepeatRule get repeatRule => RepeatRule(frequency: 'daily', interval: 1);
+  List<DateTime> get exceptions => [];
 
   Task(
       {required this.id,

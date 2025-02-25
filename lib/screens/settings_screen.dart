@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
+
 import '../theme_notifier.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -40,32 +41,7 @@ class SettingsScreen extends StatelessWidget {
               onValueChanged: (String value) {
                 themeNotifier.setTheme(value);
               },
-            ),
-            const SizedBox(height: 32.0),
-            const Text(
-              'Font',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16.0),
-            CupertinoSegmentedControl<String>(
-              children: const {
-                'Roboto': Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('Roboto'),
-                ),
-                'Arial': Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('Arial'),
-                ),
-                'Times': Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8.0),
-                  child: Text('Times'),
-                ),
-              },
-              groupValue: themeNotifier.currentFont,
-              onValueChanged: (String value) {
-                themeNotifier.setFont(value);
-              },
+              selectedColor: CupertinoColors.activeBlue,
             ),
           ],
         ),

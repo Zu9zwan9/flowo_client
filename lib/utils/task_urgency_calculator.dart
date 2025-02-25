@@ -1,6 +1,8 @@
+import 'dart:developer';
+
+import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
-import 'package:flowo_client/models/day.dart';
 import 'package:hive/hive.dart';
 
 import '../models/scheduled_task.dart';
@@ -15,6 +17,7 @@ class TaskUrgencyCalculator {
     final Map<Task, double> taskUrgencyMap = {};
 
     for (var task in tasks) {
+      log('Title: ${task.title}, Deadline: ${task.deadline}, EstimatedTime: ${task.estimatedTime}, Priority: ${task.priority}');
       final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
       final trueTimeLeft =
           timeLeft - _busyTime(task.deadline, justScheduledTasks);
@@ -26,6 +29,7 @@ class TaskUrgencyCalculator {
         _negativeUrgencyHandler(task);
       } else {
         taskUrgencyMap[task] = urgency;
+        log('Task: ${task.title} has urgency' + urgency.toStringAsFixed(2));
       }
     }
 
@@ -35,10 +39,12 @@ class TaskUrgencyCalculator {
   void _negativeUrgencyHandler(Task task) {
     final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
     if (timeLeft - task.estimatedTime < 0) {
+      log('Task ${task.title} is impossible to complete in time');
       // TODO: message user that task is impossible to complete in time and should be rescheduled
       // messageUserAboutOverdue(task);
       // remove task or change deadline
     } else {
+      log('Task ${task.title} is possible to complete in time if rescheduled');
       // show user that task is possible to complete in time, only if reschedule
       // or remove some pinned tasks //
     }

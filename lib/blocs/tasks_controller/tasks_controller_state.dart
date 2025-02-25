@@ -1,23 +1,27 @@
 import 'package:equatable/equatable.dart';
+
+import '../../models/day.dart';
 import '../../models/task.dart';
 
 enum CalendarStatus { initial, loading, success, failure }
 
 class CalendarState extends Equatable {
   final CalendarStatus status;
-  final List<Task> tasks;
+  final List<Task> tasksDB;
+  final List<Day> daysDB;
   final DateTime selectedDate;
   final String? errorMessage;
 
   const CalendarState({
     this.status = CalendarStatus.initial,
-    this.tasks = const [],
+    this.tasksDB = const [],
+    this.daysDB = const [],
     required this.selectedDate,
     this.errorMessage,
   });
 
   @override
-  List<Object?> get props => [status, tasks, selectedDate, errorMessage];
+  List<Object?> get props => [status, tasksDB, selectedDate, errorMessage];
 
   CalendarState copyWith({
     CalendarStatus? status,
@@ -27,7 +31,7 @@ class CalendarState extends Equatable {
   }) {
     return CalendarState(
       status: status ?? this.status,
-      tasks: tasks ?? this.tasks,
+      tasksDB: tasks ?? tasksDB,
       selectedDate: selectedDate ?? this.selectedDate,
       errorMessage: errorMessage ?? this.errorMessage,
     );

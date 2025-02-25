@@ -1,6 +1,9 @@
+import 'dart:developer';
+
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/user_settings.dart';
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flowo_client/utils/scheduler.dart';
 import 'package:flowo_client/utils/task_urgency_calculator.dart';
 import 'package:flutter/cupertino.dart';
@@ -42,6 +45,32 @@ class TaskManager {
     }
   }
 
+  deleteTask(Task task) {
+    tasksDB.delete(task.key);
+    final parentTask = task.parentTask;
+    if (parentTask != null) {
+      parentTask.subtasks.remove(task);
+    }
+    for (Task subtask in task.subtasks) {
+      deleteTask(subtask);
+    }
+    for (ScheduledTask scheduledTask in task.scheduledTasks) {
+      for (var day in daysDB.values) {
+        day.scheduledTasks.remove(scheduledTask);
+      }
+    }
+  }
+
+  editTask(Task task, String title, int priority, int estimatedTime,
+      int deadline, Category category, Task? parentTask) {
+    task.title = title;
+    task.priority = priority;
+    task.estimatedTime = estimatedTime;
+    task.deadline = deadline;
+    task.category = category;
+    task.parentTask = parentTask;
+  }
+
   void manageTasks() {
     List<Task> tasks = tasksDB.values
         .where((task) =>
@@ -54,6 +83,13 @@ class TaskManager {
     while (tasks.isNotEmpty) {
       final taskUrgencyMap =
           taskUrgencyCalculator.calculateUrgency(tasks, justScheduledTasks);
+
+      if (taskUrgencyMap.isEmpty) {
+        log('No tasks to schedule');
+        break;
+      }
+      log('Task Urgency Map: $taskUrgencyMap');
+
       Task mostUrgentTask = taskUrgencyMap.entries
           .where((entry) => _isOrderCorrect(entry.key))
           .reduce((a, b) => a.value > b.value ? a : b)
