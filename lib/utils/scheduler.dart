@@ -37,6 +37,8 @@ class Scheduler {
     bool isFirstIteration = true;
     ScheduledTask? createdTask;
 
+    removePreviousScheduledTasks(task);
+
     while (remainingTime > 0) {
       String dateKey;
       if (availableDates != null && dateIndex < availableDates.length) {
@@ -49,7 +51,7 @@ class Scheduler {
         }
         dateKey = _formatDateKey(currentDate);
         if (!isFirstIteration) {
-          currentDate = currentDate.add(Duration(days: 1));
+          // currentDate = currentDate.add(Duration(days: 1)); // TODO: check what this line does
         }
         isFirstIteration = false;
       }
@@ -107,6 +109,15 @@ class Scheduler {
       currentDate = currentDate.add(Duration(days: 1));
     }
     return createdTask;
+  }
+
+  void removePreviousScheduledTasks(Task task){ // for tasks rescheduling
+    for(ScheduledTask scheduledTask in task.scheduledTasks){
+      task.scheduledTasks.remove(scheduledTask);
+      for(Day day in daysDB.values){
+        day.scheduledTasks.remove(scheduledTask);
+      }
+    }
   }
 
   List<ScheduledTask> _sortScheduledTasksByTime(

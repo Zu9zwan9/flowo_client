@@ -5,7 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({Key? key}) : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
