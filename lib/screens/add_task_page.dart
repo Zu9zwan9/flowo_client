@@ -99,8 +99,8 @@ class AddTaskPageState extends State<AddTaskPage> {
                     _buildSectionTitle('Priority '),
                     Text(
                       _priority.toString(),
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -178,7 +178,7 @@ class AddTaskPageState extends State<AddTaskPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Time',
+              const Text('Time',
                   style: TextStyle(
                       fontSize: 16, color: CupertinoColors.systemBlue)),
               Text(_formatTime(_selectedTime),
@@ -288,9 +288,7 @@ class AddTaskPageState extends State<AddTaskPage> {
     }
   }
 
-  Future<void> _showTimePicker(
-    BuildContext context,
-  ) async {
+  Future<void> _showTimePicker(BuildContext context) async {
     Duration? pickedDuration;
     await showCupertinoModalPopup(
       context: context,
@@ -458,7 +456,7 @@ class AddTaskPageState extends State<AddTaskPage> {
       deadline: selectedTime.millisecondsSinceEpoch,
       estimatedTime: _estimatedTime,
       category: Category(name: _selectedCategory),
-      // notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       subtasks: const [],
       scheduledTasks: const [],
       isDone: false,

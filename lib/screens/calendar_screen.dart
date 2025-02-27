@@ -1,14 +1,11 @@
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
-import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/utils/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/tasks_controller_state.dart';
-import '../models/day.dart';
 import '../models/scheduled_task.dart';
 import '../utils/logger.dart';
 
@@ -16,12 +13,13 @@ class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
   @override
-  _CalendarScreenState createState() => _CalendarScreenState();
+  CalendarScreenState createState() => CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
-  DateTime selectedDate = DateTime.now();
+class CalendarScreenState extends State<CalendarScreen> {
   bool _showTaskList = true;
+  final ScrollController _scrollController = ScrollController();
+  DateTime selectedDate = DateTime.now();
 
   void _onDateSelected(DateTime newDate) {
     setState(() {
@@ -34,6 +32,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
     setState(() {
       _showTaskList = !_showTaskList;
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -144,8 +148,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ? CupertinoColors.systemGrey
         : CupertinoColors.systemGrey;
 
-    return FutureBuilder<List<Task>>(
-      future: context.read<CalendarCubit>().getTasksForDay(selectedDate),
+    return FutureBuilder<List<ScheduledTask>>(
+      future: context
+          .read<TaskManagerCubit>()
+          .getScheduledTasksForDate(selectedDate),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CupertinoActivityIndicator());
@@ -165,16 +171,16 @@ class _CalendarScreenState extends State<CalendarScreen> {
           );
         } else {
           final tasks = snapshot.data!
-            ..sort((a, b) => a.deadline.compareTo(b.deadline));
+            ..sort((a, b) => a.startTime.compareTo(b.startTime));
           return CupertinoScrollbar(
+            controller: _scrollController,
             child: ListView.builder(
+              controller: _scrollController,
               itemCount: tasks.length,
               itemBuilder: (context, index) {
                 final task = tasks[index];
-                final startTime =
-                    DateTime.fromMillisecondsSinceEpoch(task.deadline);
-                final endTime = DateTime.fromMillisecondsSinceEpoch(
-                    task.deadline + task.estimatedTime);
+                final startTime = task.startTime;
+                final endTime = task.endTime;
 
                 return Padding(
                   padding:
@@ -231,7 +237,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               Container(
                                 width: 4,
                                 height: 40,
-                                color: _getCategoryColor(task.category.name),
+                                color: _getCategoryColor(
+                                    task.parentTask.category.name),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -239,7 +246,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      task.title,
+                                      task.parentTask.title,
                                       style: CupertinoTheme.of(context)
                                           .textTheme
                                           .textStyle
@@ -249,11 +256,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                             color: textColor,
                                           ),
                                     ),
-                                    if (task.notes != null &&
-                                        task.notes!.isNotEmpty) ...[
+                                    if (task.parentTask.notes != null &&
+                                        task.parentTask.notes!.isNotEmpty) ...[
                                       const SizedBox(height: 4),
                                       Text(
-                                        task.notes!,
+                                        task.parentTask.notes!,
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: secondaryTextColor,

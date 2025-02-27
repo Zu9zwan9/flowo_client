@@ -30,6 +30,22 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     return scheduledTasks;
   }
 
+  Future<List<ScheduledTask>> getScheduledTasksForDate(DateTime date) async {
+    var dateKey = _formatDateKey(date);
+    final List<ScheduledTask> scheduledTasks = [];
+    for (var day in taskManager.daysDB.values) {
+      if (day.day == dateKey) {
+        scheduledTasks.addAll(day.scheduledTasks);
+      }
+    }
+
+    return scheduledTasks;
+  }
+
+  String _formatDateKey(DateTime date) {
+    return '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+  }
+
   void deleteTask(Task task) {
     taskManager.deleteTask(task);
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));

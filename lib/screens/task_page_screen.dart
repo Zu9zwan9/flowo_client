@@ -6,7 +6,7 @@ class TaskPageScreen extends StatefulWidget {
   const TaskPageScreen({required this.task, super.key});
 
   @override
-  Future<_TaskPageScreenState> createState() async => _TaskPageScreenState();
+  _TaskPageScreenState createState() => _TaskPageScreenState();
 }
 
 class _TaskPageScreenState extends State<TaskPageScreen> {

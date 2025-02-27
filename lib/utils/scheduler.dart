@@ -34,7 +34,7 @@ class Scheduler {
     int remainingTime = partSession ?? task.estimatedTime;
     DateTime currentDate = DateTime.now();
     int dateIndex = 0;
-    bool isFirstIteration = true;
+    // bool isFirstIteration = true;
     ScheduledTask? createdTask;
 
     removePreviousScheduledTasks(task);
@@ -50,10 +50,12 @@ class Scheduler {
           return null;
         }
         dateKey = _formatDateKey(currentDate);
+        /*
         if (!isFirstIteration) {
-          // currentDate = currentDate.add(Duration(days: 1)); // TODO: check what this line does
+          currentDate = currentDate.add(Duration(days: 1)); // TODO: check what this line does
         }
-        isFirstIteration = false;
+         isFirstIteration = false;
+        */
       }
 
       Day day = _getOrCreateDay(dateKey);
@@ -111,10 +113,11 @@ class Scheduler {
     return createdTask;
   }
 
-  void removePreviousScheduledTasks(Task task){ // for tasks rescheduling
-    for(ScheduledTask scheduledTask in task.scheduledTasks){
+  void removePreviousScheduledTasks(Task task) {
+    // for tasks rescheduling
+    for (ScheduledTask scheduledTask in task.scheduledTasks) {
       task.scheduledTasks.remove(scheduledTask);
-      for(Day day in daysDB.values){
+      for (Day day in daysDB.values) {
         day.scheduledTasks.remove(scheduledTask);
       }
     }
