@@ -29,7 +29,7 @@ class TaskUrgencyCalculator {
         _negativeUrgencyHandler(task);
       } else {
         taskUrgencyMap[task] = urgency;
-        log('Task: ${task.title} has urgency ${urgency.toStringAsFixed(2)}');
+        log('Task: ${task.title} has urgency $urgency');
       }
     }
 
