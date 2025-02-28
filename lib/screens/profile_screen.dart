@@ -5,7 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -237,9 +237,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         const SizedBox(height: 12),
         CupertinoButton(
           padding: EdgeInsets.zero,
+          onPressed: _showAvatarOptions,
           child: const Text('Change Avatar',
               style: TextStyle(color: CupertinoColors.activeBlue)),
-          onPressed: _showAvatarOptions,
         ),
       ],
     );

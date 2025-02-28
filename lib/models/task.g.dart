@@ -27,7 +27,7 @@ class TaskAdapter extends TypeAdapter<Task> {
       notes: fields[6] as String?,
       location: fields[7] as Coordinates?,
       image: fields[8] as String?,
-      frequency: (fields[9] as List?)?.cast<Day>(),
+      frequency: fields[9] as RepeatRule?,
       subtasks: (fields[10] as List).cast<Task>(),
       scheduledTasks: (fields[12] as List).cast<ScheduledTask>(),
       isDone: fields[13] as bool,

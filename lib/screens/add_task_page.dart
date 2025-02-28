@@ -1,10 +1,11 @@
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/models/category.dart';
-import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../blocs/tasks_controller/task_manager_cubit.dart';
 
 class AddTaskPage extends StatefulWidget {
   final DateTime? selectedDate;
@@ -19,6 +20,8 @@ class AddTaskPageState extends State<AddTaskPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
+  // Store provider references
+  late TaskManagerCubit _taskManagerCubit;
   late var _estimatedTime = 0;
 
   late DateTime _selectedDate;
@@ -449,25 +452,19 @@ class AddTaskPageState extends State<AddTaskPage> {
     final selectedTime = DateTime(_selectedDate.year, _selectedDate.month,
         _selectedDate.day, _selectedTime.hour, _selectedTime.minute);
 
-    final task = Task(
-      id: UniqueKey().toString(),
-      title: _titleController.text,
-      priority: _priority,
-      deadline: selectedTime.millisecondsSinceEpoch,
-      estimatedTime: _estimatedTime,
-      category: Category(name: _selectedCategory),
-      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-      subtasks: const [],
-      scheduledTasks: const [],
-      isDone: false,
-      order: 0,
-      overdue: false,
-    );
+    context.read<TaskManagerCubit>().createTask(
+          title: _titleController.text,
+          priority: _priority,
+          estimatedTime: _estimatedTime,
+          deadline: selectedTime.millisecondsSinceEpoch,
+          category: Category(name: _selectedCategory),
+          notes:
+              _notesController.text.isNotEmpty ? _notesController.text : null,
+        );
 
-    context.read<CalendarCubit>().addTask(task);
     Navigator.pushReplacement(
             context, CupertinoPageRoute(builder: (_) => const HomeScreen()))
         .then((_) => context.read<CalendarCubit>().selectDate(selectedTime));
-    logInfo('Saved $type: ${task.title}');
+    logInfo('Saved $type: ${_titleController.text}');
   }
 }

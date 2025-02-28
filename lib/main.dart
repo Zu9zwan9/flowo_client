@@ -8,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
+import 'adapters/time_of_day_adapter.dart';
 import 'blocs/tasks_controller/task_manager_cubit.dart';
 import 'blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'models/category.dart';
@@ -16,6 +17,7 @@ import 'models/day.dart';
 import 'models/notification_type.dart';
 import 'models/scheduled_task.dart';
 import 'models/scheduled_task_type.dart';
+import 'models/time_frame.dart';
 import 'models/user_settings.dart';
 import 'screens/home_screen.dart';
 import 'theme_notifier.dart';
@@ -34,6 +36,8 @@ void main() async {
   Hive.registerAdapter(ScheduledTaskTypeAdapter());
   Hive.registerAdapter(TaskAdapter());
   Hive.registerAdapter(UserSettingsAdapter());
+  Hive.registerAdapter(TimeFrameAdapter());
+  Hive.registerAdapter(TimeOfDayAdapter());
 
   await Hive.initFlutter();
 

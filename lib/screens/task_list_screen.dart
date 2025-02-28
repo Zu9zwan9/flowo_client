@@ -262,7 +262,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        task.title,
+                        '${task.title} ${task.scheduledTasks.length}',
                         style: CupertinoTheme.of(context)
                             .textTheme
                             .textStyle

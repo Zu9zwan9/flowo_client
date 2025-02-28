@@ -28,14 +28,13 @@ class RepeatRule {
   @HiveField(7)
   int? bySetPos;
 
-  RepeatRule({
-    required this.frequency,
-    required this.interval,
-    this.count,
-    this.until,
-    this.byDay,
-    this.byMonthDay,
-    this.byMonth,
-    this.bySetPos,
-  });
+  RepeatRule(
+      {required this.frequency,
+      required this.interval,
+      this.count,
+      this.until,
+      this.byDay,
+      this.byMonthDay,
+      this.byMonth,
+      this.bySetPos});
 }

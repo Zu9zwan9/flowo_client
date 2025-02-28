@@ -1,10 +1,247 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flowo_client/models/time_frame.dart';
+import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
+import 'package:flowo_client/utils/logger.dart';
+import 'package:flowo_client/models/user_settings.dart';
 
+import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../theme_notifier.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  late TimeOfDay _sleepTime;
+  late TimeOfDay _wakeupTime;
+  late int _breakDuration;
+  late int _minSessionDuration;
+  final List<TimeFrame> _mealTimes = [];
+  final List<TimeFrame> _freeTimes = []; // Added free time list
+  final Map<String, bool> _activeDays = {
+    'Monday': true,
+    'Tuesday': true,
+    'Wednesday': true,
+    'Thursday': true,
+    'Friday': true,
+    'Saturday': true,
+    'Sunday': true,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize with default values
+    _sleepTime = const TimeOfDay(hour: 22, minute: 0);
+    _wakeupTime = const TimeOfDay(hour: 7, minute: 0);
+    _breakDuration = 15;
+    _minSessionDuration = 25;
+
+    // Add default meal times
+    _mealTimes.add(TimeFrame(
+      startTime: const TimeOfDay(hour: 8, minute: 0),
+      endTime: const TimeOfDay(hour: 8, minute: 30),
+    ));
+    _mealTimes.add(TimeFrame(
+      startTime: const TimeOfDay(hour: 13, minute: 0),
+      endTime: const TimeOfDay(hour: 13, minute: 30),
+    ));
+    _mealTimes.add(TimeFrame(
+      startTime: const TimeOfDay(hour: 19, minute: 0),
+      endTime: const TimeOfDay(hour: 19, minute: 30),
+    ));
+
+    // Add default free times
+    _freeTimes.add(TimeFrame(
+      startTime: const TimeOfDay(hour: 17, minute: 0),
+      endTime: const TimeOfDay(hour: 18, minute: 30),
+    ));
+
+    // Load saved settings (in a real app)
+    _loadSettings();
+  }
+
+  void _loadSettings() {
+    // Here you'd load settings from a repository or Hive
+    // For now we'll just use the defaults
+  }
+
+  void _saveSettings() {
+    final userSettings = UserSettings(
+      name: 'Default',
+      minSession: _minSessionDuration * 60 * 1000, // Convert to milliseconds
+      breakTime: _breakDuration * 60 * 1000, // Convert to milliseconds
+      sleepTime: [
+        TimeFrame(
+          startTime: _sleepTime,
+          endTime: _wakeupTime,
+        )
+      ],
+      mealBreaks: _mealTimes,
+      freeTime: _freeTimes, // Added free time slots
+    );
+
+    // Here you would save to Hive or other storage
+    context.read<TaskManagerCubit>().updateUserSettings(userSettings);
+    logInfo('Settings updated');
+
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Settings Saved'),
+        content: const Text('Your schedule preferences have been updated.'),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _showTimePicker({
+    required TimeOfDay initialTime,
+    required Function(TimeOfDay) onTimeSelected,
+  }) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        height: 280,
+        color: CupertinoColors.systemBackground,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoButton(
+                  child: const Text('Done'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                initialDateTime: DateTime(
+                  2022,
+                  1,
+                  1,
+                  initialTime.hour,
+                  initialTime.minute,
+                ),
+                onDateTimeChanged: (dateTime) {
+                  onTimeSelected(TimeOfDay(
+                    hour: dateTime.hour,
+                    minute: dateTime.minute,
+                  ));
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAddTimeSlotDialog({
+    required String title,
+    required Function(TimeOfDay, TimeOfDay) onAdd,
+    Color iconColor = CupertinoColors.systemBlue,
+  }) {
+    TimeOfDay startTime = const TimeOfDay(hour: 12, minute: 0);
+    TimeOfDay endTime = const TimeOfDay(hour: 13, minute: 0);
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text('Add $title'),
+        message: Text('Set your $title start and end times'),
+        actions: [
+          CupertinoActionSheetAction(
+            child: Text('Start Time: ${_formatTimeOfDay(startTime)}'),
+            onPressed: () {
+              Navigator.pop(context);
+              _showTimePicker(
+                initialTime: startTime,
+                onTimeSelected: (time) => setState(() => startTime = time),
+              );
+            },
+          ),
+          CupertinoActionSheetAction(
+            child: Text('End Time: ${_formatTimeOfDay(endTime)}'),
+            onPressed: () {
+              Navigator.pop(context);
+              _showTimePicker(
+                initialTime: endTime,
+                onTimeSelected: (time) => setState(() => endTime = time),
+              );
+            },
+          ),
+          CupertinoActionSheetAction(
+            isDefaultAction: true,
+            child: Text('Add $title'),
+            onPressed: () {
+              onAdd(startTime, endTime);
+              Navigator.pop(context);
+            },
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          child: const Text('Cancel'),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+    );
+  }
+
+  void _showAddMealDialog() {
+    _showAddTimeSlotDialog(
+      title: 'Meal Time',
+      iconColor: CupertinoColors.systemOrange,
+      onAdd: (startTime, endTime) {
+        setState(() {
+          _mealTimes.add(TimeFrame(
+            startTime: startTime,
+            endTime: endTime,
+          ));
+        });
+      },
+    );
+  }
+
+  void _showAddFreeTimeDialog() {
+    _showAddTimeSlotDialog(
+      title: 'Free Time',
+      iconColor: CupertinoColors.systemGreen,
+      onAdd: (startTime, endTime) {
+        setState(() {
+          _freeTimes.add(TimeFrame(
+            startTime: startTime,
+            endTime: endTime,
+          ));
+        });
+      },
+    );
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,12 +255,10 @@ class SettingsScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
-            const Text(
-              'Theme',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16.0),
+            _buildSectionHeader('Theme'),
+            const SizedBox(height: 8.0),
             CupertinoSegmentedControl<String>(
+              groupValue: themeNotifier.currentThemeName,
               children: const {
                 'Light': Padding(
                   padding: EdgeInsets.symmetric(horizontal: 8.0),
@@ -41,10 +276,262 @@ class SettingsScreen extends StatelessWidget {
               onValueChanged: (String value) {
                 themeNotifier.setTheme(value);
               },
-              selectedColor: CupertinoColors.activeBlue,
+            ),
+            const SizedBox(height: 24.0),
+            _buildSectionHeader('Sleep Schedule'),
+            _buildSettingItem(
+              'Sleep Time',
+              _formatTimeOfDay(_sleepTime),
+              onTap: () => _showTimePicker(
+                initialTime: _sleepTime,
+                onTimeSelected: (time) => setState(() => _sleepTime = time),
+              ),
+            ),
+            _buildSettingItem(
+              'Wake Up Time',
+              _formatTimeOfDay(_wakeupTime),
+              onTap: () => _showTimePicker(
+                initialTime: _wakeupTime,
+                onTimeSelected: (time) => setState(() => _wakeupTime = time),
+              ),
+            ),
+            const SizedBox(height: 16.0),
+            _buildSectionHeader('Active Days'),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Wrap(
+                spacing: 8.0,
+                children: _activeDays.keys.map((day) {
+                  return CupertinoButton(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12.0, vertical: 6.0),
+                    color: _activeDays[day]!
+                        ? CupertinoColors.activeBlue
+                        : CupertinoColors.systemGrey5,
+                    borderRadius: BorderRadius.circular(16.0),
+                    minSize: 0,
+                    child: Text(
+                      day.substring(0, 3),
+                      style: TextStyle(
+                        color: _activeDays[day]!
+                            ? CupertinoColors.white
+                            : CupertinoColors.label,
+                        fontSize: 14.0,
+                      ),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _activeDays[day] = !_activeDays[day]!;
+                      });
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 16.0),
+            _buildSectionHeader('Meal Times'),
+            ..._mealTimes
+                .map((meal) => _buildTimeSlotItem(
+                    meal,
+                    CupertinoColors.systemOrange,
+                    () => setState(() => _mealTimes.remove(meal))))
+                .toList(),
+            CupertinoButton(
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(CupertinoIcons.add_circled),
+                  SizedBox(width: 8.0),
+                  Text('Add Meal Time'),
+                ],
+              ),
+              onPressed: _showAddMealDialog,
+            ),
+            const SizedBox(height: 16.0),
+            // Added Free Time section
+            _buildSectionHeader('Free Time'),
+            ..._freeTimes
+                .map((freeTime) => _buildTimeSlotItem(
+                    freeTime,
+                    CupertinoColors.systemGreen,
+                    () => setState(() => _freeTimes.remove(freeTime))))
+                .toList(),
+            CupertinoButton(
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(CupertinoIcons.add_circled),
+                  SizedBox(width: 8.0),
+                  Text('Add Free Time'),
+                ],
+              ),
+              onPressed: _showAddFreeTimeDialog,
+            ),
+            const SizedBox(height: 16.0),
+            _buildSectionHeader('Work Settings'),
+            _buildSliderItem(
+              'Minimum Session (minutes)',
+              _minSessionDuration.toDouble(),
+              min: 5,
+              max: 120,
+              divisions: 23,
+              onChanged: (value) {
+                setState(() {
+                  _minSessionDuration = value.round();
+                });
+              },
+            ),
+            _buildSliderItem(
+              'Break Duration (minutes)',
+              _breakDuration.toDouble(),
+              min: 5,
+              max: 30,
+              divisions: 5,
+              onChanged: (value) {
+                setState(() {
+                  _breakDuration = value.round();
+                });
+              },
+            ),
+            const SizedBox(height: 24.0),
+            CupertinoButton.filled(
+              child: const Text('Save Settings'),
+              onPressed: _saveSettings,
+            ),
+            const SizedBox(height: 24.0),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingItem(String label, String value,
+      {required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: CupertinoColors.systemGrey5,
+              width: 0.5,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(fontSize: 16),
+            ),
+            Row(
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: CupertinoColors.systemGrey,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(
+                  CupertinoIcons.chevron_right,
+                  color: CupertinoColors.systemGrey2,
+                  size: 18,
+                ),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTimeSlotItem(
+      TimeFrame timeFrame, Color iconColor, VoidCallback onDelete) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: CupertinoColors.systemGrey5,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(CupertinoIcons.time, color: iconColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '${_formatTimeOfDay(timeFrame.startTime)} - ${_formatTimeOfDay(timeFrame.endTime)}',
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            child: const Icon(
+              CupertinoIcons.delete,
+              color: CupertinoColors.systemRed,
+            ),
+            onPressed: onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSliderItem(
+    String label,
+    double value, {
+    required double min,
+    required double max,
+    required int divisions,
+    required Function(double) onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 16)),
+              Text(
+                '${value.round()}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8.0),
+          CupertinoSlider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            onChanged: onChanged,
+          ),
+        ],
       ),
     );
   }

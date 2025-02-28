@@ -7,6 +7,7 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/tasks_controller_state.dart';
 import '../models/scheduled_task.dart';
+import '../models/task.dart';
 import '../utils/logger.dart';
 
 class CalendarScreen extends StatefulWidget {
@@ -148,7 +149,7 @@ class CalendarScreenState extends State<CalendarScreen> {
         ? CupertinoColors.systemGrey
         : CupertinoColors.systemGrey;
 
-    return FutureBuilder<List<ScheduledTask>>(
+    return FutureBuilder<Map<Task, ScheduledTask>>(
       future: context
           .read<TaskManagerCubit>()
           .getScheduledTasksForDate(selectedDate),
@@ -170,15 +171,15 @@ class CalendarScreenState extends State<CalendarScreen> {
             ),
           );
         } else {
-          final tasks = snapshot.data!
-            ..sort((a, b) => a.startTime.compareTo(b.startTime));
+          final tasks = snapshot.data!.entries.toList()
+            ..sort((a, b) => a.value.startTime.compareTo(b.value.startTime));
           return CupertinoScrollbar(
             controller: _scrollController,
             child: ListView.builder(
               controller: _scrollController,
               itemCount: tasks.length,
               itemBuilder: (context, index) {
-                final task = tasks[index];
+                final task = tasks[index].value;
                 final startTime = task.startTime;
                 final endTime = task.endTime;
 
@@ -355,9 +356,12 @@ class TaskDataSource extends CalendarDataSource {
 
   @override
   String getSubject(int index) {
-    return appointments![index].parentTask.title.isNotEmpty
-        ? appointments![index].parentTask.title
-        : 'Untitled';
+    var parentTask = appointments![index].parentTask;
+    if (parentTask != null) {
+      return parentTask.title;
+    } else {
+      return 'Untitled';
+    }
   }
 
   @override

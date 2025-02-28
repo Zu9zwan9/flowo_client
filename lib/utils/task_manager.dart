@@ -16,7 +16,7 @@ import '../models/task.dart';
 class TaskManager {
   final Scheduler scheduler;
   final TaskUrgencyCalculator taskUrgencyCalculator;
-  final UserSettings userSettings;
+  UserSettings userSettings;
   final Box<Day> daysDB;
   final Box<Task> tasksDB;
 
@@ -28,7 +28,7 @@ class TaskManager {
         taskUrgencyCalculator = TaskUrgencyCalculator(daysDB);
 
   createTask(String title, int priority, int estimatedTime, int deadline,
-      Category category, Task? parentTask) {
+      Category category, Task? parentTask, String? notes) {
     Task task = Task(
       id: UniqueKey().toString(),
       title: title,
@@ -36,8 +36,9 @@ class TaskManager {
       estimatedTime: estimatedTime,
       deadline: deadline,
       category: category,
+      notes: notes,
     );
-    tasksDB.put(task.key, task);
+    tasksDB.put(task.id, task);
     if (parentTask != null) {
       task.parentTask = parentTask;
       parentTask.subtasks.add(task);
@@ -56,6 +57,7 @@ class TaskManager {
     for (ScheduledTask scheduledTask in task.scheduledTasks) {
       for (var day in daysDB.values) {
         day.scheduledTasks.remove(scheduledTask);
+        day.save();
       }
     }
   }
@@ -72,9 +74,7 @@ class TaskManager {
 
   void manageTasks() {
     List<Task> tasks = tasksDB.values
-        .where((task) =>
-            (task.frequency == null || task.frequency!.isEmpty) &&
-            task.subtasks.isEmpty)
+        .where((task) => (task.frequency == null) && task.subtasks.isEmpty)
         .toList();
 
     List<ScheduledTask> justScheduledTasks = [];
@@ -121,9 +121,8 @@ class TaskManager {
   }
 
   void manageHabits() {
-    List<Task> habits = tasksDB.values
-        .where((task) => task.frequency != null && task.frequency!.isNotEmpty)
-        .toList();
+    List<Task> habits =
+        tasksDB.values.where((task) => task.frequency != null).toList();
 
     for (Task habit in habits) {
       List<DateTime> scheduledDates = _calculateHabitDates(habit);
@@ -147,7 +146,12 @@ class TaskManager {
 
       day.scheduledTasks.removeWhere((scheduledTask) {
         if (scheduledTask.type == ScheduledTaskType.defaultType) {
-          scheduledTask.parentTask.scheduledTasks.remove(scheduledTask);
+          var task = tasksDB.get(scheduledTask.parentTaskId);
+          if (task != null) {
+            task.scheduledTasks.remove(scheduledTask);
+            task.save();
+          }
+
           return true;
         }
         return false;
@@ -165,8 +169,15 @@ class TaskManager {
   List<DateTime> _calculateHabitDates(Task habit) {
     List<DateTime> dates = [];
     DateTime currentDate = habit.startDate;
-    RepeatRule repeatRule = habit.repeatRule;
+    RepeatRule? repeatRule = habit.frequency;
 
+    // Early return if repeatRule is null
+    if (repeatRule == null) {
+      dates.add(currentDate);
+      return dates;
+    }
+
+    // Now we know repeatRule is not null
     while (
         (repeatRule.until != null && currentDate.isBefore(repeatRule.until!)) ||
             (repeatRule.count != null && dates.length < repeatRule.count!) ||
@@ -184,7 +195,7 @@ class TaskManager {
               repeatRule.byDay!.contains(currentDate.weekday % 7)) {
             dates.add(currentDate);
           }
-          currentDate = currentDate.add(Duration(days: 1));
+          currentDate = currentDate.add(const Duration(days: 1));
           break;
         case 'monthly':
           if (repeatRule.byMonthDay != null) {
@@ -203,7 +214,7 @@ class TaskManager {
           }
           if (repeatRule.bySetPos != null &&
               (currentDate.day - 1) ~/ 7 + 1 == repeatRule.bySetPos) {
-            dates.add(currentDate); //To review (31-1 ~/7 + 1 = 5)
+            dates.add(currentDate);
           }
           currentDate = DateTime(currentDate.year,
               currentDate.month + repeatRule.interval, currentDate.day);

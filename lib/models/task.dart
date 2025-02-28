@@ -1,11 +1,8 @@
-// lib/models/task.dart
-
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:hive/hive.dart';
 
 import 'category.dart';
 import 'coordinates.dart';
-import 'day.dart';
 import 'repeat_rule.dart';
 
 part 'task.g.dart';
@@ -40,7 +37,7 @@ class Task extends HiveObject {
   String? image;
 
   @HiveField(9)
-  List<Day>? frequency;
+  RepeatRule? frequency;
 
   @HiveField(10)
   List<Task> subtasks;
@@ -62,7 +59,6 @@ class Task extends HiveObject {
 
   DateTime get startDate => DateTime.now();
   DateTime get endDate => DateTime.now().add(Duration(days: 1));
-  RepeatRule get repeatRule => RepeatRule(frequency: 'daily', interval: 1);
   List<DateTime> get exceptions => [];
 
   Task(

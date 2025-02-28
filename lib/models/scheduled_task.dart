@@ -10,32 +10,39 @@ part 'scheduled_task.g.dart';
 class ScheduledTask extends HiveObject {
   // Attributes
   @HiveField(0)
-  Task parentTask;
+  String scheduledTaskId;
 
   @HiveField(1)
-  DateTime startTime;
+  String parentTaskId;
 
   @HiveField(2)
-  DateTime endTime;
+  DateTime startTime;
 
   @HiveField(3)
-  double? urgency;
+  DateTime endTime;
 
   @HiveField(4)
-  ScheduledTaskType type;
+  double? urgency;
 
   @HiveField(5)
-  int travelingTime; // In milliseconds
+  ScheduledTaskType type;
 
   @HiveField(6)
-  int breakTime; // In milliseconds
+  int travelingTime; // In milliseconds
 
   @HiveField(7)
+  int breakTime; // In milliseconds
+
+  @HiveField(8)
   NotificationType notification;
+
+  // Add the parentTask property
+  Task get parentTask => Hive.box<Task>('tasks').get(parentTaskId)!;
 
   // Constructor
   ScheduledTask({
-    required this.parentTask,
+    required this.scheduledTaskId,
+    required this.parentTaskId,
     required this.startTime,
     required this.endTime,
     this.urgency,

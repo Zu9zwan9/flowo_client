@@ -1,3 +1,5 @@
+import 'package:flowo_client/models/user_settings.dart';
+
 import '../../models/task.dart';
 
 class TaskManagerState {
@@ -7,7 +9,7 @@ class TaskManagerState {
 
   factory TaskManagerState.initial() => TaskManagerState([]);
 
-  TaskManagerState copyWith({List<Task>? tasks}) {
+  TaskManagerState copyWith({List<Task>? tasks, UserSettings? userSettings}) {
     return TaskManagerState(tasks ?? this.tasks);
   }
 }
