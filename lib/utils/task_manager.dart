@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/user_settings.dart';
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flowo_client/utils/scheduler.dart';
 import 'package:flowo_client/utils/task_urgency_calculator.dart';
 import 'package:flutter/cupertino.dart';
@@ -27,6 +28,25 @@ class TaskManager {
   })  : scheduler = Scheduler(daysDB, tasksDB, userSettings),
         taskUrgencyCalculator = TaskUrgencyCalculator(daysDB);
 
+  updateUserSettings(UserSettings userSettings) {
+    logInfo('Previous user settings:'
+        '- Break time: ${userSettings.breakTime}\n'
+        '- Free time slots: ${userSettings.freeTime.length}\n'
+        '- Sleep time slots: ${userSettings.sleepTime.length}\n'
+        '- Meal breaks: ${userSettings.mealBreaks.length}\n'
+        '- Min session: ${userSettings.minSession}');
+
+    this.userSettings = userSettings;
+    scheduler.updateUserSettings(userSettings);
+
+    logInfo('Updated user settings:'
+        '- Break time: ${userSettings.breakTime}\n'
+        '- Free time slots: ${userSettings.freeTime.length}\n'
+        '- Sleep time slots: ${userSettings.sleepTime.length}\n'
+        '- Meal breaks: ${userSettings.mealBreaks.length}\n'
+        '- Min session: ${userSettings.minSession}');
+  }
+
   createTask(String title, int priority, int estimatedTime, int deadline,
       Category category, Task? parentTask, String? notes) {
     Task task = Task(
@@ -43,6 +63,7 @@ class TaskManager {
       task.parentTask = parentTask;
       parentTask.subtasks.add(task);
     }
+    logInfo('Days in daysDB: ${daysDB.values.length}');
   }
 
   deleteTask(Task task) {
@@ -55,7 +76,8 @@ class TaskManager {
       deleteTask(subtask);
     }
     for (ScheduledTask scheduledTask in task.scheduledTasks) {
-      for (var day in daysDB.values) { // TODO: Continue from here
+      for (var day in daysDB.values) {
+        // TODO: Continue from here
         day.scheduledTasks.remove(scheduledTask);
         day.save();
       }

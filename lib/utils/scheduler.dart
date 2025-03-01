@@ -15,30 +15,57 @@ import '../models/time_frame.dart';
 class Scheduler {
   final Box<Day> daysDB;
   final Box<Task> tasksDB;
-  final UserSettings userSettings;
-  late final Task freeTimeManager; // Changed to late for initialization
+  UserSettings userSettings;
+  late final Task freeTimeManager;
   final Map<String, Day> _dayCache = {};
 
   Scheduler(this.daysDB, this.tasksDB, this.userSettings) {
     _initializeFreeTimeManager();
   }
 
-  void _initializeFreeTimeManager() {
-    const freeTimeManagerId = 'free_time_manager'; // Consistent ID
-    freeTimeManager = tasksDB.get(freeTimeManagerId) ??
-        Task(
-          id: freeTimeManagerId,
-          title: 'Free Time',
-          priority: 0,
-          estimatedTime: 0,
-          deadline: 0,
-          category: Category(name: 'Free Time Manager'),
-        );
+  void updateUserSettings(UserSettings userSettings) {
+    logInfo('Previous user settings in scheduler:'
+        '- Break time: ${userSettings.breakTime}\n'
+        '- Free time slots: ${userSettings.freeTime.length}\n'
+        '- Sleep time slots: ${userSettings.sleepTime.length}\n'
+        '- Meal breaks: ${userSettings.mealBreaks.length}\n'
+        '- Min session: ${userSettings.minSession}');
 
-    // Persist freeTimeManager if it’s not already in the box
-    if (!tasksDB.containsKey(freeTimeManagerId)) {
+    this.userSettings = userSettings;
+
+    logInfo('Updated user settings in scheduler:'
+        '- Break time: ${userSettings.breakTime}\n'
+        '- Free time slots: ${userSettings.freeTime.length}\n'
+        '- Sleep time slots: ${userSettings.sleepTime.length}\n'
+        '- Meal breaks: ${userSettings.mealBreaks.length}\n'
+        '- Min session: ${userSettings.minSession}');
+  }
+
+  void _initializeFreeTimeManager() {
+    const freeTimeManagerId = 'free_time_manager';
+    Task? existingTask = tasksDB.get(freeTimeManagerId);
+
+    if (existingTask == null) {
+      freeTimeManager = Task(
+        id: freeTimeManagerId,
+        title: 'Free Time',
+        priority: 0,
+        estimatedTime: 0,
+        deadline: 0,
+        category: Category(name: 'Free Time Manager'),
+        scheduledTasks: [], // Ensure initialized
+      );
       tasksDB.put(freeTimeManagerId, freeTimeManager);
-      logger.i('Persisted freeTimeManager to tasksDB with ID: $freeTimeManagerId');
+      logger.i('Persisted new freeTimeManager to tasksDB with ID: $freeTimeManagerId');
+    } else {
+      freeTimeManager = existingTask;
+      logger.i('Loaded existing freeTimeManager from tasksDB with ID: $freeTimeManagerId');
+    }
+
+    // Verify box state
+    if (!tasksDB.isOpen) {
+      logger.e('tasksDB is not open during initialization');
+      throw HiveError('tasksDB must be open to initialize Scheduler');
     }
   }
 
@@ -290,14 +317,14 @@ class Scheduler {
 
   Day _createDay(String dateKey) {
     logInfo('Day $dateKey not found, creating new day');
-    final day = Day(day: dateKey);
+    final day = Day(day: dateKey, scheduledTasks: []);
     daysDB.put(dateKey, day);
     _addPredefinedTimeBlocks(day);
     return day;
   }
 
   void _addPredefinedTimeBlocks(Day day) {
-    logDebug('Adding predefined time blocks for day: $day.day with user settings:\n'
+    logDebug('Adding predefined time blocks for day: ${day.day} with user settings:\n'
         '- Break time: ${userSettings.breakTime}\n'
         '- Free time slots: ${userSettings.freeTime.length}\n'
         '- Sleep time slots: ${userSettings.sleepTime.length}\n'
@@ -338,6 +365,12 @@ class Scheduler {
     double? urgency,
     ScheduledTaskType? type,
   }) {
+    // Ensure task is in the box before modification
+    if (!tasksDB.containsKey(task.id)) {
+      tasksDB.put(task.id, task);
+      logger.w('Task ${task.id} was not in box; persisted it');
+    }
+
     final scheduledTask = ScheduledTask(
       scheduledTaskId: UniqueKey().toString(),
       parentTaskId: task.id,
@@ -351,11 +384,11 @@ class Scheduler {
     );
 
     task.scheduledTasks = List.from(task.scheduledTasks)..add(scheduledTask);
-    task.save();
+    tasksDB.put(task.id, task); // Use put instead of save to ensure persistence
 
     final day = _getOrCreateDay(dateKey);
     day.scheduledTasks = List.from(day.scheduledTasks)..add(scheduledTask);
-    day.save();
+    daysDB.put(dateKey, day); // Use put instead of save for consistency
 
     log('Created scheduled task from ${scheduledTask.startTime} to ${scheduledTask.endTime} for $dateKey');
     return scheduledTask;
@@ -385,3 +418,5 @@ class Scheduler {
     return DateTime(year, month, day, timeOfDay.hour, timeOfDay.minute);
   }
 }
+
+// TODO: check free time scheduled tasks adding to daysDB

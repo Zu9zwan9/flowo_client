@@ -7,7 +7,6 @@ import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flowo_client/models/user_settings.dart';
 
-import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../theme_notifier.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -337,6 +336,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     () => setState(() => _mealTimes.remove(meal))))
                 .toList(),
             CupertinoButton(
+              onPressed: _showAddMealDialog,
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -345,7 +345,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text('Add Meal Time'),
                 ],
               ),
-              onPressed: _showAddMealDialog,
             ),
             const SizedBox(height: 16.0),
             // Added Free Time section
@@ -357,6 +356,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     () => setState(() => _freeTimes.remove(freeTime))))
                 .toList(),
             CupertinoButton(
+              onPressed: _showAddFreeTimeDialog,
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -365,7 +365,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Text('Add Free Time'),
                 ],
               ),
-              onPressed: _showAddFreeTimeDialog,
             ),
             const SizedBox(height: 16.0),
             _buildSectionHeader('Work Settings'),
@@ -395,8 +394,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 24.0),
             CupertinoButton.filled(
-              child: const Text('Save Settings'),
               onPressed: _saveSettings,
+              child: const Text('Save Settings'),
             ),
             const SizedBox(height: 24.0),
           ],
@@ -486,11 +485,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           CupertinoButton(
             padding: EdgeInsets.zero,
+            onPressed: onDelete,
             child: const Icon(
               CupertinoIcons.delete,
               color: CupertinoColors.systemRed,
             ),
-            onPressed: onDelete,
           ),
         ],
       ),

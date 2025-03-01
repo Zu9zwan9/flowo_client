@@ -1,6 +1,5 @@
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:hive/hive.dart';
-
 part 'day.g.dart';
 
 @HiveType(typeId: 4) // Unique ID for the Days class
@@ -11,8 +10,11 @@ class Day extends HiveObject {
   @HiveField(1)
   List<ScheduledTask> scheduledTasks;
 
-  // Constructor
   Day({
     required this.day,
-  }) : scheduledTasks = [];
+    List<ScheduledTask>? scheduledTasks, // Optional named parameter
+  }) : scheduledTasks = scheduledTasks ?? []; // Default to empty list
+
+  @override
+  String toString() => 'Day(day: $day, scheduledTasks: ${scheduledTasks.length})';
 }
