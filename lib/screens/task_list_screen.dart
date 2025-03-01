@@ -6,6 +6,7 @@ import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../models/task.dart';
 import 'task_breakdown_screen.dart';
+import 'task_page_screen.dart';
 
 enum TaskFilterType { all, event, task, habit }
 
@@ -230,7 +231,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
         child: GestureDetector(
           onTap: () => Navigator.push(
             context,
-            CupertinoPageRoute(builder: (_) => TaskBreakdownScreen(task: task)),
+            CupertinoPageRoute(builder: (_) => TaskPageScreen(task: task)),
           ),
           child: Container(
             padding: const EdgeInsets.all(12),

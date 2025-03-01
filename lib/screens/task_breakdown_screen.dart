@@ -70,14 +70,82 @@ class TaskBreakdownScreen extends StatelessWidget {
 
 class CupertinoListTile extends StatelessWidget {
   final Widget title;
+  final Widget? subtitle;
+  final Widget? leading;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry? padding;
+  final Color? backgroundColor;
+  final double minLeadingWidth;
 
-  const CupertinoListTile({required this.title, super.key});
+  const CupertinoListTile({
+    required this.title,
+    this.subtitle,
+    this.leading,
+    this.trailing,
+    this.onTap,
+    this.padding,
+    this.backgroundColor,
+    this.minLeadingWidth = 28.0,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final effectivePadding =
+        padding ?? const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0);
+
+    Widget content = Row(
+      children: [
+        if (leading != null) ...[
+          SizedBox(
+            width: minLeadingWidth,
+            child: leading,
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DefaultTextStyle(
+                style: CupertinoTheme.of(context).textTheme.textStyle,
+                child: title,
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 4),
+                DefaultTextStyle(
+                  style:
+                      CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                            fontSize: 14,
+                            color: CupertinoColors.systemGrey,
+                          ),
+                  child: subtitle!,
+                ),
+              ],
+            ],
+          ),
+        ),
+        if (trailing != null) ...[
+          const SizedBox(width: 8),
+          trailing!,
+        ],
+      ],
+    );
+
+    if (onTap != null) {
+      content = GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: content,
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+      padding: effectivePadding,
       decoration: BoxDecoration(
+        color: backgroundColor ?? CupertinoColors.systemBackground,
         border: Border(
           bottom: BorderSide(
             color: CupertinoColors.separator,
@@ -85,10 +153,7 @@ class CupertinoListTile extends StatelessWidget {
           ),
         ),
       ),
-      child: DefaultTextStyle(
-        style: CupertinoTheme.of(context).textTheme.textStyle,
-        child: title,
-      ),
+      child: content,
     );
   }
 }
