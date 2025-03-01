@@ -326,7 +326,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
               color: CupertinoColors.white, size: 28),
         ),
         onPressed: () {
-          // Navigate to AddItemScreen or similar
           Navigator.pushReplacement(
             context,
             CupertinoPageRoute(builder: (_) => HomeScreen(initialIndex: 2)),
@@ -347,7 +346,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
               color: CupertinoColors.white, size: 28),
         ),
         onPressed: () {
-          _scheduleTasks();
           context.read<TaskManagerCubit>().manageTasks();
           _scheduleTasks();
         },
@@ -361,10 +359,16 @@ class _TaskListScreenState extends State<TaskListScreen> {
         content: const Text('Tasks have been scheduled successfully.'),
         actions: [
           CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
-          ),
+              isDefaultAction: true,
+              child: const Text('OK'),
+              onPressed: () => {
+                    Navigator.pop(context),
+                    Navigator.pushReplacement(
+                      context,
+                      CupertinoPageRoute(
+                          builder: (_) => HomeScreen(initialIndex: 0)),
+                    ),
+                  }),
         ],
       ),
     );

@@ -55,7 +55,7 @@ class TaskManager {
       deleteTask(subtask);
     }
     for (ScheduledTask scheduledTask in task.scheduledTasks) {
-      for (var day in daysDB.values) {
+      for (var day in daysDB.values) { // TODO: Continue from here
         day.scheduledTasks.remove(scheduledTask);
         day.save();
       }

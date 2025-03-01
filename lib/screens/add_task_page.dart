@@ -20,6 +20,7 @@ class AddTaskPageState extends State<AddTaskPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
+
   // Store provider references
   late TaskManagerCubit _taskManagerCubit;
   late var _estimatedTime = 0;
@@ -462,9 +463,7 @@ class AddTaskPageState extends State<AddTaskPage> {
               _notesController.text.isNotEmpty ? _notesController.text : null,
         );
 
-    Navigator.pushReplacement(
-            context, CupertinoPageRoute(builder: (_) => const HomeScreen()))
-        .then((_) => context.read<CalendarCubit>().selectDate(selectedTime));
-    logInfo('Saved $type: ${_titleController.text}');
+    Navigator.pushReplacement(context,
+        CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)));
   }
 }

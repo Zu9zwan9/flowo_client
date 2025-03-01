@@ -32,7 +32,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   List<ScheduledTask> getScheduledTasks() {
     final List<ScheduledTask> scheduledTasks = [];
     for (var day in taskManager.daysDB.values) {
-      logDebug(day.scheduledTasks.toString());
       scheduledTasks.addAll(day.scheduledTasks);
     }
 
@@ -86,6 +85,14 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
   void updateUserSettings(UserSettings userSettings) {
     // Update the user settings in the task manager
+
+    logDebug('New userSettings:\n'
+        '- Break time: ${userSettings.breakTime}\n'
+        '- Free time slots: ${userSettings.freeTime.length}\n'
+        '- Sleep time slots: ${userSettings.sleepTime.length}\n'
+        '- Meal breaks: ${userSettings.mealBreaks.length}\n'
+        '- Min session: ${userSettings.minSession}');
+
     taskManager.userSettings = userSettings;
 
     // If you're storing settings in a Hive box, you should save them

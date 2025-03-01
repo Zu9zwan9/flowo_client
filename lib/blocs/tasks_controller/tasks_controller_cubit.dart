@@ -25,7 +25,6 @@ class CalendarCubit extends Cubit<CalendarState> {
   }
 
   void selectDate(DateTime date) {
-    logDebug('Selected date: $date');
     emit(state.copyWith(selectedDate: date));
   }
 
@@ -86,7 +85,6 @@ class CalendarCubit extends Cubit<CalendarState> {
       }
       groupedTasks[task.category.name]!.add(task);
     }
-    logDebug('Tasks grouped by category: ${groupedTasks.keys.length}');
     return groupedTasks;
   }
 
