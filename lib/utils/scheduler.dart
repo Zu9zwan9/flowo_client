@@ -88,9 +88,11 @@ class Scheduler {
       Day day = _getOrCreateDay(dateKey);
       DateTime start = _parseStartTime(dateKey);
 
-      ScheduledTask? slot = _findAvailableTimeSlot(
+      // Find all available slots in the current day
+      List<ScheduledTask> availableSlots = _findAllAvailableTimeSlots(
           day, start, remainingTime, minSessionDuration, task.title, dateKey);
-      if (slot != null) {
+
+      for (ScheduledTask slot in availableSlots) {
         lastScheduledTask = _createScheduledTask(
           task: task,
           urgency: urgency,
@@ -98,8 +100,17 @@ class Scheduler {
           end: slot.endTime,
           dateKey: dateKey,
         );
-        remainingTime -= _calculateDurationMs(slot.startTime, slot.endTime);
-      } else if (urgency != null && urgency > 0) {
+
+        int slotDuration = _calculateDurationMs(slot.startTime, slot.endTime);
+        remainingTime -= slotDuration;
+
+        if (remainingTime <= 0) {
+          break;
+        }
+      }
+
+      // If we still have remaining time and sufficient urgency, try to displace existing tasks
+      if (remainingTime > 0 && urgency != null && urgency > 0) {
         List<ScheduledTask> displacedTasks = _findDisplaceableSlots(
           day,
           start,
@@ -108,6 +119,7 @@ class Scheduler {
           urgency,
           task.title,
         );
+
         for (var taskToDisplace in displacedTasks) {
           _removeScheduledTask(taskToDisplace);
           lastScheduledTask = _createScheduledTask(
@@ -117,8 +129,10 @@ class Scheduler {
             end: taskToDisplace.endTime,
             dateKey: dateKey,
           );
+
           remainingTime -= _calculateDurationMs(
               taskToDisplace.startTime, taskToDisplace.endTime);
+
           if (remainingTime <= 0) break;
         }
       }
@@ -182,29 +196,71 @@ class Scheduler {
     }
   }
 
-  ScheduledTask? _findAvailableTimeSlot(Day day, DateTime start,
+  List<ScheduledTask> _findAllAvailableTimeSlots(Day day, DateTime start,
       int requiredTime, int minSession, String taskTitle, String dateKey) {
+    final List<ScheduledTask> availableSlots = [];
     final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
     final dayStart = _parseStartTime(dateKey);
     final dayEnd = _parseEndOfDayTime(dateKey);
+    int remainingTimeForSlots = requiredTime;
 
+    // If no tasks in the day, use the entire day
     if (sortedTasks.isEmpty) {
-      return _tryCreateSlot(
-          dayStart, dayEnd, requiredTime, minSession, dateKey);
+      final slot = _tryCreateSlot(
+          dayStart, dayEnd, remainingTimeForSlots, minSession, dateKey);
+      if (slot != null) {
+        availableSlots.add(slot);
+        remainingTimeForSlots -=
+            _calculateDurationMs(slot.startTime, slot.endTime);
+      }
+      return availableSlots;
     }
 
+    // Check if there's space before the first task
     ScheduledTask? slot = _tryCreateSlot(dayStart, sortedTasks.first.startTime,
-        requiredTime, minSession, dateKey);
-    if (slot != null) return slot;
-
-    for (int i = 0; i < sortedTasks.length - 1; i++) {
-      slot = _tryCreateSlot(sortedTasks[i].endTime,
-          sortedTasks[i + 1].startTime, requiredTime, minSession, dateKey);
-      if (slot != null) return slot;
+        remainingTimeForSlots, minSession, dateKey);
+    if (slot != null) {
+      availableSlots.add(slot);
+      remainingTimeForSlots -=
+          _calculateDurationMs(slot.startTime, slot.endTime);
     }
 
-    return _tryCreateSlot(
-        sortedTasks.last.endTime, dayEnd, requiredTime, minSession, dateKey);
+    // Check spaces between tasks
+    for (int i = 0; i < sortedTasks.length - 1; i++) {
+      if (remainingTimeForSlots <= 0) break;
+
+      slot = _tryCreateSlot(
+          sortedTasks[i].endTime,
+          sortedTasks[i + 1].startTime,
+          remainingTimeForSlots,
+          minSession,
+          dateKey);
+
+      if (slot != null) {
+        availableSlots.add(slot);
+        remainingTimeForSlots -=
+            _calculateDurationMs(slot.startTime, slot.endTime);
+      }
+    }
+
+    // Check if there's space after the last task
+    if (remainingTimeForSlots > 0) {
+      slot = _tryCreateSlot(sortedTasks.last.endTime, dayEnd,
+          remainingTimeForSlots, minSession, dateKey);
+      if (slot != null) {
+        availableSlots.add(slot);
+      }
+    }
+
+    return availableSlots;
+  }
+
+  // Kept for backwards compatibility but now returns the first slot from _findAllAvailableTimeSlots
+  ScheduledTask? _findAvailableTimeSlot(Day day, DateTime start,
+      int requiredTime, int minSession, String taskTitle, String dateKey) {
+    final slots = _findAllAvailableTimeSlots(
+        day, start, requiredTime, minSession, taskTitle, dateKey);
+    return slots.isNotEmpty ? slots.first : null;
   }
 
   ScheduledTask? _tryCreateSlot(DateTime start, DateTime end, int requiredTime,

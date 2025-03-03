@@ -245,7 +245,12 @@ class CalendarScreenState extends State<CalendarScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      task.title,
+                                      task.title == 'Free Time'
+                                          ? scheduledTask.type
+                                              .toString()
+                                              .split('.')
+                                              .last
+                                          : task.title,
                                       style: CupertinoTheme.of(context)
                                           .textTheme
                                           .textStyle
