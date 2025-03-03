@@ -1,9 +1,9 @@
-import 'package:flowo_client/models/time_frame.dart';
 import 'package:hive/hive.dart';
+import 'time_frame.dart';
 
 part 'user_settings.g.dart';
 
-@HiveType(typeId: 11) // Unique ID for the Category class
+@HiveType(typeId: 11)
 class UserSettings extends HiveObject {
   @HiveField(0)
   String name;
@@ -12,7 +12,7 @@ class UserSettings extends HiveObject {
   int minSession;
 
   @HiveField(2)
-  int? breakTime; // in minutes
+  int? breakTime;
 
   @HiveField(3)
   List<TimeFrame> mealBreaks;
@@ -23,7 +23,9 @@ class UserSettings extends HiveObject {
   @HiveField(5)
   List<TimeFrame> freeTime;
 
-  // Constructor
+  @HiveField(6)
+  Map<String, bool>? activeDays;
+
   UserSettings({
     required this.name,
     required this.minSession,
@@ -31,5 +33,16 @@ class UserSettings extends HiveObject {
     this.mealBreaks = const [],
     this.sleepTime = const [],
     this.freeTime = const [],
-  });
+    this.activeDays,
+  }) {
+    activeDays ??= {
+      'Monday': true,
+      'Tuesday': true,
+      'Wednesday': true,
+      'Thursday': true,
+      'Friday': true,
+      'Saturday': true,
+      'Sunday': true,
+    };
+  }
 }

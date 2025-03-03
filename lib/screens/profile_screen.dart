@@ -17,6 +17,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _emailController = TextEditingController();
   File? _avatarImage;
   bool _isUploading = false;
+  bool _isUpdating = false;
 
   @override
   void dispose() {
@@ -26,69 +27,95 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _changeAvatar() async {
+    setState(() => _isUploading = true);
+
     try {
-      setState(() => _isUploading = true);
       final pickedFile =
           await ImagePicker().pickImage(source: ImageSource.gallery);
-      if (pickedFile != null && mounted) {
+
+      if (pickedFile != null) {
         setState(() {
           _avatarImage = File(pickedFile.path);
           _isUploading = false;
         });
-        logInfo('Avatar image uploaded: ${pickedFile.path}');
+        logInfo('Avatar changed successfully');
       } else {
         setState(() => _isUploading = false);
       }
     } catch (e) {
       setState(() => _isUploading = false);
-      logError('Failed to upload avatar: $e');
-      if (mounted) {
-        showCupertinoDialog(
-          context: context,
-          builder: (_) => CupertinoAlertDialog(
-            title: const Text('Error'),
-            content: Text('Failed to upload image: $e'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        );
-      }
+      logError('Error changing avatar: $e');
     }
   }
 
   void _generateAvatar() {
-    if (mounted) {
+    setState(() => _isUploading = true);
+
+    try {
+      // For initials avatar, we'll just clear the file
+      // so the initials will be shown in the UI
       setState(() {
-        _avatarImage = null; // Reset to trigger initials-based avatar
+        _avatarImage = null;
+        _isUploading = false;
       });
-      final name = _nameController.text.trim();
-      logInfo('Avatar reset to auto-generated with name: "$name"');
+
+      logInfo('Avatar generated from initials');
+    } catch (e) {
+      setState(() => _isUploading = false);
+      logError('Error generating avatar: $e');
     }
   }
 
-  void _updateProfile() {
+  Future<void> _updateProfile() async {
     if (_formKey.currentState!.validate()) {
-      final name = _nameController.text;
-      final email = _emailController.text;
-      showCupertinoDialog(
-        context: context,
-        builder: (_) => CupertinoAlertDialog(
-          title: const Text('Profile Updated'),
-          content: const Text('Your profile has been updated successfully.'),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('OK'),
-              onPressed: () => Navigator.of(context).pop(),
+      setState(() => _isUpdating = true);
+
+      try {
+        // Simulate an API call to update profile
+        await Future.delayed(const Duration(seconds: 1));
+
+        setState(() => _isUpdating = false);
+
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder: (_) => CupertinoAlertDialog(
+              title: const Text('Profile Updated'),
+              content: const Text(
+                  'Your profile information has been updated successfully.'),
+              actions: [
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-      logInfo('Profile updated: Name: $name, Email: $email');
+          );
+        }
+
+        logInfo('Profile updated successfully');
+      } catch (e) {
+        setState(() => _isUpdating = false);
+        logError('Error updating profile: $e');
+
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder: (_) => CupertinoAlertDialog(
+              title: const Text('Update Failed'),
+              content: Text('Failed to update profile: ${e.toString()}'),
+              actions: [
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          );
+        }
+      }
     }
   }
 

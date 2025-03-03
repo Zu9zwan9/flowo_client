@@ -23,13 +23,14 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       mealBreaks: (fields[3] as List).cast<TimeFrame>(),
       sleepTime: (fields[4] as List).cast<TimeFrame>(),
       freeTime: (fields[5] as List).cast<TimeFrame>(),
+      activeDays: (fields[6] as Map?)?.cast<String, bool>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, UserSettings obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       ..writeByte(4)
       ..write(obj.sleepTime)
       ..writeByte(5)
-      ..write(obj.freeTime);
+      ..write(obj.freeTime)
+      ..writeByte(6)
+      ..write(obj.activeDays);
   }
 
   @override

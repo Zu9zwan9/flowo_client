@@ -1,11 +1,9 @@
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../blocs/tasks_controller/task_manager_cubit.dart';
-import '../blocs/tasks_controller/tasks_controller_cubit.dart';
+import '../blocs/tasks_controller/task_manager_state.dart';
 import '../models/task.dart';
-import 'task_breakdown_screen.dart';
 import 'task_page_screen.dart';
 
 enum TaskFilterType { all, event, task, habit }
@@ -44,7 +42,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   Map<String, List<Task>> _filterGroupedTasks(
       Map<String, List<Task>> groupedTasks) {
     final query = _searchController.text.toLowerCase();
-    final Map<String, List<Task>> filtered = {};
+    final filtered = <String, List<Task>>{};
     groupedTasks.forEach((category, tasks) {
       final tasksFiltered = tasks.where((task) {
         final matchesQuery = task.title.toLowerCase().contains(query);
@@ -62,7 +60,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGrey6,
-      navigationBar: _buildNavigationBar(context),
+      navigationBar: _buildNavigationBar(),
       child: Stack(
         children: [
           SafeArea(
@@ -92,8 +90,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     );
   }
 
-  CupertinoNavigationBar _buildNavigationBar(BuildContext context) =>
-      const CupertinoNavigationBar(
+  CupertinoNavigationBar _buildNavigationBar() => const CupertinoNavigationBar(
         middle: Text('Reminders'),
         backgroundColor: CupertinoColors.systemGrey6,
         border: null,
@@ -120,21 +117,17 @@ class _TaskListScreenState extends State<TaskListScreen> {
           groupValue: _selectedFilter,
           children: const {
             TaskFilterType.all: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text('All', style: TextStyle(fontSize: 14)),
-            ),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text('All', style: TextStyle(fontSize: 14))),
             TaskFilterType.task: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text('Task', style: TextStyle(fontSize: 14)),
-            ),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text('Task', style: TextStyle(fontSize: 14))),
             TaskFilterType.event: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text('Event', style: TextStyle(fontSize: 14)),
-            ),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text('Event', style: TextStyle(fontSize: 14))),
             TaskFilterType.habit: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text('Habit', style: TextStyle(fontSize: 14)),
-            ),
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text('Habit', style: TextStyle(fontSize: 14))),
           },
           onValueChanged: (value) => setState(() => _selectedFilter = value),
           borderColor: CupertinoColors.systemGrey4,
@@ -145,23 +138,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
       );
 
   Widget _buildTaskList(BuildContext context) =>
-      FutureBuilder<Map<String, List<Task>>>(
-        future: context.read<CalendarCubit>().getTasksGroupedByCategory(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CupertinoActivityIndicator());
-          } else if (snapshot.hasError) {
-            return Center(
-                child: Text('Error: ${snapshot.error}',
-                    style: const TextStyle(color: CupertinoColors.systemGrey)));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(
-                child: Text('No tasks found',
-                    style: TextStyle(color: CupertinoColors.systemGrey)));
-          }
-
-          final groupedTasks = _filterGroupedTasks(snapshot.data!);
-          if (groupedTasks.isEmpty) {
+      BlocBuilder<TaskManagerCubit, TaskManagerState>(
+        builder: (context, state) {
+          final groupedTasks = _groupTasksByCategory(state.tasks);
+          final filteredTasks = _filterGroupedTasks(groupedTasks);
+          if (filteredTasks.isEmpty) {
             return const Center(
                 child: Text('No tasks match your filter',
                     style: TextStyle(color: CupertinoColors.systemGrey)));
@@ -169,10 +150,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
           return CupertinoScrollbar(
             child: ListView.builder(
-              itemCount: groupedTasks.length,
+              itemCount: filteredTasks.length,
               itemBuilder: (context, index) {
-                final category = groupedTasks.keys.elementAt(index);
-                final tasks = groupedTasks[category]!;
+                final category = filteredTasks.keys.elementAt(index);
+                final tasks = filteredTasks[category]!;
                 final isExpanded = _expandedCategories[category] ?? true;
                 return _buildCategorySection(
                     context, category, tasks, isExpanded);
@@ -182,57 +163,62 @@ class _TaskListScreenState extends State<TaskListScreen> {
         },
       );
 
-  Widget _buildCategorySection(BuildContext context, String category,
-      List<Task> tasks, bool isExpanded) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GestureDetector(
-            onTap: () =>
-                setState(() => _expandedCategories[category] = !isExpanded),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  category,
-                  style: CupertinoTheme.of(context)
-                      .textTheme
-                      .navTitleTextStyle
-                      .copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: CupertinoColors.label,
-                      ),
-                ),
-                Icon(
-                  isExpanded
-                      ? CupertinoIcons.chevron_down
-                      : CupertinoIcons.chevron_right,
-                  size: 20,
-                  color: CupertinoColors.systemGrey,
-                ),
-              ],
-            ),
-          ),
-          if (isExpanded) ...[
-            const SizedBox(height: 8),
-            ...tasks.map((task) => _buildTaskTile(context, task)),
-          ],
-          const SizedBox(height: 12),
-        ],
-      ),
-    );
+  Map<String, List<Task>> _groupTasksByCategory(List<Task> tasks) {
+    final grouped = <String, List<Task>>{};
+    for (var task in tasks) {
+      grouped.putIfAbsent(task.category.name, () => []).add(task);
+    }
+    return grouped;
   }
+
+  Widget _buildCategorySection(BuildContext context, String category,
+          List<Task> tasks, bool isExpanded) =>
+      Padding(
+        padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () =>
+                  setState(() => _expandedCategories[category] = !isExpanded),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    category,
+                    style: CupertinoTheme.of(context)
+                        .textTheme
+                        .navTitleTextStyle
+                        .copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: CupertinoColors.label,
+                        ),
+                  ),
+                  Icon(
+                    isExpanded
+                        ? CupertinoIcons.chevron_down
+                        : CupertinoIcons.chevron_right,
+                    size: 20,
+                    color: CupertinoColors.systemGrey,
+                  ),
+                ],
+              ),
+            ),
+            if (isExpanded) ...[
+              const SizedBox(height: 8),
+              ...tasks.map((task) => _buildTaskTile(context, task)),
+            ],
+            const SizedBox(height: 12),
+          ],
+        ),
+      );
 
   Widget _buildTaskTile(BuildContext context, Task task) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: GestureDetector(
-          onTap: () => Navigator.push(
-            context,
-            CupertinoPageRoute(builder: (_) => TaskPageScreen(task: task)),
-          ),
+          onTap: () => Navigator.push(context,
+              CupertinoPageRoute(builder: (_) => TaskPageScreen(task: task))),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -263,7 +249,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${task.title} ${task.scheduledTasks.length}',
+                        '${task.title} (${task.scheduledTasks.length})',
                         style: CupertinoTheme.of(context)
                             .textTheme
                             .textStyle
@@ -325,12 +311,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
           child: const Icon(CupertinoIcons.add,
               color: CupertinoColors.white, size: 28),
         ),
-        onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            CupertinoPageRoute(builder: (_) => HomeScreen(initialIndex: 2)),
-          );
-        },
+        onPressed: () => Navigator.pushReplacement(context,
+            CupertinoPageRoute(builder: (_) => HomeScreen(initialIndex: 2))),
       );
 
   Widget _buildScheduleButton(BuildContext context) => CupertinoButton(
@@ -346,12 +328,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
               color: CupertinoColors.white, size: 28),
         ),
         onPressed: () {
-          context.read<TaskManagerCubit>().manageTasks();
-          _scheduleTasks();
+          context.read<TaskManagerCubit>().scheduleTasks();
+          _showScheduleConfirmation();
         },
       );
 
-  void _scheduleTasks() {
+  void _showScheduleConfirmation() {
     showCupertinoDialog(
       context: context,
       builder: (_) => CupertinoAlertDialog(
@@ -359,29 +341,27 @@ class _TaskListScreenState extends State<TaskListScreen> {
         content: const Text('Tasks have been scheduled successfully.'),
         actions: [
           CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('OK'),
-              onPressed: () => {
-                    Navigator.pop(context),
-                    Navigator.pushReplacement(
-                      context,
-                      CupertinoPageRoute(
-                          builder: (_) => HomeScreen(initialIndex: 0)),
-                    ),
-                  }),
+            isDefaultAction: true,
+            child: const Text('OK'),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                  context,
+                  CupertinoPageRoute(
+                      builder: (_) => HomeScreen(initialIndex: 0)));
+            },
+          ),
         ],
       ),
     );
   }
 
   void _editTask(BuildContext context, Task task) {
-    // Implement your edit task logic here
-    // For example, navigate to a task edit screen
+    // Placeholder for edit logic
   }
 
   void _deleteTask(BuildContext context, Task task) {
     context.read<TaskManagerCubit>().deleteTask(task);
-    setState(() {});
   }
 
   Color _getCategoryColor(String category) {

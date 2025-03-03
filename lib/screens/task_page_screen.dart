@@ -48,11 +48,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     });
 
     try {
-      // Simulate AI processing delay
       await Future.delayed(const Duration(seconds: 2));
-
-      // This is where you would call your AI service to break down the task
-      // For now, we'll use a placeholder implementation
       final generatedSubtasks = await _aiTaskBreakdown(_task);
 
       setState(() {
@@ -61,7 +57,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
         _isLoading = false;
       });
 
-      // Save the generated subtasks to the task
       _saveSubtasks(generatedSubtasks);
     } catch (e) {
       logError('Error generating task breakdown: $e');
@@ -72,14 +67,9 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     }
   }
 
-  // Placeholder for AI task breakdown logic
   Future<List<Task>> _aiTaskBreakdown(Task parentTask) async {
-    // This would be replaced with actual AI implementation
-    // For now, create some dummy subtasks based on the task complexity
-
-    final complexity = parentTask.estimatedTime ~/ 3600000; // Convert to hours
+    final complexity = parentTask.estimatedTime ~/ 3600000;
     final subtasks = <Task>[];
-
     final baseTitle = parentTask.title;
     final taskTypes = ['Research', 'Plan', 'Draft', 'Review', 'Finalize'];
 
@@ -96,23 +86,25 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       );
       subtasks.add(subtask);
     }
-
     return subtasks;
   }
 
   void _saveSubtasks(List<Task> subtasks) {
-    // Clear existing subtasks
     _task.subtasks.clear();
-
-    // Add and save new subtasks
     for (var subtask in subtasks) {
       _task.subtasks.add(subtask);
       subtask.parentTask = _task;
+      context.read<TaskManagerCubit>().createTask(
+            title: subtask.title,
+            priority: subtask.priority,
+            estimatedTime: subtask.estimatedTime,
+            deadline: subtask.deadline,
+            category: subtask.category,
+            parentTask: subtask.parentTask,
+            notes: subtask.notes,
+          );
     }
-
-    // Save the parent task
     _task.save();
-
     logInfo('Saved ${subtasks.length} subtasks for ${_task.title}');
   }
 
@@ -122,21 +114,14 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // Schedule all subtasks
       for (var subtask in _subtasks) {
-        context.read<TaskManagerCubit>().manageTasks();
+        context.read<TaskManagerCubit>().scheduleTask(subtask);
       }
+      setState(() => _isLoading = false);
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      // Show success message
       showCupertinoDialog(
         context: context,
         builder: (_) => CupertinoAlertDialog(
@@ -154,9 +139,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       );
     } catch (e) {
       logError('Error scheduling subtasks: $e');
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
       _showErrorDialog('Failed to schedule subtasks');
     }
   }
@@ -220,16 +203,12 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                   Text(
                     subtask.title,
                     style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                        fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                   Text(
                     'Est. time: ${_formatDuration(subtask.estimatedTime)}',
                     style: const TextStyle(
-                      fontSize: 12,
-                      color: CupertinoColors.systemGrey,
-                    ),
+                        fontSize: 12, color: CupertinoColors.systemGrey),
                   ),
                 ],
               ),
@@ -248,14 +227,11 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   String _formatDuration(int milliseconds) {
     final hours = milliseconds ~/ 3600000;
     final minutes = (milliseconds % 3600000) ~/ 60000;
-
-    if (hours > 0) {
-      return '$hours hr ${minutes > 0 ? '$minutes min' : ''}';
-    } else if (minutes > 0) {
-      return '$minutes min';
-    } else {
-      return '< 1 min';
-    }
+    return hours > 0
+        ? '$hours hr ${minutes > 0 ? '$minutes min' : ''}'
+        : minutes > 0
+            ? '$minutes min'
+            : '< 1 min';
   }
 
   Color _getCategoryColor(String category) {
@@ -278,9 +254,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text(_task.title),
-      ),
+      navigationBar: CupertinoNavigationBar(middle: Text(_task.title)),
       child: SafeArea(
         child: Stack(
           children: [
@@ -308,263 +282,204 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     );
   }
 
-  Widget _buildTaskHeader() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: CupertinoColors.systemBackground,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: CupertinoColors.systemGrey5.withOpacity(0.5),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _getCategoryColor(_task.category.name)
-                          .withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _task.category.name,
-                      style: TextStyle(
-                        color: _getCategoryColor(_task.category.name),
-                        fontWeight: FontWeight.bold,
+  Widget _buildTaskHeader() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemBackground,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: CupertinoColors.systemGrey5.withOpacity(0.5),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _getCategoryColor(_task.category.name)
+                            .withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        _task.category.name,
+                        style: TextStyle(
+                            color: _getCategoryColor(_task.category.name),
+                            fontWeight: FontWeight.bold),
                       ),
                     ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Priority: ${_task.priority}',
-                    style: const TextStyle(
-                      color: CupertinoColors.systemGrey,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  const Icon(
-                    CupertinoIcons.time,
-                    size: 14,
-                    color: CupertinoColors.systemGrey,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Est. time: ${_formatDuration(_task.estimatedTime)}',
-                    style: const TextStyle(
-                      color: CupertinoColors.systemGrey,
-                    ),
-                  ),
-                  const Spacer(),
-                  const Icon(
-                    CupertinoIcons.calendar,
-                    size: 14,
-                    color: CupertinoColors.systemGrey,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    DateTime.fromMillisecondsSinceEpoch(_task.deadline)
-                        .toLocal()
-                        .toString()
-                        .split(' ')[0],
-                    style: const TextStyle(
-                      color: CupertinoColors.systemGrey,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTaskDescription() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemBackground,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: CupertinoColors.systemGrey5.withOpacity(0.5),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Task Description',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          CupertinoTextField(
-            controller: _notesController,
-            placeholder: 'Add notes about this task...',
-            minLines: 3,
-            maxLines: 5,
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              border: Border.all(color: CupertinoColors.systemGrey5),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            onChanged: (value) {
-              _task.notes = value;
-              _task.save();
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMagicButton() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemIndigo.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: CupertinoColors.systemIndigo.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Icon(
-            CupertinoIcons.sparkles,
-            size: 40,
-            color: CupertinoColors.systemIndigo,
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Magic Task Breakdown',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: CupertinoColors.systemIndigo,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Let AI analyze this task and break it down into manageable subtasks',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: CupertinoColors.systemGrey,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 16),
-          CupertinoButton.filled(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: const Text('Generate Subtasks'),
-            onPressed: _generateTaskBreakdown,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSubtasksList() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemBackground,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: CupertinoColors.systemGrey5.withOpacity(0.5),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                CupertinoIcons.list_bullet,
-                size: 20,
-                color: CupertinoColors.activeBlue,
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'Generated Subtasks',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                    const Spacer(),
+                    Text('Priority: ${_task.priority}',
+                        style:
+                            const TextStyle(color: CupertinoColors.systemGrey)),
+                  ],
                 ),
-              ),
-              const Spacer(),
-              Text(
-                '${_subtasks.length}',
-                style: const TextStyle(
-                  color: CupertinoColors.systemGrey,
-                  fontSize: 16,
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(CupertinoIcons.time,
+                        size: 14, color: CupertinoColors.systemGrey),
+                    const SizedBox(width: 4),
+                    Text('Est. time: ${_formatDuration(_task.estimatedTime)}',
+                        style:
+                            const TextStyle(color: CupertinoColors.systemGrey)),
+                    const Spacer(),
+                    const Icon(CupertinoIcons.calendar,
+                        size: 14, color: CupertinoColors.systemGrey),
+                    const SizedBox(width: 4),
+                    Text(
+                      DateTime.fromMillisecondsSinceEpoch(_task.deadline)
+                          .toLocal()
+                          .toString()
+                          .split(' ')[0],
+                      style: const TextStyle(color: CupertinoColors.systemGrey),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          ..._subtasks.map(_buildSubtaskItem),
         ],
-      ),
-    );
-  }
+      );
 
-  Widget _buildScheduleButton() {
-    return CupertinoButton.filled(
-      onPressed: _scheduleSubtasks,
-      child: const Text('Schedule All Subtasks'),
-    );
-  }
-
-  Widget _buildLoadingOverlay() {
-    return Container(
-      color: CupertinoColors.systemBackground.withOpacity(0.7),
-      child: Center(
+  Widget _buildTaskDescription() => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemBackground,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+                color: CupertinoColors.systemGrey5.withOpacity(0.5),
+                blurRadius: 4,
+                offset: const Offset(0, 2)),
+          ],
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CupertinoActivityIndicator(radius: 20),
-            const SizedBox(height: 16),
-            Text(
-              _hasBreakdown ? 'Scheduling tasks...' : 'Breaking down task...',
-              style: const TextStyle(fontSize: 16),
+            const Text('Task Description',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            CupertinoTextField(
+              controller: _notesController,
+              placeholder: 'Add notes about this task...',
+              minLines: 3,
+              maxLines: 5,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  border: Border.all(color: CupertinoColors.systemGrey5),
+                  borderRadius: BorderRadius.circular(8)),
+              onChanged: (value) {
+                _task.notes = value.isEmpty ? null : value;
+                _task.save();
+              },
             ),
           ],
         ),
-      ),
-    );
-  }
+      );
+
+  Widget _buildMagicButton() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemIndigo.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: CupertinoColors.systemIndigo.withOpacity(0.3), width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Icon(CupertinoIcons.sparkles,
+                size: 40, color: CupertinoColors.systemIndigo),
+            const SizedBox(height: 12),
+            const Text('Magic Task Breakdown',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: CupertinoColors.systemIndigo)),
+            const SizedBox(height: 8),
+            const Text(
+                'Let AI analyze this task and break it down into manageable subtasks',
+                textAlign: TextAlign.center,
+                style:
+                    TextStyle(color: CupertinoColors.systemGrey, fontSize: 14)),
+            const SizedBox(height: 16),
+            CupertinoButton.filled(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: const Text('Generate Subtasks'),
+                onPressed: _generateTaskBreakdown),
+          ],
+        ),
+      );
+
+  Widget _buildSubtasksList() => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemBackground,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+                color: CupertinoColors.systemGrey5.withOpacity(0.5),
+                blurRadius: 4,
+                offset: const Offset(0, 2)),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(CupertinoIcons.list_bullet,
+                    size: 20, color: CupertinoColors.activeBlue),
+                const SizedBox(width: 8),
+                const Text('Generated Subtasks',
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                Text('${_subtasks.length}',
+                    style: const TextStyle(
+                        color: CupertinoColors.systemGrey, fontSize: 16)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 12),
+            ..._subtasks.map(_buildSubtaskItem),
+          ],
+        ),
+      );
+
+  Widget _buildScheduleButton() => CupertinoButton.filled(
+        onPressed: _scheduleSubtasks,
+        child: const Text('Schedule All Subtasks'),
+      );
+
+  Widget _buildLoadingOverlay() => Container(
+        color: CupertinoColors.systemBackground.withOpacity(0.7),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CupertinoActivityIndicator(radius: 20),
+              const SizedBox(height: 16),
+              Text(
+                  _hasBreakdown
+                      ? 'Scheduling tasks...'
+                      : 'Breaking down task...',
+                  style: const TextStyle(fontSize: 16)),
+            ],
+          ),
+        ),
+      );
 }

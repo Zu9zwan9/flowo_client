@@ -1,9 +1,8 @@
-import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:hive/hive.dart';
-
 import 'category.dart';
 import 'coordinates.dart';
 import 'repeat_rule.dart';
+import 'scheduled_task.dart';
 
 part 'task.g.dart';
 
@@ -46,7 +45,7 @@ class Task extends HiveObject {
   Task? parentTask;
 
   @HiveField(12)
-  List<ScheduledTask> scheduledTasks;
+  List<ScheduledTask> scheduledTasks; // Changed from const [] to mutable
 
   @HiveField(13)
   bool isDone;
@@ -61,21 +60,22 @@ class Task extends HiveObject {
   DateTime get endDate => DateTime.now().add(Duration(days: 1));
   List<DateTime> get exceptions => [];
 
-  Task(
-      {required this.id,
-      required this.title,
-      required this.priority,
-      required this.deadline,
-      required this.estimatedTime,
-      required this.category,
-      this.parentTask,
-      this.notes,
-      this.location,
-      this.image,
-      this.frequency,
-      this.subtasks = const [],
-      this.scheduledTasks = const [],
-      this.isDone = false,
-      this.order, // 1,2,3 - is order of subtask, if 0 - order is not important
-      this.overdue = false});
+  Task({
+    required this.id,
+    required this.title,
+    required this.priority,
+    required this.deadline,
+    required this.estimatedTime,
+    required this.category,
+    this.parentTask,
+    this.notes,
+    this.location,
+    this.image,
+    this.frequency,
+    this.subtasks = const [],
+    List<ScheduledTask>? scheduledTasks, // Allow custom initialization
+    this.isDone = false,
+    this.order,
+    this.overdue = false,
+  }) : scheduledTasks = scheduledTasks ?? []; // Default to mutable empty list
 }

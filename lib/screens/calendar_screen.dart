@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
+import '../blocs/tasks_controller/task_manager_state.dart';
 import '../blocs/tasks_controller/tasks_controller_state.dart';
 import '../models/scheduled_task.dart';
 import '../models/task.dart';
@@ -93,7 +94,7 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   Widget _buildCalendar(
       {required bool showAgenda, required BuildContext context}) {
-    return BlocBuilder<CalendarCubit, CalendarState>(
+    return BlocBuilder<TaskManagerCubit, TaskManagerState>(
       builder: (context, state) {
         return SfCalendar(
           view: CalendarView.month,
@@ -149,7 +150,7 @@ class CalendarScreenState extends State<CalendarScreen> {
         ? CupertinoColors.systemGrey
         : CupertinoColors.systemGrey;
 
-    return FutureBuilder<Map<Task, ScheduledTask>>(
+    return FutureBuilder<List<TaskWithSchedules>>(
       future: context
           .read<TaskManagerCubit>()
           .getScheduledTasksForDate(selectedDate),
@@ -158,30 +159,34 @@ class CalendarScreenState extends State<CalendarScreen> {
           return const Center(child: CupertinoActivityIndicator());
         } else if (snapshot.hasError) {
           return Center(
-            child: Text(
-              'Error: ${snapshot.error}',
-              style: TextStyle(color: secondaryTextColor),
-            ),
-          );
+              child: Text('Error: ${snapshot.error}',
+                  style: TextStyle(color: secondaryTextColor)));
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
-            child: Text(
-              'No tasks scheduled',
-              style: TextStyle(fontSize: 16, color: secondaryTextColor),
-            ),
-          );
+              child: Text('No tasks scheduled',
+                  style: TextStyle(fontSize: 16, color: secondaryTextColor)));
         } else {
-          final tasks = snapshot.data!.entries.toList()
-            ..sort((a, b) => a.value.startTime.compareTo(b.value.startTime));
+          final taskSchedulePairs = snapshot.data!
+              .expand((taskWithSchedules) => taskWithSchedules.scheduledTasks
+                  .map((scheduledTask) => (
+                        task: taskWithSchedules.task,
+                        scheduledTask: scheduledTask
+                      )))
+              .toList()
+            ..sort((a, b) =>
+                a.scheduledTask.startTime.compareTo(b.scheduledTask.startTime));
+
           return CupertinoScrollbar(
             controller: _scrollController,
             child: ListView.builder(
               controller: _scrollController,
-              itemCount: tasks.length,
+              itemCount: taskSchedulePairs.length,
               itemBuilder: (context, index) {
-                final task = tasks[index].value;
-                final startTime = task.startTime;
-                final endTime = task.endTime;
+                final pair = taskSchedulePairs[index];
+                final task = pair.task;
+                final scheduledTask = pair.scheduledTask;
+                final startTime = scheduledTask.startTime;
+                final endTime = scheduledTask.endTime;
 
                 return Padding(
                   padding:
@@ -196,23 +201,17 @@ class CalendarScreenState extends State<CalendarScreen> {
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             const SizedBox(height: 6),
-                            Text(
-                              DateTimeFormatter.formatTime(startTime),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: textColor,
-                              ),
-                            ),
+                            Text(DateTimeFormatter.formatTime(startTime),
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor)),
                             const SizedBox(height: 16),
-                            Text(
-                              DateTimeFormatter.formatTime(endTime),
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: textColor,
-                              ),
-                            ),
+                            Text(DateTimeFormatter.formatTime(endTime),
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor)),
                           ],
                         ),
                       ),
@@ -227,10 +226,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                                 Border.all(color: CupertinoColors.systemGrey4),
                             boxShadow: [
                               BoxShadow(
-                                color: CupertinoColors.black.withOpacity(0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
+                                  color:
+                                      CupertinoColors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2))
                             ],
                           ),
                           child: Row(
@@ -238,8 +237,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                               Container(
                                 width: 4,
                                 height: 40,
-                                color: _getCategoryColor(
-                                    task.parentTask.category.name),
+                                color: _getCategoryColor(task.category.name),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -247,25 +245,23 @@ class CalendarScreenState extends State<CalendarScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      task.parentTask.title,
+                                      task.title,
                                       style: CupertinoTheme.of(context)
                                           .textTheme
                                           .textStyle
                                           .copyWith(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                            color: textColor,
-                                          ),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: textColor),
                                     ),
-                                    if (task.parentTask.notes != null &&
-                                        task.parentTask.notes!.isNotEmpty) ...[
+                                    if (task.notes != null &&
+                                        task.notes!.isNotEmpty) ...[
                                       const SizedBox(height: 4),
                                       Text(
-                                        task.parentTask.notes!,
+                                        task.notes!,
                                         style: TextStyle(
-                                          fontSize: 12,
-                                          color: secondaryTextColor,
-                                        ),
+                                            fontSize: 12,
+                                            color: secondaryTextColor),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -320,16 +316,16 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   Color _getCategoryColor(String category) {
-    switch (category) {
-      case 'Brainstorm':
+    switch (category.toLowerCase()) {
+      case 'brainstorm':
         return CupertinoColors.systemBlue;
-      case 'Design':
+      case 'design':
         return CupertinoColors.systemGreen;
-      case 'Workout':
+      case 'workout':
         return CupertinoColors.systemRed;
-      case 'Meeting':
+      case 'meeting':
         return CupertinoColors.systemOrange;
-      case 'Presentation':
+      case 'presentation':
         return CupertinoColors.systemPurple;
       default:
         return CupertinoColors.systemGrey;
@@ -343,42 +339,31 @@ class TaskDataSource extends CalendarDataSource {
   }
 
   @override
-  DateTime getStartTime(int index) {
-    return appointments![index].startTime;
-  }
+  DateTime getStartTime(int index) => appointments![index].startTime;
 
   @override
-  DateTime getEndTime(int index) {
-    return appointments![index].endTime;
-  }
+  DateTime getEndTime(int index) => appointments![index].endTime;
 
   @override
-  String getSubject(int index) {
-    var parentTask = appointments![index].parentTask;
-    if (parentTask != null) {
-      return parentTask.title;
-    } else {
-      return 'Untitled';
-    }
-  }
+  String getSubject(int index) =>
+      appointments![index].parentTask?.title ?? 'Untitled';
 
   @override
-  Color getColor(int index) {
-    return _getCategoryColor(appointments![index].parentTask.category.name);
-  }
+  Color getColor(int index) => _getCategoryColor(
+      appointments![index].parentTask?.category.name ?? 'default');
 }
 
 Color _getCategoryColor(String category) {
-  switch (category) {
-    case 'Brainstorm':
+  switch (category.toLowerCase()) {
+    case 'brainstorm':
       return CupertinoColors.systemBlue;
-    case 'Design':
+    case 'design':
       return CupertinoColors.systemGreen;
-    case 'Workout':
+    case 'workout':
       return CupertinoColors.systemRed;
-    case 'Meeting':
+    case 'meeting':
       return CupertinoColors.systemOrange;
-    case 'Presentation':
+    case 'presentation':
       return CupertinoColors.systemPurple;
     default:
       return CupertinoColors.systemGrey;

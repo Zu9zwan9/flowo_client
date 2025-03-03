@@ -1,14 +1,12 @@
-import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:hive/hive.dart';
-
 import 'notification_type.dart';
+import 'scheduled_task_type.dart';
 import 'task.dart';
 
 part 'scheduled_task.g.dart';
 
-@HiveType(typeId: 5) // Unique ID for the ScheduledTask class
+@HiveType(typeId: 5)
 class ScheduledTask extends HiveObject {
-  // Attributes
   @HiveField(0)
   String scheduledTaskId;
 
@@ -28,18 +26,17 @@ class ScheduledTask extends HiveObject {
   ScheduledTaskType type;
 
   @HiveField(6)
-  int travelingTime; // In milliseconds
+  int travelingTime;
 
   @HiveField(7)
-  int breakTime; // In milliseconds
+  int breakTime;
 
   @HiveField(8)
   NotificationType notification;
 
-  // Add the parentTask property
-  Task get parentTask => Hive.box<Task>('tasks').get(parentTaskId)!;
+  Task? get parentTask =>
+      Hive.box<Task>('tasks').get(parentTaskId); // Avoid null check operator
 
-  // Constructor
   ScheduledTask({
     required this.scheduledTaskId,
     required this.parentTaskId,
