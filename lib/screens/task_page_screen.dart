@@ -5,10 +5,17 @@ import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../models/category.dart';
 import '../models/task.dart';
 import '../utils/logger.dart';
+import '../utils/category_utils.dart';
 
 class TaskPageScreen extends StatefulWidget {
   final Task task;
-  const TaskPageScreen({required this.task, super.key});
+  final bool isEditing;
+
+  const TaskPageScreen({
+    required this.task,
+    this.isEditing = false,
+    super.key,
+  });
 
   @override
   _TaskPageScreenState createState() => _TaskPageScreenState();
@@ -191,7 +198,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
               width: 4,
               height: 40,
               decoration: BoxDecoration(
-                color: _getCategoryColor(subtask.category.name),
+                color: CategoryUtils.getCategoryColor(subtask.category.name),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -232,23 +239,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
         : minutes > 0
             ? '$minutes min'
             : '< 1 min';
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'brainstorm':
-        return CupertinoColors.systemBlue;
-      case 'design':
-        return CupertinoColors.systemGreen;
-      case 'workout':
-        return CupertinoColors.systemRed;
-      case 'event':
-        return CupertinoColors.systemPurple;
-      case 'habit':
-        return CupertinoColors.systemOrange;
-      default:
-        return CupertinoColors.systemGrey;
-    }
   }
 
   @override
@@ -307,14 +297,16 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _getCategoryColor(_task.category.name)
-                            .withOpacity(0.2),
+                        color:
+                            CategoryUtils.getCategoryColor(_task.category.name)
+                                .withOpacity(0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         _task.category.name,
                         style: TextStyle(
-                            color: _getCategoryColor(_task.category.name),
+                            color: CategoryUtils.getCategoryColor(
+                                _task.category.name),
                             fontWeight: FontWeight.bold),
                       ),
                     ),
