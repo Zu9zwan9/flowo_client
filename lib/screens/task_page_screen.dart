@@ -6,6 +6,7 @@ import '../models/category.dart';
 import '../models/task.dart';
 import '../utils/logger.dart';
 import '../utils/category_utils.dart';
+import '../utils/hugging_face_api.dart';
 
 class TaskPageScreen extends StatefulWidget {
   final Task task;
@@ -27,6 +28,11 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   bool _hasBreakdown = false;
   List<Task> _subtasks = [];
   final TextEditingController _notesController = TextEditingController();
+
+  // Hugging Face API service
+  final HuggingFaceAPI _huggingFaceAPI = HuggingFaceAPI(
+    apiKey: "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",
+  );
 
   @override
   void initState() {
@@ -50,31 +56,59 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   }
 
   Future<void> _generateTaskBreakdown() async {
+    // Show loading indicator
     setState(() {
       _isLoading = true;
     });
 
     try {
-      await Future.delayed(const Duration(seconds: 2));
+      // Generate subtasks using the AI service
       final generatedSubtasks = await _aiTaskBreakdown(_task);
 
+      // Update UI with generated subtasks
       setState(() {
         _subtasks = generatedSubtasks;
         _hasBreakdown = true;
         _isLoading = false;
       });
 
+      // Save the generated subtasks
       _saveSubtasks(generatedSubtasks);
+
+      // Show success message
+      _showSuccessDialog(
+          'Successfully generated ${generatedSubtasks.length} subtasks using AI');
     } catch (e) {
       logError('Error generating task breakdown: $e');
       setState(() {
         _isLoading = false;
       });
-      _showErrorDialog('Failed to generate task breakdown');
+      _showErrorDialog('Failed to generate task breakdown: ${e.toString()}');
     }
   }
 
   Future<List<Task>> _aiTaskBreakdown(Task parentTask) async {
+    try {
+      // Use the Hugging Face API to generate subtasks
+      final generatedSubtasks =
+          await _huggingFaceAPI.generateSubtasks(parentTask);
+
+      // If no subtasks were generated, fall back to the default implementation
+      if (generatedSubtasks.isEmpty) {
+        logWarning('No subtasks generated from API, using fallback method');
+        return _fallbackTaskBreakdown(parentTask);
+      }
+
+      return generatedSubtasks;
+    } catch (e) {
+      logError('Error in AI task breakdown: $e');
+      // Fall back to the default implementation if there's an error
+      return _fallbackTaskBreakdown(parentTask);
+    }
+  }
+
+  // Fallback method for generating subtasks if the API fails
+  List<Task> _fallbackTaskBreakdown(Task parentTask) {
     final complexity = parentTask.estimatedTime ~/ 3600000;
     final subtasks = <Task>[];
     final baseTitle = parentTask.title;
@@ -156,6 +190,40 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       context: context,
       builder: (_) => CupertinoAlertDialog(
         title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _showInfoDialog(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (_) => CupertinoAlertDialog(
+        title: const Text('Information'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+          )
+        ],
+      ),
+    );
+  }
+
+  void _showSuccessDialog(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (_) => CupertinoAlertDialog(
+        title: const Text('Success'),
         content: Text(message),
         actions: [
           CupertinoDialogAction(

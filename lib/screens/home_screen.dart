@@ -1,4 +1,5 @@
 // lib/screens/home_screen.dart
+import 'package:flutter/services.dart';
 import 'package:cupertino_sidebar/cupertino_sidebar.dart';
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/screens/add_item_screen.dart';
@@ -27,6 +28,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late int _selectedIndex;
   late bool isExpanded;
+  bool _isMenuPressed = false;
 
   @override
   void initState() {
@@ -96,14 +98,41 @@ class _HomeScreenState extends State<HomeScreen> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () {
+              child: GestureDetector(
+                onTapDown: (_) => setState(() => _isMenuPressed = true),
+                onTapUp: (_) => setState(() => _isMenuPressed = false),
+                onTapCancel: () => setState(() => _isMenuPressed = false),
+                onTap: () {
+                  HapticFeedback.selectionClick();
                   setState(() {
                     isExpanded = !isExpanded;
                   });
                 },
-                child: const Icon(CupertinoIcons.sidebar_left),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _isMenuPressed
+                        ? CupertinoColors.systemGrey6
+                        : CupertinoColors.systemBackground.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: CupertinoColors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      CupertinoIcons.sidebar_left,
+                      color: CupertinoColors.label,
+                      size: 22,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
