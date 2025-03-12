@@ -407,19 +407,50 @@ class Scheduler {
 
   void _addTimeBlock(
       Day day, TimeFrame timeFrame, ScheduledTaskType type, DateTime baseDate) {
-    final start = _combineDateKeyAndTimeOfDay(day.day, timeFrame.startTime);
-    final end = _combineDateKeyAndTimeOfDay(day.day, timeFrame.endTime);
-    if (start.isBefore(baseDate) ||
-        end.isAfter(baseDate.add(const Duration(days: 1)))) {
-      return; // Skip if outside day bounds
+    if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+        timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+      // Split overnight task
+      final firstDayStart =
+          _combineDateKeyAndTimeOfDay(day.day, timeFrame.startTime);
+      final firstDayEnd = _combineDateKeyAndTimeOfDay(
+          day.day, const TimeOfDay(hour: 23, minute: 59));
+
+      _createScheduledTask(
+        task: freeTimeManager,
+        type: type,
+        start: firstDayStart,
+        end: firstDayEnd,
+        dateKey: day.day,
+      );
+
+      final nextDay = _formatDateKey(baseDate.add(const Duration(days: 1)));
+      final nextDayStart = _combineDateKeyAndTimeOfDay(
+          nextDay, const TimeOfDay(hour: 0, minute: 0));
+      final nextDayEnd =
+          _combineDateKeyAndTimeOfDay(nextDay, timeFrame.endTime);
+
+      _createScheduledTask(
+        task: freeTimeManager,
+        type: type,
+        start: nextDayStart,
+        end: nextDayEnd,
+        dateKey: nextDay,
+      );
+    } else {
+      final start = _combineDateKeyAndTimeOfDay(day.day, timeFrame.startTime);
+      final end = _combineDateKeyAndTimeOfDay(day.day, timeFrame.endTime);
+      if (start.isBefore(baseDate) ||
+          end.isAfter(baseDate.add(const Duration(days: 1)))) {
+        return; // Skip if outside day bounds
+      }
+      _createScheduledTask(
+        task: freeTimeManager,
+        type: type,
+        start: start,
+        end: end,
+        dateKey: day.day,
+      );
     }
-    _createScheduledTask(
-      task: freeTimeManager,
-      type: type,
-      start: start,
-      end: end,
-      dateKey: day.day,
-    );
   }
 
   ScheduledTask _createScheduledTask({
