@@ -73,9 +73,9 @@ class Task extends HiveObject {
     this.image,
     this.frequency,
     this.subtasks = const [],
-    List<ScheduledTask>? scheduledTasks, // Allow custom initialization
+    List<ScheduledTask>? scheduledTasks,
     this.isDone = false,
     this.order,
     this.overdue = false,
-  }) : scheduledTasks = scheduledTasks ?? []; // Default to mutable empty list
+  }) : scheduledTasks = scheduledTasks ?? [];
 }
