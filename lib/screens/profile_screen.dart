@@ -1,8 +1,12 @@
 import 'dart:io';
+import 'dart:math';
 
+import 'package:flowo_client/models/user_profile.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -18,6 +22,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
   File? _avatarImage;
   bool _isUploading = false;
   bool _isUpdating = false;
+  late Box<UserProfile> _userProfilesBox;
+  UserProfile? _currentProfile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      _userProfilesBox = await Hive.openBox<UserProfile>('user_profiles');
+      final profile = _userProfilesBox.get('current');
+
+      if (profile != null) {
+        setState(() {
+          _currentProfile = profile;
+          _nameController.text = profile.name;
+          _emailController.text = profile.email;
+
+          if (profile.avatarPath != null) {
+            _avatarImage = File(profile.avatarPath!);
+            if (!_avatarImage!.existsSync()) {
+              _avatarImage = null;
+            }
+          }
+        });
+        logInfo('Loaded user profile: ${profile.name}');
+      } else {
+        logWarning('No user profile found');
+      }
+    } catch (e) {
+      logError('Error loading user profile: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -34,11 +73,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           await ImagePicker().pickImage(source: ImageSource.gallery);
 
       if (pickedFile != null) {
+        // Get the app's documents directory
+        final appDir = await getApplicationDocumentsDirectory();
+        final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final savedImage = File('${appDir.path}/$fileName');
+
+        // Copy the picked image to the app's documents directory
+        await File(pickedFile.path).copy(savedImage.path);
+
         setState(() {
-          _avatarImage = File(pickedFile.path);
+          _avatarImage = savedImage;
           _isUploading = false;
         });
-        logInfo('Avatar changed successfully');
+
+        // Update the avatar path in the user profile
+        if (_currentProfile != null) {
+          _currentProfile!.avatarPath = savedImage.path;
+          await _userProfilesBox.put('current', _currentProfile!);
+        }
+
+        logInfo('Avatar saved to: ${savedImage.path}');
       } else {
         setState(() => _isUploading = false);
       }
@@ -48,7 +102,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _generateAvatar() {
+  Future<void> _generateAvatar() async {
     setState(() => _isUploading = true);
 
     try {
@@ -58,6 +112,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _avatarImage = null;
         _isUploading = false;
       });
+
+      // Clear the avatar path in the user profile
+      if (_currentProfile != null) {
+        _currentProfile!.avatarPath = null;
+        await _userProfilesBox.put('current', _currentProfile!);
+      }
 
       logInfo('Avatar generated from initials');
     } catch (e) {
@@ -71,8 +131,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _isUpdating = true);
 
       try {
-        // Simulate an API call to update profile
-        await Future.delayed(const Duration(seconds: 1));
+        if (_currentProfile == null) {
+          // Create a new profile if none exists
+          _currentProfile = UserProfile(
+            name: _nameController.text,
+            email: _emailController.text,
+            avatarPath: _avatarImage?.path,
+          );
+        } else {
+          // Update existing profile
+          _currentProfile!.name = _nameController.text;
+          _currentProfile!.email = _emailController.text;
+          _currentProfile!.avatarPath = _avatarImage?.path;
+        }
+
+        // Save to Hive
+        await _userProfilesBox.put('current', _currentProfile!);
 
         setState(() => _isUpdating = false);
 
@@ -141,26 +215,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (confirm == true && mounted) {
-      showCupertinoDialog(
-        context: context,
-        builder: (_) => CupertinoAlertDialog(
-          title: const Text('Account Deleted'),
-          content: const Text('Your account has been deleted successfully.'),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                if (mounted) {
-                  Navigator.of(context).pushReplacementNamed('/login');
-                }
-              },
+      try {
+        // Delete the avatar file if it exists
+        if (_currentProfile?.avatarPath != null) {
+          final avatarFile = File(_currentProfile!.avatarPath!);
+          if (avatarFile.existsSync()) {
+            await avatarFile.delete();
+            logInfo('Deleted avatar file: ${_currentProfile!.avatarPath}');
+          }
+        }
+
+        // Delete the user profile from the Hive box
+        await _userProfilesBox.delete('current');
+        _currentProfile = null;
+
+        // Clear the form
+        setState(() {
+          _nameController.clear();
+          _emailController.clear();
+          _avatarImage = null;
+        });
+
+        showCupertinoDialog(
+          context: context,
+          builder: (_) => CupertinoAlertDialog(
+            title: const Text('Account Deleted'),
+            content: const Text('Your account has been deleted successfully.'),
+            actions: [
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  if (mounted) {
+                    Navigator.of(context).pushReplacementNamed('/login');
+                  }
+                },
+              ),
+            ],
+          ),
+        );
+        logWarning('Account deleted');
+      } catch (e) {
+        logError('Error deleting account: $e');
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder: (_) => CupertinoAlertDialog(
+              title: const Text('Error'),
+              content: Text('Failed to delete account: ${e.toString()}'),
+              actions: [
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-      logWarning('Account deleted');
+          );
+        }
+      }
     }
   }
 

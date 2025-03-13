@@ -19,6 +19,7 @@ import 'models/notification_type.dart';
 import 'models/scheduled_task.dart';
 import 'models/scheduled_task_type.dart';
 import 'models/time_frame.dart';
+import 'models/user_profile.dart';
 import 'models/user_settings.dart';
 import 'screens/home_screen.dart';
 import 'theme_notifier.dart';
@@ -37,6 +38,7 @@ void main() async {
   Hive.registerAdapter(ScheduledTaskTypeAdapter());
   Hive.registerAdapter(TaskAdapter());
   Hive.registerAdapter(UserSettingsAdapter());
+  Hive.registerAdapter(UserProfileAdapter());
   Hive.registerAdapter(TimeFrameAdapter());
   Hive.registerAdapter(TimeOfDayAdapter());
 
@@ -45,17 +47,20 @@ void main() async {
   Box<Task> tasksDB;
   Box<Day> daysDB;
   Box<UserSettings> profiles;
+  Box<UserProfile> userProfiles;
 
   if (kIsWeb) {
     tasksDB = await Hive.openBox<Task>('tasks');
     daysDB = await Hive.openBox<Day>('scheduled_tasks');
     profiles = await Hive.openBox<UserSettings>('user_settings');
+    userProfiles = await Hive.openBox<UserProfile>('user_profiles');
   } else {
     final dir = await getApplicationDocumentsDirectory();
     Hive.init(dir.path);
     tasksDB = await Hive.openBox<Task>('tasks');
     daysDB = await Hive.openBox<Day>('scheduled_tasks');
     profiles = await Hive.openBox<UserSettings>('user_settings');
+    userProfiles = await Hive.openBox<UserProfile>('user_profiles');
   }
 
   var selectedProfile = profiles.values.isNotEmpty
@@ -90,6 +95,16 @@ void main() async {
             ),
           ],
         );
+
+  // Create default user profile if none exists
+  if (userProfiles.isEmpty) {
+    final defaultProfile = UserProfile(
+      name: selectedProfile.name,
+      email: 'user@example.com',
+    );
+    userProfiles.put('current', defaultProfile);
+    logger.i('Created default user profile');
+  }
 
   final taskManager = TaskManager(
     daysDB: daysDB,
