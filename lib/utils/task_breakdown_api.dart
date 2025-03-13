@@ -166,6 +166,7 @@ class TaskBreakdownAPI {
         ];
       }
 
+      /// Extension method to remove a suffix from a string
       // Clean up the text
       text = text.rstrip('"}]');
 
@@ -230,6 +231,10 @@ class TaskBreakdownAPI {
 
       logInfo(
           'Parsed ${subtasks.length} subtasks from Hugging Face API response');
+
+      if (subtasks.isNotEmpty) {
+        subtasks.removeAt(0);
+      }
       return subtasks;
     } catch (e) {
       logError('Error parsing subtasks from Hugging Face API response: $e');

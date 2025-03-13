@@ -79,6 +79,53 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     }
   }
 
+  void _showDeadlinePicker(BuildContext context, StateSetter setState,
+      int currentDeadline, Function(int) onDeadlineChanged) {
+    DateTime? pickedDate;
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        height: 300,
+        color: CupertinoColors.systemBackground,
+        child: Column(
+          children: [
+            SizedBox(
+              height: 220,
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.date,
+                initialDateTime:
+                    DateTime.fromMillisecondsSinceEpoch(currentDeadline),
+                maximumDate:
+                    DateTime.fromMillisecondsSinceEpoch(_task.deadline),
+                onDateTimeChanged: (val) => pickedDate = val,
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CupertinoButton(
+                  child: const Text('Cancel',
+                      style: TextStyle(color: CupertinoColors.systemGrey)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoButton(
+                  child: const Text('Done',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  onPressed: () {
+                    if (pickedDate != null) {
+                      onDeadlineChanged(pickedDate!.millisecondsSinceEpoch);
+                    }
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _scheduleSubtasks() {
     if (_subtasks.isEmpty) {
       // If no subtasks exist, schedule the parent task
@@ -211,11 +258,367 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   }
 
   void _deleteSubtask(Task subtask) {
-    setState(() {
-      _subtasks.remove(subtask);
-      _task.subtasks.remove(subtask);
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Delete Subtask'),
+        content: Text('Are you sure you want to delete "${subtask.title}"?'),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              final tasksCubit = context.read<TaskManagerCubit>();
+              tasksCubit.deleteTask(subtask);
+              setState(() {
+                _subtasks.remove(subtask);
+                _task.subtasks.remove(subtask);
+              });
+              _task.save();
+              Navigator.pop(context);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<int> _showEstimatedTimePicker(BuildContext context) async {
+    int? pickedHours;
+    int? pickedMinutes;
+    await showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        height: 300,
+        color: CupertinoColors.systemBackground,
+        child: Column(
+          children: [
+            SizedBox(
+              height: 220,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 32,
+                      onSelectedItemChanged: (index) {
+                        pickedHours = index;
+                      },
+                      children: [
+                        for (var i = 0; i <= 120; i++) Text('$i hours'),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 32,
+                      onSelectedItemChanged: (index) {
+                        pickedMinutes = index * 15;
+                      },
+                      children: [
+                        for (var i = 0; i < 4; i++) Text('${i * 15} minutes'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CupertinoButton(
+                  child: const Text('Cancel',
+                      style: TextStyle(color: CupertinoColors.systemGrey)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoButton(
+                  child: const Text('Done',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  onPressed: () {
+                    Navigator.pop(
+                        context,
+                        (pickedHours ?? 0) * 3600000 +
+                            (pickedMinutes ?? 0) * 60000);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    return (pickedHours ?? 0) * 3600000 + (pickedMinutes ?? 0) * 60000;
+  }
+
+  void _showAddSubtaskDialog() {
+    final TextEditingController titleController = TextEditingController();
+    int selectedEstimatedTime = 0; // Default to 0 milliseconds
+    int selectedPriority = 1;
+    int selectedDeadline = _task.deadline; // Default to parent task's deadline
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: CupertinoColors.systemBackground,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: const Text('Cancel'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      const Text(
+                        'Add Subtask',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: const Text('Add'),
+                        onPressed: () {
+                          if (_validateSubtaskForm(
+                            titleController.text,
+                            selectedEstimatedTime,
+                            selectedDeadline,
+                          )) {
+                            _addSubtask(
+                              titleController.text,
+                              selectedEstimatedTime,
+                              selectedPriority,
+                              selectedDeadline,
+                            );
+                            Navigator.pop(context);
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Title',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  CupertinoTextField(
+                    controller: titleController,
+                    placeholder: 'Enter subtask title',
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: CupertinoColors.systemGrey4),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Estimated Time',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () async {
+                      final estimatedTime =
+                          await _showEstimatedTimePicker(context);
+                      setState(() => selectedEstimatedTime = estimatedTime);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.systemBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Estimated Time',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: CupertinoColors.systemBlue)),
+                          Text(
+                              '${(selectedEstimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((selectedEstimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+                              style: const TextStyle(
+                                  fontSize: 16, color: CupertinoColors.label)),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text(
+                        'Priority ',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        selectedPriority.toString(),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: CupertinoSlider(
+                      min: 1,
+                      max: 10,
+                      divisions: 9,
+                      value: selectedPriority.toDouble(),
+                      onChanged: (value) =>
+                          setState(() => selectedPriority = value.toInt()),
+                      activeColor: CupertinoColors.systemOrange,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Deadline',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => _showDeadlinePicker(
+                        context, setState, selectedDeadline, (newDeadline) {
+                      setState(() {
+                        selectedDeadline = newDeadline;
+                      });
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.systemBlue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Date',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  color: CupertinoColors.systemBlue)),
+                          Text(
+                            DateTime.fromMillisecondsSinceEpoch(
+                                    selectedDeadline)
+                                .toLocal()
+                                .toString()
+                                .split(' ')[0],
+                            style: const TextStyle(
+                                fontSize: 16, color: CupertinoColors.label),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Category: ${_task.category.name} (inherited from parent task)',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color:
+                          CategoryUtils.getCategoryColor(_task.category.name),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) {
+      // Clean up controllers
+      titleController.dispose();
     });
+  }
+
+  bool _validateSubtaskForm(String title, int estimatedTimeMs, int deadline) {
+    if (title.isEmpty) {
+      _showErrorDialog('Please enter a title for the subtask');
+      return false;
+    }
+
+    if (estimatedTimeMs <= 0) {
+      _showErrorDialog('Please select an estimated time greater than 0');
+      return false;
+    }
+
+    if (estimatedTimeMs > _task.estimatedTime) {
+      _showErrorDialog(
+          'Subtask estimated time cannot exceed parent task estimated time (${_formatDuration(_task.estimatedTime)})');
+      return false;
+    }
+
+    if (deadline > _task.deadline) {
+      _showErrorDialog(
+          'Subtask deadline cannot be later than parent task deadline');
+      return false;
+    }
+
+    return true;
+  }
+
+  void _addSubtask(
+      String title, int estimatedTime, int priority, int deadline) {
+    // Generate a unique ID for the subtask
+    final String subtaskId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    // Create the subtask with the parent task's category
+    final Task subtask = Task(
+      id: subtaskId,
+      title: title,
+      priority: priority,
+      deadline: deadline,
+      estimatedTime: estimatedTime,
+      category: _task.category, // Inherit category from parent
+      parentTask: _task, // Set parent task reference
+    );
+
+    // Add the subtask to the parent task
+    setState(() {
+      // _subtasks.add(subtask);
+      _task.subtasks.add(subtask);
+      _hasBreakdown = true;
+    });
+
+    // Save the parent task to persist the changes
     _task.save();
+
+    // Schedule the subtask
+    context.read<TaskManagerCubit>().scheduleTask(subtask);
   }
 
   Widget _buildSubtaskItem(Task subtask) {
@@ -234,38 +637,78 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       ),
       child: Padding(
         padding: const EdgeInsets.all(12.0),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 4,
-              height: 40,
-              decoration: BoxDecoration(
-                color: CategoryUtils.getCategoryColor(subtask.category.name),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    subtask.title,
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w500),
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color:
+                        CategoryUtils.getCategoryColor(subtask.category.name),
+                    borderRadius: BorderRadius.circular(2),
                   ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        subtask.title,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(CupertinoIcons.time,
+                              size: 12, color: CupertinoColors.systemGrey),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Est. time: ${_formatDuration(subtask.estimatedTime)}',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: CupertinoColors.systemGrey),
+                          ),
+                          const SizedBox(width: 12),
+                          const Icon(CupertinoIcons.flag,
+                              size: 12, color: CupertinoColors.systemGrey),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Priority: ${subtask.priority}',
+                            style: const TextStyle(
+                                fontSize: 12,
+                                color: CupertinoColors.systemGrey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: const Icon(CupertinoIcons.delete, size: 20),
+                  onPressed: () => _deleteSubtask(subtask),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0, top: 4.0),
+              child: Row(
+                children: [
+                  const Icon(CupertinoIcons.calendar,
+                      size: 12, color: CupertinoColors.systemGrey),
+                  const SizedBox(width: 4),
                   Text(
-                    'Est. time: ${_formatDuration(subtask.estimatedTime)}',
+                    'Deadline: ${DateTime.fromMillisecondsSinceEpoch(subtask.deadline).toLocal().toString().split(' ')[0]}',
                     style: const TextStyle(
                         fontSize: 12, color: CupertinoColors.systemGrey),
                   ),
                 ],
               ),
-            ),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              child: const Icon(CupertinoIcons.delete, size: 20),
-              onPressed: () => _deleteSubtask(subtask),
             ),
           ],
         ),
@@ -303,7 +746,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
               onPressed: () {
                 final subtaskCount = _task.subtasks.length;
                 final message = subtaskCount > 0
-                    ? 'Are you sure you want to delete "${_task.title}" and its ${subtaskCount} subtask${subtaskCount == 1 ? "" : "s"}?'
+                    ? 'Are you sure you want to delete "${_task.title}" and its $subtaskCount subtask${subtaskCount == 1 ? "" : "s"}?'
                     : 'Are you sure you want to delete "${_task.title}"?';
 
                 showCupertinoDialog(
@@ -484,22 +927,22 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
             const Icon(CupertinoIcons.sparkles,
                 size: 40, color: CupertinoColors.systemIndigo),
             const SizedBox(height: 12),
-            const Text('Magic Task Breakdown',
+            const Text('Task Breakdown Options',
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: CupertinoColors.systemIndigo)),
             const SizedBox(height: 8),
             const Text(
-                'Let AI analyze this task and break it down into manageable subtasks. Subtasks will be automatically scheduled.',
+                'You can either let AI analyze this task and break it down into manageable subtasks, or add subtasks manually from the subtasks section below.',
                 textAlign: TextAlign.center,
                 style:
                     TextStyle(color: CupertinoColors.systemGrey, fontSize: 14)),
             const SizedBox(height: 16),
             CupertinoButton.filled(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: const Text('Generate Subtasks'),
-                onPressed: _generateTaskBreakdown),
+                onPressed: _generateTaskBreakdown,
+                child: const Text('Generate Subtasks with AI')),
           ],
         ),
       );
@@ -524,10 +967,22 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 const Icon(CupertinoIcons.list_bullet,
                     size: 20, color: CupertinoColors.activeBlue),
                 const SizedBox(width: 8),
-                const Text('Generated Subtasks',
+                const Text('Subtasks',
                     style:
                         TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const Spacer(),
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  onPressed: _showAddSubtaskDialog,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(CupertinoIcons.add, size: 16),
+                      SizedBox(width: 4),
+                      Text('Add Subtask'),
+                    ],
+                  ),
+                ),
                 Text('${_subtasks.length}',
                     style: const TextStyle(
                         color: CupertinoColors.systemGrey, fontSize: 16)),

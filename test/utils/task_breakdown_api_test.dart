@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flowo_client/utils/task_breakdown_api.dart';
 import 'package:flowo_client/utils/logger.dart';
@@ -17,7 +18,9 @@ void main() {
           await api.makeRequest('Write a research paper on climate change');
 
       // Print the raw response for debugging
-      print('[DEBUG_LOG] Raw API response: $response');
+      if (kDebugMode) {
+        print('[DEBUG_LOG] Raw API response: $response');
+      }
 
       expect(response, isNotNull);
     });
@@ -27,8 +30,12 @@ void main() {
           await api.breakdownTask('Write a research paper on climate change');
 
       // Print the subtasks for debugging
-      print('[DEBUG_LOG] Generated subtasks: $subtasks');
-      print('[DEBUG_LOG] Number of subtasks: ${subtasks.length}');
+      if (kDebugMode) {
+        print('[DEBUG_LOG] Generated subtasks: $subtasks');
+      }
+      if (kDebugMode) {
+        print('[DEBUG_LOG] Number of subtasks: ${subtasks.length}');
+      }
 
       expect(subtasks, isA<List<String>>());
     });
@@ -43,7 +50,9 @@ void main() {
       ];
 
       final subtasks = api.parseSubtasks(listResponse);
-      print('[DEBUG_LOG] Parsed subtasks from list response: $subtasks');
+      if (kDebugMode) {
+        print('[DEBUG_LOG] Parsed subtasks from list response: $subtasks');
+      }
       expect(subtasks.length, 5);
 
       // Test with a map response format
@@ -53,7 +62,10 @@ void main() {
       };
 
       final subtasksFromMap = api.parseSubtasks(mapResponse);
-      print('[DEBUG_LOG] Parsed subtasks from map response: $subtasksFromMap');
+      if (kDebugMode) {
+        print(
+            '[DEBUG_LOG] Parsed subtasks from map response: $subtasksFromMap');
+      }
       expect(subtasksFromMap.length, 5);
     });
   });
