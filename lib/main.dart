@@ -3,6 +3,7 @@ import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
@@ -59,7 +60,36 @@ void main() async {
 
   var selectedProfile = profiles.values.isNotEmpty
       ? profiles.values.first
-      : UserSettings(name: 'Default', minSession: 15);
+      : UserSettings(
+          name: 'Default',
+          minSession: 15,
+          sleepTime: [
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 22, minute: 0),
+              endTime: const TimeOfDay(hour: 7, minute: 0),
+            ),
+          ],
+          mealBreaks: [
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 8, minute: 0),
+              endTime: const TimeOfDay(hour: 8, minute: 30),
+            ),
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 12, minute: 0),
+              endTime: const TimeOfDay(hour: 13, minute: 0),
+            ),
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 18, minute: 0),
+              endTime: const TimeOfDay(hour: 19, minute: 0),
+            ),
+          ],
+          freeTime: [
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 19, minute: 0),
+              endTime: const TimeOfDay(hour: 22, minute: 0),
+            ),
+          ],
+        );
 
   final taskManager = TaskManager(
     daysDB: daysDB,
