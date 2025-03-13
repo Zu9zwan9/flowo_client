@@ -4,6 +4,7 @@ import 'package:flowo_client/utils/logger.dart';
 import 'package:hive/hive.dart';
 
 import '../../models/category.dart';
+import '../../models/repeat_rule.dart';
 import '../../models/task.dart';
 import '../../models/user_settings.dart';
 import '../../utils/task_manager.dart';
@@ -25,10 +26,11 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     Task? parentTask,
     String? notes,
     int? color,
+    RepeatRule? frequency,
   }) {
     taskManager.createTask(
         title, priority, estimatedTime, deadline, category, parentTask, notes,
-        color: color);
+        color: color, frequency: frequency);
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
@@ -71,6 +73,34 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(
         tasks: taskManager.tasksDB.values
             .toList())); // Refresh state after deletion
+  }
+
+  void editTask({
+    required Task task,
+    required String title,
+    required int priority,
+    required int estimatedTime,
+    required int deadline,
+    required Category category,
+    Task? parentTask,
+    String? notes,
+    int? color,
+    RepeatRule? frequency,
+  }) {
+    // Update task properties
+    taskManager.editTask(
+        task, title, priority, estimatedTime, deadline, category, parentTask,
+        notes: notes, color: color, frequency: frequency);
+
+    // No need to update notes, color, and frequency separately as they're now part of the TaskManager.editTask method
+    taskManager.tasksDB.put(task.id, task);
+
+    // Recalculate scheduling after edit
+    taskManager.removeScheduledTasks();
+    taskManager.scheduleTasks();
+
+    // Update state
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
   void scheduleTasks() {

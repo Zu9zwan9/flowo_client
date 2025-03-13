@@ -11,6 +11,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
 import '../models/day.dart';
+import '../models/repeat_rule.dart';
 import '../models/scheduled_task_type.dart';
 import '../models/task.dart';
 
@@ -41,7 +42,7 @@ class TaskManager {
 
   void createTask(String title, int priority, int estimatedTime, int deadline,
       Category category, Task? parentTask, String? notes,
-      {int? color}) {
+      {int? color, RepeatRule? frequency}) {
     final task = Task(
       id: UniqueKey().toString(),
       title: title,
@@ -51,6 +52,7 @@ class TaskManager {
       category: category,
       notes: notes,
       color: color,
+      frequency: frequency,
     );
     tasksDB.put(task.id, task);
     if (parentTask != null) {
@@ -83,13 +85,23 @@ class TaskManager {
   }
 
   void editTask(Task task, String title, int priority, int estimatedTime,
-      int deadline, Category category, Task? parentTask) {
+      int deadline, Category category, Task? parentTask,
+      {String? notes, int? color, RepeatRule? frequency}) {
     task.title = title;
     task.priority = priority;
     task.estimatedTime = estimatedTime;
     task.deadline = deadline;
     task.category = category;
     task.parentTask = parentTask;
+    if (notes != null) {
+      task.notes = notes;
+    }
+    if (color != null) {
+      task.color = color;
+    }
+    if (frequency != null) {
+      task.frequency = frequency;
+    }
     tasksDB.put(task.id, task);
     logInfo('Edited task: ${task.title}');
   }

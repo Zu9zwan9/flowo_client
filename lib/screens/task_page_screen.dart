@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flowo_client/screens/task_edit_screen.dart';
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../models/category.dart';
 import '../models/task.dart';
@@ -162,6 +163,53 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     );
   }
 
+  void _navigateToEditScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => TaskEditScreen(task: _task),
+      ),
+    ).then((_) {
+      // Refresh the task data when returning from the edit screen
+      setState(() {
+        _task = widget.task;
+        _notesController.text = _task.notes ?? '';
+        _loadExistingSubtasks();
+      });
+    });
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    final subtaskCount = _task.subtasks.length;
+    final message = subtaskCount > 0
+        ? 'Are you sure you want to delete "${_task.title}" and its ${subtaskCount} subtask${subtaskCount == 1 ? "" : "s"}?'
+        : 'Are you sure you want to delete "${_task.title}"?';
+
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Delete Task'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              final tasksCubit = context.read<TaskManagerCubit>();
+              tasksCubit.deleteTask(_task);
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Return to previous screen
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _deleteSubtask(Task subtask) {
     setState(() {
       _subtasks.remove(subtask);
@@ -238,7 +286,54 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(middle: Text(_task.title)),
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(_task.title),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              child: const Icon(CupertinoIcons.pencil),
+              onPressed: () => _navigateToEditScreen(context),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              child: const Icon(CupertinoIcons.delete,
+                  color: CupertinoColors.destructiveRed),
+              onPressed: () {
+                final subtaskCount = _task.subtasks.length;
+                final message = subtaskCount > 0
+                    ? 'Are you sure you want to delete "${_task.title}" and its ${subtaskCount} subtask${subtaskCount == 1 ? "" : "s"}?'
+                    : 'Are you sure you want to delete "${_task.title}"?';
+
+                showCupertinoDialog(
+                  context: context,
+                  builder: (context) => CupertinoAlertDialog(
+                    title: const Text('Delete Task'),
+                    content: Text(message),
+                    actions: [
+                      CupertinoDialogAction(
+                        child: const Text('Cancel'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      CupertinoDialogAction(
+                        isDestructiveAction: true,
+                        onPressed: () {
+                          final tasksCubit = context.read<TaskManagerCubit>();
+                          tasksCubit.deleteTask(_task);
+                          Navigator.pop(context); // Close dialog
+                          Navigator.pop(context); // Return to previous screen
+                        },
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
       child: SafeArea(
         child: Stack(
           children: [
