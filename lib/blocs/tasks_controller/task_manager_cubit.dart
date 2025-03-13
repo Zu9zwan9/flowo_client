@@ -112,6 +112,16 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     }
     logInfo('All days deleted');
   }
+
+  /// Breaks down a task into subtasks using AI and schedules them
+  ///
+  /// Returns a list of the created subtasks
+  Future<List<Task>> breakdownAndScheduleTask(Task task) async {
+    logInfo('Breaking down task using AI: ${task.title}');
+    final subtasks = await taskManager.breakdownAndScheduleTask(task);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    return subtasks;
+  }
 }
 
 class TaskWithSchedules {

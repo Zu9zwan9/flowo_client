@@ -42,7 +42,14 @@ class Task extends HiveObject {
   List<Task> subtasks;
 
   @HiveField(11)
-  Task? parentTask;
+  String? parentTaskId;
+
+  Task? get parentTask =>
+      parentTaskId != null ? Hive.box<Task>('tasks').get(parentTaskId) : null;
+
+  set parentTask(Task? value) {
+    parentTaskId = value?.id;
+  }
 
   @HiveField(12)
   List<ScheduledTask> scheduledTasks; // Changed from const [] to mutable
@@ -67,15 +74,17 @@ class Task extends HiveObject {
     required this.deadline,
     required this.estimatedTime,
     required this.category,
-    this.parentTask,
+    Task? parentTask,
     this.notes,
     this.location,
     this.image,
     this.frequency,
-    this.subtasks = const [],
+    List<Task>? subtasks,
     List<ScheduledTask>? scheduledTasks,
     this.isDone = false,
     this.order,
     this.overdue = false,
-  }) : scheduledTasks = scheduledTasks ?? [];
+  })  : parentTaskId = parentTask?.id,
+        subtasks = subtasks ?? [],
+        scheduledTasks = scheduledTasks ?? [];
 }

@@ -55,8 +55,10 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     });
 
     try {
-      await Future.delayed(const Duration(seconds: 2));
-      final generatedSubtasks = await _aiTaskBreakdown(_task);
+      // Use the TaskManagerCubit to break down the task using AI
+      final generatedSubtasks = await context
+          .read<TaskManagerCubit>()
+          .breakdownAndScheduleTask(_task);
 
       setState(() {
         _subtasks = generatedSubtasks;
@@ -64,7 +66,9 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
         _isLoading = false;
       });
 
-      _saveSubtasks(generatedSubtasks);
+      // No need to save subtasks separately as they're already saved by the TaskManager
+      logInfo(
+          'Generated ${generatedSubtasks.length} subtasks for ${_task.title}');
     } catch (e) {
       logError('Error generating task breakdown: $e');
       setState(() {
@@ -74,81 +78,71 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     }
   }
 
-  Future<List<Task>> _aiTaskBreakdown(Task parentTask) async {
-    final complexity = parentTask.estimatedTime ~/ 3600000;
-    final subtasks = <Task>[];
-    final baseTitle = parentTask.title;
-    final taskTypes = ['Research', 'Plan', 'Draft', 'Review', 'Finalize'];
-
-    for (int i = 0; i < (complexity.clamp(3, 5)); i++) {
-      final subtask = Task(
-        id: UniqueKey().toString(),
-        title: '${taskTypes[i % taskTypes.length]} $baseTitle',
-        priority: parentTask.priority,
-        deadline: parentTask.deadline,
-        estimatedTime: parentTask.estimatedTime ~/ (complexity + 1),
-        category: parentTask.category,
-        notes: 'Subtask ${i + 1} for $baseTitle',
-        parentTask: parentTask,
-      );
-      subtasks.add(subtask);
-    }
-    return subtasks;
-  }
-
-  void _saveSubtasks(List<Task> subtasks) {
-    _task.subtasks.clear();
-    for (var subtask in subtasks) {
-      _task.subtasks.add(subtask);
-      subtask.parentTask = _task;
-      context.read<TaskManagerCubit>().createTask(
-            title: subtask.title,
-            priority: subtask.priority,
-            estimatedTime: subtask.estimatedTime,
-            deadline: subtask.deadline,
-            category: subtask.category,
-            parentTask: subtask.parentTask,
-            notes: subtask.notes,
-          );
-    }
-    _task.save();
-    logInfo('Saved ${subtasks.length} subtasks for ${_task.title}');
-  }
-
   void _scheduleSubtasks() {
     if (_subtasks.isEmpty) {
-      _showErrorDialog('Please generate subtasks first');
+      // If no subtasks exist, schedule the parent task
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        // Schedule the parent task
+        context.read<TaskManagerCubit>().scheduleTask(_task);
+
+        setState(() {
+          _isLoading = false;
+        });
+
+        // Show a dialog informing the user that the task has been scheduled
+        showCupertinoDialog(
+          context: context,
+          builder: (_) => CupertinoAlertDialog(
+            title: const Text('Task Scheduled'),
+            content: const Text(
+                'The task has been scheduled in the calendar since there are no subtasks.'),
+            actions: [
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('View in Calendar'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Navigate to the home screen (which typically has the calendar view)
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+              )
+            ],
+          ),
+        );
+      } catch (e) {
+        logError('Error scheduling task: $e');
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorDialog('Failed to schedule task');
+      }
       return;
     }
 
-    setState(() => _isLoading = true);
-
-    try {
-      for (var subtask in _subtasks) {
-        context.read<TaskManagerCubit>().scheduleTask(subtask);
-      }
-      setState(() => _isLoading = false);
-
-      showCupertinoDialog(
-        context: context,
-        builder: (_) => CupertinoAlertDialog(
-          title: const Text('Tasks Scheduled'),
-          content: Text(
-              '${_subtasks.length} subtasks have been scheduled successfully.'),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
-            )
-          ],
-        ),
-      );
-    } catch (e) {
-      logError('Error scheduling subtasks: $e');
-      setState(() => _isLoading = false);
-      _showErrorDialog('Failed to schedule subtasks');
-    }
+    // Show a dialog informing the user that subtasks are already scheduled
+    showCupertinoDialog(
+      context: context,
+      builder: (_) => CupertinoAlertDialog(
+        title: const Text('Tasks Already Scheduled'),
+        content: const Text(
+            'Subtasks have already been scheduled when they were generated. You can view them in the calendar.'),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('View in Calendar'),
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to the home screen (which typically has the calendar view)
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            },
+          )
+        ],
+      ),
+    );
   }
 
   void _showErrorDialog(String message) {
@@ -402,7 +396,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                     color: CupertinoColors.systemIndigo)),
             const SizedBox(height: 8),
             const Text(
-                'Let AI analyze this task and break it down into manageable subtasks',
+                'Let AI analyze this task and break it down into manageable subtasks. Subtasks will be automatically scheduled.',
                 textAlign: TextAlign.center,
                 style:
                     TextStyle(color: CupertinoColors.systemGrey, fontSize: 14)),
@@ -454,7 +448,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
 
   Widget _buildScheduleButton() => CupertinoButton.filled(
         onPressed: _scheduleSubtasks,
-        child: const Text('Schedule All Subtasks'),
+        child: const Text('Schedule Task'),
       );
 
   Widget _buildLoadingOverlay() => Container(

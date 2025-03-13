@@ -30,6 +30,7 @@ dependencies:
   datetime_picker_formfield: ^2.0.0
   cupertino_sidebar: ^1.0.1
   flutter_local_notifications: ^18.0.1
+  http: ^1.2.0
 
 
 dev_dependencies:

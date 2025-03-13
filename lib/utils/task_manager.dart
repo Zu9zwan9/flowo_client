@@ -5,6 +5,7 @@ import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flowo_client/utils/scheduler.dart';
+import 'package:flowo_client/utils/task_breakdown_api.dart';
 import 'package:flowo_client/utils/task_urgency_calculator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
@@ -16,6 +17,7 @@ import '../models/task.dart';
 class TaskManager {
   final Scheduler scheduler;
   final TaskUrgencyCalculator taskUrgencyCalculator;
+  final TaskBreakdownAPI taskBreakdownAPI;
   UserSettings userSettings;
   final Box<Day> daysDB;
   final Box<Task> tasksDB;
@@ -24,8 +26,12 @@ class TaskManager {
     required this.daysDB,
     required this.tasksDB,
     required this.userSettings,
+    String? huggingFaceApiKey,
   })  : scheduler = Scheduler(daysDB, tasksDB, userSettings),
-        taskUrgencyCalculator = TaskUrgencyCalculator(daysDB);
+        taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
+        taskBreakdownAPI = TaskBreakdownAPI(
+          apiKey: huggingFaceApiKey ?? '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',
+        );
 
   void updateUserSettings(UserSettings userSettings) {
     logInfo('Updating TaskManager user settings');
@@ -234,4 +240,84 @@ class TaskManager {
 
   String _formatDateKey(DateTime date) =>
       '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+
+  /// Breaks down a task into subtasks using AI and schedules them
+  ///
+  /// Returns a list of the created subtasks
+  Future<List<Task>> breakdownAndScheduleTask(Task task) async {
+    logInfo('Breaking down task: ${task.title}');
+
+    // Use the API to break down the task into subtasks
+    final subtaskTitles = await taskBreakdownAPI.breakdownTask(task.title);
+
+    if (subtaskTitles.isEmpty) {
+      logWarning('No subtasks generated for task: ${task.title}');
+
+      // If no subtasks were generated, schedule the parent task itself
+      logInfo('Scheduling parent task: ${task.title}');
+      scheduler.scheduleTask(
+        task,
+        userSettings.minSession,
+        urgency: null,
+      );
+
+      return [];
+    }
+
+    logInfo('Generated ${subtaskTitles.length} subtasks for: ${task.title}');
+
+    // Create subtask objects
+    final subtasks = <Task>[];
+    int order = 1;
+
+    for (var subtaskTitle in subtaskTitles) {
+      // Calculate estimated time based on parent task's estimated time
+      // Distribute time proportionally among subtasks
+      final estimatedTime = (task.estimatedTime / subtaskTitles.length).round();
+
+      final subtask = Task(
+        id: UniqueKey().toString(),
+        title: subtaskTitle,
+        priority: task.priority,
+        estimatedTime: estimatedTime,
+        deadline: task.deadline,
+        category: task.category,
+        parentTask: task,
+        order: order++,
+      );
+
+      tasksDB.put(subtask.id, subtask);
+      subtasks.add(subtask);
+
+      // Add subtask to parent task's subtasks list
+      task.subtasks.add(subtask);
+    }
+
+    // Update the parent task in the database
+    tasksDB.put(task.id, task);
+
+    // Schedule the subtasks
+    _scheduleSubtasks(subtasks);
+
+    return subtasks;
+  }
+
+  /// Schedules a list of subtasks in order
+  void _scheduleSubtasks(List<Task> subtasks) {
+    logInfo('Scheduling ${subtasks.length} subtasks');
+
+    // Sort subtasks by order
+    subtasks.sort((a, b) => (a.order ?? 0).compareTo(b.order ?? 0));
+
+    // Schedule each subtask
+    for (var subtask in subtasks) {
+      scheduler.scheduleTask(
+        subtask,
+        userSettings.minSession,
+        urgency:
+            null, // Let the scheduler determine urgency based on task properties
+      );
+      logInfo('Scheduled subtask: ${subtask.title}');
+    }
+  }
 }

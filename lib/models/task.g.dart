@@ -23,17 +23,16 @@ class TaskAdapter extends TypeAdapter<Task> {
       deadline: fields[3] as int,
       estimatedTime: fields[4] as int,
       category: fields[5] as Category,
-      parentTask: fields[11] as Task?,
       notes: fields[6] as String?,
       location: fields[7] as Coordinates?,
       image: fields[8] as String?,
       frequency: fields[9] as RepeatRule?,
-      subtasks: (fields[10] as List).cast<Task>(),
+      subtasks: (fields[10] as List?)?.cast<Task>(),
       scheduledTasks: (fields[12] as List?)?.cast<ScheduledTask>(),
       isDone: fields[13] as bool,
       order: fields[14] as int?,
       overdue: fields[15] as bool,
-    );
+    )..parentTaskId = fields[11] as String?;
   }
 
   @override
@@ -63,7 +62,7 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(10)
       ..write(obj.subtasks)
       ..writeByte(11)
-      ..write(obj.parentTask)
+      ..write(obj.parentTaskId)
       ..writeByte(12)
       ..write(obj.scheduledTasks)
       ..writeByte(13)
