@@ -8,6 +8,9 @@ class TaskListItem extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final Color categoryColor;
+  final bool hasSubtasks;
+  final bool isExpanded;
+  final VoidCallback? onToggleExpand;
 
   const TaskListItem({
     super.key,
@@ -16,6 +19,9 @@ class TaskListItem extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.categoryColor,
+    this.hasSubtasks = false,
+    this.isExpanded = false,
+    this.onToggleExpand,
   });
 
   @override
@@ -45,7 +51,7 @@ class TaskListItem extends StatelessWidget {
               width: 4,
               height: 40,
               decoration: BoxDecoration(
-                color: categoryColor,
+                color: task.color != null ? Color(task.color!) : categoryColor,
                 borderRadius:
                     const BorderRadius.horizontal(left: Radius.circular(2)),
               ),
@@ -81,6 +87,18 @@ class TaskListItem extends StatelessWidget {
                 ],
               ),
             ),
+            if (hasSubtasks && onToggleExpand != null)
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: onToggleExpand,
+                child: Icon(
+                  isExpanded
+                      ? CupertinoIcons.chevron_down
+                      : CupertinoIcons.chevron_right,
+                  size: 20,
+                  color: CupertinoColors.systemGrey,
+                ),
+              ),
             Icon(
               task.isDone
                   ? CupertinoIcons.check_mark_circled

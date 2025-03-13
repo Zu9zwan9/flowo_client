@@ -24,6 +24,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   final Debouncer _searchDebouncer = Debouncer();
   TaskFilterType _selectedFilter = TaskFilterType.all;
   final Map<String, bool> _expandedCategories = {};
+  final Map<String, bool> _expandedTasks = {};
   String _searchQuery = '';
 
   @override
@@ -279,21 +280,67 @@ class _TaskListScreenState extends State<TaskListScreen> {
             ),
             if (isExpanded) ...[
               const CupertinoDivider(),
-              ...tasks
-                  .map((task) => Column(
-                        children: [
-                          TaskListItem(
-                            task: task,
-                            onTap: () => _onTaskTap(context, task),
-                            onEdit: () => _editTask(context, task),
-                            onDelete: () => _deleteTask(context, task),
-                            categoryColor: CategoryUtils.getCategoryColor(
-                                task.category.name),
-                          ),
-                          if (task != tasks.last) const CupertinoDivider(),
-                        ],
-                      ))
-                  .toList(),
+              ...tasks.map((task) {
+                final hasSubtasks = task.subtasks.isNotEmpty;
+                final isExpanded = _expandedTasks[task.id] ?? false;
+                return Column(
+                  children: [
+                    TaskListItem(
+                      task: task,
+                      onTap: () => _onTaskTap(context, task),
+                      onEdit: () => _editTask(context, task),
+                      onDelete: () => _deleteTask(context, task),
+                      categoryColor:
+                          CategoryUtils.getCategoryColor(task.category.name),
+                      hasSubtasks: hasSubtasks,
+                      isExpanded: isExpanded,
+                      onToggleExpand: hasSubtasks
+                          ? () {
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _expandedTasks[task.id] = !isExpanded;
+                              });
+                            }
+                          : null,
+                    ),
+                    if (hasSubtasks && isExpanded)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 20),
+                        child: Column(
+                          children: task.subtasks.map((subtask) {
+                            return Column(
+                              children: [
+                                const CupertinoDivider(),
+                                TaskListItem(
+                                  task: subtask,
+                                  onTap: () => _onTaskTap(context, subtask),
+                                  onEdit: () => _editTask(context, subtask),
+                                  onDelete: () => _deleteTask(context, subtask),
+                                  categoryColor: CategoryUtils.getCategoryColor(
+                                      subtask.category.name),
+                                  hasSubtasks: subtask.subtasks.isNotEmpty,
+                                  isExpanded:
+                                      _expandedTasks[subtask.id] ?? false,
+                                  onToggleExpand: subtask.subtasks.isNotEmpty
+                                      ? () {
+                                          HapticFeedback.selectionClick();
+                                          setState(() {
+                                            _expandedTasks[subtask.id] =
+                                                !(_expandedTasks[subtask.id] ??
+                                                    false);
+                                          });
+                                        }
+                                      : null,
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    if (task != tasks.last) const CupertinoDivider(),
+                  ],
+                );
+              }).toList(),
             ],
           ],
         ),

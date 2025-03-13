@@ -63,6 +63,9 @@ class Task extends HiveObject {
   @HiveField(15)
   bool overdue;
 
+  @HiveField(16)
+  int? color;
+
   DateTime get startDate => DateTime.now();
   DateTime get endDate => DateTime.now().add(Duration(days: 1));
   List<DateTime> get exceptions => [];
@@ -84,6 +87,7 @@ class Task extends HiveObject {
     this.isDone = false,
     this.order,
     this.overdue = false,
+    this.color,
   })  : parentTaskId = parentTask?.id,
         subtasks = subtasks ?? [],
         scheduledTasks = scheduledTasks ?? [];

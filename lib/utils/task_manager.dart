@@ -40,7 +40,8 @@ class TaskManager {
   }
 
   void createTask(String title, int priority, int estimatedTime, int deadline,
-      Category category, Task? parentTask, String? notes) {
+      Category category, Task? parentTask, String? notes,
+      {int? color}) {
     final task = Task(
       id: UniqueKey().toString(),
       title: title,
@@ -49,6 +50,7 @@ class TaskManager {
       deadline: deadline,
       category: category,
       notes: notes,
+      color: color,
     );
     tasksDB.put(task.id, task);
     if (parentTask != null) {

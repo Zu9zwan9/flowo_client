@@ -24,9 +24,11 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     required Category category,
     Task? parentTask,
     String? notes,
+    int? color,
   }) {
     taskManager.createTask(
-        title, priority, estimatedTime, deadline, category, parentTask, notes);
+        title, priority, estimatedTime, deadline, category, parentTask, notes,
+        color: color);
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 

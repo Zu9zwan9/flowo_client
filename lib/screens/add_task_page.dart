@@ -29,11 +29,22 @@ class AddTaskPageState extends State<AddTaskPage> {
   late DateTime _selectedTime;
   String _selectedCategory = 'Brainstorm';
   int _priority = 1;
+  int? _selectedColor;
   final List<String> _categoryOptions = [
     'Brainstorm',
     'Design',
     'Workout',
     'Add'
+  ];
+
+  final List<Color> _colorOptions = [
+    CupertinoColors.systemRed,
+    CupertinoColors.systemOrange,
+    CupertinoColors.systemYellow,
+    CupertinoColors.systemGreen,
+    CupertinoColors.systemBlue,
+    CupertinoColors.systemPurple,
+    CupertinoColors.systemGrey,
   ];
 
   @override
@@ -110,6 +121,10 @@ class AddTaskPageState extends State<AddTaskPage> {
                 ),
                 const SizedBox(height: 12),
                 _buildPrioritySlider(),
+                const SizedBox(height: 20),
+                _buildSectionTitle('Color'),
+                const SizedBox(height: 12),
+                _buildColorSelector(),
                 const SizedBox(height: 32),
                 _buildSaveButton(context, 'Task'),
               ],
@@ -262,6 +277,84 @@ class AddTaskPageState extends State<AddTaskPage> {
           value: _priority.toDouble(),
           onChanged: (value) => setState(() => _priority = value.toInt()),
           activeColor: CupertinoColors.systemOrange,
+        ),
+      );
+
+  Widget _buildColorSelector() => Container(
+        height: 50,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: _colorOptions.length + 1, // +1 for "No color" option
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              // "No color" option
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedColor = null;
+                    });
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: CupertinoColors.white,
+                      border: Border.all(
+                        color: _selectedColor == null
+                            ? CupertinoColors.activeBlue
+                            : CupertinoColors.systemGrey,
+                        width: 2,
+                      ),
+                    ),
+                    child: _selectedColor == null
+                        ? const Icon(
+                            CupertinoIcons.checkmark,
+                            color: CupertinoColors.activeBlue,
+                          )
+                        : null,
+                  ),
+                ),
+              );
+            }
+
+            final color = _colorOptions[index - 1];
+            final colorValue = color.value;
+            final isSelected = _selectedColor == colorValue;
+
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedColor = colorValue;
+                  });
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color,
+                    border: Border.all(
+                      color: isSelected
+                          ? CupertinoColors.activeBlue
+                          : CupertinoColors.systemGrey,
+                      width: 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? const Icon(
+                          CupertinoIcons.checkmark,
+                          color: CupertinoColors.white,
+                        )
+                      : null,
+                ),
+              ),
+            );
+          },
         ),
       );
 
@@ -461,6 +554,7 @@ class AddTaskPageState extends State<AddTaskPage> {
           category: Category(name: _selectedCategory),
           notes:
               _notesController.text.isNotEmpty ? _notesController.text : null,
+          color: _selectedColor,
         );
 
     Navigator.pushReplacement(context,
