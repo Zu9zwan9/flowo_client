@@ -63,8 +63,10 @@ class TaskManager {
     logInfo('Created task: ${task.title}');
   }
 
+  // Fixed issue where task.key could be null causing "type 'Null' is not a subtype of type 'String'" error
+  // We use task.id instead of task.key because tasks are stored with their id as the key
   void deleteTask(Task task) {
-    tasksDB.delete(task.key);
+    tasksDB.delete(task.id);
     final parentTask = task.parentTask;
     if (parentTask != null) {
       parentTask.subtasks.remove(task);

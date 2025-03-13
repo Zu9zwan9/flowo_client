@@ -211,7 +211,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
   Map<String, List<Task>> _groupTasksByCategory(List<Task> tasks) {
     final grouped = <String, List<Task>>{};
     for (var task in tasks) {
-      grouped.putIfAbsent(task.category.name, () => []).add(task);
+      // Only add top-level tasks (tasks without a parent) to avoid duplicating subtasks
+      if (task.parentTaskId == null) {
+        grouped.putIfAbsent(task.category.name, () => []).add(task);
+      }
     }
     return grouped;
   }
@@ -367,11 +370,16 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   void _deleteTask(BuildContext context, Task task) {
     HapticFeedback.mediumImpact();
+    final subtaskCount = task.subtasks.length;
+    final message = subtaskCount > 0
+        ? 'Are you sure you want to delete "${task.title}" and its ${subtaskCount} subtask${subtaskCount == 1 ? "" : "s"}?'
+        : 'Are you sure you want to delete "${task.title}"?';
+
     showCupertinoDialog(
       context: context,
       builder: (context) => CupertinoAlertDialog(
         title: const Text('Delete Task'),
-        content: Text('Are you sure you want to delete "${task.title}"?'),
+        content: Text(message),
         actions: [
           CupertinoDialogAction(
             child: const Text('Cancel'),
