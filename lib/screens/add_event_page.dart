@@ -34,6 +34,52 @@ class AddEventPageState extends State<AddEventPage> {
     'Workout',
     'Add'
   ];
+  String _selectedCategory = 'Brainstorm';
+
+  void _handleCategoryChange(String value) {
+    setState(() {
+      if (value == 'Add') {
+        _showAddCategoryDialog(context);
+      } else {
+        _selectedCategory = value;
+      }
+    });
+  }
+
+  void _showAddCategoryDialog(BuildContext context) {
+    final categoryController = TextEditingController();
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Add Category'),
+        content: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: CupertinoTextField(
+            controller: categoryController,
+            placeholder: 'Category name',
+            autofocus: true,
+          ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          CupertinoDialogAction(
+            child: const Text('Add'),
+            onPressed: () {
+              if (categoryController.text.isNotEmpty) {
+                setState(() {
+                  _selectedCategory = categoryController.text;
+                });
+              }
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -87,6 +133,21 @@ class AddEventPageState extends State<AddEventPage> {
                     controller: _locationController, placeholder: 'Location'),
                 const SizedBox(height: 12),
                 _buildImagePicker(),
+                const SizedBox(height: 12),
+                _buildSectionTitle('Category'),
+                const SizedBox(height: 12),
+                _buildSegmentedControl(
+                  options: _categoryOptions,
+                  value: _selectedCategory,
+                  onChanged: _handleCategoryChange,
+                  selectedColor: _selectedCategory == 'Brainstorm'
+                      ? CupertinoColors.systemGreen
+                      : _selectedCategory == 'Design'
+                          ? CupertinoColors.systemBlue
+                          : _selectedCategory == 'Workout'
+                              ? CupertinoColors.systemOrange
+                              : CupertinoColors.activeBlue,
+                ),
                 const SizedBox(height: 20),
                 _buildSectionTitle('Start'),
                 const SizedBox(height: 12),
@@ -407,8 +468,20 @@ class AddEventPageState extends State<AddEventPage> {
       return;
     }
 
+    // Create the event with additional parameters
     context.read<TaskManagerCubit>().createEvent(
-        title: _titleController.text, start: startTime, end: endTime);
+        title: _titleController.text,
+        start: startTime,
+        end: endTime,
+        location: _locationController.text,
+        notes: _notesController.text,
+        color: _selectedCategory == 'Brainstorm'
+            ? 0xFF4CAF50
+            : _selectedCategory == 'Design'
+                ? 0xFF2196F3
+                : _selectedCategory == 'Workout'
+                    ? 0xFFF44336
+                    : null);
 
     Navigator.pushReplacement(
             context, CupertinoPageRoute(builder: (_) => const HomeScreen()))

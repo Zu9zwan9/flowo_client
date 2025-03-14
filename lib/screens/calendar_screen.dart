@@ -18,6 +18,20 @@ class CalendarScreen extends StatefulWidget {
 class CalendarScreenState extends State<CalendarScreen> {
   final ScrollController _scrollController = ScrollController();
   DateTime selectedDate = DateTime.now();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text;
+    });
+  }
 
   void _onDateSelected(DateTime newDate) {
     setState(() {
@@ -28,6 +42,8 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   @override
   void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -59,6 +75,14 @@ class CalendarScreenState extends State<CalendarScreen> {
               fontWeight: FontWeight.w600,
               color: CupertinoColors.label,
             ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: CupertinoSearchTextField(
+            controller: _searchController,
+            placeholder: 'Search events',
+            onChanged: (value) => setState(() {}),
           ),
         ),
         Expanded(
@@ -142,7 +166,7 @@ class CalendarScreenState extends State<CalendarScreen> {
               child: Text('No tasks scheduled',
                   style: TextStyle(fontSize: 16, color: secondaryTextColor)));
         } else {
-          final taskSchedulePairs = snapshot.data!
+          var taskSchedulePairs = snapshot.data!
               .expand((taskWithSchedules) => taskWithSchedules.scheduledTasks
                   .map((scheduledTask) => (
                         task: taskWithSchedules.task,
@@ -151,6 +175,18 @@ class CalendarScreenState extends State<CalendarScreen> {
               .toList()
             ..sort((a, b) =>
                 a.scheduledTask.startTime.compareTo(b.scheduledTask.startTime));
+
+          // Filter tasks based on search query
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.toLowerCase();
+            taskSchedulePairs = taskSchedulePairs.where((pair) {
+              final task = pair.task;
+              return task.title.toLowerCase().contains(query) ||
+                  (task.notes != null &&
+                      task.notes!.toLowerCase().contains(query)) ||
+                  task.category.name.toLowerCase().contains(query);
+            }).toList();
+          }
 
           return CupertinoScrollbar(
             controller: _scrollController,
