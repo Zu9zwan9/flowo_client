@@ -1,9 +1,8 @@
 // lib/screens/add_event_page.dart
 import 'dart:io';
 
+import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
-import 'package:flowo_client/models/category.dart';
-import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
@@ -28,8 +27,6 @@ class AddEventPageState extends State<AddEventPage> {
   late DateTime _selectedDate;
   late DateTime _startTime;
   DateTime? _endTime;
-  String _selectedCategory = 'Brainstorm';
-  String _priority = 'Normal';
   File? _image;
   final List<String> _categoryOptions = [
     'Brainstorm',
@@ -91,30 +88,17 @@ class AddEventPageState extends State<AddEventPage> {
                 const SizedBox(height: 12),
                 _buildImagePicker(),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Deadline'),
+                _buildSectionTitle('Start'),
                 const SizedBox(height: 12),
-                _buildDateButton(context),
+                _buildDateButton(context, isStart: true),
                 const SizedBox(height: 12),
                 _buildTimeButton(context, isStart: true),
+                const SizedBox(height: 20),
+                _buildSectionTitle('End'),
+                const SizedBox(height: 12),
+                _buildDateButton(context, isStart: false),
                 const SizedBox(height: 12),
                 _buildTimeButton(context, isStart: false),
-                const SizedBox(height: 20),
-                _buildSectionTitle('Category'),
-                const SizedBox(height: 12),
-                _buildSegmentedControl(
-                  options: _categoryOptions,
-                  value: _selectedCategory,
-                  onChanged: _handleCategoryChange,
-                ),
-                const SizedBox(height: 20),
-                _buildSectionTitle('Priority'),
-                const SizedBox(height: 12),
-                _buildSegmentedControl(
-                  options: const ['Low', 'Normal', 'High'],
-                  value: _priority,
-                  onChanged: (value) => setState(() => _priority = value),
-                  selectedColor: CupertinoColors.systemOrange,
-                ),
                 const SizedBox(height: 32),
                 _buildSaveButton(context, 'Event'),
               ],
@@ -154,8 +138,9 @@ class AddEventPageState extends State<AddEventPage> {
         placeholderStyle: const TextStyle(color: CupertinoColors.systemGrey2),
       );
 
-  Widget _buildDateButton(BuildContext context) => GestureDetector(
-        onTap: () => _showDatePicker(context),
+  Widget _buildDateButton(BuildContext context, {required bool isStart}) =>
+      GestureDetector(
+        onTap: () => _showDatePicker(context, isStart: isStart),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
@@ -191,7 +176,7 @@ class AddEventPageState extends State<AddEventPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(isStart ? 'Start Time' : 'End Time',
+              Text('Time',
                   style: TextStyle(
                       fontSize: 16,
                       color: isStart
@@ -255,13 +240,14 @@ class AddEventPageState extends State<AddEventPage> {
   Widget _buildSaveButton(BuildContext context, String type) => Center(
         child: CupertinoButton.filled(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          onPressed: () => _saveTask(context, type),
+          onPressed: () => _saveEvent(context, type),
           child: const Text('Save',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         ),
       );
 
-  Future<void> _showDatePicker(BuildContext context) async {
+  Future<void> _showDatePicker(BuildContext context,
+      {required bool isStart}) async {
     DateTime? pickedDate;
     await showCupertinoModalPopup(
       context: context,
@@ -274,7 +260,8 @@ class AddEventPageState extends State<AddEventPage> {
               height: 220,
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.date,
-                initialDateTime: _selectedDate,
+                initialDateTime:
+                    isStart ? _selectedDate : (_endTime ?? _startTime),
                 onDateTimeChanged: (val) => pickedDate = val,
               ),
             ),
@@ -284,7 +271,21 @@ class AddEventPageState extends State<AddEventPage> {
       ),
     );
     if (pickedDate != null && mounted) {
-      setState(() => _selectedDate = pickedDate!);
+      setState(() {
+        if (isStart) {
+          _selectedDate = pickedDate!;
+          // Update start time to maintain the same date
+          _startTime = DateTime(pickedDate!.year, pickedDate!.month,
+              pickedDate!.day, _startTime.hour, _startTime.minute);
+        } else {
+          // Update end time to the selected date while preserving time
+          _endTime = _endTime != null
+              ? DateTime(pickedDate!.year, pickedDate!.month, pickedDate!.day,
+                  _endTime!.hour, _endTime!.minute)
+              : DateTime(pickedDate!.year, pickedDate!.month, pickedDate!.day,
+                  _startTime.hour + 1, _startTime.minute);
+        }
+      });
     }
   }
 
@@ -345,49 +346,6 @@ class AddEventPageState extends State<AddEventPage> {
         ],
       );
 
-  void _showAddCategoryDialog(BuildContext context) {
-    final controller = TextEditingController();
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Add Custom Category'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: CupertinoTextField(
-            controller: controller,
-            placeholder: 'Category Name',
-            decoration: BoxDecoration(
-                color: CupertinoColors.systemGrey6,
-                borderRadius: BorderRadius.circular(8)),
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(context)),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('Add'),
-            onPressed: () {
-              final newCategory = controller.text.trim();
-              if (newCategory.isNotEmpty && mounted) {
-                setState(() {
-                  if (!_categoryOptions.contains(newCategory)) {
-                    _categoryOptions.insert(
-                        _categoryOptions.length - 1, newCategory);
-                  }
-                  _selectedCategory = newCategory;
-                });
-                logInfo('Custom category added: $newCategory');
-              }
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _pickImage() async {
     try {
       final pickedFile =
@@ -413,15 +371,7 @@ class AddEventPageState extends State<AddEventPage> {
     }
   }
 
-  void _handleCategoryChange(String value) {
-    if (value == 'Add') {
-      _showAddCategoryDialog(context);
-    } else {
-      setState(() => _selectedCategory = value);
-    }
-  }
-
-  void _saveTask(BuildContext context, String type) {
+  void _saveEvent(BuildContext context, String type) {
     if (!_formKey.currentState!.validate()) {
       showCupertinoDialog(
           context: context,
@@ -457,29 +407,12 @@ class AddEventPageState extends State<AddEventPage> {
       return;
     }
 
-    final task = Task(
-      id: UniqueKey().toString(),
-      title: _titleController.text,
-      priority: _mapPriorityToInt(_priority),
-      deadline: startTime.millisecondsSinceEpoch,
-      estimatedTime: endTime.difference(startTime).inMilliseconds,
-      category: Category(name: _selectedCategory),
-      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-      // location: _locationController.text.isNotEmpty
-      // ? Coordinates.fromString(_locationController.text)
-      // : null,
-      image: _image?.path,
-      subtasks: const [],
-      scheduledTasks: const [],
-      isDone: false,
-      order: 0,
-      overdue: false,
-    );
+    context.read<TaskManagerCubit>().createEvent(
+        title: _titleController.text, start: startTime, end: endTime);
 
-    context.read<CalendarCubit>().addTask(task);
     Navigator.pushReplacement(
             context, CupertinoPageRoute(builder: (_) => const HomeScreen()))
         .then((_) => context.read<CalendarCubit>().selectDate(startTime));
-    logInfo('Saved $type: ${task.title}');
+    logInfo('Created event: ${_titleController.text}');
   }
 }

@@ -222,10 +222,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                                   children: [
                                     Text(
                                       task.title == 'Free Time'
-                                          ? scheduledTask.type
+                                          ? freeTimeName(scheduledTask.type
                                               .toString()
                                               .split('.')
-                                              .last
+                                              .last)
                                           : task.title,
                                       style: CupertinoTheme.of(context)
                                           .textTheme
@@ -263,6 +263,19 @@ class CalendarScreenState extends State<CalendarScreen> {
         }
       },
     );
+  }
+
+  String freeTimeName(String type) {
+    switch (type) {
+      case 'sleep':
+        return 'Sleep';
+      case 'mealBreak':
+        return 'Meal break';
+      case 'rest':
+        return 'Rest';
+      default:
+        return 'Free Time';
+    }
   }
 
   String _weekdayName(int weekday) {

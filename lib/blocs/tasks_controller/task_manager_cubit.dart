@@ -34,6 +34,14 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
+  void createEvent({
+    required String title,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    logInfo('Got data: title - ${title}, start - ${start}, end - ${end}');
+  }
+
   List<ScheduledTask> getScheduledTasks() {
     final scheduledTasks = <ScheduledTask>[];
     for (var day in taskManager.daysDB.values) {
