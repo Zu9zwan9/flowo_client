@@ -1,4 +1,3 @@
-import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
@@ -360,6 +359,7 @@ class AddTaskPageState extends State<AddTaskPage> {
 
   Future<void> _showDatePicker(BuildContext context) async {
     DateTime? pickedDate;
+    final now = DateTime.now();
     await showCupertinoModalPopup(
       context: context,
       builder: (context) => Container(
@@ -371,7 +371,9 @@ class AddTaskPageState extends State<AddTaskPage> {
               height: 220,
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.date,
-                initialDateTime: _selectedDate,
+                initialDateTime:
+                    _selectedDate.isBefore(now) ? now : _selectedDate,
+                minimumDate: now,
                 onDateTimeChanged: (val) => pickedDate = val,
               ),
             ),
@@ -387,6 +389,22 @@ class AddTaskPageState extends State<AddTaskPage> {
 
   Future<void> _showTimePicker(BuildContext context) async {
     Duration? pickedDuration;
+    final now = DateTime.now();
+
+    // Calculate initial duration based on current time if needed
+    Duration initialDuration;
+    if (_selectedDate.year == now.year &&
+        _selectedDate.month == now.month &&
+        _selectedDate.day == now.day &&
+        _selectedTime.isBefore(now)) {
+      // If selected date is today and selected time is before now, use current time
+      initialDuration = Duration(hours: now.hour, minutes: now.minute);
+    } else {
+      // Otherwise use selected time
+      initialDuration =
+          Duration(hours: _selectedTime.hour, minutes: _selectedTime.minute);
+    }
+
     await showCupertinoModalPopup(
       context: context,
       builder: (context) => Container(
@@ -398,9 +416,7 @@ class AddTaskPageState extends State<AddTaskPage> {
               height: 220,
               child: CupertinoTimerPicker(
                 mode: CupertinoTimerPickerMode.hm,
-                initialTimerDuration: Duration(
-                    hours: (_selectedTime).hour,
-                    minutes: (_selectedTime).minute),
+                initialTimerDuration: initialDuration,
                 onTimerDurationChanged: (duration) => pickedDuration = duration,
               ),
             ),
@@ -417,7 +433,17 @@ class AddTaskPageState extends State<AddTaskPage> {
             _selectedDate.day,
             pickedDuration!.inHours,
             pickedDuration!.inMinutes % 60);
-        _selectedTime = time;
+
+        // If selected date is today, ensure time is not before current time
+        if (_selectedDate.year == now.year &&
+            _selectedDate.month == now.month &&
+            _selectedDate.day == now.day &&
+            time.isBefore(now)) {
+          _selectedTime =
+              DateTime(now.year, now.month, now.day, now.hour, now.minute);
+        } else {
+          _selectedTime = time;
+        }
       });
     }
   }

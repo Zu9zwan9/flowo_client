@@ -375,6 +375,7 @@ class TaskEditScreenState extends State<TaskEditScreen> {
 
   Future<void> _showDatePicker(BuildContext context) async {
     DateTime? pickedDate;
+    final now = DateTime.now();
     await showCupertinoModalPopup(
       context: context,
       builder: (context) => Container(
@@ -386,7 +387,9 @@ class TaskEditScreenState extends State<TaskEditScreen> {
               height: 220,
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.date,
-                initialDateTime: _selectedDate,
+                initialDateTime:
+                    _selectedDate.isBefore(now) ? now : _selectedDate,
+                minimumDate: now,
                 onDateTimeChanged: (val) => pickedDate = val,
               ),
             ),

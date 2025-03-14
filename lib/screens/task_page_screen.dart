@@ -1,12 +1,12 @@
+import 'package:flowo_client/screens/task_edit_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flowo_client/screens/task_edit_screen.dart';
+
 import '../blocs/tasks_controller/task_manager_cubit.dart';
-import '../models/category.dart';
 import '../models/task.dart';
-import '../utils/logger.dart';
 import '../utils/category_utils.dart';
+import '../utils/logger.dart';
 
 class TaskPageScreen extends StatefulWidget {
   final Task task;
@@ -82,6 +82,10 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   void _showDeadlinePicker(BuildContext context, StateSetter setState,
       int currentDeadline, Function(int) onDeadlineChanged) {
     DateTime? pickedDate;
+    final now = DateTime.now();
+    final currentDateTime =
+        DateTime.fromMillisecondsSinceEpoch(currentDeadline);
+
     showCupertinoModalPopup(
       context: context,
       builder: (context) => Container(
@@ -94,7 +98,8 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.date,
                 initialDateTime:
-                    DateTime.fromMillisecondsSinceEpoch(currentDeadline),
+                    currentDateTime.isBefore(now) ? now : currentDateTime,
+                minimumDate: now,
                 maximumDate:
                     DateTime.fromMillisecondsSinceEpoch(_task.deadline),
                 onDateTimeChanged: (val) => pickedDate = val,
@@ -177,7 +182,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       builder: (_) => CupertinoAlertDialog(
         title: const Text('Tasks Already Scheduled'),
         content: const Text(
-            'Subtasks have already been scheduled when they were generated. You can view them in the calendar.'),
+            'Subtasks are automatically scheduled when they are added. You can view them in the calendar.'),
         actions: [
           CupertinoDialogAction(
             isDefaultAction: true,
@@ -789,12 +794,10 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 const SizedBox(height: 24),
                 _buildMagicButton(),
                 const SizedBox(height: 24),
-                if (_hasBreakdown) ...[
-                  _buildSubtasksList(),
-                  const SizedBox(height: 24),
-                  _buildScheduleButton(),
-                  const SizedBox(height: 32),
-                ],
+                _buildSubtasksList(),
+                const SizedBox(height: 24),
+                _buildScheduleButton(),
+                const SizedBox(height: 32),
               ],
             ),
             if (_isLoading) _buildLoadingOverlay(),
@@ -934,7 +937,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                     color: CupertinoColors.systemIndigo)),
             const SizedBox(height: 8),
             const Text(
-                'You can either let AI analyze this task and break it down into manageable subtasks, or add subtasks manually from the subtasks section below.',
+                'You can either let AI analyze this task and break it down into manageable subtasks, or add subtasks manually using the "Add Subtask" button in the subtasks section below.',
                 textAlign: TextAlign.center,
                 style:
                     TextStyle(color: CupertinoColors.systemGrey, fontSize: 14)),

@@ -255,16 +255,17 @@ class Scheduler {
     return availableSlots;
   }
 
-  // Kept for backwards compatibility but now returns the first slot from _findAllAvailableTimeSlots
-  ScheduledTask? _findAvailableTimeSlot(Day day, DateTime start,
-      int requiredTime, int minSession, String taskTitle, String dateKey) {
-    final slots = _findAllAvailableTimeSlots(
-        day, start, requiredTime, minSession, taskTitle, dateKey);
-    return slots.isNotEmpty ? slots.first : null;
-  }
-
   ScheduledTask? _tryCreateSlot(DateTime start, DateTime end, int requiredTime,
       int minSession, String dateKey) {
+    // Ensure start time is not before current time
+    final now = DateTime.now();
+    if (start.isBefore(now)) {
+      start = now;
+    }
+
+    // If start time is after end time after adjustment, no slot is available
+    if (start.isAfter(end)) return null;
+
     final availableTime = _calculateDurationMs(start, end);
     if (availableTime < minSession) return null;
 
