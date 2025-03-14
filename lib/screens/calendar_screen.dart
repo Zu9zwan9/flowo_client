@@ -6,10 +6,7 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/task_manager_state.dart';
-import '../blocs/tasks_controller/tasks_controller_state.dart';
 import '../models/scheduled_task.dart';
-import '../models/task.dart';
-import '../utils/logger.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -19,7 +16,6 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class CalendarScreenState extends State<CalendarScreen> {
-  bool _showTaskList = true;
   final ScrollController _scrollController = ScrollController();
   DateTime selectedDate = DateTime.now();
 
@@ -28,12 +24,6 @@ class CalendarScreenState extends State<CalendarScreen> {
       selectedDate = newDate;
     });
     context.read<CalendarCubit>().selectDate(newDate);
-  }
-
-  void _toggleTaskList() {
-    setState(() {
-      _showTaskList = !_showTaskList;
-    });
   }
 
   @override
@@ -47,18 +37,8 @@ class CalendarScreenState extends State<CalendarScreen> {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Calendar'),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _toggleTaskList,
-          child: Text(
-            _showTaskList ? 'Agenda' : 'List',
-            style: const TextStyle(fontSize: 16),
-          ),
-        ),
       ),
-      child: SafeArea(
-        child: _showTaskList ? _buildSplitView() : _buildAgendaView(),
-      ),
+      child: SafeArea(child: _buildSplitView()),
     );
   }
 
@@ -86,10 +66,6 @@ class CalendarScreenState extends State<CalendarScreen> {
         ),
       ],
     );
-  }
-
-  Widget _buildAgendaView() {
-    return _buildCalendar(showAgenda: true, context: context);
   }
 
   Widget _buildCalendar(
