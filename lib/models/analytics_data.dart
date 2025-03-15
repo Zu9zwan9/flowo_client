@@ -1,5 +1,3 @@
-
-
 import 'package:flowo_client/models/category.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -7,34 +5,34 @@ import 'package:flutter/cupertino.dart';
 class AnalyticsData {
   /// Total number of tasks
   final int totalTasks;
-  
+
   /// Number of completed tasks
   final int completedTasks;
-  
+
   /// Number of overdue tasks
   final int overdueTasks;
-  
+
   /// Completion rate (percentage)
   final double completionRate;
-  
+
   /// Overdue rate (percentage)
   final double overdueRate;
-  
+
   /// Time spent by category (in minutes)
   final Map<Category, int> timeSpentByCategory;
-  
+
   /// AI-generated suggestions based on task patterns
   final List<String> aiSuggestions;
-  
+
   /// Efficiency score (0-100)
   final double efficiencyScore;
-  
+
   /// Average time to complete tasks (in minutes)
   final double averageCompletionTime;
-  
+
   /// Most productive time of day (hour of day, 0-23)
   final int? mostProductiveHour;
-  
+
   /// Most common category
   final Category? mostCommonCategory;
 
@@ -52,7 +50,7 @@ class AnalyticsData {
     this.mostProductiveHour,
     this.mostCommonCategory,
   });
-  
+
   /// Create an empty analytics data object
   factory AnalyticsData.empty() {
     return AnalyticsData(
@@ -74,7 +72,7 @@ class CategoryDataPoint {
   final Category category;
   final int value;
   final double percentage;
-  
+
   CategoryDataPoint({
     required this.category,
     required this.value,
@@ -86,7 +84,7 @@ class CategoryDataPoint {
 class PriorityDataPoint {
   final int priority;
   final int value;
-  
+
   PriorityDataPoint({
     required this.priority,
     required this.value,
@@ -98,7 +96,7 @@ class _ChartData {
   final String x;
   final int y;
   final Color color;
-  
+
   _ChartData(this.x, this.y, this.color);
 }
 
@@ -107,6 +105,6 @@ class _TimeData {
   final String category;
   final int time;
   final double percentage;
-  
+
   _TimeData(this.category, this.time, this.percentage);
 }

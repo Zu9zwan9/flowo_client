@@ -229,6 +229,85 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
     return subtasks;
   }
+
+  /// Estimates time for a task using AI
+  ///
+  /// This method uses the task breakdown API to estimate time for a task
+  /// based on its content. It breaks down the task into subtasks and then
+  /// uses the estimated time of each subtask to calculate the total time.
+  ///
+  /// Returns the estimated time in minutes
+  Future<int> estimateTaskTime(Task task) async {
+    logInfo('Estimating time for task: ${task.title}');
+
+    try {
+      // Store the original estimated time
+      final originalEstimatedTime = task.estimatedTime;
+
+      // Break down the task into subtasks
+      final subtasks = await breakdownAndScheduleTask(task);
+
+      if (subtasks.isEmpty) {
+        logWarning('No subtasks generated for task: ${task.title}');
+        return task.estimatedTime > 0
+            ? task.estimatedTime
+            : 60; // Default to 1 hour if no estimate
+      }
+
+      // Calculate the total estimated time from the subtasks
+      final totalEstimatedTime =
+          subtasks.fold(0, (sum, subtask) => sum + subtask.estimatedTime);
+
+      // Update the task with the estimated time
+      task.estimatedTime = totalEstimatedTime;
+      taskManager.tasksDB.put(task.id, task);
+
+      logInfo(
+          'Estimated time for task "${task.title}": $totalEstimatedTime minutes');
+
+      // Update the state to reflect the changes
+      emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+
+      return totalEstimatedTime;
+    } catch (e) {
+      logError('Error estimating time for task: $e');
+      return task.estimatedTime > 0
+          ? task.estimatedTime
+          : 60; // Return existing estimate or default
+    }
+  }
+
+  /// Estimates time for all tasks using AI
+  ///
+  /// This method estimates time for all top-level tasks (tasks without a parent)
+  /// and updates them with the estimated times.
+  ///
+  /// Returns the number of tasks updated
+  Future<int> estimateAllTasks() async {
+    logInfo('Estimating time for all tasks');
+
+    try {
+      // Get all top-level tasks (tasks without a parent)
+      final tasks = taskManager.tasksDB.values
+          .where((task) => task.parentTaskId == null)
+          .toList();
+
+      int updatedCount = 0;
+
+      // Process each task
+      for (var task in tasks) {
+        await estimateTaskTime(task);
+        updatedCount++;
+      }
+
+      logInfo('Updated $updatedCount tasks with AI-estimated times');
+
+      return updatedCount;
+    } catch (e) {
+      logError('Error estimating time for all tasks: $e');
+      return 0;
+    }
+  }
 }
 
 class TaskWithSchedules {

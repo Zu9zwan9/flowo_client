@@ -14,7 +14,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Screen for displaying analytics and statistics
 class AnalyticsScreen extends StatefulWidget {
-  const AnalyticsScreen({Key? key}) : super(key: key);
+  const AnalyticsScreen({super.key});
 
   @override
   State<AnalyticsScreen> createState() => _AnalyticsScreenState();
@@ -201,7 +201,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                '${data.efficiencyScore.toStringAsFixed(1)}',
+                data.efficiencyScore.toStringAsFixed(1),
                 style: const TextStyle(
                   fontSize: 48,
                   fontWeight: FontWeight.bold,

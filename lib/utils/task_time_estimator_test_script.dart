@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flowo_client/models/category.dart' as flowo;
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/services/task_time_estimator.dart';
 import 'package:flutter/foundation.dart';
@@ -127,7 +128,7 @@ Future<void> testEstimation(
       priority: 2,
       estimatedTime: 0, // Will be set by applyEstimates
       deadline: parentDeadline,
-      category: Category(name: 'Test'),
+      category: flowo.Category(name: 'Test'),
     ));
   }
 

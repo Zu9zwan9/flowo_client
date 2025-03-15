@@ -1,10 +1,11 @@
+import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
+import 'package:flowo_client/models/time_frame.dart';
+import 'package:flowo_client/models/user_settings.dart';
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flowo_client/models/time_frame.dart';
-import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
-import 'package:flowo_client/utils/logger.dart';
-import 'package:flowo_client/models/user_settings.dart';
+
 import '../theme_notifier.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -279,12 +280,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 16.0),
             _buildSectionHeader('Meal Times'),
-            ..._mealTimes
-                .map((meal) => _buildTimeSlotItem(
-                    meal,
-                    CupertinoColors.systemOrange,
-                    () => setState(() => _mealTimes.remove(meal))))
-                ,
+            ..._mealTimes.map((meal) => _buildTimeSlotItem(
+                meal,
+                CupertinoColors.systemOrange,
+                () => setState(() => _mealTimes.remove(meal)))),
             CupertinoButton(
               onPressed: _showAddMealDialog,
               child: const Row(
@@ -297,12 +296,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 16.0),
             _buildSectionHeader('Free Time'),
-            ..._freeTimes
-                .map((freeTime) => _buildTimeSlotItem(
-                    freeTime,
-                    CupertinoColors.systemGreen,
-                    () => setState(() => _freeTimes.remove(freeTime))))
-                ,
+            ..._freeTimes.map((freeTime) => _buildTimeSlotItem(
+                freeTime,
+                CupertinoColors.systemGreen,
+                () => setState(() => _freeTimes.remove(freeTime)))),
             CupertinoButton(
               onPressed: _showAddFreeTimeDialog,
               child: const Row(
@@ -331,8 +328,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() => _breakDuration = value.round())),
             const SizedBox(height: 24.0),
             CupertinoButton.filled(
-                onPressed: _saveSettings,
-                child: const Text('Save Settings')),
+                onPressed: _saveSettings, child: const Text('Save Settings')),
             const SizedBox(height: 24.0),
           ],
         ),

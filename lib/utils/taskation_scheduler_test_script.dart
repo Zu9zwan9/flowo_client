@@ -1,12 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flowo_client/models/category.dart';
+import 'package:flowo_client/models/category.dart' as flowo;
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/taskation_scheduler.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart'; // A simple script to test the TaskationScheduler
 
-// A simple script to test the TaskationScheduler
 Future<void> main() async {
   if (kDebugMode) {
     print('Starting TaskationScheduler test script...');
@@ -29,7 +28,7 @@ Future<void> main() async {
     deadline: DateTime.now()
         .add(const Duration(days: 7))
         .millisecondsSinceEpoch, // 1 week deadline
-    category: Category(name: 'Work'),
+    category: flowo.Category(name: 'Work'),
   );
 
   // Estimate time for the task
@@ -51,7 +50,7 @@ Future<void> main() async {
     estimatedTime: 240, // 4 hours
     deadline:
         DateTime.now().add(const Duration(days: 5)).millisecondsSinceEpoch,
-    category: Category(name: 'Project'),
+    category: flowo.Category(name: 'Project'),
   );
 
   // Create subtasks
@@ -129,7 +128,7 @@ Future<void> main() async {
       estimatedTime: 60,
       deadline:
           DateTime.now().add(const Duration(days: 1)).millisecondsSinceEpoch,
-      category: Category(name: 'Urgent'),
+      category: flowo.Category(name: 'Urgent'),
     ),
     Task(
       id: 'task_2',
@@ -138,7 +137,7 @@ Future<void> main() async {
       estimatedTime: 120,
       deadline:
           DateTime.now().add(const Duration(days: 2)).millisecondsSinceEpoch,
-      category: Category(name: 'Important'),
+      category: flowo.Category(name: 'Important'),
     ),
     Task(
       id: 'task_3',
@@ -147,7 +146,7 @@ Future<void> main() async {
       estimatedTime: 90,
       deadline:
           DateTime.now().add(const Duration(days: 3)).millisecondsSinceEpoch,
-      category: Category(name: 'Regular'),
+      category: flowo.Category(name: 'Regular'),
     ),
   ];
 
