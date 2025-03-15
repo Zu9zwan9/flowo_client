@@ -7,7 +7,6 @@ import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../design/cupertino_form_theme.dart';
 import '../design/cupertino_form_widgets.dart';
 
@@ -121,6 +120,7 @@ class AddHabitPageState extends State<AddHabitPage>
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(middle: Text('Add Habit')),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(CupertinoFormTheme.horizontalSpacing),
@@ -905,20 +905,27 @@ class AddHabitPageState extends State<AddHabitPage>
       );
     }
 
-    context.read<TaskManagerCubit>().createTask(
+    final task = Task(
+      id: UniqueKey().toString(),
       title: _titleController.text,
-      priority: 10,
+      priority: {'Low': 0, 'Normal': 1, 'High': 2}[_priority] ?? 1,
       deadline: startTime.millisecondsSinceEpoch,
       estimatedTime: endTime.difference(startTime).inMilliseconds,
       category: Category(name: _selectedCategory),
       notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       frequency: repeatRule,
+      subtasks: const [],
+      scheduledTasks: const [],
+      isDone: false,
+      order: 0,
+      overdue: false,
     );
 
+    context.read<CalendarCubit>().addTask(task);
     Navigator.pushReplacement(
       context,
       CupertinoPageRoute(builder: (_) => const HomeScreen()),
     ).then((_) => context.read<CalendarCubit>().selectDate(startTime));
-    logInfo('Saved habit: ${_titleController.text}');
+    logInfo('Saved Habit: ${task.title}');
   }
 }
