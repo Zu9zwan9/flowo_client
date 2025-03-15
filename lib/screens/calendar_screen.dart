@@ -63,10 +63,10 @@ class CalendarScreenState extends State<CalendarScreen> {
 
     try {
       // Select the current date in the calendar cubit
-      context.read<CalendarCubit>().selectDate(_selectedDate);
+      context.read<CalendarCubit>().selectDate(_selectedDate);;
 
       // Ensure tasks are scheduled
-      context.read<TaskManagerCubit>().scheduleTasks();
+      // Select the current date in the calendar cubit
 
       // Initialize the Future for scheduled tasks
       _scheduledTasksFuture = context

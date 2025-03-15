@@ -45,14 +45,14 @@ class TaskManager {
     scheduler.updateUserSettings(userSettings);
   }
 
-  void createTask(
+  Task createTask(
     String title,
     int priority,
     int estimatedTime,
     int deadline,
-    Category category,
+    Category category, {
     Task? parentTask,
-    String? notes, {
+    String? notes,
     int? color,
     RepeatRule? frequency,
   }) {
@@ -74,6 +74,7 @@ class TaskManager {
       tasksDB.put(parentTask.id, parentTask);
     }
     logInfo('Created task: ${task.title}');
+    return task;
   }
 
   // Fixed issue where task.key could be null causing "type 'Null' is not a subtype of type 'String'" error

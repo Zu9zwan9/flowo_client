@@ -39,8 +39,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       estimatedTime,
       deadline,
       category,
-      parentTask,
-      notes,
+      parentTask: parentTask,
+      notes: notes,
       color: color,
       frequency: frequency,
     );
@@ -58,64 +58,27 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }) {
     logInfo('Creating event: title - $title, start - $start, end - $end');
 
-    // Calculate estimated time in milliseconds
+    final priority = 0; // Not required, set to default
     final estimatedTime = end.difference(start).inMilliseconds;
+    final deadline = end.millisecondsSinceEpoch; // Use end time as deadline
+    final category = Category(
+      name: 'Event',
+    ); // Always use the 'Event' category for events
 
-    // Always use the 'Event' category for events
-    final category = Category(name: 'Event');
-
-    // Create the task with required fields
-    final task = Task(
-      id: UniqueKey().toString(),
-      title: title,
-      priority: 0, // Not required, set to default
-      estimatedTime: estimatedTime,
-      deadline: end.millisecondsSinceEpoch, // Use end time as deadline
-      category: category,
+    final task = taskManager.createTask(
+      title,
+      priority,
+      estimatedTime,
+      deadline,
+      category,
       notes: notes,
       color: color,
-      location:
-          location != null && location.isNotEmpty
-              ? Coordinates(
-                latitude: 1.0,
-                longitude: 1.0,
-              ) // Placeholder coordinates
-              : null,
     );
 
-    // Save the task
-    taskManager.tasksDB.put(task.id, task);
-
-    // Create the scheduled task
-    final scheduledTask = ScheduledTask(
-      scheduledTaskId: UniqueKey().toString(),
-      parentTaskId: task.id,
-      startTime: start,
-      endTime: end,
-      urgency: null, // Not required
-      type: ScheduledTaskType.timeSensitive,
-      travelingTime:
-          travelingTime ??
-          (location != null && location.isNotEmpty
-              ? 15 *
-                  60 *
-                  1000 // Default 15 minutes in milliseconds if location is provided
-              : 0),
-      breakTime:
-          taskManager.userSettings.breakTime ??
-          5 * 60 * 1000, // From user settings
-      notification: NotificationType.none,
-    );
-
-    // Add the scheduled task to the task
-    task.scheduledTasks.add(scheduledTask);
-    taskManager.tasksDB.put(task.id, task);
-
-    // Add the scheduled task to the day
-    final dateKey = _formatDateKey(start);
-    final day = taskManager.daysDB.get(dateKey) ?? Day(day: dateKey);
-    day.scheduledTasks.add(scheduledTask);
-    taskManager.daysDB.put(dateKey, day);
+    taskManager.scheduler.scheduleEvent(
+        task: task,
+        start: start,
+        end: end);
 
     // Update the state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));

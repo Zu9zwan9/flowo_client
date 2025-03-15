@@ -172,6 +172,22 @@ class Scheduler {
     return lastScheduledTask;
   }
 
+  void scheduleEvent({
+    required Task task,
+    required DateTime start,
+    required DateTime end,
+  }) {
+    _dayCache.clear();
+    final dateKey = _formatDateKey(start);
+    _createScheduledTask(
+      task: task,
+      start: start,
+      end: end,
+      dateKey: dateKey,
+      type: ScheduledTaskType.timeSensitive
+    );
+  }
+
   bool _isActiveDay(String dateKey) {
     final date = DateTime.parse('$dateKey 00:00:00');
     final weekdayNames = [
