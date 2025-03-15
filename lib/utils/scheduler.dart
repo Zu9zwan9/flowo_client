@@ -179,6 +179,16 @@ class Scheduler {
   }) {
     _dayCache.clear();
     final dateKey = _formatDateKey(start);
+
+    final day = _getOrCreateDay(dateKey);
+    final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
+    for (ScheduledTask scheduledTask in sortedTasks){
+      if (scheduledTask.startTime.isBefore(end) && scheduledTask.endTime.isAfter(start)){
+        logDebug('Event overlaps with existing task: ${scheduledTask.parentTaskId}');
+        return;
+      }
+    }
+
     _createScheduledTask(
       task: task,
       start: start,
