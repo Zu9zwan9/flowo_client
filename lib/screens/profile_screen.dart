@@ -612,92 +612,115 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         children: [
           // Avatar with Hero animation for smooth transitions
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              _showAvatarOptions();
-            },
-            child: Hero(
-              tag: 'profile_avatar',
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:
-                      CupertinoTheme.of(context).brightness == Brightness.dark
-                          ? CupertinoColors.systemGrey5.darkColor
-                          : CupertinoColors.systemGrey5,
-                  boxShadow: [
-                    BoxShadow(
-                      color: CupertinoColors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: _isUploading
-                    ? const CupertinoActivityIndicator(radius: 20)
-                    : _avatarImage != null
-                        ? Image.file(_avatarImage!, fit: BoxFit.cover)
-                        : Center(
-                            child: Text(
-                              initials,
-                              style: TextStyle(
-                                fontSize: 48,
-                                fontWeight: FontWeight.bold,
-                                color: CupertinoTheme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? CupertinoColors.white
-                                    : CupertinoColors.black,
+          Semantics(
+            label: 'Profile picture',
+            hint: 'Double tap to change your profile picture',
+            image: _avatarImage != null,
+            button: true,
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                _showAvatarOptions();
+              },
+              child: Hero(
+                tag: 'profile_avatar',
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color:
+                        CupertinoTheme.of(context).brightness == Brightness.dark
+                            ? CupertinoColors.systemGrey5.darkColor
+                            : CupertinoColors.systemGrey5,
+                    boxShadow: [
+                      BoxShadow(
+                        color: CupertinoColors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: _isUploading
+                      ? const CupertinoActivityIndicator(radius: 20)
+                      : _avatarImage != null
+                          ? Image.file(
+                              _avatarImage!,
+                              fit: BoxFit.cover,
+                              semanticLabel: 'Your profile picture',
+                            )
+                          : Center(
+                              child: ExcludeSemantics(
+                                child: Text(
+                                  initials,
+                                  style: TextStyle(
+                                    fontSize: 48,
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        CupertinoTheme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? CupertinoColors.white
+                                            : CupertinoColors.black,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 12),
           // Change avatar button with icon
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              _showAvatarOptions();
-            },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  CupertinoIcons.camera,
-                  size: 16,
-                  color: CupertinoTheme.of(context).primaryColor,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Change Avatar',
-                  style: TextStyle(
+          Semantics(
+            label: 'Change avatar button',
+            hint: 'Double tap to change your profile picture',
+            button: true,
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                _showAvatarOptions();
+              },
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    CupertinoIcons.camera,
+                    size: 16,
                     color: CupertinoTheme.of(context).primaryColor,
-                    fontWeight: FontWeight.w500,
+                    semanticLabel: 'Camera icon',
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  Text(
+                    'Change Avatar',
+                    style: TextStyle(
+                      color: CupertinoTheme.of(context).primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           // Display user name if available
           if (_nameController.text.trim().isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                _nameController.text,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color:
-                      CupertinoTheme.of(context).brightness == Brightness.dark
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
+              child: Semantics(
+                label: 'User name: ${_nameController.text}',
+                header: true,
+                child: Text(
+                  _nameController.text,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color:
+                        CupertinoTheme.of(context).brightness == Brightness.dark
+                            ? CupertinoColors.white
+                            : CupertinoColors.black,
+                  ),
                 ),
               ),
             ),
@@ -730,50 +753,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          CupertinoTextField(
-            controller: _nameController,
-            placeholder: 'Enter your name',
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: CupertinoTheme.of(context).brightness == Brightness.dark
-                  ? CupertinoColors.systemGrey6.darkColor
-                  : CupertinoColors.systemGrey6,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: _nameError != null
-                    ? CupertinoColors.systemRed
-                    : CupertinoColors.systemGrey4,
+          Semantics(
+            label: 'Name text field',
+            hint: 'Enter your full name',
+            textField: true,
+            child: CupertinoTextField(
+              controller: _nameController,
+              placeholder: 'Enter your name',
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: CupertinoTheme.of(context).brightness == Brightness.dark
+                    ? CupertinoColors.systemGrey6.darkColor
+                    : CupertinoColors.systemGrey6,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _nameError != null
+                      ? CupertinoColors.systemRed
+                      : CupertinoColors.systemGrey4,
+                ),
               ),
-            ),
-            style: const TextStyle(fontSize: 16),
-            placeholderStyle:
-                const TextStyle(color: CupertinoColors.systemGrey2),
-            prefix: const Padding(
-              padding: EdgeInsets.only(left: 12.0),
-              child: Icon(
-                CupertinoIcons.person_fill,
-                color: CupertinoColors.systemGrey,
-                size: 18,
+              style: const TextStyle(fontSize: 16),
+              placeholderStyle:
+                  const TextStyle(color: CupertinoColors.systemGrey2),
+              prefix: const Padding(
+                padding: EdgeInsets.only(left: 12.0),
+                child: Icon(
+                  CupertinoIcons.person_fill,
+                  color: CupertinoColors.systemGrey,
+                  size: 18,
+                  semanticLabel: 'Person icon',
+                ),
               ),
+              clearButtonMode: OverlayVisibilityMode.editing,
+              textInputAction: TextInputAction.next,
+              onChanged: (value) {
+                if (_nameError != null) {
+                  setState(() {
+                    _nameError = null;
+                  });
+                }
+              },
+              // Improve keyboard accessibility
+              autofocus: false,
+              autocorrect: true,
+              enableSuggestions: true,
             ),
-            clearButtonMode: OverlayVisibilityMode.editing,
-            textInputAction: TextInputAction.next,
-            onChanged: (value) {
-              if (_nameError != null) {
-                setState(() {
-                  _nameError = null;
-                });
-              }
-            },
           ),
           if (_nameError != null)
             Padding(
               padding: const EdgeInsets.only(top: 6.0, left: 12.0),
-              child: Text(
-                _nameError!,
-                style: const TextStyle(
-                  color: CupertinoColors.systemRed,
-                  fontSize: 12,
+              child: Semantics(
+                label: 'Name error: $_nameError',
+                liveRegion: true, // Announce changes to this widget
+                child: Text(
+                  _nameError!,
+                  style: const TextStyle(
+                    color: CupertinoColors.systemRed,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ),
@@ -806,51 +843,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          CupertinoTextField(
-            controller: _emailController,
-            placeholder: 'Enter your email',
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: CupertinoTheme.of(context).brightness == Brightness.dark
-                  ? CupertinoColors.systemGrey6.darkColor
-                  : CupertinoColors.systemGrey6,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: _emailError != null
-                    ? CupertinoColors.systemRed
-                    : CupertinoColors.systemGrey4,
+          Semantics(
+            label: 'Email text field',
+            hint: 'Enter your email address',
+            textField: true,
+            child: CupertinoTextField(
+              controller: _emailController,
+              placeholder: 'Enter your email',
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: CupertinoTheme.of(context).brightness == Brightness.dark
+                    ? CupertinoColors.systemGrey6.darkColor
+                    : CupertinoColors.systemGrey6,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _emailError != null
+                      ? CupertinoColors.systemRed
+                      : CupertinoColors.systemGrey4,
+                ),
               ),
-            ),
-            style: const TextStyle(fontSize: 16),
-            placeholderStyle:
-                const TextStyle(color: CupertinoColors.systemGrey2),
-            prefix: const Padding(
-              padding: EdgeInsets.only(left: 12.0),
-              child: Icon(
-                CupertinoIcons.mail_solid,
-                color: CupertinoColors.systemGrey,
-                size: 18,
+              style: const TextStyle(fontSize: 16),
+              placeholderStyle:
+                  const TextStyle(color: CupertinoColors.systemGrey2),
+              prefix: const Padding(
+                padding: EdgeInsets.only(left: 12.0),
+                child: Icon(
+                  CupertinoIcons.mail_solid,
+                  color: CupertinoColors.systemGrey,
+                  size: 18,
+                  semanticLabel: 'Email icon',
+                ),
               ),
+              clearButtonMode: OverlayVisibilityMode.editing,
+              keyboardType: TextInputType.emailAddress,
+              autocorrect: false,
+              onChanged: (value) {
+                if (_emailError != null) {
+                  setState(() {
+                    _emailError = null;
+                  });
+                }
+              },
+              // Improve keyboard accessibility
+              autofocus: false,
+              enableSuggestions: true,
+              textCapitalization: TextCapitalization.none,
             ),
-            clearButtonMode: OverlayVisibilityMode.editing,
-            keyboardType: TextInputType.emailAddress,
-            autocorrect: false,
-            onChanged: (value) {
-              if (_emailError != null) {
-                setState(() {
-                  _emailError = null;
-                });
-              }
-            },
           ),
           if (_emailError != null)
             Padding(
               padding: const EdgeInsets.only(top: 6.0, left: 12.0),
-              child: Text(
-                _emailError!,
-                style: const TextStyle(
-                  color: CupertinoColors.systemRed,
-                  fontSize: 12,
+              child: Semantics(
+                label: 'Email error: $_emailError',
+                liveRegion: true, // Announce changes to this widget
+                child: Text(
+                  _emailError!,
+                  style: const TextStyle(
+                    color: CupertinoColors.systemRed,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ),
