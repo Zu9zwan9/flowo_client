@@ -335,4 +335,83 @@ class LocalNotificationService implements INotificationService {
       'Task completion check notification scheduled for: ${task.title} at ${scheduledTime.toString()}',
     );
   }
+  /// Show a notification for a task that is impossible to complete in time
+  Future<void> showTaskImpossibleToCompleteNotification(
+    Task task,
+  ) async {
+    if (!_isInitialized) await initialize();
+
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        const AndroidNotificationDetails(
+          'task_impossible_channel',
+          'Task Impossible to Complete Notifications',
+          channelDescription: 'Notifications for tasks impossible to complete in time',
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration: true,
+          playSound: true,
+        );
+
+    final DarwinNotificationDetails iOSPlatformChannelSpecifics =
+        const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        );
+
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+
+    await _flutterLocalNotificationsPlugin.show(
+      task.id.hashCode + 2000, // Different ID for impossible tasks
+      'Task Impossible to Complete: ${task.title}',
+      'This task is impossible to complete in time. Tap to reschedule or change deadline.',
+      platformChannelSpecifics,
+      payload: '${task.id}|impossible_to_complete',
+    );
+
+    logInfo('Task impossible to complete notification sent for: ${task.title}');
+  }
+
+  /// Show a notification for a task that is possible to complete if rescheduled
+  Future<void> showTaskPossibleIfRescheduledNotification(
+    Task task,
+  ) async {
+    if (!_isInitialized) await initialize();
+
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        const AndroidNotificationDetails(
+          'task_reschedule_channel',
+          'Task Reschedule Notifications',
+          channelDescription: 'Notifications for tasks that need rescheduling',
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration: true,
+          playSound: true,
+        );
+
+    final DarwinNotificationDetails iOSPlatformChannelSpecifics =
+        const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        );
+
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+
+    await _flutterLocalNotificationsPlugin.show(
+      task.id.hashCode + 3000, // Different ID for reschedule tasks
+      'Task Needs Rescheduling: ${task.title}',
+      'This task is possible to complete in time if rescheduled or if some pinned tasks are removed.',
+      platformChannelSpecifics,
+      payload: '${task.id}|possible_if_rescheduled',
+    );
+
+    logInfo('Task possible if rescheduled notification sent for: ${task.title}');
+  }
 }

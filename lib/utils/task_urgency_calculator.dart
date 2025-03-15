@@ -3,14 +3,16 @@ import 'dart:developer';
 import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
+import 'package:flowo_client/services/notification_manager.dart';
 import 'package:hive/hive.dart';
 
 import '../models/scheduled_task.dart';
 
 class TaskUrgencyCalculator {
   final Box<Day> daysDB;
+  final NotificationManager? notificationManager;
 
-  TaskUrgencyCalculator(this.daysDB);
+  TaskUrgencyCalculator(this.daysDB, {this.notificationManager});
 
   Map<Task, double> calculateUrgency(
     List<Task> tasks,
@@ -45,13 +47,16 @@ class TaskUrgencyCalculator {
     final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
     if (timeLeft - task.estimatedTime < 0) {
       log('Task ${task.title} is impossible to complete in time');
-      // TODO: message user that task is impossible to complete in time and should be rescheduled
-      // messageUserAboutOverdue(task);
-      // remove task or change deadline
+      // Notify user that task is impossible to complete in time and should be rescheduled
+      if (notificationManager != null) {
+        notificationManager!.notifyTaskImpossibleToComplete(task);
+      }
     } else {
       log('Task ${task.title} is possible to complete in time if rescheduled');
-      // show user that task is possible to complete in time, only if reschedule
-      // or remove some pinned tasks //
+      // Notify user that task is possible to complete in time if rescheduled or some pinned tasks are removed
+      if (notificationManager != null) {
+        notificationManager!.notifyTaskPossibleIfRescheduled(task);
+      }
     }
   }
 
