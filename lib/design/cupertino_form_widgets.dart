@@ -1,5 +1,9 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../utils/logger.dart';
 import 'cupertino_form_theme.dart';
 
 /// Reusable Cupertino form widgets following Apple's HIG.
@@ -137,6 +141,7 @@ class CupertinoFormWidgets {
   static Future<DateTime?> showDatePicker({
     required BuildContext context,
     required DateTime initialDate,
+    DateTime? minimumDate,
   }) async {
     DateTime? pickedDate;
     await showCupertinoModalPopup(
@@ -152,6 +157,7 @@ class CupertinoFormWidgets {
                   child: CupertinoDatePicker(
                     mode: CupertinoDatePickerMode.date,
                     initialDateTime: initialDate,
+                    minimumDate: minimumDate,
                     onDateTimeChanged: (val) => pickedDate = val,
                   ),
                 ),
@@ -185,6 +191,7 @@ class CupertinoFormWidgets {
   static Future<DateTime?> showTimePicker({
     required BuildContext context,
     required DateTime initialTime,
+    DateTime? minimumDate,
   }) async {
     DateTime? pickedTime;
     await showCupertinoModalPopup(
@@ -200,6 +207,7 @@ class CupertinoFormWidgets {
                   child: CupertinoDatePicker(
                     mode: CupertinoDatePickerMode.time,
                     initialDateTime: initialTime,
+                    minimumDate: minimumDate,
                     onDateTimeChanged: (val) => pickedTime = val,
                   ),
                 ),
@@ -227,5 +235,243 @@ class CupertinoFormWidgets {
           ),
     );
     return pickedTime;
+  }
+
+  /// Creates a duration picker for estimated or traveling time.
+  static Future<int> showDurationPicker({
+    required BuildContext context,
+    int initialHours = 0,
+    int initialMinutes = 0,
+    int maxHours = 120,
+    int minuteInterval = 15,
+  }) async {
+    int? pickedHours = initialHours;
+    int? pickedMinutes = initialMinutes;
+    await showCupertinoModalPopup(
+      context: context,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoColors.systemBackground,
+            child: Column(
+              children: [
+                SizedBox(
+                  height: 220,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: CupertinoPicker(
+                          itemExtent: 32,
+                          onSelectedItemChanged: (index) => pickedHours = index,
+                          children: [
+                            for (var i = 0; i <= maxHours; i++)
+                              Text('$i hours'),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: CupertinoPicker(
+                          itemExtent: 32,
+                          onSelectedItemChanged:
+                              (index) => pickedMinutes = index * minuteInterval,
+                          children: [
+                            for (var i = 0; i < 60 ~/ minuteInterval; i++)
+                              Text('${i * minuteInterval} minutes'),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    CupertinoButton(
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: CupertinoColors.systemGrey),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoButton(
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+    );
+    return (pickedHours ?? 0) * 3600000 + (pickedMinutes ?? 0) * 60000;
+  }
+
+  /// Creates a color picker.
+  static Widget colorPicker({
+    required List<Color> colors,
+    required int? selectedColor,
+    required ValueChanged<int?> onColorSelected,
+  }) {
+    return SizedBox(
+      height: 50,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: colors.length + 1, // +1 for "No color" option
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            // "No color" option
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () => onColorSelected(null),
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: CupertinoColors.systemBackground,
+                    border: Border.all(
+                      color:
+                          selectedColor == null
+                              ? CupertinoFormTheme.primaryColor
+                              : CupertinoColors.systemGrey4,
+                      width: 2,
+                    ),
+                  ),
+                  child:
+                      selectedColor == null
+                          ? const Icon(
+                            CupertinoIcons.checkmark,
+                            color: CupertinoFormTheme.primaryColor,
+                            size: CupertinoFormTheme.smallIconSize,
+                          )
+                          : null,
+                ),
+              ),
+            );
+          }
+
+          final color = colors[index - 1];
+          final colorValue = color.value;
+          final isSelected = selectedColor == colorValue;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => onColorSelected(colorValue),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: color,
+                  border: Border.all(
+                    color:
+                        isSelected
+                            ? CupertinoFormTheme.primaryColor
+                            : CupertinoColors.systemGrey4,
+                    width: 2,
+                  ),
+                ),
+                child:
+                    isSelected
+                        ? const Icon(
+                          CupertinoIcons.checkmark,
+                          color: CupertinoColors.white,
+                          size: CupertinoFormTheme.smallIconSize,
+                        )
+                        : null,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Creates a priority slider.
+  static Widget prioritySlider({
+    required int value,
+    required ValueChanged<int> onChanged,
+  }) {
+    return CupertinoSlider(
+      min: 1,
+      max: 10,
+      divisions: 9,
+      value: value.toDouble(),
+      onChanged: (val) => onChanged(val.toInt()),
+      activeColor: CupertinoFormTheme.getPriorityColor(value),
+      thumbColor: CupertinoColors.white,
+    );
+  }
+
+  /// Creates an image picker widget.
+  static Widget imagePicker({
+    required File? image,
+    required VoidCallback onPickImage,
+  }) {
+    return GestureDetector(
+      onTap: onPickImage,
+      child: Container(
+        padding: CupertinoFormTheme.inputPadding,
+        decoration: CupertinoFormTheme.inputDecoration,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Image', style: CupertinoFormTheme.labelTextStyle),
+            image != null
+                ? ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    image,
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                  ),
+                )
+                : const Icon(
+                  CupertinoIcons.photo,
+                  color: CupertinoColors.systemGrey,
+                  size: CupertinoFormTheme.standardIconSize,
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Picks an image from the gallery.
+  static Future<File?> pickImage(BuildContext context) async {
+    try {
+      final pickedFile = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+      );
+      if (pickedFile != null) {
+        return File(pickedFile.path);
+      }
+      return null;
+    } catch (e) {
+      logError('Failed to pick image: $e');
+      if (context.mounted) {
+        await showCupertinoDialog(
+          context: context,
+          builder:
+              (_) => CupertinoAlertDialog(
+                title: const Text('Error'),
+                content: const Text('Failed to pick image.'),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+        );
+      }
+      return null;
+    }
   }
 }

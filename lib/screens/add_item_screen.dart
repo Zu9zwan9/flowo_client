@@ -1,10 +1,9 @@
-// lib/screens/add_item_screen.dart
-import 'package:cupertino_sidebar/cupertino_sidebar.dart';
-import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../blocs/tasks_controller/tasks_controller_cubit.dart';
+import '../design/cupertino_form_theme.dart';
 import 'add_event_page.dart';
 import 'add_habit_page.dart';
 import 'add_task_page.dart';
@@ -26,9 +25,6 @@ class _AddItemScreenState extends State<AddItemScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(() {
-      setState(() {});
-    });
   }
 
   @override
@@ -65,32 +61,60 @@ class _AddItemScreenState extends State<AddItemScreen>
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Add Item'),
+        border: null,
+      ),
       child: SafeArea(
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.all(4.0),
-              child: CupertinoFloatingTabBar(
-                controller: _tabController,
-                onDestinationSelected: (index) {
+              padding: const EdgeInsets.symmetric(
+                horizontal: CupertinoFormTheme.horizontalSpacing,
+                vertical: CupertinoFormTheme.smallSpacing,
+              ),
+              child: CupertinoSegmentedControl<int>(
+                children: const {
+                  0: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: CupertinoFormTheme.smallSpacing,
+                      vertical: CupertinoFormTheme.smallSpacing / 2,
+                    ),
+                    child: Text('Task'),
+                  ),
+                  1: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: CupertinoFormTheme.smallSpacing,
+                      vertical: CupertinoFormTheme.smallSpacing / 2,
+                    ),
+                    child: Text('Event'),
+                  ),
+                  2: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: CupertinoFormTheme.smallSpacing,
+                      vertical: CupertinoFormTheme.smallSpacing / 2,
+                    ),
+                    child: Text('Habit'),
+                  ),
+                },
+                groupValue: _tabController.index,
+                onValueChanged: (index) {
                   setState(() {
                     _tabController.index = index;
                   });
                 },
-                tabs: const [
-                  CupertinoFloatingTab(child: Text('Task')),
-                  CupertinoFloatingTab(child: Text('Event')),
-                  CupertinoFloatingTab(child: Text('Habit')),
-                ],
+                borderColor: CupertinoColors.systemGrey4,
+                selectedColor: CupertinoFormTheme.primaryColor,
+                unselectedColor: CupertinoColors.systemBackground,
+                pressedColor: CupertinoFormTheme.primaryColor.withOpacity(0.2),
               ),
             ),
             Expanded(
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: child,
-                ),
+                transitionBuilder:
+                    (child, animation) =>
+                        FadeTransition(opacity: animation, child: child),
                 child: _buildTabContent(_tabController.index),
               ),
             ),
