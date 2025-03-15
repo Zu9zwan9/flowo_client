@@ -24,15 +24,14 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       sleepTime: (fields[4] as List).cast<TimeFrame>(),
       freeTime: (fields[5] as List).cast<TimeFrame>(),
       activeDays: (fields[6] as Map?)?.cast<String, bool>(),
-      defaultNotificationType:
-          fields[7] as NotificationType? ?? NotificationType.sound,
+      defaultNotificationType: fields[7] as NotificationType,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserSettings obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -46,7 +45,9 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       ..writeByte(5)
       ..write(obj.freeTime)
       ..writeByte(6)
-      ..write(obj.activeDays);
+      ..write(obj.activeDays)
+      ..writeByte(7)
+      ..write(obj.defaultNotificationType);
   }
 
   @override

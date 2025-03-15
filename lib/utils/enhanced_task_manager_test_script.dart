@@ -58,7 +58,7 @@ Future<void> main() async {
     deadline: DateTime.now()
         .add(const Duration(days: 7))
         .millisecondsSinceEpoch, // 1 week deadline
-    category: flowo.Category.work,
+    category: flowo.Category(name: 'Work'),
   );
 
   // Add the task to the mock box
