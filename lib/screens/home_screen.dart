@@ -234,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen>
             left: _isExpanded ? 0 : -320,
             top: 0,
             bottom: 0,
-            width: 280,
+            width: 320,
             child: ClipRRect(
               borderRadius: const BorderRadius.only(
                 topRight: Radius.circular(20),
@@ -377,43 +377,94 @@ class _HomeScreenState extends State<HomeScreen>
           ),
 
           // Menu button to toggle sidebar
+
+          // Menu button to toggle sidebar (hamburger menu only)
           Positioned(
             top: 0,
             left: 0,
             child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              child: Visibility(
+                visible: !_isExpanded, // Only show when sidebar is closed
                 child: GestureDetector(
                   onTap: _toggleSidebar,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color:
-                          isDarkMode
-                              ? CupertinoColors.darkBackgroundGray.withOpacity(
-                                0.8,
-                              )
-                              : CupertinoColors.white.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: CupertinoColors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        _isExpanded
-                            ? CupertinoIcons.xmark
-                            : CupertinoIcons.line_horizontal_3,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
                         color:
                             isDarkMode
-                                ? CupertinoColors.white
-                                : CupertinoColors.black,
-                        size: 22,
+                                ? CupertinoColors.darkBackgroundGray
+                                    .withOpacity(0.8)
+                                : CupertinoColors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: CupertinoColors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          CupertinoIcons.line_horizontal_3,
+                          color:
+                              isDarkMode
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Close button (x-mark) on right side of sidebar when expanded
+          Positioned(
+            top: 0,
+            left:
+                _isExpanded
+                    ? 288
+                    : -50, // Position on right side of sidebar when open
+            child: SafeArea(
+              child: Visibility(
+                visible: _isExpanded,
+                child: GestureDetector(
+                  onTap: _toggleSidebar,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color:
+                            isDarkMode
+                                ? CupertinoColors.darkBackgroundGray
+                                    .withOpacity(0.8)
+                                : CupertinoColors.white.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: CupertinoColors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Icon(
+                          CupertinoIcons.xmark,
+                          color:
+                              isDarkMode
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
+                          size: 22,
+                        ),
                       ),
                     ),
                   ),
