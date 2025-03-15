@@ -188,9 +188,12 @@ class AddTaskPageState extends State<AddTaskPage>
                       ],
                     ),
                     SizedBox(height: CupertinoFormTheme.smallSpacing),
-                    CupertinoFormWidgets.prioritySlider(
-                      value: _priority,
-                      onChanged: (value) => setState(() => _priority = value),
+                    SizedBox(
+                      width: double.infinity,
+                      child: CupertinoFormWidgets.prioritySlider(
+                        value: _priority,
+                        onChanged: (value) => setState(() => _priority = value),
+                      ),
                     ),
                   ],
                 ),
