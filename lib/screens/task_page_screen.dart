@@ -1258,7 +1258,10 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     }
   }
 
-  Future<void> _rescheduleTask(BuildContext context) async {
+  Future<void> _rescheduleTask([BuildContext? ctx]) async {
+    // Use the provided context or the current context
+    final context = ctx ?? this.context;
+
     // Show loading indicator
     showCupertinoDialog(
       context: context,
@@ -1380,128 +1383,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
 
       // Show error dialog
       _showErrorDialog('Failed to estimate subtask times: $e');
-    }
-  }
-
-  Future<void> _estimateTimeWithAI() async {
-    // Show loading indicator
-    showCupertinoDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const CupertinoAlertDialog(
-        title: Text('Estimating Time'),
-        content: Padding(
-          padding: EdgeInsets.only(top: 16.0),
-          child: Center(
-            child: CupertinoActivityIndicator(),
-          ),
-        ),
-      ),
-    );
-
-    try {
-      // Call the TaskManagerCubit to estimate time for the task
-      final estimatedTime =
-          await context.read<TaskManagerCubit>().estimateTaskTime(_task);
-
-      // Close the loading dialog
-      Navigator.pop(context);
-
-      if (mounted) {
-        setState(() {
-          _task.estimatedTime = estimatedTime;
-          _task.save();
-        });
-
-        // Show success dialog
-        showCupertinoDialog(
-          context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('Time Estimated'),
-            content: Text(
-                'The AI estimates this task will take ${(_task.estimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_task.estimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m to complete.'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(context),
-              ),
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('Reschedule Now'),
-                onPressed: () {
-                  Navigator.pop(context);
-                  _rescheduleTask();
-                },
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      // Close the loading dialog
-      Navigator.pop(context);
-
-      // Show error dialog
-      _showErrorDialog('Failed to estimate time: $e');
-    }
-  }
-
-  Future<void> _rescheduleTask() async {
-    // Show loading indicator
-    showCupertinoDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const CupertinoAlertDialog(
-        title: Text('Rescheduling Task'),
-        content: Padding(
-          padding: EdgeInsets.only(top: 16.0),
-          child: Center(
-            child: CupertinoActivityIndicator(),
-          ),
-        ),
-      ),
-    );
-
-    try {
-      // Remove previous scheduled tasks
-      context.read<TaskManagerCubit>().removeScheduledTasks();
-
-      // Schedule the task
-      context.read<TaskManagerCubit>().scheduleTask(_task);
-
-      // Close the loading dialog
-      Navigator.pop(context);
-
-      // Show success dialog
-      showCupertinoDialog(
-        context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Task Rescheduled'),
-          content: const Text(
-              'The task has been rescheduled with the new estimated time.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
-            ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('View in Calendar'),
-              onPressed: () {
-                Navigator.pop(context);
-                // Navigate to the home screen (which typically has the calendar view)
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      // Close the loading dialog
-      Navigator.pop(context);
-
-      // Show error dialog
-      _showErrorDialog('Failed to reschedule task: $e');
     }
   }
 
