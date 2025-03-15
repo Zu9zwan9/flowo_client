@@ -7,7 +7,6 @@ import 'package:flowo_client/screens/calendar_screen.dart';
 import 'package:flowo_client/screens/profile_screen.dart';
 import 'package:flowo_client/screens/settings_screen.dart';
 import 'package:flowo_client/screens/task_list_screen.dart';
-import 'package:flowo_client/screens/widgets/menu_button.dart';
 import 'package:flowo_client/screens/widgets/sidebar_menu_item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -381,21 +380,14 @@ class _HomeScreenState extends State<HomeScreen>
           Positioned(
             top: 0,
             left: 0,
-            child: MenuButton(isExpanded: _isExpanded, onTap: _toggleSidebar),
-          ),
-
-          // Menu button to toggle sidebar
-          Positioned(
-            top: 0,
-            left: 0,
             child: SafeArea(
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: GestureDetector(
                   onTap: _toggleSidebar,
                   child: Container(
-                    width: 44,
-                    height: 44,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                       color:
                           isDarkMode
