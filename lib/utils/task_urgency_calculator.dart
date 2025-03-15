@@ -4,6 +4,7 @@ import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/services/notification_manager.dart';
+import 'package:flowo_client/utils/logger.dart';
 import 'package:hive/hive.dart';
 
 import '../models/scheduled_task.dart';
@@ -69,15 +70,22 @@ class TaskUrgencyCalculator {
     final relevantDays = daysDB.values.where(
       (day) => day.scheduledTasks.any(
         (task) =>
-            task.type == ScheduledTaskType.timeSensitive &&
+            (task.type == ScheduledTaskType.timeSensitive ||
+                task.type == ScheduledTaskType.mealBreak ||
+                task.type == ScheduledTaskType.rest ||
+                task.type == ScheduledTaskType.sleep) &&
             task.startTime.millisecondsSinceEpoch >= now &&
             task.endTime.millisecondsSinceEpoch <= deadline,
       ),
     );
 
+
     for (var day in relevantDays) {
       for (var scheduledTask in day.scheduledTasks) {
-        if (scheduledTask.type == ScheduledTaskType.timeSensitive &&
+        if ((scheduledTask.type == ScheduledTaskType.timeSensitive ||
+            scheduledTask.type == ScheduledTaskType.mealBreak ||
+            scheduledTask.type == ScheduledTaskType.rest ||
+            scheduledTask.type == ScheduledTaskType.sleep) &&
             scheduledTask.startTime.millisecondsSinceEpoch >= now &&
             scheduledTask.endTime.millisecondsSinceEpoch <= deadline) {
           busyTime +=
@@ -99,6 +107,8 @@ class TaskUrgencyCalculator {
         }
       }
     }
+
+    logDebug('busy time -> ${busyTime.toString()}');
 
     return busyTime;
   }

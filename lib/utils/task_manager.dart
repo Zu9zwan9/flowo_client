@@ -132,7 +132,10 @@ class TaskManager {
   }
 
   void scheduleTasks() {
-    final tasks = tasksDB.values.toList();
+    final tasks = tasksDB.values
+        .where((task) => (task.frequency == null) && task.subtasks.isEmpty)
+        .toList();
+
     tasks.removeWhere((task) => task.id == 'free_time_manager');
     final justScheduledTasks = <ScheduledTask>[];
 
