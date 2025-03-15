@@ -1,4 +1,5 @@
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
+import 'package:flowo_client/screens/widgets/calendar_widgets.dart';
 import 'package:flowo_client/utils/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,7 +8,10 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/task_manager_state.dart';
 import '../models/scheduled_task.dart';
+import '../models/task.dart';
 
+/// An improved Calendar screen with enhanced UI/UX following iOS design guidelines
+/// and implementing best practices, SOLID principles, and proper error handling.
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
@@ -17,14 +21,42 @@ class CalendarScreen extends StatefulWidget {
 
 class CalendarScreenState extends State<CalendarScreen> {
   final ScrollController _scrollController = ScrollController();
-  DateTime selectedDate = DateTime.now();
+  DateTime _selectedDate = DateTime.now();
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  CalendarView _calendarView = CalendarView.month;
+  bool _isRefreshing = false;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _loadInitialData();
+  }
+
+  Future<void> _loadInitialData() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Select the current date in the calendar cubit
+      context.read<CalendarCubit>().selectDate(_selectedDate);
+
+      // Ensure tasks are scheduled
+      context.read<TaskManagerCubit>().scheduleTasks();
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load calendar data: ${e.toString()}';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _onSearchChanged() {
@@ -35,9 +67,210 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   void _onDateSelected(DateTime newDate) {
     setState(() {
-      selectedDate = newDate;
+      _selectedDate = newDate;
     });
     context.read<CalendarCubit>().selectDate(newDate);
+  }
+
+  Future<void> _refreshData() async {
+    if (_isRefreshing) return;
+
+    setState(() {
+      _isRefreshing = true;
+      _errorMessage = null;
+    });
+
+    try {
+      // Reload data
+      context.read<TaskManagerCubit>().scheduleTasks();
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to refresh data: ${e.toString()}';
+      });
+    } finally {
+      setState(() {
+        _isRefreshing = false;
+      });
+    }
+  }
+
+  void _onViewChanged(CalendarView newView) {
+    setState(() {
+      _calendarView = newView;
+    });
+  }
+
+  void _goToToday() {
+    _onDateSelected(DateTime.now());
+  }
+
+  void _goToPreviousPeriod() {
+    DateTime newDate;
+    switch (_calendarView) {
+      case CalendarView.month:
+        newDate = DateTime(_selectedDate.year, _selectedDate.month - 1, 1);
+        break;
+      case CalendarView.week:
+        newDate = _selectedDate.subtract(const Duration(days: 7));
+        break;
+      case CalendarView.day:
+        newDate = _selectedDate.subtract(const Duration(days: 1));
+        break;
+      default:
+        newDate = DateTime(_selectedDate.year, _selectedDate.month - 1, 1);
+    }
+    _onDateSelected(newDate);
+  }
+
+  void _goToNextPeriod() {
+    DateTime newDate;
+    switch (_calendarView) {
+      case CalendarView.month:
+        newDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1);
+        break;
+      case CalendarView.week:
+        newDate = _selectedDate.add(const Duration(days: 7));
+        break;
+      case CalendarView.day:
+        newDate = _selectedDate.add(const Duration(days: 1));
+        break;
+      default:
+        newDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1);
+    }
+    _onDateSelected(newDate);
+  }
+
+  void _showEventDetails(Task task, ScheduledTask scheduledTask) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        title: Text(task.title),
+        message: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Text(
+              '${DateTimeFormatter.formatTime(scheduledTask.startTime)} - ${DateTimeFormatter.formatTime(scheduledTask.endTime)}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (task.notes != null && task.notes!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                task.notes!,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              'Category: ${task.category.name}',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to edit event screen
+              // This would be implemented in a real app
+            },
+            child: const Text('Edit Event'),
+          ),
+          CupertinoActionSheetAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+              _showDeleteConfirmation(task);
+            },
+            child: const Text('Delete Event'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(Task task) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Delete Event'),
+        content: Text('Are you sure you want to delete "${task.title}"?'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteTask(task);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteTask(Task task) async {
+    try {
+      context.read<TaskManagerCubit>().deleteTask(task);
+      _showSuccessMessage('Event deleted successfully');
+    } catch (e) {
+      _showErrorMessage('Failed to delete event: ${e.toString()}');
+    }
+  }
+
+  void _showSuccessMessage(String message) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => CupertinoActionSheet(
+        message: Text(
+          message,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('OK'),
+        ),
+      ),
+    );
+  }
+
+  void _showErrorMessage(String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToAddEvent() {
+    // This would navigate to the add event screen in a real app
+    _showSuccessMessage('Add Event functionality would be implemented here');
   }
 
   @override
@@ -53,23 +286,65 @@ class CalendarScreenState extends State<CalendarScreen> {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Calendar'),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _navigateToAddEvent,
+          child: const Icon(CupertinoIcons.add),
+        ),
       ),
-      child: SafeArea(child: _buildSplitView()),
+      child: SafeArea(
+        child: _buildContent(),
+      ),
     );
   }
 
-  Widget _buildSplitView() {
+  Widget _buildContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CupertinoActivityIndicator(radius: 16),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: EmptyStateView(
+          title: 'Error Loading Calendar',
+          message: _errorMessage,
+          icon: CupertinoIcons.exclamationmark_circle,
+          actionLabel: 'Retry',
+          onActionPressed: _loadInitialData,
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 400,
-          child: _buildCalendar(showAgenda: false, context: context),
+        // Calendar view selector
+        CalendarViewSelector(
+          selectedView: _calendarView,
+          onViewChanged: _onViewChanged,
         ),
+
+        // Calendar header
+        CalendarHeader(
+          selectedDate: _selectedDate,
+          onTodayPressed: _goToToday,
+          onPreviousPressed: _goToPreviousPeriod,
+          onNextPressed: _goToNextPeriod,
+        ),
+
+        // Calendar view
+        SizedBox(
+          height: 350,
+          child: _buildCalendar(),
+        ),
+
+        // Selected date header
         Padding(
           padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
           child: Text(
-            '${_weekdayName(selectedDate.weekday)}, ${_monthName(selectedDate.month)} ${selectedDate.day}',
+            '${_weekdayName(_selectedDate.weekday)}, ${_monthName(_selectedDate.month)} ${_selectedDate.day}',
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -77,6 +352,8 @@ class CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
         ),
+
+        // Search field
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: CupertinoSearchTextField(
@@ -85,39 +362,44 @@ class CalendarScreenState extends State<CalendarScreen> {
             onChanged: (value) => setState(() {}),
           ),
         ),
+
+        // Agenda view
         Expanded(
-          child: _buildCustomAgenda(),
+          child: _buildAgendaView(),
         ),
       ],
     );
   }
 
-  Widget _buildCalendar(
-      {required bool showAgenda, required BuildContext context}) {
+  Widget _buildCalendar() {
     return BlocBuilder<TaskManagerCubit, TaskManagerState>(
       builder: (context, state) {
         return SfCalendar(
-          view: CalendarView.month,
-          showNavigationArrow: true,
-          showDatePickerButton: true,
-          dataSource: TaskDataSource(
+          view: _calendarView,
+          showNavigationArrow: false,
+          showDatePickerButton: false,
+          dataSource: CalendarTaskDataSource(
               context.read<TaskManagerCubit>().getScheduledTasks()),
-          initialSelectedDate: selectedDate,
+          initialSelectedDate: _selectedDate,
           onTap: (details) {
             if (details.date != null) {
               _onDateSelected(details.date!);
             }
           },
-          monthViewSettings: MonthViewSettings(
+          monthViewSettings: const MonthViewSettings(
             appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
-            showAgenda: showAgenda,
-            agendaStyle: const AgendaStyle(
-              appointmentTextStyle:
-                  TextStyle(fontSize: 14, color: CupertinoColors.black),
-              dateTextStyle:
-                  TextStyle(fontSize: 12, color: CupertinoColors.systemGrey),
-              dayTextStyle:
-                  TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            showAgenda: false,
+          ),
+          timeSlotViewSettings: const TimeSlotViewSettings(
+            startHour: 6,
+            endHour: 22,
+            timeFormat: 'h:mm a',
+            timeInterval: Duration(minutes: 30),
+            timeIntervalHeight: 80,
+            timeTextStyle: TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+              color: CupertinoColors.systemGrey,
             ),
           ),
           selectionDecoration: BoxDecoration(
@@ -125,9 +407,7 @@ class CalendarScreenState extends State<CalendarScreen> {
             color: CupertinoColors.activeBlue.withOpacity(0.2),
           ),
           todayHighlightColor: CupertinoColors.activeBlue,
-          headerStyle: const CalendarHeaderStyle(
-            textStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-          ),
+          headerHeight: 0, // Hide the default header
           viewHeaderStyle: const ViewHeaderStyle(
             dayTextStyle:
                 TextStyle(fontSize: 12, color: CupertinoColors.systemGrey),
@@ -138,33 +418,48 @@ class CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  Widget _buildCustomAgenda() {
-    final brightness = CupertinoTheme.of(context).brightness;
-    final containerColor = brightness == Brightness.dark
-        ? CupertinoColors.darkBackgroundGray
-        : CupertinoColors.white;
-    final textColor = brightness == Brightness.dark
-        ? CupertinoColors.white
-        : CupertinoColors.black;
-    final secondaryTextColor = brightness == Brightness.dark
-        ? CupertinoColors.systemGrey
-        : CupertinoColors.systemGrey;
+  Widget _buildAgendaView() {
+    return CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        CupertinoSliverRefreshControl(
+          onRefresh: _refreshData,
+        ),
+        SliverFillRemaining(
+          child: _buildAgendaContent(),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildAgendaContent() {
     return FutureBuilder<List<TaskWithSchedules>>(
       future: context
           .read<TaskManagerCubit>()
-          .getScheduledTasksForDate(selectedDate),
+          .getScheduledTasksForDate(_selectedDate),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CupertinoActivityIndicator());
         } else if (snapshot.hasError) {
           return Center(
-              child: Text('Error: ${snapshot.error}',
-                  style: TextStyle(color: secondaryTextColor)));
+            child: EmptyStateView(
+              title: 'Error Loading Events',
+              message: 'Pull down to refresh and try again',
+              icon: CupertinoIcons.exclamationmark_circle,
+              actionLabel: 'Retry',
+              onActionPressed: _refreshData,
+            ),
+          );
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return Center(
-              child: Text('No tasks scheduled',
-                  style: TextStyle(fontSize: 16, color: secondaryTextColor)));
+            child: EmptyStateView(
+              title: 'No Events Scheduled',
+              message: 'Tap the + button to add a new event',
+              icon: CupertinoIcons.calendar_badge_plus,
+              actionLabel: 'Add Event',
+              onActionPressed: _navigateToAddEvent,
+            ),
+          );
         } else {
           var taskSchedulePairs = snapshot.data!
               .expand((taskWithSchedules) => taskWithSchedules.scheduledTasks
@@ -197,101 +492,17 @@ class CalendarScreenState extends State<CalendarScreen> {
                 final pair = taskSchedulePairs[index];
                 final task = pair.task;
                 final scheduledTask = pair.scheduledTask;
-                final startTime = scheduledTask.startTime;
-                final endTime = scheduledTask.endTime;
 
-                return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 50,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            const SizedBox(height: 6),
-                            Text(DateTimeFormatter.formatTime(startTime),
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: textColor)),
-                            const SizedBox(height: 16),
-                            Text(DateTimeFormatter.formatTime(endTime),
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: textColor)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 1),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: containerColor,
-                            borderRadius: BorderRadius.circular(8),
-                            border:
-                                Border.all(color: CupertinoColors.systemGrey4),
-                            boxShadow: [
-                              BoxShadow(
-                                  color:
-                                      CupertinoColors.black.withOpacity(0.05),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2))
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 4,
-                                height: 40,
-                                color: _getCategoryColor(task.category.name),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      task.title == 'Free Time'
-                                          ? freeTimeName(scheduledTask.type
-                                              .toString()
-                                              .split('.')
-                                              .last)
-                                          : task.title,
-                                      style: CupertinoTheme.of(context)
-                                          .textTheme
-                                          .textStyle
-                                          .copyWith(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color: textColor),
-                                    ),
-                                    if (task.notes != null &&
-                                        task.notes!.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        task.notes!,
-                                        style: TextStyle(
-                                            fontSize: 12,
-                                            color: secondaryTextColor),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                return AgendaItem(
+                  title: task.title == 'Free Time'
+                      ? _freeTimeName(
+                          scheduledTask.type.toString().split('.').last)
+                      : task.title,
+                  subtitle: task.notes,
+                  startTime: scheduledTask.startTime,
+                  endTime: scheduledTask.endTime,
+                  categoryColor: _getCategoryColor(task.category.name),
+                  onTap: () => _showEventDetails(task, scheduledTask),
                 );
               },
             ),
@@ -301,7 +512,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  String freeTimeName(String type) {
+  String _freeTimeName(String type) {
     switch (type) {
       case 'sleep':
         return 'Sleep';
@@ -357,45 +568,10 @@ class CalendarScreenState extends State<CalendarScreen> {
         return CupertinoColors.systemOrange;
       case 'presentation':
         return CupertinoColors.systemPurple;
+      case 'event':
+        return CupertinoColors.systemIndigo;
       default:
         return CupertinoColors.systemGrey;
     }
-  }
-}
-
-class TaskDataSource extends CalendarDataSource {
-  TaskDataSource(List<ScheduledTask> scheduledTasks) {
-    appointments = scheduledTasks;
-  }
-
-  @override
-  DateTime getStartTime(int index) => appointments![index].startTime;
-
-  @override
-  DateTime getEndTime(int index) => appointments![index].endTime;
-
-  @override
-  String getSubject(int index) =>
-      appointments![index].parentTask?.title ?? 'Untitled';
-
-  @override
-  Color getColor(int index) => _getCategoryColor(
-      appointments![index].parentTask?.category.name ?? 'default');
-}
-
-Color _getCategoryColor(String category) {
-  switch (category.toLowerCase()) {
-    case 'brainstorm':
-      return CupertinoColors.systemBlue;
-    case 'design':
-      return CupertinoColors.systemGreen;
-    case 'workout':
-      return CupertinoColors.systemRed;
-    case 'meeting':
-      return CupertinoColors.systemOrange;
-    case 'presentation':
-      return CupertinoColors.systemPurple;
-    default:
-      return CupertinoColors.systemGrey;
   }
 }

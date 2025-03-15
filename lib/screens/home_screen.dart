@@ -10,10 +10,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'calendar_screen.dart';
+import 'package:flowo_client/screens/calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final dynamic initialIndex;
+  final int initialIndex;
   final bool initialExpanded;
 
   const HomeScreen({
