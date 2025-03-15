@@ -1,39 +1,32 @@
-import 'package:flowo_client/models/category.dart';
+import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive/hive.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 
-class TaskEditScreen extends StatefulWidget {
-  final Task task;
+class EventEditScreen extends StatefulWidget {
+  final Task event;
 
-  const TaskEditScreen({super.key, required this.task});
+  const EventEditScreen({super.key, required this.event});
 
   @override
-  TaskEditScreenState createState() => TaskEditScreenState();
+  EventEditScreenState createState() => EventEditScreenState();
 }
 
-class TaskEditScreenState extends State<TaskEditScreen> {
+class EventEditScreenState extends State<EventEditScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
+  final _locationController = TextEditingController();
 
-  late int _estimatedTime;
   late DateTime _selectedDate;
-  late DateTime _selectedTime;
-  late String _selectedCategory;
-  late int _priority;
+  late DateTime _startTime;
+  late DateTime _endTime;
   int? _selectedColor;
-
-  final List<String> _categoryOptions = [
-    'Brainstorm',
-    'Design',
-    'Workout',
-    'Add'
-  ];
 
   final List<Color> _colorOptions = [
     CupertinoColors.systemRed,
@@ -49,41 +42,48 @@ class TaskEditScreenState extends State<TaskEditScreen> {
   void initState() {
     super.initState();
 
-    // Initialize controllers and variables with task data
-    _titleController.text = widget.task.title;
-    _notesController.text = widget.task.notes ?? '';
-    _estimatedTime = widget.task.estimatedTime;
-    _selectedDate = DateTime.fromMillisecondsSinceEpoch(widget.task.deadline);
-    _selectedTime = _selectedDate;
-    _selectedCategory = widget.task.category.name;
-    _priority = widget.task.priority;
-    _selectedColor = widget.task.color;
+    // Initialize controllers and variables with event data
+    _titleController.text = widget.event.title;
+    _notesController.text = widget.event.notes ?? '';
+    _locationController.text = widget.event.location?.toString() ?? '';
 
-    // Add the task's category to the options if it's not already there
-    if (!_categoryOptions.contains(_selectedCategory) &&
-        _selectedCategory != 'Add') {
-      _categoryOptions.insert(_categoryOptions.length - 1, _selectedCategory);
+    // Get the scheduled task for this event (assuming it's the first one)
+    final scheduledTask = widget.event.scheduledTasks.isNotEmpty
+        ? widget.event.scheduledTasks.first
+        : null;
+
+    // Initialize date and time
+    _selectedDate = DateTime.fromMillisecondsSinceEpoch(widget.event.deadline);
+
+    if (scheduledTask != null) {
+      _startTime = scheduledTask.startTime;
+      _endTime = scheduledTask.endTime;
+    } else {
+      _startTime = _selectedDate;
+      _endTime = _selectedDate.add(const Duration(hours: 1));
     }
+
+    _selectedColor = widget.event.color;
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _notesController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
   String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 
-  String _formatTime(DateTime? time) => time != null
-      ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
-      : 'Not set';
+  String _formatTime(DateTime time) =>
+      '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
       navigationBar: const CupertinoNavigationBar(
-        middle: Text('Edit Task'),
+        middle: Text('Edit Event'),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
@@ -93,11 +93,11 @@ class TaskEditScreenState extends State<TaskEditScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionTitle('Task Details'),
+                _buildSectionTitle('Event Details'),
                 const SizedBox(height: 12),
                 _buildTextField(
                   controller: _titleController,
-                  placeholder: 'Task Name *',
+                  placeholder: 'Event Name *',
                   validator: (value) => value!.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 12),
@@ -105,37 +105,21 @@ class TaskEditScreenState extends State<TaskEditScreen> {
                     controller: _notesController,
                     placeholder: 'Notes',
                     maxLines: 3),
+                const SizedBox(height: 12),
+                _buildTextField(
+                    controller: _locationController, placeholder: 'Location'),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Deadline'),
+                _buildSectionTitle('Date'),
                 const SizedBox(height: 12),
                 _buildDateButton(context),
-                const SizedBox(height: 12),
-                _buildTimeButton(context),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Estimated Time'),
+                _buildSectionTitle('Start Time'),
                 const SizedBox(height: 12),
-                _buildEstimatedTimeButton(context),
+                _buildTimeButton(context, isStart: true),
                 const SizedBox(height: 20),
-                _buildSectionTitle('Category'),
+                _buildSectionTitle('End Time'),
                 const SizedBox(height: 12),
-                _buildSegmentedControl(
-                  options: _categoryOptions,
-                  value: _selectedCategory,
-                  onChanged: _handleCategoryChange,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    _buildSectionTitle('Priority '),
-                    Text(
-                      _priority.toString(),
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                _buildPrioritySlider(),
+                _buildTimeButton(context, isStart: false),
                 const SizedBox(height: 20),
                 _buildSectionTitle('Color'),
                 const SizedBox(height: 12),
@@ -201,99 +185,41 @@ class TaskEditScreenState extends State<TaskEditScreen> {
         ),
       );
 
-  Widget _buildTimeButton(BuildContext context) => GestureDetector(
-        onTap: () => _showTimePicker(context),
+  Widget _buildTimeButton(BuildContext context, {required bool isStart}) =>
+      GestureDetector(
+        onTap: () => _showTimePicker(context, isStart: isStart),
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
-            color: (CupertinoColors.systemBlue).withOpacity(0.1),
+            color: (isStart
+                    ? CupertinoColors.systemGreen
+                    : CupertinoColors.systemOrange)
+                .withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Time',
+              Text('Time',
                   style: TextStyle(
-                      fontSize: 16, color: CupertinoColors.systemBlue)),
-              Text(_formatTime(_selectedTime),
+                      fontSize: 16,
+                      color: isStart
+                          ? CupertinoColors.systemGreen
+                          : CupertinoColors.systemOrange)),
+              Text(_formatTime(isStart ? _startTime : _endTime),
                   style: const TextStyle(
                       fontSize: 16, color: CupertinoColors.label)),
             ],
           ),
         ),
-      );
-
-  Widget _buildSegmentedControl({
-    required List<String> options,
-    required String value,
-    required ValueChanged<String> onChanged,
-    Color selectedColor = CupertinoColors.activeBlue,
-  }) =>
-      CupertinoSegmentedControl<String>(
-        children: {
-          for (var item in options)
-            item: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child:
-                  Text(item.toString(), style: const TextStyle(fontSize: 14)),
-            ),
-        },
-        groupValue: options.contains(value) ? value : null,
-        onValueChanged: onChanged,
-        borderColor: CupertinoColors.systemGrey4,
-        selectedColor: selectedColor,
-        unselectedColor: CupertinoColors.systemGrey6,
-        pressedColor: selectedColor.withOpacity(0.2),
       );
 
   Widget _buildSaveButton(BuildContext context) => Center(
         child: CupertinoButton.filled(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          onPressed: () => _saveTask(context),
+          onPressed: () => _saveEvent(context),
           child: const Text('Save Changes',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-        ),
-      );
-
-  Widget _buildEstimatedTimeButton(BuildContext context) => GestureDetector(
-        onTap: () async {
-          final estimatedTime = await _showEstimatedTimePicker(context);
-          if (mounted) {
-            setState(() => _estimatedTime = estimatedTime);
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            color: CupertinoColors.systemBlue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Estimated Time',
-                  style: TextStyle(
-                      fontSize: 16, color: CupertinoColors.systemBlue)),
-              Text(
-                  '${(_estimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_estimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
-                  style: const TextStyle(
-                      fontSize: 16, color: CupertinoColors.label)),
-            ],
-          ),
-        ),
-      );
-
-  Widget _buildPrioritySlider() => SizedBox(
-        width: double.infinity,
-        child: CupertinoSlider(
-          min: 1,
-          max: 10,
-          divisions: 9,
-          // Ensure the value is within the valid range
-          value:
-              _priority < 1 ? 1 : (_priority > 10 ? 10 : _priority.toDouble()),
-          onChanged: (value) => setState(() => _priority = value.toInt()),
-          activeColor: CupertinoColors.systemOrange,
         ),
       );
 
@@ -401,11 +327,21 @@ class TaskEditScreenState extends State<TaskEditScreen> {
       ),
     );
     if (pickedDate != null && mounted) {
-      setState(() => _selectedDate = pickedDate!);
+      setState(() {
+        _selectedDate = pickedDate!;
+
+        // Update start and end times to maintain the same time on the new date
+        _startTime = DateTime(pickedDate!.year, pickedDate!.month,
+            pickedDate!.day, _startTime.hour, _startTime.minute);
+
+        _endTime = DateTime(pickedDate!.year, pickedDate!.month,
+            pickedDate!.day, _endTime.hour, _endTime.minute);
+      });
     }
   }
 
-  Future<void> _showTimePicker(BuildContext context) async {
+  Future<void> _showTimePicker(BuildContext context,
+      {required bool isStart}) async {
     Duration? pickedDuration;
     await showCupertinoModalPopup(
       context: context,
@@ -419,8 +355,8 @@ class TaskEditScreenState extends State<TaskEditScreen> {
               child: CupertinoTimerPicker(
                 mode: CupertinoTimerPickerMode.hm,
                 initialTimerDuration: Duration(
-                    hours: (_selectedTime).hour,
-                    minutes: (_selectedTime).minute),
+                    hours: (isStart ? _startTime : _endTime).hour,
+                    minutes: (isStart ? _startTime : _endTime).minute),
                 onTimerDurationChanged: (duration) => pickedDuration = duration,
               ),
             ),
@@ -437,48 +373,25 @@ class TaskEditScreenState extends State<TaskEditScreen> {
             _selectedDate.day,
             pickedDuration!.inHours,
             pickedDuration!.inMinutes % 60);
-        _selectedTime = time;
+
+        if (isStart) {
+          _startTime = time;
+
+          // If end time is before start time, adjust it
+          if (_endTime.isBefore(_startTime)) {
+            _endTime = _startTime.add(const Duration(hours: 1));
+          }
+        } else {
+          // Ensure end time is after start time
+          if (time.isAfter(_startTime)) {
+            _endTime = time;
+          } else {
+            // Show error message
+            _showErrorDialog('End time must be after start time');
+          }
+        }
       });
     }
-  }
-
-  Future<int> _showEstimatedTimePicker(BuildContext context) async {
-    int? pickedHours;
-    int? pickedMinutes;
-    await showCupertinoModalPopup(
-      context: context,
-      builder: (context) => Container(
-        height: 300,
-        color: CupertinoColors.systemBackground,
-        child: Row(
-          children: [
-            Expanded(
-              child: CupertinoPicker(
-                itemExtent: 32,
-                onSelectedItemChanged: (index) {
-                  pickedHours = index;
-                },
-                children: [
-                  for (var i = 0; i <= 120; i++) Text('$i hours'),
-                ],
-              ),
-            ),
-            Expanded(
-              child: CupertinoPicker(
-                itemExtent: 32,
-                onSelectedItemChanged: (index) {
-                  pickedMinutes = index * 15;
-                },
-                children: [
-                  for (var i = 0; i < 4; i++) Text('${i * 15} minutes'),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    return (pickedHours ?? 0) * 3600000 + (pickedMinutes ?? 0) * 60000;
   }
 
   Widget _buildPickerActions(BuildContext context) => Row(
@@ -495,90 +408,82 @@ class TaskEditScreenState extends State<TaskEditScreen> {
         ],
       );
 
-  void _handleCategoryChange(String value) {
-    if (value == 'Add') {
-      _showAddCategoryDialog(context);
-    } else {
-      setState(() => _selectedCategory = value);
-    }
-  }
-
-  void _showAddCategoryDialog(BuildContext context) {
-    final controller = TextEditingController();
+  void _showErrorDialog(String message) {
     showCupertinoDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Add Custom Category'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: CupertinoTextField(
-            controller: controller,
-            placeholder: 'Category Name',
-            decoration: BoxDecoration(
-                color: CupertinoColors.systemGrey6,
-                borderRadius: BorderRadius.circular(8)),
-          ),
-        ),
+      builder: (_) => CupertinoAlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
         actions: [
           CupertinoDialogAction(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(context)),
-          CupertinoDialogAction(
             isDefaultAction: true,
-            child: const Text('Add'),
-            onPressed: () {
-              final newCategory = controller.text.trim();
-              if (newCategory.isNotEmpty && mounted) {
-                setState(() {
-                  if (!_categoryOptions.contains(newCategory)) {
-                    _categoryOptions.insert(
-                        _categoryOptions.length - 1, newCategory);
-                  }
-                  _selectedCategory = newCategory;
-                });
-                logInfo('Custom category added: $newCategory');
-              }
-              Navigator.pop(context);
-            },
-          ),
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
+          )
         ],
       ),
     );
   }
 
-  Future<void> _saveTask(BuildContext context) async {
+  void _saveEvent(BuildContext context) {
     if (!_formKey.currentState!.validate()) {
-      showCupertinoDialog(
-        context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Validation Error'),
-          content: const Text('Please fill in all required fields.'),
-          actions: [
-            CupertinoDialogAction(
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(context))
-          ],
-        ),
-      );
+      _showErrorDialog('Please fill in all required fields.');
       return;
     }
 
-    final selectedTime = DateTime(_selectedDate.year, _selectedDate.month,
-        _selectedDate.day, _selectedTime.hour, _selectedTime.minute);
+    if (_endTime.isBefore(_startTime)) {
+      _showErrorDialog('End time must be after start time.');
+      return;
+    }
 
+    // Calculate estimated time in milliseconds
+    final estimatedTime = _endTime.difference(_startTime).inMilliseconds;
+
+    // Update the event
     context.read<TaskManagerCubit>().editTask(
-          task: widget.task,
+          task: widget.event,
           title: _titleController.text,
-          priority: _priority,
-          estimatedTime: _estimatedTime,
-          deadline: selectedTime.millisecondsSinceEpoch,
-          category: Category(name: _selectedCategory),
+          priority: 0, // Events always have priority 0
+          estimatedTime: estimatedTime,
+          deadline: _endTime.millisecondsSinceEpoch,
+          category: widget.event.category, // Keep the existing category (Event)
           notes:
               _notesController.text.isNotEmpty ? _notesController.text : null,
           color: _selectedColor,
         );
 
+    // Update the scheduled task
+    if (widget.event.scheduledTasks.isNotEmpty) {
+      final scheduledTask = widget.event.scheduledTasks.first;
+      scheduledTask.startTime = _startTime;
+      scheduledTask.endTime = _endTime;
+
+      // Save the updated task
+      widget.event.save();
+
+      // Update the day that contains this scheduled task
+      final dateKey = _formatDateKey(_startTime);
+      final daysBox = Hive.box<Day>('scheduled_tasks');
+      final day = daysBox.get(dateKey) ?? Day(day: dateKey);
+
+      // Find and update the scheduled task in the day
+      for (var i = 0; i < day.scheduledTasks.length; i++) {
+        if (day.scheduledTasks[i].scheduledTaskId ==
+            scheduledTask.scheduledTaskId) {
+          day.scheduledTasks[i] = scheduledTask;
+          break;
+        }
+      }
+
+      daysBox.put(dateKey, day);
+    }
+
+    logInfo('Event updated: ${_titleController.text}');
+
     Navigator.pushReplacement(context,
-        CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)));
+        CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)));
   }
+
+  String _formatDateKey(DateTime date) =>
+      '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
 }

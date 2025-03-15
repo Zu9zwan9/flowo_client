@@ -28,58 +28,9 @@ class AddEventPageState extends State<AddEventPage> {
   late DateTime _startTime;
   DateTime? _endTime;
   File? _image;
-  final List<String> _categoryOptions = [
-    'Brainstorm',
-    'Design',
-    'Workout',
-    'Add'
-  ];
-  String _selectedCategory = 'Brainstorm';
-
-  void _handleCategoryChange(String value) {
-    setState(() {
-      if (value == 'Add') {
-        _showAddCategoryDialog(context);
-      } else {
-        _selectedCategory = value;
-      }
-    });
-  }
-
-  void _showAddCategoryDialog(BuildContext context) {
-    final categoryController = TextEditingController();
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Add Category'),
-        content: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: CupertinoTextField(
-            controller: categoryController,
-            placeholder: 'Category name',
-            autofocus: true,
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
-          ),
-          CupertinoDialogAction(
-            child: const Text('Add'),
-            onPressed: () {
-              if (categoryController.text.isNotEmpty) {
-                setState(() {
-                  _selectedCategory = categoryController.text;
-                });
-              }
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  int? _selectedColor;
+  int _travelingTime = 0; // Default to 0 milliseconds
+  // Events always use the 'Event' category
 
   @override
   void initState() {
@@ -101,9 +52,6 @@ class AddEventPageState extends State<AddEventPage> {
   String _formatTime(DateTime? time) => time != null
       ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
       : 'Not set';
-
-  int _mapPriorityToInt(String priority) =>
-      {'Low': 0, 'Normal': 1, 'High': 2}[priority] ?? 1;
 
   @override
   Widget build(BuildContext context) {
@@ -134,20 +82,20 @@ class AddEventPageState extends State<AddEventPage> {
                 const SizedBox(height: 12),
                 _buildImagePicker(),
                 const SizedBox(height: 12),
-                _buildSectionTitle('Category'),
+                _buildSectionTitle('Event Color'),
+                const Text('Select a color for your event',
+                    style: TextStyle(
+                        color: CupertinoColors.systemGrey, fontSize: 14)),
                 const SizedBox(height: 12),
-                _buildSegmentedControl(
-                  options: _categoryOptions,
-                  value: _selectedCategory,
-                  onChanged: _handleCategoryChange,
-                  selectedColor: _selectedCategory == 'Brainstorm'
-                      ? CupertinoColors.systemGreen
-                      : _selectedCategory == 'Design'
-                          ? CupertinoColors.systemBlue
-                          : _selectedCategory == 'Workout'
-                              ? CupertinoColors.systemOrange
-                              : CupertinoColors.activeBlue,
-                ),
+                _buildColorPicker(),
+                const SizedBox(height: 20),
+                _buildSectionTitle('Traveling Time'),
+                const Text(
+                    'Optional time needed for travel to the event location',
+                    style: TextStyle(
+                        color: CupertinoColors.systemGrey, fontSize: 14)),
+                const SizedBox(height: 12),
+                _buildTravelingTimeButton(context),
                 const SizedBox(height: 20),
                 _buildSectionTitle('Start'),
                 const SizedBox(height: 12),
@@ -251,27 +199,188 @@ class AddEventPageState extends State<AddEventPage> {
         ),
       );
 
-  Widget _buildSegmentedControl({
-    required List<String> options,
-    required String value,
-    required ValueChanged<String> onChanged,
-    Color selectedColor = CupertinoColors.activeBlue,
-  }) =>
-      CupertinoSegmentedControl<String>(
-        children: {
-          for (var item in options)
-            item: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(item, style: const TextStyle(fontSize: 14)),
+  Widget _buildColorPicker() {
+    final colorOptions = [
+      0xFF4CAF50, // Green
+      0xFF2196F3, // Blue
+      0xFFF44336, // Red
+      0xFFFF9800, // Orange
+      0xFF9C27B0, // Purple
+      0xFF795548, // Brown
+      0xFF607D8B, // Blue Grey
+    ];
+
+    return SizedBox(
+      height: 50,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: colorOptions.length + 1, // +1 for "No color" option
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            // "No color" option
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedColor = null;
+                  });
+                },
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: CupertinoColors.white,
+                    border: Border.all(
+                      color: _selectedColor == null
+                          ? CupertinoColors.activeBlue
+                          : CupertinoColors.systemGrey,
+                      width: 2,
+                    ),
+                  ),
+                  child: _selectedColor == null
+                      ? const Icon(
+                          CupertinoIcons.checkmark,
+                          color: CupertinoColors.activeBlue,
+                        )
+                      : null,
+                ),
+              ),
+            );
+          }
+
+          final color = colorOptions[index - 1];
+          final isSelected = _selectedColor == color;
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedColor = color;
+                });
+              },
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(color),
+                  border: Border.all(
+                    color: isSelected
+                        ? CupertinoColors.activeBlue
+                        : CupertinoColors.systemGrey,
+                    width: 2,
+                  ),
+                ),
+                child: isSelected
+                    ? const Icon(
+                        CupertinoIcons.checkmark,
+                        color: CupertinoColors.white,
+                      )
+                    : null,
+              ),
             ),
+          );
         },
-        groupValue: options.contains(value) ? value : null,
-        onValueChanged: onChanged,
-        borderColor: CupertinoColors.systemGrey4,
-        selectedColor: selectedColor,
-        unselectedColor: CupertinoColors.systemGrey6,
-        pressedColor: selectedColor.withOpacity(0.2),
+      ),
+    );
+  }
+
+  Widget _buildTravelingTimeButton(BuildContext context) => GestureDetector(
+        onTap: () async {
+          final travelingTime = await _showTravelingTimePicker(context);
+          if (mounted) {
+            setState(() => _travelingTime = travelingTime);
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: CupertinoColors.systemBlue.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Traveling Time',
+                  style: TextStyle(
+                      fontSize: 16, color: CupertinoColors.systemBlue)),
+              Text(
+                  '${(_travelingTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_travelingTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+                  style: const TextStyle(
+                      fontSize: 16, color: CupertinoColors.label)),
+            ],
+          ),
+        ),
       );
+
+  Future<int> _showTravelingTimePicker(BuildContext context) async {
+    int? pickedHours;
+    int? pickedMinutes;
+    await showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        height: 300,
+        color: CupertinoColors.systemBackground,
+        child: Column(
+          children: [
+            SizedBox(
+              height: 220,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 32,
+                      onSelectedItemChanged: (index) {
+                        pickedHours = index;
+                      },
+                      children: [
+                        for (var i = 0; i <= 12; i++) Text('$i hours'),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 32,
+                      onSelectedItemChanged: (index) {
+                        pickedMinutes = index * 15;
+                      },
+                      children: [
+                        for (var i = 0; i < 4; i++) Text('${i * 15} minutes'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CupertinoButton(
+                  child: const Text('Cancel',
+                      style: TextStyle(color: CupertinoColors.systemGrey)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoButton(
+                  child: const Text('Done',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  onPressed: () {
+                    Navigator.pop(
+                        context,
+                        (pickedHours ?? 0) * 3600000 +
+                            (pickedMinutes ?? 0) * 60000);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+    return (pickedHours ?? 0) * 3600000 + (pickedMinutes ?? 0) * 60000;
+  }
 
   Widget _buildImagePicker() => GestureDetector(
         onTap: _pickImage,
@@ -475,13 +584,8 @@ class AddEventPageState extends State<AddEventPage> {
         end: endTime,
         location: _locationController.text,
         notes: _notesController.text,
-        color: _selectedCategory == 'Brainstorm'
-            ? 0xFF4CAF50
-            : _selectedCategory == 'Design'
-                ? 0xFF2196F3
-                : _selectedCategory == 'Workout'
-                    ? 0xFFF44336
-                    : null);
+        color: _selectedColor,
+        travelingTime: _travelingTime);
 
     Navigator.pushReplacement(
             context, CupertinoPageRoute(builder: (_) => const HomeScreen()))

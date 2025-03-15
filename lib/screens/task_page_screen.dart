@@ -1,3 +1,4 @@
+import 'package:flowo_client/screens/event_edit_screen.dart';
 import 'package:flowo_client/screens/task_edit_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -216,10 +217,15 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   }
 
   void _navigateToEditScreen(BuildContext context) {
+    // Check if the task is an event (priority 0)
+    final isEvent = _task.priority == 0 && _task.category.name == 'Event';
+
     Navigator.push(
       context,
       CupertinoPageRoute(
-        builder: (context) => TaskEditScreen(task: _task),
+        builder: (context) => isEvent
+            ? EventEditScreen(event: _task)
+            : TaskEditScreen(task: _task),
       ),
     ).then((_) {
       // Refresh the task data when returning from the edit screen
@@ -229,37 +235,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
         _loadExistingSubtasks();
       });
     });
-  }
-
-  void _showDeleteConfirmation(BuildContext context) {
-    final subtaskCount = _task.subtasks.length;
-    final message = subtaskCount > 0
-        ? 'Are you sure you want to delete "${_task.title}" and its $subtaskCount subtask${subtaskCount == 1 ? "" : "s"}?'
-        : 'Are you sure you want to delete "${_task.title}"?';
-
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Delete Task'),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              final tasksCubit = context.read<TaskManagerCubit>();
-              tasksCubit.deleteTask(_task);
-              Navigator.pop(context); // Close dialog
-              Navigator.pop(context); // Return to previous screen
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _deleteSubtask(Task subtask) {

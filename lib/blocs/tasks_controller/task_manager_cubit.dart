@@ -46,13 +46,14 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     String? location,
     String? notes,
     int? color,
+    int? travelingTime,
   }) {
     logInfo('Creating event: title - $title, start - $start, end - $end');
 
     // Calculate estimated time in milliseconds
     final estimatedTime = end.difference(start).inMilliseconds;
 
-    // Create a category for events if not exists
+    // Always use the 'Event' category for events
     final category = Category(name: 'Event');
 
     // Create the task with required fields
@@ -82,11 +83,12 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       endTime: end,
       urgency: null, // Not required
       type: ScheduledTaskType.timeSensitive,
-      travelingTime: location != null && location.isNotEmpty
-          ? 15 *
-              60 *
-              1000 // Default 15 minutes in milliseconds if location is provided
-          : 0,
+      travelingTime: travelingTime ??
+          (location != null && location.isNotEmpty
+              ? 15 *
+                  60 *
+                  1000 // Default 15 minutes in milliseconds if location is provided
+              : 0),
       breakTime: taskManager.userSettings.breakTime ??
           5 * 60 * 1000, // From user settings
       notification: NotificationType.none,

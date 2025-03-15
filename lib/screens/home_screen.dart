@@ -126,8 +126,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     boxShadow: [
                       BoxShadow(
                         color: CupertinoColors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                        blurRadius: 0,
+                        offset: const Offset(0, 0),
                       ),
                     ],
                   ),
