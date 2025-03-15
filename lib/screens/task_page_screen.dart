@@ -1145,31 +1145,41 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                         TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const Spacer(),
                 if (_subtasks.isNotEmpty)
-                  CupertinoButton(
+                  Flexible(
+                    child: CupertinoButton(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      onPressed: _estimateSubtaskTimes,
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(CupertinoIcons.wand_stars,
+                              size: 16, color: CupertinoColors.systemGreen),
+                          SizedBox(width: 4),
+                          Flexible(
+                            child: Text('Estimate Subtasks',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    color: CupertinoColors.systemGreen)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                Flexible(
+                  child: CupertinoButton(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                    onPressed: _estimateSubtaskTimes,
+                    onPressed: _showAddSubtaskDialog,
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(CupertinoIcons.wand_stars,
-                            size: 16, color: CupertinoColors.systemGreen),
+                        Icon(CupertinoIcons.add, size: 16),
                         SizedBox(width: 4),
-                        Text('Estimate Subtasks',
-                            style:
-                                TextStyle(color: CupertinoColors.systemGreen)),
+                        Flexible(
+                          child: Text('Add Subtask',
+                              overflow: TextOverflow.ellipsis),
+                        ),
                       ],
                     ),
-                  ),
-                CupertinoButton(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  onPressed: _showAddSubtaskDialog,
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(CupertinoIcons.add, size: 16),
-                      SizedBox(width: 4),
-                      Text('Add Subtask'),
-                    ],
                   ),
                 ),
                 Text('${_subtasks.length}',
