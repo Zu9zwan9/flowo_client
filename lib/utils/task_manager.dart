@@ -14,6 +14,7 @@ import '../models/day.dart';
 import '../models/repeat_rule.dart';
 import '../models/scheduled_task_type.dart';
 import '../models/task.dart';
+import '../services/notification_scheduler.dart';
 
 class TaskManager {
   final Scheduler scheduler;

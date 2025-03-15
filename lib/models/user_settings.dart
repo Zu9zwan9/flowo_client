@@ -1,4 +1,6 @@
 import 'package:hive/hive.dart';
+
+import 'notification_type.dart';
 import 'time_frame.dart';
 
 part 'user_settings.g.dart';
@@ -26,6 +28,9 @@ class UserSettings extends HiveObject {
   @HiveField(6)
   Map<String, bool>? activeDays;
 
+  @HiveField(7)
+  NotificationType defaultNotificationType;
+
   UserSettings({
     required this.name,
     required this.minSession,
@@ -34,6 +39,7 @@ class UserSettings extends HiveObject {
     this.sleepTime = const [],
     this.freeTime = const [],
     this.activeDays,
+    this.defaultNotificationType = NotificationType.sound,
   }) {
     activeDays ??= {
       'Monday': true,

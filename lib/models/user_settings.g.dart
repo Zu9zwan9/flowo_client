@@ -24,6 +24,8 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       sleepTime: (fields[4] as List).cast<TimeFrame>(),
       freeTime: (fields[5] as List).cast<TimeFrame>(),
       activeDays: (fields[6] as Map?)?.cast<String, bool>(),
+      defaultNotificationType:
+          fields[7] as NotificationType? ?? NotificationType.sound,
     );
   }
 

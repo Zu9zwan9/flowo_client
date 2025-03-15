@@ -1,4 +1,5 @@
 import 'package:flowo_client/utils/task_breakdown_api.dart';
+import 'package:flutter/foundation.dart';
 
 /// Example usage of the Pipeline class, similar to the Python example:
 /// ```python
@@ -27,5 +28,7 @@ void main() async {
   final response = await pipe.call(messages);
 
   // Print the response
-  print('Generated text: ${response?["generated_text"]}');
+  if (kDebugMode) {
+    print('Generated text: ${response?["generated_text"]}');
+  }
 }
