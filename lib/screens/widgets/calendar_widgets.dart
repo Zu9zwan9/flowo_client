@@ -424,6 +424,13 @@ class _AgendaItemState extends State<AgendaItem>
 }
 
 /// A custom empty state widget with iOS styling
+///
+/// This widget displays a message when there are no events or when an error occurs.
+/// It includes an icon, a title, an optional message, and an optional action button.
+///
+/// The widget uses a SingleChildScrollView to prevent overflow issues on smaller screens
+/// or when the content is too large to fit within the available space. This ensures
+/// that all content is accessible even on constrained layouts.
 class EmptyStateView extends StatelessWidget {
   final String title;
   final String? message;
@@ -456,6 +463,10 @@ class EmptyStateView extends StatelessWidget {
       padding: padding,
       child: Center(
         child: SingleChildScrollView(
+          // SingleChildScrollView prevents RenderFlex overflow errors by allowing
+          // the content to scroll if it doesn't fit within the available space
+          // This is especially important for smaller screens or when the content
+          // includes multiple elements like icon, title, message, and button
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min, // Use minimum space needed

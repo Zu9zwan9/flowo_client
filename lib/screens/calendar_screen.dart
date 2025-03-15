@@ -12,6 +12,20 @@ import '../models/task.dart';
 
 /// An improved Calendar screen with enhanced UI/UX following iOS design guidelines
 /// and implementing best practices, SOLID principles, and proper error handling.
+///
+/// This screen displays a calendar with events and allows users to:
+/// - View events in different calendar views (month, week, day)
+/// - Navigate between dates
+/// - Search for events
+/// - View event details
+/// - Add new events
+///
+/// The implementation follows iOS design guidelines and best practices:
+/// - Uses Cupertino widgets for iOS look and feel
+/// - Implements proper error handling and loading states
+/// - Uses responsive design for different screen sizes
+/// - Follows SOLID principles for maintainable code
+/// - Optimizes performance by reducing unnecessary data fetching
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
@@ -28,6 +42,11 @@ class CalendarScreenState extends State<CalendarScreen> {
   bool _isRefreshing = false;
   bool _isLoading = false;
   String? _errorMessage;
+
+  // Store the Future to avoid unnecessary data fetching
+  // This improves performance by preventing redundant database queries
+  // when the widget rebuilds but the selected date hasn't changed
+  Future<List<TaskWithSchedules>>? _scheduledTasksFuture;
 
   @override
   void initState() {
@@ -48,6 +67,11 @@ class CalendarScreenState extends State<CalendarScreen> {
 
       // Ensure tasks are scheduled
       context.read<TaskManagerCubit>().scheduleTasks();
+
+      // Initialize the Future for scheduled tasks
+      _scheduledTasksFuture = context
+          .read<TaskManagerCubit>()
+          .getScheduledTasksForDate(_selectedDate);
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to load calendar data: ${e.toString()}';
@@ -68,6 +92,9 @@ class CalendarScreenState extends State<CalendarScreen> {
   void _onDateSelected(DateTime newDate) {
     setState(() {
       _selectedDate = newDate;
+      // Update the Future when the selected date changes
+      _scheduledTasksFuture =
+          context.read<TaskManagerCubit>().getScheduledTasksForDate(newDate);
     });
     context.read<CalendarCubit>().selectDate(newDate);
   }
@@ -83,6 +110,11 @@ class CalendarScreenState extends State<CalendarScreen> {
     try {
       // Reload data
       context.read<TaskManagerCubit>().scheduleTasks();
+
+      // Update the Future for scheduled tasks
+      _scheduledTasksFuture = context
+          .read<TaskManagerCubit>()
+          .getScheduledTasksForDate(_selectedDate);
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to refresh data: ${e.toString()}';
@@ -334,10 +366,18 @@ class CalendarScreenState extends State<CalendarScreen> {
           onNextPressed: _goToNextPeriod,
         ),
 
-        // Calendar view
-        SizedBox(
-          height: 350,
-          child: _buildCalendar(),
+        // Calendar view with responsive height
+        // Using a percentage of screen height instead of fixed height
+        // This prevents layout issues on smaller screens and different orientations
+        // and ensures the calendar scales appropriately on all devices
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return SizedBox(
+              height: MediaQuery.of(context).size.height *
+                  0.4, // 40% of screen height
+              child: _buildCalendar(),
+            );
+          },
         ),
 
         // Selected date header
@@ -432,11 +472,26 @@ class CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
+  /// Builds the agenda content showing scheduled tasks for the selected date
+  ///
+  /// This method uses a cached Future (_scheduledTasksFuture) to avoid unnecessary
+  /// data fetching when the widget rebuilds. The Future is only updated when:
+  /// - The selected date changes (_onDateSelected method)
+  /// - The user refreshes the data (_refreshData method)
+  /// - The app first loads (_loadInitialData method)
+  ///
+  /// This optimization improves performance and reduces database queries.
   Widget _buildAgendaContent() {
-    return FutureBuilder<List<TaskWithSchedules>>(
-      future: context
+    // If _scheduledTasksFuture is null, initialize it
+    // This is a fallback in case it wasn't initialized elsewhere
+    if (_scheduledTasksFuture == null) {
+      _scheduledTasksFuture = context
           .read<TaskManagerCubit>()
-          .getScheduledTasksForDate(_selectedDate),
+          .getScheduledTasksForDate(_selectedDate);
+    }
+
+    return FutureBuilder<List<TaskWithSchedules>>(
+      future: _scheduledTasksFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CupertinoActivityIndicator());
