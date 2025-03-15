@@ -854,127 +854,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                     Expanded(
                       child: CupertinoButton(
                         padding: EdgeInsets.zero,
-                        onPressed: () {
-                          // Show loading indicator
-                          showCupertinoDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (context) => const CupertinoAlertDialog(
-                              title: Text('Estimating Time'),
-                              content: Padding(
-                                padding: EdgeInsets.only(top: 16.0),
-                                child: Center(
-                                  child: CupertinoActivityIndicator(),
-                                ),
-                              ),
-                            ),
-                          );
-
-                          // Call the TaskManagerCubit to estimate time for the task
-                          context
-                              .read<TaskManagerCubit>()
-                              .estimateTaskTime(_task)
-                              .then((estimatedTime) {
-                            // Close the loading dialog
-                            Navigator.pop(context);
-
-                            if (mounted) {
-                              setState(() {
-                                _task.estimatedTime = estimatedTime;
-                                _task.save();
-                              });
-
-                              // Show success dialog
-                              showCupertinoDialog(
-                                context: context,
-                                builder: (context) => CupertinoAlertDialog(
-                                  title: const Text('Time Estimated'),
-                                  content: Text(
-                                      'The AI estimates this task will take ${(_task.estimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_task.estimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m to complete.'),
-                                  actions: [
-                                    CupertinoDialogAction(
-                                      child: const Text('OK'),
-                                      onPressed: () => Navigator.pop(context),
-                                    ),
-                                    CupertinoDialogAction(
-                                      isDefaultAction: true,
-                                      child: const Text('Reschedule Now'),
-                                      onPressed: () {
-                                        Navigator.pop(context);
-
-                                        // Show loading indicator
-                                        showCupertinoDialog(
-                                          context: context,
-                                          barrierDismissible: false,
-                                          builder: (context) =>
-                                              const CupertinoAlertDialog(
-                                            title: Text('Rescheduling Task'),
-                                            content: Padding(
-                                              padding:
-                                                  EdgeInsets.only(top: 16.0),
-                                              child: Center(
-                                                child:
-                                                    CupertinoActivityIndicator(),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-
-                                        // Remove previous scheduled tasks and schedule the task
-                                        context
-                                            .read<TaskManagerCubit>()
-                                            .removeScheduledTasks();
-                                        context
-                                            .read<TaskManagerCubit>()
-                                            .scheduleTask(_task);
-
-                                        // Close the loading dialog
-                                        Navigator.pop(context);
-
-                                        // Show success dialog
-                                        showCupertinoDialog(
-                                          context: context,
-                                          builder: (context) =>
-                                              CupertinoAlertDialog(
-                                            title:
-                                                const Text('Task Rescheduled'),
-                                            content: const Text(
-                                                'The task has been rescheduled with the new estimated time.'),
-                                            actions: [
-                                              CupertinoDialogAction(
-                                                child: const Text('OK'),
-                                                onPressed: () =>
-                                                    Navigator.pop(context),
-                                              ),
-                                              CupertinoDialogAction(
-                                                isDefaultAction: true,
-                                                child: const Text(
-                                                    'View in Calendar'),
-                                                onPressed: () {
-                                                  Navigator.pop(context);
-                                                  // Navigate to the home screen (which typically has the calendar view)
-                                                  Navigator.of(context)
-                                                      .popUntil((route) =>
-                                                          route.isFirst);
-                                                },
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-                          }).catchError((e) {
-                            // Close the loading dialog
-                            Navigator.pop(context);
-
-                            // Show error dialog
-                            _showErrorDialog('Failed to estimate time: $e');
-                          });
-                        },
+                        onPressed: () => _estimateTimeWithAI(context),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               vertical: 8, horizontal: 12),
@@ -1002,7 +882,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                     Expanded(
                       child: CupertinoButton(
                         padding: EdgeInsets.zero,
-                        onPressed: _rescheduleTask,
+                        onPressed: () => _rescheduleTask(),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                               vertical: 8, horizontal: 12),
@@ -1195,7 +1075,10 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
         ),
       );
 
-  Future<void> _estimateTimeWithAI(BuildContext context) async {
+  Future<void> _estimateTimeWithAI([BuildContext? ctx]) async {
+    // Use the provided context or the current context
+    final context = ctx ?? this.context;
+
     // Show loading indicator
     showCupertinoDialog(
       context: context,
