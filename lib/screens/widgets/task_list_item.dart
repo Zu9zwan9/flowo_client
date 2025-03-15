@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+
 import '../../models/task.dart';
 
 class TaskListItem extends StatelessWidget {
@@ -11,6 +12,7 @@ class TaskListItem extends StatelessWidget {
   final bool hasSubtasks;
   final bool isExpanded;
   final VoidCallback? onToggleExpand;
+  final VoidCallback? onToggleCompletion;
 
   const TaskListItem({
     super.key,
@@ -22,6 +24,7 @@ class TaskListItem extends StatelessWidget {
     this.hasSubtasks = false,
     this.isExpanded = false,
     this.onToggleExpand,
+    this.onToggleCompletion,
   });
 
   @override
@@ -99,14 +102,18 @@ class TaskListItem extends StatelessWidget {
                   color: CupertinoColors.systemGrey,
                 ),
               ),
-            Icon(
-              task.isDone
-                  ? CupertinoIcons.check_mark_circled
-                  : CupertinoIcons.circle,
-              color: task.isDone
-                  ? CupertinoColors.activeGreen
-                  : CupertinoColors.systemGrey,
-              size: 24,
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: onToggleCompletion,
+              child: Icon(
+                task.isDone
+                    ? CupertinoIcons.check_mark_circled
+                    : CupertinoIcons.circle,
+                color: task.isDone
+                    ? CupertinoColors.activeGreen
+                    : CupertinoColors.systemGrey,
+                size: 24,
+              ),
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,

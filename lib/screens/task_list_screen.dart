@@ -1,16 +1,17 @@
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'widgets/cupertino_divider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/task_manager_state.dart';
 import '../models/task.dart';
-import '../utils/debouncer.dart';
 import '../utils/category_utils.dart';
+import '../utils/debouncer.dart';
+import 'task_page_screen.dart';
+import 'widgets/cupertino_divider.dart';
 import 'widgets/task_list_components.dart';
 import 'widgets/task_list_item.dart';
-import 'task_page_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -305,6 +306,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
                               });
                             }
                           : null,
+                      onToggleCompletion: () =>
+                          _toggleTaskCompletion(context, task),
                     ),
                     if (hasSubtasks && isExpanded)
                       Padding(
@@ -334,6 +337,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
                                           });
                                         }
                                       : null,
+                                  onToggleCompletion: () =>
+                                      _toggleTaskCompletion(context, subtask),
                                 ),
                               ],
                             );
@@ -474,5 +479,39 @@ class _TaskListScreenState extends State<TaskListScreen> {
         ],
       ),
     );
+  }
+
+  /// Toggle the completion status of a task
+  void _toggleTaskCompletion(BuildContext context, Task task) {
+    HapticFeedback.selectionClick();
+
+    // Use the TaskManagerCubit to toggle the completion status
+    final tasksCubit = context.read<TaskManagerCubit>();
+    tasksCubit.toggleTaskCompletion(task).then((isCompleted) {
+      // Clear the cache to refresh the task list
+      _clearCache();
+
+      // Show a confirmation message
+      final message = isCompleted
+          ? 'Task "${task.title}" marked as completed'
+          : 'Task "${task.title}" marked as incomplete';
+
+      // Show a snackbar or toast message (not available in Cupertino)
+      // Instead, we'll show a quick dialog that auto-dismisses
+      showCupertinoDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => CupertinoAlertDialog(
+          content: Text(message),
+        ),
+      );
+
+      // Auto-dismiss the dialog after a short delay
+      Future.delayed(const Duration(seconds: 1), () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      });
+    });
   }
 }

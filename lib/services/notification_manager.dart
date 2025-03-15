@@ -15,6 +15,9 @@ class NotificationManager {
 
   bool _isInitialized = false;
 
+  // Constants for notification IDs
+  static const String _completionCheckPrefix = 'completion_check_';
+
   NotificationManager({
     required LocalNotificationService localNotificationService,
     required PushNotificationService pushNotificationService,
@@ -273,5 +276,50 @@ class NotificationManager {
     //     'timeBeforeStart': timeBeforeStart?.inMilliseconds,
     //   },
     // );
+  }
+
+  /// Send a notification to check if a task is completed
+  Future<void> notifyTaskCompletionCheck(Task task) async {
+    if (!_isInitialized) await initialize();
+
+    try {
+      // Determine the notification type based on user settings or task settings
+      // For now, we'll use a local notification
+      final notificationId = '$_completionCheckPrefix${task.id}';
+
+      // Create a notification with action buttons for marking as completed or not
+      await _localNotificationService.showCompletionCheckNotification(
+        task,
+        notificationId,
+      );
+
+      logInfo('Sent completion check notification for task: ${task.title}');
+    } catch (e) {
+      logError('Failed to send completion check notification: $e');
+    }
+  }
+
+  /// Schedule a notification to check if a task is completed
+  Future<void> scheduleTaskCompletionCheckNotification(
+      Task task, DateTime scheduledTime) async {
+    if (!_isInitialized) await initialize();
+
+    try {
+      // Determine the notification type based on user settings or task settings
+      // For now, we'll use a local notification
+      final notificationId = '$_completionCheckPrefix${task.id}';
+
+      // Schedule a notification with action buttons for marking as completed or not
+      await _localNotificationService.scheduleCompletionCheckNotification(
+        task,
+        notificationId,
+        scheduledTime,
+      );
+
+      logInfo(
+          'Scheduled completion check notification for task: ${task.title} at $scheduledTime');
+    } catch (e) {
+      logError('Failed to schedule completion check notification: $e');
+    }
   }
 }

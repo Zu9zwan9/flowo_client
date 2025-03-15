@@ -51,6 +51,48 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     });
   }
 
+  /// Toggle the completion status of the task
+  void _toggleTaskCompletion() {
+    // Use the TaskManagerCubit to toggle the completion status
+    final tasksCubit = context.read<TaskManagerCubit>();
+    tasksCubit.toggleTaskCompletion(_task).then((isCompleted) {
+      // Update the UI
+      setState(() {
+        _task.isDone = isCompleted;
+        // Refresh subtasks list as they might have been auto-completed
+        _loadExistingSubtasks();
+      });
+
+      // Show a confirmation message
+      final message = isCompleted
+          ? 'Task "${_task.title}" marked as completed'
+          : 'Task "${_task.title}" marked as incomplete';
+
+      // Show a quick dialog that auto-dismisses
+      showCupertinoDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => CupertinoAlertDialog(
+          content: Text(message),
+        ),
+      );
+
+      // Auto-dismiss the dialog after a short delay
+      Future.delayed(const Duration(seconds: 1), () {
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      });
+
+      // If the task is completed, schedule a reminder to check completion
+      // after a certain period (e.g., 1 day) to verify it's still completed
+      if (isCompleted) {
+        final scheduledTime = DateTime.now().add(const Duration(days: 1));
+        tasksCubit.scheduleCompletionCheckReminder(_task, scheduledTime);
+      }
+    });
+  }
+
   Future<void> _generateTaskBreakdown() async {
     setState(() {
       _isLoading = true;
@@ -636,10 +678,72 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        subtask.title,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w500),
+                      Row(
+                        children: [
+                          // Completion status indicator
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () {
+                              // Toggle the completion status of the subtask
+                              final tasksCubit =
+                                  context.read<TaskManagerCubit>();
+                              tasksCubit
+                                  .toggleTaskCompletion(subtask)
+                                  .then((isCompleted) {
+                                // Update the UI
+                                setState(() {
+                                  subtask.isDone = isCompleted;
+                                });
+
+                                // Show a confirmation message
+                                final message = isCompleted
+                                    ? 'Subtask "${subtask.title}" marked as completed'
+                                    : 'Subtask "${subtask.title}" marked as incomplete';
+
+                                // Show a quick dialog that auto-dismisses
+                                showCupertinoDialog(
+                                  context: context,
+                                  barrierDismissible: true,
+                                  builder: (context) => CupertinoAlertDialog(
+                                    content: Text(message),
+                                  ),
+                                );
+
+                                // Auto-dismiss the dialog after a short delay
+                                Future.delayed(const Duration(seconds: 1), () {
+                                  if (Navigator.canPop(context)) {
+                                    Navigator.pop(context);
+                                  }
+                                });
+                              });
+                            },
+                            child: Icon(
+                              subtask.isDone
+                                  ? CupertinoIcons.check_mark_circled_solid
+                                  : CupertinoIcons.circle,
+                              color: subtask.isDone
+                                  ? CupertinoColors.activeGreen
+                                  : CupertinoColors.systemGrey,
+                              size: 16,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              subtask.title,
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                decoration: subtask.isDone
+                                    ? TextDecoration.lineThrough
+                                    : TextDecoration.none,
+                                color: subtask.isDone
+                                    ? CupertinoColors.systemGrey
+                                    : CupertinoColors.label,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       Row(
@@ -821,6 +925,35 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                       ),
                     ),
                     const Spacer(),
+                    // Completion status indicator
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: _toggleTaskCompletion,
+                      child: Row(
+                        children: [
+                          Icon(
+                            _task.isDone
+                                ? CupertinoIcons.check_mark_circled_solid
+                                : CupertinoIcons.circle,
+                            color: _task.isDone
+                                ? CupertinoColors.activeGreen
+                                : CupertinoColors.systemGrey,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _task.isDone ? 'Completed' : 'Mark as completed',
+                            style: TextStyle(
+                              color: _task.isDone
+                                  ? CupertinoColors.activeGreen
+                                  : CupertinoColors.systemGrey,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Text('Priority: ${_task.priority}',
                         style:
                             const TextStyle(color: CupertinoColors.systemGrey)),

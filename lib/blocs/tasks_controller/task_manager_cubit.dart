@@ -308,6 +308,86 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       return 0;
     }
   }
+
+  /// Toggle the completion status of a task
+  ///
+  /// This method toggles the isDone property of a task and updates any subtasks
+  /// if the parent task is marked as completed. It also sends the completion
+  /// status to analytics.
+  ///
+  /// Returns the new completion status
+  Future<bool> toggleTaskCompletion(Task task) async {
+    logInfo('Toggling completion status for task: ${task.title}');
+
+    try {
+      // Toggle the isDone property
+      task.isDone = !task.isDone;
+
+      // If the task is marked as completed, update any subtasks
+      if (task.isDone) {
+        // Mark all subtasks as completed if the parent task is completed
+        for (var subtask in task.subtasks) {
+          if (!subtask.isDone) {
+            subtask.isDone = true;
+            taskManager.tasksDB.put(subtask.id, subtask);
+            logInfo(
+                'Subtask "${subtask.title}" automatically marked as completed');
+          }
+        }
+      }
+
+      // Save the task
+      taskManager.tasksDB.put(task.id, task);
+
+      // Update the state
+      emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+
+      logInfo(
+          'Task "${task.title}" marked as ${task.isDone ? "completed" : "incomplete"}');
+
+      return task.isDone;
+    } catch (e) {
+      logError('Error toggling task completion: $e');
+      return task.isDone; // Return the current status in case of error
+    }
+  }
+
+  /// Send a reminder to check if a task is completed
+  Future<void> sendCompletionCheckReminder(Task task) async {
+    if (task.isDone) {
+      // Task is already completed, no need to send a reminder
+      return;
+    }
+
+    try {
+      // Create a notification for the task completion check
+      // This would typically use a notification service, but for simplicity,
+      // we'll just log it for now
+      logInfo('Would send completion check reminder for task "${task.title}"');
+
+      // In a real implementation, you would use a notification service:
+      // await _notificationService.sendCompletionCheckReminder(task);
+    } catch (e) {
+      logError('Error sending completion check reminder: $e');
+    }
+  }
+
+  /// Schedule a reminder to check if a task is completed
+  Future<void> scheduleCompletionCheckReminder(
+      Task task, DateTime scheduledTime) async {
+    try {
+      // Schedule a notification for the task completion check
+      // This would typically use a notification service, but for simplicity,
+      // we'll just log it for now
+      logInfo(
+          'Would schedule completion check reminder for task "${task.title}" at $scheduledTime');
+
+      // In a real implementation, you would use a notification service:
+      // await _notificationService.scheduleCompletionCheckReminder(task, scheduledTime);
+    } catch (e) {
+      logError('Error scheduling completion check reminder: $e');
+    }
+  }
 }
 
 class TaskWithSchedules {

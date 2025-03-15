@@ -227,4 +227,85 @@ class LocalNotificationService implements INotificationService {
     logInfo(
         '${isReminder ? "Reminder" : "Task start"} notification scheduled for: ${task.title} at ${scheduledTime.toString()}');
   }
+
+  /// Show a notification to check if a task is completed
+  Future<void> showCompletionCheckNotification(Task task, String notificationId) async {
+    if (!_isInitialized) await initialize();
+
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        const AndroidNotificationDetails(
+      'task_completion_channel',
+      'Task Completion Check Notifications',
+      channelDescription: 'Notifications to check if tasks are completed',
+      importance: Importance.high,
+      priority: Priority.high,
+      enableVibration: true,
+      playSound: true,
+    );
+
+    final DarwinNotificationDetails iOSPlatformChannelSpecifics =
+        const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+
+    await _flutterLocalNotificationsPlugin.show(
+      notificationId.hashCode,
+      'Task Completion Check: ${task.title}',
+      'Have you completed this task? Tap to mark as completed.',
+      platformChannelSpecifics,
+      payload: '${task.id}|completion_check',
+    );
+
+    logInfo('Task completion check notification sent for: ${task.title}');
+  }
+
+  /// Schedule a notification to check if a task is completed
+  Future<void> scheduleCompletionCheckNotification(
+      Task task, String notificationId, DateTime scheduledTime) async {
+    if (!_isInitialized) await initialize();
+
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        const AndroidNotificationDetails(
+      'task_completion_channel',
+      'Task Completion Check Notifications',
+      channelDescription: 'Notifications to check if tasks are completed',
+      importance: Importance.high,
+      priority: Priority.high,
+      enableVibration: true,
+      playSound: true,
+    );
+
+    final DarwinNotificationDetails iOSPlatformChannelSpecifics =
+        const DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      iOS: iOSPlatformChannelSpecifics,
+    );
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      notificationId.hashCode,
+      'Task Completion Check: ${task.title}',
+      'Have you completed this task? Tap to mark as completed.',
+      tz.TZDateTime.from(scheduledTime, tz.local),
+      platformChannelSpecifics,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      payload: '${task.id}|completion_check',
+    );
+
+    logInfo('Task completion check notification scheduled for: ${task.title} at ${scheduledTime.toString()}');
+  }
 }
