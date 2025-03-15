@@ -176,6 +176,26 @@ class TaskManager {
     logInfo('Scheduled ${justScheduledTasks.length} tasks');
   }
 
+  void manageHabits() { // TODO: remake this method
+    List<Task> habits =
+    tasksDB.values.where((task) => task.frequency != null).toList();
+
+    for (Task habit in habits) {
+      List<DateTime> scheduledDates = _calculateHabitDates(habit);
+
+      logDebug(scheduledDates.toString());
+
+      for (DateTime date in scheduledDates) {
+        logDebug(date.toIso8601String().split('T').first);
+        scheduler.scheduleTask(
+          habit,
+          userSettings.minSession,
+          availableDates: [date.toIso8601String().split('T').first],
+        );
+      }
+    }
+  }
+
   bool _isOrderCorrect(Task task) {
     if (task.order != null && task.order! > 0 && task.parentTask != null) {
       return !task.parentTask!.subtasks.any(

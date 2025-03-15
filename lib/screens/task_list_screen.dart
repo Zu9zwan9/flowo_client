@@ -182,6 +182,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     HapticFeedback.mediumImpact();
     final tasksCubit = context.read<TaskManagerCubit>();
     tasksCubit.scheduleTasks();
+    tasksCubit.scheduleHabits();
     _clearCache(); // Clear cache as tasks will be modified
   }
 
