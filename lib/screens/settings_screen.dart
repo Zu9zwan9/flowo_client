@@ -107,6 +107,94 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _saveLogs() async {
+    // Log this action itself
+    appLogger.info('Save logs button pressed', 'Settings');
+
+    // Save logs to file
+    final filePath = await appLogger.saveToFile(context);
+
+    if (filePath != null) {
+      // Show success dialog with options
+      showCupertinoDialog(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('Logs Saved'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Logs have been saved successfully.'),
+              const SizedBox(height: 8),
+              Text('Location: $filePath',
+                  style: const TextStyle(
+                      fontSize: 12, color: CupertinoColors.systemGrey)),
+            ],
+          ),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('Share'),
+              onPressed: () {
+                Navigator.pop(context);
+                _shareLogFile(filePath);
+              },
+            ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+
+      // Log success
+      appLogger.info('Logs saved successfully', 'Settings', {'path': filePath});
+    }
+  }
+
+  Future<void> _shareLogFile(String filePath) async {
+    try {
+      // Show a simple dialog with the file path since we can't directly share files
+      // without additional setup
+      showCupertinoDialog(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('Log File Location'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Your log file is saved at:'),
+              const SizedBox(height: 8),
+              Text(filePath,
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              const Text(
+                  'You can access this file through your device\'s file manager.'),
+            ],
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+
+      appLogger.info('Log file location shown', 'Settings');
+    } catch (e) {
+      appLogger.error('Error showing log file location', 'Settings',
+          {'error': e.toString()});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to show log file location: $e')),
+      );
+    }
+  }
+
   void _showTimePicker(
       {required TimeOfDay initialTime,
       required Function(TimeOfDay) onTimeSelected}) {
@@ -326,6 +414,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 divisions: 5,
                 onChanged: (value) =>
                     setState(() => _breakDuration = value.round())),
+            const SizedBox(height: 16.0),
+            _buildSectionHeader('Debug'),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              child: CupertinoButton(
+                color: CupertinoColors.systemBlue,
+                onPressed: _saveLogs,
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(CupertinoIcons.doc_text, color: CupertinoColors.white),
+                    SizedBox(width: 8.0),
+                    Text('Save Logs',
+                        style: TextStyle(color: CupertinoColors.white)),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 24.0),
             CupertinoButton.filled(
                 onPressed: _saveSettings, child: const Text('Save Settings')),

@@ -67,7 +67,8 @@ class AnalyticsService {
         mostCommonCategory: mostCommonCategory,
       );
     } catch (e) {
-      logger.e('Error getting analytics data: $e');
+      appLogger.error('Error getting analytics data', 'AnalyticsService',
+          {'error': e.toString()});
       return AnalyticsData.empty();
     }
   }
@@ -256,7 +257,8 @@ class AnalyticsService {
         );
       }).toList();
     } catch (e) {
-      logger.e('Error getting category distribution: $e');
+      appLogger.error('Error getting category distribution', 'AnalyticsService',
+          {'error': e.toString()});
       return [];
     }
   }
@@ -289,7 +291,8 @@ class AnalyticsService {
         );
       }).toList();
     } catch (e) {
-      logger.e('Error getting priority distribution: $e');
+      appLogger.error('Error getting priority distribution', 'AnalyticsService',
+          {'error': e.toString()});
       return [];
     }
   }
@@ -328,7 +331,8 @@ class AnalyticsService {
         );
       }).toList();
     } catch (e) {
-      logger.e('Error getting completion rate by category: $e');
+      appLogger.error('Error getting completion rate by category',
+          'AnalyticsService', {'error': e.toString()});
       return [];
     }
   }

@@ -105,7 +105,7 @@ void main() async {
       email: 'user@example.com',
     );
     userProfiles.put('current', defaultProfile);
-    logger.i('Created default user profile');
+    appLogger.info('Created default user profile', 'App');
   }
 
   final taskManager = TaskManager(
@@ -116,7 +116,7 @@ void main() async {
         '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', // Default API key
   );
 
-  logger.i('Hive initialized and task boxes opened');
+  appLogger.info('Hive initialized and task boxes opened', 'App');
 
   // Create analytics service
   final analyticsService = AnalyticsService();
@@ -151,7 +151,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    logger.i('Building MyApp');
+    appLogger.info('Building MyApp', 'App');
     return Consumer<ThemeNotifier>(
       builder: (context, themeNotifier, child) {
         return CupertinoApp(

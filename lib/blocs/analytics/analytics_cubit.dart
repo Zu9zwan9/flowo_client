@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flowo_client/blocs/analytics/analytics_state.dart';
 import 'package:flowo_client/models/analytics_data.dart';
 import 'package:flowo_client/services/analytics_service.dart';
@@ -21,7 +23,8 @@ class AnalyticsCubit extends Cubit<AnalyticsState> {
 
       emit(AnalyticsLoaded(analyticsData));
     } catch (e) {
-      logger.e('Error loading analytics: $e');
+      appLogger.error(
+          'Error loading analytics', 'AnalyticsCubit', {'error': e.toString()});
       emit(AnalyticsError('Failed to load analytics data: ${e.toString()}'));
     }
   }

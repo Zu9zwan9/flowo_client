@@ -39,6 +39,8 @@ dependencies:
   # Email package
   mailer: ^6.1.0
   timezone: ^0.10.0
+  # File sharing
+  share_plus: ^7.2.1
 
 dev_dependencies:
   build_runner: ^2.1.7

@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:math' as math;
 
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/coordinates.dart';
@@ -12,6 +13,7 @@ import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
+import '../main.dart';
 import '../models/time_frame.dart';
 import '../services/notification_manager.dart';
 
@@ -48,11 +50,11 @@ class Scheduler {
 
     if (!tasksDB.containsKey(freeTimeManagerId)) {
       tasksDB.put(freeTimeManagerId, freeTimeManager);
-      logger.i(
-          'Persisted new freeTimeManager to tasksDB with ID: $freeTimeManagerId');
+      appLogger.info('Persisted new freeTimeManager to tasksDB', 'Scheduler',
+          {'id': freeTimeManagerId});
     } else {
-      logger.i(
-          'Loaded existing freeTimeManager from tasksDB with ID: $freeTimeManagerId');
+      appLogger.info('Loaded existing freeTimeManager from tasksDB',
+          'Scheduler', {'id': freeTimeManagerId});
     }
   }
 
@@ -467,7 +469,7 @@ class Scheduler {
   }) {
     if (!tasksDB.containsKey(task.id)) {
       tasksDB.put(task.id, task);
-      logger.w('Persisted unsaved task ${task.id}');
+      appLogger.warning('Persisted unsaved task', 'Scheduler', {'id': task.id});
     }
 
     final scheduledTask = ScheduledTask(
