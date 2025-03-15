@@ -1,6 +1,7 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/time_frame.dart';
 import 'package:flowo_client/models/user_settings.dart';
+import 'package:flowo_client/screens/widgets/settings_widgets.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -28,8 +29,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
-    _minSessionDuration = (_minSessionDuration ?? 15).clamp(5, 120);
-    _breakDuration = (_breakDuration ?? 5).clamp(5, 30);
+    _minSessionDuration = (_minSessionDuration).clamp(5, 120);
+    _breakDuration = (_breakDuration).clamp(5, 30);
   }
 
   void _loadSettings() {
@@ -303,229 +304,223 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
 
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('Settings')),
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Settings'),
+        border: null, // Remove the bottom border for a cleaner look
+      ),
       child: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
           children: [
-            _buildSectionHeader('Theme'),
-            const SizedBox(height: 8.0),
-            CupertinoSegmentedControl<String>(
-              groupValue: themeNotifier.currentThemeName,
-              children: const {
-                'Light': Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text('Light')),
-                'Night': Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text('Night')),
-                'ADHD': Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text('ADHD')),
-              },
-              onValueChanged: (value) => themeNotifier.setTheme(value),
+            // Theme Section
+            SettingsSection(
+              title: 'Theme',
+              footerText:
+                  'Choose a theme that suits your preferences and needs.',
+              children: [
+                SettingsSegmentedItem(
+                  label: 'Appearance',
+                  subtitle: 'Select your preferred visual style',
+                  groupValue: themeNotifier.currentThemeName,
+                  children: const {
+                    'Light': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('Light')),
+                    'Night': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('Night')),
+                    'ADHD': Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8.0),
+                        child: Text('ADHD')),
+                  },
+                  onValueChanged: (value) => themeNotifier.setTheme(value),
+                ),
+              ],
             ),
-            const SizedBox(height: 24.0),
-            _buildSectionHeader('Sleep Schedule'),
-            _buildSettingItem('Sleep Time', _formatTimeOfDay(_sleepTime),
-                onTap: () => _showTimePicker(
-                    initialTime: _sleepTime,
-                    onTimeSelected: (time) =>
-                        setState(() => _sleepTime = time))),
-            _buildSettingItem('Wake Up Time', _formatTimeOfDay(_wakeupTime),
-                onTap: () => _showTimePicker(
-                    initialTime: _wakeupTime,
-                    onTimeSelected: (time) =>
-                        setState(() => _wakeupTime = time))),
-            const SizedBox(height: 16.0),
-            _buildSectionHeader('Active Days'),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Wrap(
-                spacing: 8.0,
-                children: _activeDays.keys
-                    .map((day) => CupertinoButton(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12.0, vertical: 6.0),
-                          color: _activeDays[day]!
-                              ? CupertinoColors.activeBlue
-                              : CupertinoColors.systemGrey5,
-                          borderRadius: BorderRadius.circular(16.0),
-                          minSize: 0,
-                          child: Text(
-                            day.substring(0, 3),
-                            style: TextStyle(
-                                color: _activeDays[day]!
-                                    ? CupertinoColors.white
-                                    : CupertinoColors.label,
-                                fontSize: 14.0),
+
+            // Sleep Schedule Section
+            SettingsSection(
+              title: 'Sleep Schedule',
+              footerText:
+                  'Set your sleep and wake up times to help optimize your schedule.',
+              children: [
+                SettingsTimePickerItem(
+                  label: 'Sleep Time',
+                  time: _sleepTime,
+                  onTimeSelected: (time) => setState(() => _sleepTime = time),
+                  leading: const Icon(CupertinoIcons.moon_fill,
+                      color: CupertinoColors.systemIndigo),
+                  use24HourFormat: false,
+                ),
+                SettingsTimePickerItem(
+                  label: 'Wake Up Time',
+                  time: _wakeupTime,
+                  onTimeSelected: (time) => setState(() => _wakeupTime = time),
+                  leading: const Icon(CupertinoIcons.sunrise_fill,
+                      color: CupertinoColors.systemOrange),
+                  use24HourFormat: false,
+                ),
+              ],
+            ),
+
+            // Active Days Section
+            SettingsSection(
+              title: 'Active Days',
+              footerText: 'Select the days when you want to be active.',
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      vertical: 16.0, horizontal: 16.0),
+                  child: Wrap(
+                    spacing: 8.0,
+                    runSpacing: 8.0,
+                    children: _activeDays.keys
+                        .map((day) => SettingsButton(
+                              label: day.substring(0, 3),
+                              isPrimary: _activeDays[day]!,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12.0, vertical: 6.0),
+                              borderRadius: BorderRadius.circular(16.0),
+                              minSize: 0,
+                              onPressed: () => setState(
+                                  () => _activeDays[day] = !_activeDays[day]!),
+                            ))
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+
+            // Meal Times Section
+            SettingsSection(
+              title: 'Meal Times',
+              footerText:
+                  'Set your regular meal times to help schedule your day.',
+              children: [
+                ..._mealTimes
+                    .map((meal) => SettingsItem(
+                          label:
+                              'Meal ${_formatTimeOfDay(meal.startTime)} - ${_formatTimeOfDay(meal.endTime)}',
+                          leading: const Icon(CupertinoIcons.clock,
+                              color: CupertinoColors.systemOrange),
+                          trailing: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            child: const Icon(CupertinoIcons.delete,
+                                color: CupertinoColors.systemRed),
+                            onPressed: () =>
+                                setState(() => _mealTimes.remove(meal)),
                           ),
-                          onPressed: () => setState(
-                              () => _activeDays[day] = !_activeDays[day]!),
                         ))
                     .toList(),
-              ),
-            ),
-            const SizedBox(height: 16.0),
-            _buildSectionHeader('Meal Times'),
-            ..._mealTimes.map((meal) => _buildTimeSlotItem(
-                meal,
-                CupertinoColors.systemOrange,
-                () => setState(() => _mealTimes.remove(meal)))),
-            CupertinoButton(
-              onPressed: _showAddMealDialog,
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(CupertinoIcons.add_circled),
-                    SizedBox(width: 8.0),
-                    Text('Add Meal Time')
-                  ]),
-            ),
-            const SizedBox(height: 16.0),
-            _buildSectionHeader('Free Time'),
-            ..._freeTimes.map((freeTime) => _buildTimeSlotItem(
-                freeTime,
-                CupertinoColors.systemGreen,
-                () => setState(() => _freeTimes.remove(freeTime)))),
-            CupertinoButton(
-              onPressed: _showAddFreeTimeDialog,
-              child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(CupertinoIcons.add_circled),
-                    SizedBox(width: 8.0),
-                    Text('Add Free Time')
-                  ]),
-            ),
-            const SizedBox(height: 16.0),
-            _buildSectionHeader('Work Settings'),
-            _buildSliderItem('Minimum Session (minutes)',
-                _minSessionDuration.toDouble().clamp(5.0, 120.0),
-                min: 5,
-                max: 120,
-                divisions: 23,
-                onChanged: (value) =>
-                    setState(() => _minSessionDuration = value.round())),
-            _buildSliderItem('Break Duration (minutes)',
-                _breakDuration.toDouble().clamp(5.0, 30.0),
-                min: 5,
-                max: 30,
-                divisions: 5,
-                onChanged: (value) =>
-                    setState(() => _breakDuration = value.round())),
-            const SizedBox(height: 16.0),
-            _buildSectionHeader('Debug'),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12.0),
-              child: CupertinoButton(
-                color: CupertinoColors.systemBlue,
-                onPressed: _saveLogs,
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(CupertinoIcons.doc_text, color: CupertinoColors.white),
-                    SizedBox(width: 8.0),
-                    Text('Save Logs',
-                        style: TextStyle(color: CupertinoColors.white)),
-                  ],
+                SettingsItem(
+                  label: 'Add Meal Time',
+                  leading: const Icon(CupertinoIcons.add_circled,
+                      color: CupertinoColors.systemOrange),
+                  onTap: _showAddMealDialog,
                 ),
+              ],
+            ),
+
+            // Free Times Section
+            SettingsSection(
+              title: 'Free Times',
+              footerText:
+                  'Set your free time periods to avoid scheduling tasks during these times.',
+              children: [
+                ..._freeTimes
+                    .map((freeTime) => SettingsItem(
+                          label:
+                              'Free ${_formatTimeOfDay(freeTime.startTime)} - ${_formatTimeOfDay(freeTime.endTime)}',
+                          leading: const Icon(CupertinoIcons.clock,
+                              color: CupertinoColors.systemGreen),
+                          trailing: CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            child: const Icon(CupertinoIcons.delete,
+                                color: CupertinoColors.systemRed),
+                            onPressed: () =>
+                                setState(() => _freeTimes.remove(freeTime)),
+                          ),
+                        ))
+                    .toList(),
+                SettingsItem(
+                  label: 'Add Free Time',
+                  leading: const Icon(CupertinoIcons.add_circled,
+                      color: CupertinoColors.systemGreen),
+                  onTap: _showAddFreeTimeDialog,
+                ),
+              ],
+            ),
+
+            // Session Duration Section
+            SettingsSection(
+              title: 'Session Duration',
+              footerText:
+                  'Set the minimum duration for a task session in minutes.',
+              children: [
+                SettingsSliderItem(
+                  label: 'Minimum Session',
+                  value: _minSessionDuration.toDouble(),
+                  min: 5,
+                  max: 120,
+                  divisions: 23,
+                  valueLabel: '${_minSessionDuration.round()} min',
+                  onChanged: (value) =>
+                      setState(() => _minSessionDuration = value.round()),
+                  subtitle: 'The minimum time you want to spend on a task',
+                ),
+              ],
+            ),
+
+            // Break Duration Section
+            SettingsSection(
+              title: 'Break Duration',
+              footerText:
+                  'Set the duration for breaks between tasks in minutes.',
+              children: [
+                SettingsSliderItem(
+                  label: 'Break Time',
+                  value: _breakDuration.toDouble(),
+                  min: 5,
+                  max: 30,
+                  divisions: 5,
+                  valueLabel: '${_breakDuration.round()} min',
+                  onChanged: (value) =>
+                      setState(() => _breakDuration = value.round()),
+                  subtitle:
+                      'The time you want to take for breaks between tasks',
+                ),
+              ],
+            ),
+
+            // Logs Section
+            SettingsSection(
+              title: 'Logs',
+              footerText:
+                  'Save and share application logs for troubleshooting.',
+              children: [
+                SettingsItem(
+                  label: 'Save Logs',
+                  subtitle: 'Save application logs to a file',
+                  leading: const Icon(CupertinoIcons.doc_text,
+                      color: CupertinoColors.systemBlue),
+                  onTap: _saveLogs,
+                ),
+              ],
+            ),
+
+            // Save Button
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SettingsButton(
+                label: 'Save Settings',
+                isPrimary: true,
+                icon: CupertinoIcons.check_mark,
+                onPressed: _saveSettings,
               ),
             ),
-            const SizedBox(height: 24.0),
-            CupertinoButton.filled(
-                onPressed: _saveSettings, child: const Text('Save Settings')),
-            const SizedBox(height: 24.0),
           ],
         ),
       ),
     );
   }
-
-  Widget _buildSectionHeader(String title) => Padding(
-      padding: const EdgeInsets.only(top: 8.0),
-      child: Text(title,
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)));
-
-  Widget _buildSettingItem(String label, String value,
-          {required VoidCallback onTap}) =>
-      GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
-          decoration: BoxDecoration(
-              border: Border(
-                  bottom: BorderSide(
-                      color: CupertinoColors.systemGrey5, width: 0.5))),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(label, style: const TextStyle(fontSize: 16)),
-              Row(
-                children: [
-                  Text(value,
-                      style: const TextStyle(
-                          fontSize: 16, color: CupertinoColors.systemGrey)),
-                  const SizedBox(width: 8),
-                  const Icon(CupertinoIcons.chevron_right,
-                      color: CupertinoColors.systemGrey2, size: 18),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-
-  Widget _buildTimeSlotItem(
-          TimeFrame timeFrame, Color iconColor, VoidCallback onDelete) =>
-      Container(
-        padding: const EdgeInsets.symmetric(vertical: 12.0),
-        decoration: BoxDecoration(
-            border: Border(
-                bottom: BorderSide(
-                    color: CupertinoColors.systemGrey5, width: 0.5))),
-        child: Row(
-          children: [
-            Icon(CupertinoIcons.time, color: iconColor),
-            const SizedBox(width: 12),
-            Expanded(
-                child: Text(
-                    '${_formatTimeOfDay(timeFrame.startTime)} - ${_formatTimeOfDay(timeFrame.endTime)}',
-                    style: const TextStyle(fontSize: 16))),
-            CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: onDelete,
-                child: const Icon(CupertinoIcons.delete,
-                    color: CupertinoColors.systemRed)),
-          ],
-        ),
-      );
-
-  Widget _buildSliderItem(String label, double value,
-          {required double min,
-          required double max,
-          required int divisions,
-          required Function(double) onChanged}) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text(label, style: const TextStyle(fontSize: 16)),
-              Text('${value.round()}',
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.bold)),
-            ]),
-            const SizedBox(height: 8.0),
-            CupertinoSlider(
-                value: value,
-                min: min,
-                max: max,
-                divisions: divisions,
-                onChanged: onChanged),
-          ],
-        ),
-      );
 }
