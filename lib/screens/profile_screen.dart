@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flowo_client/models/user_profile.dart';
+import 'package:flowo_client/screens/analytics_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
@@ -315,6 +315,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   text: 'Update Profile',
                   color: CupertinoColors.activeBlue,
                   onPressed: _updateProfile,
+                ),
+                const SizedBox(height: 16),
+                _buildActionButton(
+                  text: 'View Analytics & Insights',
+                  color: CupertinoColors.activeOrange,
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      CupertinoPageRoute(
+                        builder: (context) => const AnalyticsScreen(),
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 _buildActionButton(

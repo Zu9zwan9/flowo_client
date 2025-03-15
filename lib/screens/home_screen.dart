@@ -1,12 +1,13 @@
 // lib/screens/home_screen.dart
-import 'package:flutter/services.dart';
 import 'package:cupertino_sidebar/cupertino_sidebar.dart';
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/screens/add_item_screen.dart';
+import 'package:flowo_client/screens/analytics_screen.dart';
 import 'package:flowo_client/screens/profile_screen.dart';
 import 'package:flowo_client/screens/settings_screen.dart';
 import 'package:flowo_client/screens/task_list_screen.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'calendar_screen.dart';
@@ -43,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
     AddItemScreen(),
     ProfileScreen(),
     SettingsScreen(),
+    AnalyticsScreen(),
   ];
 
   @override
@@ -91,6 +93,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 SidebarDestination(
                   icon: Icon(CupertinoIcons.settings),
                   label: Text('Settings'),
+                ),
+                SidebarDestination(
+                  icon: Icon(CupertinoIcons.chart_bar),
+                  label: Text('Analytics'),
                 ),
               ],
             ),

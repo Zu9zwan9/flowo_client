@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flowo_client/models/time_frame.dart';
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/utils/logger.dart';
@@ -285,7 +284,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     meal,
                     CupertinoColors.systemOrange,
                     () => setState(() => _mealTimes.remove(meal))))
-                .toList(),
+                ,
             CupertinoButton(
               onPressed: _showAddMealDialog,
               child: const Row(
@@ -303,7 +302,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     freeTime,
                     CupertinoColors.systemGreen,
                     () => setState(() => _freeTimes.remove(freeTime))))
-                .toList(),
+                ,
             CupertinoButton(
               onPressed: _showAddFreeTimeDialog,
               child: const Row(
@@ -332,7 +331,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     setState(() => _breakDuration = value.round())),
             const SizedBox(height: 24.0),
             CupertinoButton.filled(
-                child: const Text('Save Settings'), onPressed: _saveSettings),
+                onPressed: _saveSettings,
+                child: const Text('Save Settings')),
             const SizedBox(height: 24.0),
           ],
         ),
@@ -392,9 +392,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     style: const TextStyle(fontSize: 16))),
             CupertinoButton(
                 padding: EdgeInsets.zero,
+                onPressed: onDelete,
                 child: const Icon(CupertinoIcons.delete,
-                    color: CupertinoColors.systemRed),
-                onPressed: onDelete),
+                    color: CupertinoColors.systemRed)),
           ],
         ),
       );

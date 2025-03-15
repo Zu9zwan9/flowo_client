@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
-import 'package:flutter/foundation.dart';
 import 'package:flowo_client/utils/logger.dart';
 
 /// A factory function to create a pipeline for various NLP tasks

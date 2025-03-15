@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import '../../models/task.dart';
 
 class TaskSearchBar extends StatelessWidget {
   final TextEditingController controller;

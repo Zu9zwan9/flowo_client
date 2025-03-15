@@ -343,7 +343,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                     if (task != tasks.last) const CupertinoDivider(),
                   ],
                 );
-              }).toList(),
+              }),
             ],
           ],
         ),
@@ -372,7 +372,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     HapticFeedback.mediumImpact();
     final subtaskCount = task.subtasks.length;
     final message = subtaskCount > 0
-        ? 'Are you sure you want to delete "${task.title}" and its ${subtaskCount} subtask${subtaskCount == 1 ? "" : "s"}?'
+        ? 'Are you sure you want to delete "${task.title}" and its $subtaskCount subtask${subtaskCount == 1 ? "" : "s"}?'
         : 'Are you sure you want to delete "${task.title}"?';
 
     showCupertinoDialog(

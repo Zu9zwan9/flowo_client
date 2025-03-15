@@ -6,9 +6,6 @@ import 'package:flowo_client/models/time_frame.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/models/category.dart';
-import 'package:flowo_client/models/scheduled_task.dart';
-import 'package:flowo_client/models/notification_type.dart';
-import 'package:flowo_client/models/coordinates.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 

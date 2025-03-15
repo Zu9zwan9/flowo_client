@@ -279,7 +279,7 @@ class AddTaskPageState extends State<AddTaskPage> {
         ),
       );
 
-  Widget _buildColorSelector() => Container(
+  Widget _buildColorSelector() => SizedBox(
         height: 50,
         child: ListView.builder(
           scrollDirection: Axis.horizontal,

@@ -1,5 +1,7 @@
+import 'package:flowo_client/blocs/analytics/analytics_cubit.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/task.dart';
+import 'package:flowo_client/services/analytics_service.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -114,10 +116,14 @@ void main() async {
 
   logger.i('Hive initialized and task boxes opened');
 
+  // Create analytics service
+  final analyticsService = AnalyticsService();
+
   runApp(
     MultiProvider(
       providers: [
         Provider<TaskManager>.value(value: taskManager),
+        Provider<AnalyticsService>.value(value: analyticsService),
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         BlocProvider<CalendarCubit>(
           create: (context) => CalendarCubit(
@@ -128,6 +134,9 @@ void main() async {
         ),
         BlocProvider<TaskManagerCubit>(
           create: (context) => TaskManagerCubit(taskManager),
+        ),
+        BlocProvider<AnalyticsCubit>(
+          create: (context) => AnalyticsCubit(analyticsService),
         ),
       ],
       child: const MyApp(),

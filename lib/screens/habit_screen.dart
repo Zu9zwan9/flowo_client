@@ -281,9 +281,9 @@ class HabitScreenState extends State<HabitScreen> {
             children: [
               CupertinoButton(
                 padding: EdgeInsets.zero,
-                child: const Icon(CupertinoIcons.minus_circle),
                 onPressed:
                     _interval > 1 ? () => setState(() => _interval--) : null,
+                child: const Icon(CupertinoIcons.minus_circle),
               ),
               Expanded(
                 child: Text(

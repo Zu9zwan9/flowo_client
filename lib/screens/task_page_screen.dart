@@ -234,7 +234,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   void _showDeleteConfirmation(BuildContext context) {
     final subtaskCount = _task.subtasks.length;
     final message = subtaskCount > 0
-        ? 'Are you sure you want to delete "${_task.title}" and its ${subtaskCount} subtask${subtaskCount == 1 ? "" : "s"}?'
+        ? 'Are you sure you want to delete "${_task.title}" and its $subtaskCount subtask${subtaskCount == 1 ? "" : "s"}?'
         : 'Are you sure you want to delete "${_task.title}"?';
 
     showCupertinoDialog(
