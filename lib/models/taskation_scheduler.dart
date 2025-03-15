@@ -104,7 +104,8 @@ class TaskationScheduler {
       totalAllocated += estimatedTime;
 
       logInfo(
-          'Estimated time for subtask "${subtask.title}": $estimatedTime minutes');
+        'Estimated time for subtask "${subtask.title}": $estimatedTime minutes',
+      );
     }
 
     return estimatedTimes;
@@ -119,7 +120,8 @@ class TaskationScheduler {
       if (estimatedTime != null) {
         subtask.estimatedTime = estimatedTime;
         logInfo(
-            'Applied estimated time to subtask "${subtask.title}": $estimatedTime minutes');
+          'Applied estimated time to subtask "${subtask.title}": $estimatedTime minutes',
+        );
       }
     }
   }
@@ -147,8 +149,9 @@ class TaskationScheduler {
       if (task.isDone) continue;
 
       // Calculate end time by adding estimated minutes to current time
-      final endDateTime =
-          currentDateTime.add(Duration(minutes: task.estimatedTime));
+      final endDateTime = currentDateTime.add(
+        Duration(minutes: task.estimatedTime),
+      );
 
       // Create a scheduled task
       final scheduledTask = ScheduledTask(

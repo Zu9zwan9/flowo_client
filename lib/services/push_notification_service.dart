@@ -27,7 +27,8 @@ class PushNotificationService implements IPushNotificationService {
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
       FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
       FirebaseMessaging.onBackgroundMessage(
-          _firebaseMessagingBackgroundHandler);
+        _firebaseMessagingBackgroundHandler,
+      );
 
       _isInitialized = true;
       logInfo('Push notification service initialized');
@@ -44,7 +45,8 @@ class PushNotificationService implements IPushNotificationService {
 
   void _handleMessageOpenedApp(RemoteMessage message) {
     logInfo(
-        'App opened from push notification: ${message.notification?.title}');
+      'App opened from push notification: ${message.notification?.title}',
+    );
     // Handle the message, e.g., navigate to a specific screen
   }
 
@@ -53,13 +55,13 @@ class PushNotificationService implements IPushNotificationService {
     if (kIsWeb ||
         defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS) {
-      NotificationSettings settings =
-          await _firebaseMessaging.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-        provisional: false,
-      );
+      NotificationSettings settings = await _firebaseMessaging
+          .requestPermission(
+            alert: true,
+            badge: true,
+            sound: true,
+            provisional: false,
+          );
       return settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional;
     }
@@ -91,7 +93,10 @@ class PushNotificationService implements IPushNotificationService {
 
   @override
   Future<void> notifyTaskReminder(
-      Task task, ScheduledTask scheduledTask, Duration timeBeforeStart) async {
+    Task task,
+    ScheduledTask scheduledTask,
+    Duration timeBeforeStart,
+  ) async {
     if (!_isInitialized) await initialize();
 
     // Calculate minutes before start
@@ -102,7 +107,8 @@ class PushNotificationService implements IPushNotificationService {
     // For push notifications, we would typically send this to a server
     // that would then use FCM to send the notification to the device
     logInfo(
-        'Push notification for task reminder would be sent: ${task.title} - $reminderText');
+      'Push notification for task reminder would be sent: ${task.title} - $reminderText',
+    );
 
     // In a real implementation, you would send a request to your server:
     // await _sendNotificationToServer(

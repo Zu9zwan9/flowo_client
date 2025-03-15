@@ -57,14 +57,12 @@ class AIEstimationCubit extends Cubit<AIEstimationState> {
   final TaskManager taskManager;
   final AIEstimationService _estimationService;
 
-  AIEstimationCubit({
-    required this.taskManager,
-    String? huggingFaceApiKey,
-  })  : _estimationService = AIEstimationService(
-          taskManager: taskManager,
-          huggingFaceApiKey: huggingFaceApiKey,
-        ),
-        super(AIEstimationInitial());
+  AIEstimationCubit({required this.taskManager, String? huggingFaceApiKey})
+    : _estimationService = AIEstimationService(
+        taskManager: taskManager,
+        huggingFaceApiKey: huggingFaceApiKey,
+      ),
+      super(AIEstimationInitial());
 
   /// Estimates time for a single task using AI
   ///
@@ -81,16 +79,15 @@ class AIEstimationCubit extends Cubit<AIEstimationState> {
       taskManager.tasksDB.put(task.id, task);
 
       logInfo(
-          'Updated task "${task.title}" with estimated time: $estimatedTime minutes');
+        'Updated task "${task.title}" with estimated time: $estimatedTime minutes',
+      );
 
-      emit(AIEstimationSuccess(
-        task: task,
-        estimatedTime: estimatedTime,
-      ));
+      emit(AIEstimationSuccess(task: task, estimatedTime: estimatedTime));
     } catch (e) {
       logError('Error estimating time for task: $e');
-      emit(AIEstimationError(
-          message: 'Failed to estimate time: ${e.toString()}'));
+      emit(
+        AIEstimationError(message: 'Failed to estimate time: ${e.toString()}'),
+      );
     }
   }
 
@@ -99,24 +96,32 @@ class AIEstimationCubit extends Cubit<AIEstimationState> {
   /// Updates the task and its subtasks with the estimated times
   /// Emits AIEstimationSuccess with the updated task
   Future<void> estimateTaskAndSubtasks(Task task) async {
-    emit(const AIEstimationLoading(
-        message: 'Estimating time for task and subtasks...'));
+    emit(
+      const AIEstimationLoading(
+        message: 'Estimating time for task and subtasks...',
+      ),
+    );
 
     try {
-      final updatedTask =
-          await _estimationService.estimateTaskAndSubtasks(task);
+      final updatedTask = await _estimationService.estimateTaskAndSubtasks(
+        task,
+      );
 
       logInfo(
-          'Updated task "${updatedTask.title}" and its subtasks with AI-estimated times');
+        'Updated task "${updatedTask.title}" and its subtasks with AI-estimated times',
+      );
 
-      emit(AIEstimationSuccess(
-        task: updatedTask,
-        estimatedTime: updatedTask.estimatedTime,
-      ));
+      emit(
+        AIEstimationSuccess(
+          task: updatedTask,
+          estimatedTime: updatedTask.estimatedTime,
+        ),
+      );
     } catch (e) {
       logError('Error estimating time for task and subtasks: $e');
-      emit(AIEstimationError(
-          message: 'Failed to estimate time: ${e.toString()}'));
+      emit(
+        AIEstimationError(message: 'Failed to estimate time: ${e.toString()}'),
+      );
     }
   }
 
@@ -126,20 +131,20 @@ class AIEstimationCubit extends Cubit<AIEstimationState> {
   /// Emits AIEstimationSuccess with the number of tasks updated
   Future<void> estimateAllTasks() async {
     emit(
-        const AIEstimationLoading(message: 'Estimating time for all tasks...'));
+      const AIEstimationLoading(message: 'Estimating time for all tasks...'),
+    );
 
     try {
       final updatedCount = await _estimationService.estimateAllTasks();
 
       logInfo('Updated $updatedCount tasks with AI-estimated times');
 
-      emit(AIEstimationSuccess(
-        updatedCount: updatedCount,
-      ));
+      emit(AIEstimationSuccess(updatedCount: updatedCount));
     } catch (e) {
       logError('Error estimating time for all tasks: $e');
-      emit(AIEstimationError(
-          message: 'Failed to estimate time: ${e.toString()}'));
+      emit(
+        AIEstimationError(message: 'Failed to estimate time: ${e.toString()}'),
+      );
     }
   }
 }

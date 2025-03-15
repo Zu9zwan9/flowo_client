@@ -1,20 +1,19 @@
+import 'package:flowo_client/utils/task_breakdown_api.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flowo_client/utils/task_breakdown_api.dart';
 
 void main() {
   group('TaskBreakdownAPI', () {
     late TaskBreakdownAPI api;
 
     setUp(() {
-      api = TaskBreakdownAPI(
-        apiKey: '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',
-      );
+      api = TaskBreakdownAPI(apiKey: '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');
     });
 
     test('makeRequest returns a valid response', () async {
-      final response =
-          await api.makeRequest('Write a research paper on climate change');
+      final response = await api.makeRequest(
+        'Write a research paper on climate change',
+      );
 
       // Print the raw response for debugging
       if (kDebugMode) {
@@ -25,8 +24,9 @@ void main() {
     });
 
     test('breakdownTask returns a list of subtasks', () async {
-      final subtasks =
-          await api.breakdownTask('Write a research paper on climate change');
+      final subtasks = await api.breakdownTask(
+        'Write a research paper on climate change',
+      );
 
       // Print the subtasks for debugging
       if (kDebugMode) {
@@ -44,8 +44,8 @@ void main() {
       final listResponse = [
         {
           "generated_text":
-              "1. Research climate change causes\n2. Gather scientific data\n3. Outline the paper\n4. Write introduction\n5. Analyze findings"
-        }
+              "1. Research climate change causes\n2. Gather scientific data\n3. Outline the paper\n4. Write introduction\n5. Analyze findings",
+        },
       ];
 
       final subtasks = api.parseSubtasks(listResponse);
@@ -57,13 +57,14 @@ void main() {
       // Test with a map response format
       final mapResponse = {
         "generated_text":
-            "1. Research climate change causes\n2. Gather scientific data\n3. Outline the paper\n4. Write introduction\n5. Analyze findings"
+            "1. Research climate change causes\n2. Gather scientific data\n3. Outline the paper\n4. Write introduction\n5. Analyze findings",
       };
 
       final subtasksFromMap = api.parseSubtasks(mapResponse);
       if (kDebugMode) {
         print(
-            '[DEBUG_LOG] Parsed subtasks from map response: $subtasksFromMap');
+          '[DEBUG_LOG] Parsed subtasks from map response: $subtasksFromMap',
+        );
       }
       expect(subtasksFromMap.length, 5);
     });

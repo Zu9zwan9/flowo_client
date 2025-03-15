@@ -1,1 +1,1 @@
-final api = (apiKey: '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',);
+final api = (apiKey: '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');

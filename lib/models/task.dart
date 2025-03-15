@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+
 import 'category.dart';
 import 'coordinates.dart';
 import 'repeat_rule.dart';
@@ -88,7 +89,7 @@ class Task extends HiveObject {
     this.order,
     this.overdue = false,
     this.color,
-  })  : parentTaskId = parentTask?.id,
-        subtasks = subtasks ?? [],
-        scheduledTasks = scheduledTasks ?? [];
+  }) : parentTaskId = parentTask?.id,
+       subtasks = subtasks ?? [],
+       scheduledTasks = scheduledTasks ?? [];
 }

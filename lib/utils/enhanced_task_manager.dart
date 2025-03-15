@@ -25,14 +25,10 @@ class EnhancedTaskManager extends TaskManager {
     required super.tasksDB,
     required super.userSettings,
     required String huggingFaceApiKey,
-  })  : _taskTimeEstimator = TaskTimeEstimator(
-          AITimeEstimationStrategy(
-            apiKey: huggingFaceApiKey,
-          ),
-        ),
-        super(
-          huggingFaceApiKey: huggingFaceApiKey,
-        );
+  }) : _taskTimeEstimator = TaskTimeEstimator(
+         AITimeEstimationStrategy(apiKey: huggingFaceApiKey),
+       ),
+       super(huggingFaceApiKey: huggingFaceApiKey);
 
   /// Breaks down a task into subtasks using AI, estimates time for each subtask using AI,
   /// and schedules them.
@@ -53,11 +49,7 @@ class EnhancedTaskManager extends TaskManager {
 
       // If no subtasks were generated, schedule the parent task itself
       logInfo('Scheduling parent task: ${task.title}');
-      scheduler.scheduleTask(
-        task,
-        userSettings.minSession,
-        urgency: null,
-      );
+      scheduler.scheduleTask(task, userSettings.minSession, urgency: null);
 
       return [];
     }
@@ -80,9 +72,10 @@ class EnhancedTaskManager extends TaskManager {
       final subtaskTitle = subtaskTitles[i];
 
       // Use AI-estimated time if available, otherwise use proportional distribution
-      final estimatedTime = i < estimates.length
-          ? estimates[i]
-          : (task.estimatedTime / subtaskTitles.length).round();
+      final estimatedTime =
+          i < estimates.length
+              ? estimates[i]
+              : (task.estimatedTime / subtaskTitles.length).round();
 
       final subtask = Task(
         id: UniqueKey().toString(),
@@ -102,7 +95,8 @@ class EnhancedTaskManager extends TaskManager {
       task.subtasks.add(subtask);
 
       logInfo(
-          'Created subtask "$subtaskTitle" with estimated time: $estimatedTime minutes');
+        'Created subtask "$subtaskTitle" with estimated time: $estimatedTime minutes',
+      );
     }
 
     // Update the parent task in the database
@@ -121,14 +115,16 @@ class EnhancedTaskManager extends TaskManager {
     logInfo('Estimating time for task: ${task.title}');
 
     // Create task description with notes if available
-    final taskDescription = task.notes != null && task.notes!.isNotEmpty
-        ? "${task.title}\nNotes: ${task.notes}"
-        : task.title;
+    final taskDescription =
+        task.notes != null && task.notes!.isNotEmpty
+            ? "${task.title}\nNotes: ${task.notes}"
+            : task.title;
 
     try {
       // Use the TaskBreakdownAPI to make a request with a custom prompt
       final response = await taskBreakdownAPI.makeRequest(
-          "Estimate how long this task will take in minutes. Only respond with a number: $taskDescription");
+        "Estimate how long this task will take in minutes. Only respond with a number: $taskDescription",
+      );
 
       // Parse the response
       final estimatedTime = _parseTimeEstimate(response);
@@ -138,7 +134,8 @@ class EnhancedTaskManager extends TaskManager {
       tasksDB.put(task.id, task);
 
       logInfo(
-          'Updated estimated time for "${task.title}" to $estimatedTime milliseconds');
+        'Updated estimated time for "${task.title}" to $estimatedTime milliseconds',
+      );
 
       return estimatedTime;
     } catch (e) {
@@ -164,7 +161,8 @@ class EnhancedTaskManager extends TaskManager {
         text = response["generated_text"] ?? "";
       } else {
         logWarning(
-            'Unexpected response format from Hugging Face API: $response');
+          'Unexpected response format from Hugging Face API: $response',
+        );
         return 60 * 60 * 1000; // Default to 1 hour
       }
 
@@ -198,7 +196,8 @@ class EnhancedTaskManager extends TaskManager {
     }
 
     logInfo(
-        'Estimating time for ${task.subtasks.length} subtasks of: ${task.title}');
+      'Estimating time for ${task.subtasks.length} subtasks of: ${task.title}',
+    );
 
     // Get subtask titles
     final subtaskTitles =
@@ -218,7 +217,8 @@ class EnhancedTaskManager extends TaskManager {
         tasksDB.put(task.subtasks[i].id, task.subtasks[i]);
 
         logInfo(
-            'Updated estimated time for "${task.subtasks[i].title}" to ${estimates[i]} milliseconds');
+          'Updated estimated time for "${task.subtasks[i].title}" to ${estimates[i]} milliseconds',
+        );
       }
     }
 
@@ -235,11 +235,7 @@ class EnhancedTaskManager extends TaskManager {
     scheduler.removePreviousScheduledTasks(task);
 
     // Schedule the task with its new estimated time
-    scheduler.scheduleTask(
-      task,
-      userSettings.minSession,
-      urgency: null,
-    );
+    scheduler.scheduleTask(task, userSettings.minSession, urgency: null);
 
     logInfo('Rescheduled task: ${task.title}');
 

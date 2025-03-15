@@ -65,8 +65,9 @@ class ProfileManager {
   /// Change the avatar by selecting an image from the gallery
   Future<String?> changeAvatarFromGallery() async {
     try {
-      final pickedFile =
-          await ImagePicker().pickImage(source: ImageSource.gallery);
+      final pickedFile = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+      );
 
       if (pickedFile != null) {
         // Get the app's documents directory

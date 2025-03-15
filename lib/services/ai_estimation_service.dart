@@ -16,14 +16,16 @@ class AIEstimationService {
     required TaskManager taskManager,
     TaskTimeEstimator? taskTimeEstimator,
     String? huggingFaceApiKey,
-  })  : _taskManager = taskManager,
-        _taskTimeEstimator = taskTimeEstimator ??
-            TaskTimeEstimator(
-              AITimeEstimationStrategy(
-                apiKey: huggingFaceApiKey ??
-                    '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', // Default API key
-              ),
-            );
+  }) : _taskManager = taskManager,
+       _taskTimeEstimator =
+           taskTimeEstimator ??
+           TaskTimeEstimator(
+             AITimeEstimationStrategy(
+               apiKey:
+                   huggingFaceApiKey ??
+                   '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', // Default API key
+             ),
+           );
 
   /// Estimates time for a single task using AI
   ///
@@ -33,8 +35,9 @@ class AIEstimationService {
 
     try {
       // Use the task breakdown API to generate a description of the task
-      final subtaskTitles =
-          await _taskManager.taskBreakdownAPI.breakdownTask(task.title);
+      final subtaskTitles = await _taskManager.taskBreakdownAPI.breakdownTask(
+        task.title,
+      );
 
       if (subtaskTitles.isEmpty) {
         logWarning('No subtasks generated for task: ${task.title}');
@@ -56,7 +59,8 @@ class AIEstimationService {
       final totalEstimate = estimates.fold(0, (sum, time) => sum + time);
 
       logInfo(
-          'Estimated time for task "${task.title}": $totalEstimate minutes');
+        'Estimated time for task "${task.title}": $totalEstimate minutes',
+      );
       return totalEstimate;
     } catch (e) {
       logError('Error estimating time for task: $e');
@@ -82,13 +86,15 @@ class AIEstimationService {
         // If subtasks were created, return the updated task
         if (subtasks.isNotEmpty) {
           logInfo(
-              'Created ${subtasks.length} subtasks for task: ${task.title}');
+            'Created ${subtasks.length} subtasks for task: ${task.title}',
+          );
           return task;
         }
       } else {
         // Task already has subtasks, estimate time for each
         logInfo(
-            'Task has ${task.subtasks.length} subtasks, estimating time for each');
+          'Task has ${task.subtasks.length} subtasks, estimating time for each',
+        );
 
         // Get subtask titles
         final subtaskTitles =
@@ -108,17 +114,21 @@ class AIEstimationService {
         for (var subtask in task.subtasks) {
           _taskManager.tasksDB.put(subtask.id, subtask);
           logInfo(
-              'Updated subtask "${subtask.title}" with estimated time: ${subtask.estimatedTime} minutes');
+            'Updated subtask "${subtask.title}" with estimated time: ${subtask.estimatedTime} minutes',
+          );
         }
 
         // Update parent task's estimated time to sum of subtasks
-        final totalEstimate = task.subtasks
-            .fold(0, (sum, subtask) => sum + subtask.estimatedTime);
+        final totalEstimate = task.subtasks.fold(
+          0,
+          (sum, subtask) => sum + subtask.estimatedTime,
+        );
         task.estimatedTime = totalEstimate;
         _taskManager.tasksDB.put(task.id, task);
 
         logInfo(
-            'Updated task "${task.title}" with total estimated time: ${task.estimatedTime} minutes');
+          'Updated task "${task.title}" with total estimated time: ${task.estimatedTime} minutes',
+        );
       }
 
       return task;
@@ -137,9 +147,10 @@ class AIEstimationService {
 
     try {
       // Get all top-level tasks (tasks without a parent)
-      final tasks = _taskManager.tasksDB.values
-          .where((task) => task.parentTaskId == null)
-          .toList();
+      final tasks =
+          _taskManager.tasksDB.values
+              .where((task) => task.parentTaskId == null)
+              .toList();
 
       int updatedCount = 0;
 

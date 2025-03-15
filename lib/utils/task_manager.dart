@@ -30,14 +30,14 @@ class TaskManager {
     required this.tasksDB,
     required this.userSettings,
     String? huggingFaceApiKey,
-  })  : scheduler = Scheduler(daysDB, tasksDB, userSettings),
-        taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
-        taskBreakdownAPI = TaskBreakdownAPI(
-          apiKey: huggingFaceApiKey ?? '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',
-        ),
-        taskEstimatorAPI = TaskEstimatorAPI(
-          apiKey: huggingFaceApiKey ?? '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',
-        );
+  }) : scheduler = Scheduler(daysDB, tasksDB, userSettings),
+       taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
+       taskBreakdownAPI = TaskBreakdownAPI(
+         apiKey: huggingFaceApiKey ?? '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',
+       ),
+       taskEstimatorAPI = TaskEstimatorAPI(
+         apiKey: huggingFaceApiKey ?? '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',
+       );
 
   void updateUserSettings(UserSettings userSettings) {
     logInfo('Updating TaskManager user settings');
@@ -45,9 +45,17 @@ class TaskManager {
     scheduler.updateUserSettings(userSettings);
   }
 
-  void createTask(String title, int priority, int estimatedTime, int deadline,
-      Category category, Task? parentTask, String? notes,
-      {int? color, RepeatRule? frequency}) {
+  void createTask(
+    String title,
+    int priority,
+    int estimatedTime,
+    int deadline,
+    Category category,
+    Task? parentTask,
+    String? notes, {
+    int? color,
+    RepeatRule? frequency,
+  }) {
     final task = Task(
       id: UniqueKey().toString(),
       title: title,
@@ -91,9 +99,18 @@ class TaskManager {
     logInfo('Deleted task: ${task.title}');
   }
 
-  void editTask(Task task, String title, int priority, int estimatedTime,
-      int deadline, Category category, Task? parentTask,
-      {String? notes, int? color, RepeatRule? frequency}) {
+  void editTask(
+    Task task,
+    String title,
+    int priority,
+    int estimatedTime,
+    int deadline,
+    Category category,
+    Task? parentTask, {
+    String? notes,
+    int? color,
+    RepeatRule? frequency,
+  }) {
     task.title = title;
     task.priority = priority;
     task.estimatedTime = estimatedTime;
@@ -119,8 +136,10 @@ class TaskManager {
     final justScheduledTasks = <ScheduledTask>[];
 
     while (tasks.isNotEmpty) {
-      final taskUrgencyMap =
-          taskUrgencyCalculator.calculateUrgency(tasks, justScheduledTasks);
+      final taskUrgencyMap = taskUrgencyCalculator.calculateUrgency(
+        tasks,
+        justScheduledTasks,
+      );
       if (taskUrgencyMap.isEmpty) {
         log('No tasks left to schedule');
         break;
@@ -155,10 +174,12 @@ class TaskManager {
 
   bool _isOrderCorrect(Task task) {
     if (task.order != null && task.order! > 0 && task.parentTask != null) {
-      return !task.parentTask!.subtasks.any((subtask) =>
-          subtask.order != null &&
-          subtask.order! < task.order! &&
-          subtask.scheduledTasks.isEmpty);
+      return !task.parentTask!.subtasks.any(
+        (subtask) =>
+            subtask.order != null &&
+            subtask.order! < task.order! &&
+            subtask.scheduledTasks.isEmpty,
+      );
     }
     return true;
   }
@@ -169,9 +190,10 @@ class TaskManager {
       final dayDate = DateTime.parse(day.day);
       if (dayDate.isBefore(now)) continue;
 
-      final toRemove = day.scheduledTasks
-          .where((st) => st.type == ScheduledTaskType.defaultType)
-          .toList();
+      final toRemove =
+          day.scheduledTasks
+              .where((st) => st.type == ScheduledTaskType.defaultType)
+              .toList();
       for (var scheduledTask in toRemove) {
         day.scheduledTasks.remove(scheduledTask);
         final task = tasksDB.get(scheduledTask.parentTaskId);
@@ -196,12 +218,12 @@ class TaskManager {
     }
 
     final maxDate = DateTime.now().add(const Duration(days: 365 * 3));
-    while (
-        (repeatRule.until != null && currentDate.isBefore(repeatRule.until!)) ||
-            (repeatRule.count != null && dates.length < repeatRule.count!) ||
-            (repeatRule.until == null &&
-                repeatRule.count == null &&
-                currentDate.isBefore(maxDate))) {
+    while ((repeatRule.until != null &&
+            currentDate.isBefore(repeatRule.until!)) ||
+        (repeatRule.count != null && dates.length < repeatRule.count!) ||
+        (repeatRule.until == null &&
+            repeatRule.count == null &&
+            currentDate.isBefore(maxDate))) {
       switch (repeatRule.frequency) {
         case 'daily':
           dates.add(currentDate);
@@ -219,9 +241,13 @@ class TaskManager {
             if (repeatRule.byMonthDay!.contains(currentDate.day)) {
               dates.add(currentDate);
             } else if (repeatRule.byMonthDay!.any((d) => d < 0)) {
-              final lastDay =
-                  DateTime(currentDate.year, currentDate.month + 1, 0);
-              final dayFromEnd = lastDay.day +
+              final lastDay = DateTime(
+                currentDate.year,
+                currentDate.month + 1,
+                0,
+              );
+              final dayFromEnd =
+                  lastDay.day +
                   (repeatRule.byMonthDay!.firstWhere((d) => d < 0) + 1);
               if (currentDate.day == dayFromEnd) {
                 dates.add(currentDate);
@@ -232,8 +258,11 @@ class TaskManager {
               (currentDate.day - 1) ~/ 7 + 1 == repeatRule.bySetPos) {
             dates.add(currentDate);
           }
-          currentDate = DateTime(currentDate.year,
-              currentDate.month + repeatRule.interval, currentDate.day);
+          currentDate = DateTime(
+            currentDate.year,
+            currentDate.month + repeatRule.interval,
+            currentDate.day,
+          );
           break;
         case 'yearly':
           dates.add(currentDate);
@@ -243,13 +272,19 @@ class TaskManager {
               if (day > DateTime(currentDate.year, month + 1, 0).day) {
                 day = DateTime(currentDate.year, month + 1, 0).day;
               }
-              final newDate =
-                  DateTime(currentDate.year + repeatRule.interval, month, day);
+              final newDate = DateTime(
+                currentDate.year + repeatRule.interval,
+                month,
+                day,
+              );
               if (newDate.isAfter(currentDate)) dates.add(newDate);
             }
           } else {
-            currentDate = DateTime(currentDate.year + repeatRule.interval,
-                currentDate.month, currentDate.day);
+            currentDate = DateTime(
+              currentDate.year + repeatRule.interval,
+              currentDate.month,
+              currentDate.day,
+            );
           }
           break;
         default:
@@ -276,11 +311,7 @@ class TaskManager {
 
       // If no subtasks were generated, schedule the parent task itself
       logInfo('Scheduling parent task: ${task.title}');
-      scheduler.scheduleTask(
-        task,
-        userSettings.minSession,
-        urgency: null,
-      );
+      scheduler.scheduleTask(task, userSettings.minSession, urgency: null);
 
       return [];
     }

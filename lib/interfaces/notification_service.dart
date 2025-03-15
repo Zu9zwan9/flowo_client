@@ -11,7 +11,10 @@ abstract class INotificationService {
 
   /// Send a reminder notification for an upcoming task
   Future<void> notifyTaskReminder(
-      Task task, ScheduledTask scheduledTask, Duration timeBeforeStart);
+    Task task,
+    ScheduledTask scheduledTask,
+    Duration timeBeforeStart,
+  );
 
   /// Cancel a notification for a specific task
   Future<void> cancelNotification(String taskId);

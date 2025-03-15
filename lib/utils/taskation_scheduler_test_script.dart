@@ -25,9 +25,10 @@ Future<void> main() async {
     title: 'Write a comprehensive research paper on climate change',
     priority: 3, // High priority
     estimatedTime: 0, // No estimated time
-    deadline: DateTime.now()
-        .add(const Duration(days: 7))
-        .millisecondsSinceEpoch, // 1 week deadline
+    deadline:
+        DateTime.now()
+            .add(const Duration(days: 7))
+            .millisecondsSinceEpoch, // 1 week deadline
     category: flowo.Category(name: 'Work'),
   );
 
@@ -99,8 +100,10 @@ Future<void> main() async {
     }
 
     // Calculate total estimated time
-    final totalEstimatedTime =
-        subtaskEstimates.values.fold(0, (sum, time) => sum + time);
+    final totalEstimatedTime = subtaskEstimates.values.fold(
+      0,
+      (sum, time) => sum + time,
+    );
     print('Total estimated time: $totalEstimatedTime minutes');
     print('Parent task estimated time: ${parentTask.estimatedTime} minutes');
   }
@@ -156,13 +159,15 @@ Future<void> main() async {
     print('Scheduled tasks:');
     for (var i = 0; i < scheduledTasks.length; i++) {
       final scheduledTask = scheduledTasks[i];
-      final task =
-          tasksToSchedule.firstWhere((t) => t.id == scheduledTask.parentTaskId);
+      final task = tasksToSchedule.firstWhere(
+        (t) => t.id == scheduledTask.parentTaskId,
+      );
       print('  ${i + 1}. ${task.title}');
       print('     Start: ${scheduledTask.startTime}');
       print('     End: ${scheduledTask.endTime}');
       print(
-          '     Duration: ${scheduledTask.endTime.difference(scheduledTask.startTime).inMinutes} minutes');
+        '     Duration: ${scheduledTask.endTime.difference(scheduledTask.startTime).inMinutes} minutes',
+      );
     }
   }
 

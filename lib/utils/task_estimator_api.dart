@@ -17,11 +17,11 @@ class TaskEstimatorAPI {
     this.apiUrl =
         'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta',
   }) : _pipeline = pipeline(
-          "text-generation",
-          model: 'HuggingFaceH4/zephyr-7b-beta',
-          apiKey: apiKey,
-          apiUrl: apiUrl,
-        );
+         "text-generation",
+         model: 'HuggingFaceH4/zephyr-7b-beta',
+         apiKey: apiKey,
+         apiUrl: apiUrl,
+       );
 
   /// Makes a request to the Hugging Face API to estimate time for a task
   ///
@@ -43,8 +43,8 @@ class TaskEstimatorAPI {
       {
         "role": "user",
         "content":
-            "You are a helpful assistant that estimates how long tasks will take. Based on the task description, provide a time estimate in hours and minutes. Only respond with the time estimate, nothing else. For example: '2 hours 30 minutes' or '45 minutes'. Task: $context"
-      }
+            "You are a helpful assistant that estimates how long tasks will take. Based on the task description, provide a time estimate in hours and minutes. Only respond with the time estimate, nothing else. For example: '2 hours 30 minutes' or '45 minutes'. Task: $context",
+      },
     ];
 
     // Use the pipeline to generate the response
@@ -69,7 +69,8 @@ class TaskEstimatorAPI {
         text = response["generated_text"] ?? "";
       } else {
         logWarning(
-            'Unexpected response format from Hugging Face API: $response');
+          'Unexpected response format from Hugging Face API: $response',
+        );
         // Return default estimate for unexpected format
         return 60 * 60 * 1000;
       }
@@ -87,7 +88,8 @@ class TaskEstimatorAPI {
       return _parseTimeString(text);
     } catch (e) {
       logError(
-          'Error parsing time estimate from Hugging Face API response: $e');
+        'Error parsing time estimate from Hugging Face API response: $e',
+      );
       // Return default estimate on error
       return 60 * 60 * 1000;
     }

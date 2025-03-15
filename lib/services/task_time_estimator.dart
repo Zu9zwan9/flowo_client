@@ -19,15 +19,13 @@ class AITimeEstimationStrategy implements TimeEstimationStrategy {
   final Pipeline _pipeline;
 
   /// Creates a new AITimeEstimationStrategy with the given API key
-  AITimeEstimationStrategy({
-    required String apiKey,
-    String? apiUrl,
-  }) : _pipeline = pipeline(
-          "text-generation",
-          model: 'HuggingFaceH4/zephyr-7b-beta',
-          apiKey: apiKey,
-          apiUrl: apiUrl,
-        );
+  AITimeEstimationStrategy({required String apiKey, String? apiUrl})
+    : _pipeline = pipeline(
+        "text-generation",
+        model: 'HuggingFaceH4/zephyr-7b-beta',
+        apiKey: apiKey,
+        apiUrl: apiUrl,
+      );
 
   @override
   Future<List<int>> estimateTime(
@@ -67,10 +65,7 @@ The sum of all estimates should be approximately equal to the total estimated ti
 
     // Create messages in the format expected by the pipeline
     final messages = [
-      {
-        "role": "user",
-        "content": prompt,
-      }
+      {"role": "user", "content": prompt},
     ];
 
     try {
@@ -79,19 +74,27 @@ The sum of all estimates should be approximately equal to the total estimated ti
 
       // Parse the response
       return _parseTimeEstimates(
-          response, subtaskTitles.length, parentEstimatedTime);
+        response,
+        subtaskTitles.length,
+        parentEstimatedTime,
+      );
     } catch (e) {
       logError('Error estimating time for subtasks: $e');
 
       // Fallback to proportional distribution
       return _distributeProportionally(
-          subtaskTitles.length, parentEstimatedTime);
+        subtaskTitles.length,
+        parentEstimatedTime,
+      );
     }
   }
 
   /// Parses the time estimates from the AI response
   List<int> _parseTimeEstimates(
-      dynamic response, int subtaskCount, int totalTime) {
+    dynamic response,
+    int subtaskCount,
+    int totalTime,
+  ) {
     if (response == null) {
       logWarning('Received null response from Hugging Face API');
       return _distributeProportionally(subtaskCount, totalTime);
@@ -105,7 +108,8 @@ The sum of all estimates should be approximately equal to the total estimated ti
         text = response["generated_text"] ?? "";
       } else {
         logWarning(
-            'Unexpected response format from Hugging Face API: $response');
+          'Unexpected response format from Hugging Face API: $response',
+        );
         return _distributeProportionally(subtaskCount, totalTime);
       }
 
@@ -150,7 +154,9 @@ The sum of all estimates should be approximately equal to the total estimated ti
     final remainder = totalTime % subtaskCount;
 
     return List.generate(
-        subtaskCount, (index) => index < remainder ? baseTime + 1 : baseTime);
+      subtaskCount,
+      (index) => index < remainder ? baseTime + 1 : baseTime,
+    );
   }
 }
 
@@ -184,7 +190,8 @@ class TaskTimeEstimator {
     for (int i = 0; i < subtasks.length; i++) {
       subtasks[i].estimatedTime = estimates[i];
       logInfo(
-          'Set estimated time for "${subtasks[i].title}" to ${estimates[i]} minutes');
+        'Set estimated time for "${subtasks[i].title}" to ${estimates[i]} minutes',
+      );
     }
   }
 }

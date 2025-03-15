@@ -52,9 +52,9 @@ class ThemeNotifier extends ChangeNotifier {
           primaryColor: CupertinoColors.systemBlue,
           scaffoldBackgroundColor: CupertinoColors.systemBackground,
           textTheme: Typography.material2018().black.apply(
-                fontFamily: _currentFont,
-                decoration: TextDecoration.none,
-              ),
+            fontFamily: _currentFont,
+            decoration: TextDecoration.none,
+          ),
         );
         _primaryColor = CupertinoColors.systemBlue;
         _textColor = CupertinoColors.label;
@@ -81,9 +81,9 @@ class ThemeNotifier extends ChangeNotifier {
           primaryColor: CupertinoColors.systemBlue,
           scaffoldBackgroundColor: CupertinoColors.black,
           textTheme: Typography.material2018().white.apply(
-                fontFamily: _currentFont,
-                decoration: TextDecoration.none,
-              ),
+            fontFamily: _currentFont,
+            decoration: TextDecoration.none,
+          ),
         );
         _primaryColor = CupertinoColors.systemBlue;
         _textColor = CupertinoColors.white;
@@ -111,9 +111,9 @@ class ThemeNotifier extends ChangeNotifier {
           primaryColor: CupertinoColors.systemOrange,
           scaffoldBackgroundColor: CupertinoColors.systemBackground,
           textTheme: Typography.material2018().black.apply(
-                fontFamily: _currentFont,
-                decoration: TextDecoration.none,
-              ),
+            fontFamily: _currentFont,
+            decoration: TextDecoration.none,
+          ),
         );
         _primaryColor = CupertinoColors.systemOrange;
         _textColor = CupertinoColors.black;
@@ -140,9 +140,9 @@ class ThemeNotifier extends ChangeNotifier {
           primaryColor: CupertinoColors.systemBlue,
           scaffoldBackgroundColor: CupertinoColors.systemBackground,
           textTheme: Typography.material2018().black.apply(
-                fontFamily: _currentFont,
-                decoration: TextDecoration.none,
-              ),
+            fontFamily: _currentFont,
+            decoration: TextDecoration.none,
+          ),
         );
         _primaryColor = CupertinoColors.systemBlue;
         _textColor = CupertinoColors.label;

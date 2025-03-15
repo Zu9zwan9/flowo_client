@@ -55,9 +55,10 @@ Future<void> main() async {
     title: 'Write a comprehensive research paper on climate change',
     priority: 3, // High priority
     estimatedTime: 480, // 8 hours in minutes
-    deadline: DateTime.now()
-        .add(const Duration(days: 7))
-        .millisecondsSinceEpoch, // 1 week deadline
+    deadline:
+        DateTime.now()
+            .add(const Duration(days: 7))
+            .millisecondsSinceEpoch, // 1 week deadline
     category: flowo.Category(name: 'Work'),
   );
 
@@ -86,20 +87,25 @@ Future<void> main() async {
       }
 
       // Calculate total estimated time
-      final totalEstimatedTime =
-          subtasks.fold(0, (sum, subtask) => sum + subtask.estimatedTime);
+      final totalEstimatedTime = subtasks.fold(
+        0,
+        (sum, subtask) => sum + subtask.estimatedTime,
+      );
       print('\nTotal estimated time for subtasks: $totalEstimatedTime minutes');
       print(
-          'Original parent task estimated time: ${task.estimatedTime} minutes');
+        'Original parent task estimated time: ${task.estimatedTime} minutes',
+      );
       print('Difference: ${totalEstimatedTime - task.estimatedTime} minutes');
 
       if ((totalEstimatedTime - task.estimatedTime).abs() <=
           task.estimatedTime * 0.2) {
         print(
-            'SUCCESS: Total estimated time is within 20% of parent task estimated time.');
+          'SUCCESS: Total estimated time is within 20% of parent task estimated time.',
+        );
       } else {
         print(
-            'WARNING: Total estimated time differs from parent task estimated time by more than 20%.');
+          'WARNING: Total estimated time differs from parent task estimated time by more than 20%.',
+        );
       }
     }
   }

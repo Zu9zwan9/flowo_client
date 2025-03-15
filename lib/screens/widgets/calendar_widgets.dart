@@ -37,10 +37,7 @@ class _CalendarViewSelectorState extends State<CalendarViewSelector>
       duration: const Duration(milliseconds: 200),
     );
     _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
     _animationController.value = 1.0; // Start fully visible
   }
@@ -97,10 +94,7 @@ class _CalendarViewSelectorState extends State<CalendarViewSelector>
       child: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: child,
-          );
+          return Transform.scale(scale: _scaleAnimation.value, child: child);
         },
         child: CupertinoSlidingSegmentedControl<String>(
           groupValue: groupValue,
@@ -158,41 +152,50 @@ class CalendarHeader extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Month and year
-          Text(
-            '$month $year',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.label,
+          Flexible(
+            child: Text(
+              '$month $year',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: CupertinoColors.label,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           // Navigation buttons
-          Row(
-            children: [
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                child: const Text('Today'),
-                onPressed: onTodayPressed,
+          Flexible(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Text('Today'),
+                    onPressed: onTodayPressed,
+                  ),
+                  if (onPreviousPressed != null)
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: const Icon(
+                        CupertinoIcons.chevron_left,
+                        color: CupertinoColors.systemBlue,
+                      ),
+                      onPressed: onPreviousPressed,
+                    ),
+                  if (onNextPressed != null)
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: const Icon(
+                        CupertinoIcons.chevron_right,
+                        color: CupertinoColors.systemBlue,
+                      ),
+                      onPressed: onNextPressed,
+                    ),
+                ],
               ),
-              if (onPreviousPressed != null)
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: const Icon(
-                    CupertinoIcons.chevron_left,
-                    color: CupertinoColors.systemBlue,
-                  ),
-                  onPressed: onPreviousPressed,
-                ),
-              if (onNextPressed != null)
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: const Icon(
-                    CupertinoIcons.chevron_right,
-                    color: CupertinoColors.systemBlue,
-                  ),
-                  onPressed: onNextPressed,
-                ),
-            ],
+            ),
           ),
         ],
       ),
@@ -212,7 +215,7 @@ class CalendarHeader extends StatelessWidget {
       'September',
       'October',
       'November',
-      'December'
+      'December',
     ];
     return months[month - 1];
   }
@@ -259,10 +262,7 @@ class _AgendaItemState extends State<AgendaItem>
       duration: const Duration(milliseconds: 100),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -296,23 +296,23 @@ class _AgendaItemState extends State<AgendaItem>
   @override
   Widget build(BuildContext context) {
     final brightness = CupertinoTheme.of(context).brightness;
-    final containerColor = brightness == Brightness.dark
-        ? CupertinoColors.darkBackgroundGray
-        : CupertinoColors.white;
-    final textColor = brightness == Brightness.dark
-        ? CupertinoColors.white
-        : CupertinoColors.black;
-    final secondaryTextColor = brightness == Brightness.dark
-        ? CupertinoColors.systemGrey
-        : CupertinoColors.systemGrey;
+    final containerColor =
+        brightness == Brightness.dark
+            ? CupertinoColors.darkBackgroundGray
+            : CupertinoColors.white;
+    final textColor =
+        brightness == Brightness.dark
+            ? CupertinoColors.white
+            : CupertinoColors.black;
+    final secondaryTextColor =
+        brightness == Brightness.dark
+            ? CupertinoColors.systemGrey
+            : CupertinoColors.systemGrey;
 
     return AnimatedBuilder(
       animation: _animationController,
       builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: child,
-        );
+        return Transform.scale(scale: _scaleAnimation.value, child: child);
       },
       child: GestureDetector(
         onTapDown: _handleTapDown,
@@ -358,9 +358,10 @@ class _AgendaItemState extends State<AgendaItem>
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: _isTapped
-                        ? CupertinoColors.systemGrey6
-                        : containerColor,
+                    color:
+                        _isTapped
+                            ? CupertinoColors.systemGrey6
+                            : containerColor,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: CupertinoColors.systemGrey4),
                     boxShadow: [
@@ -387,13 +388,12 @@ class _AgendaItemState extends State<AgendaItem>
                           children: [
                             Text(
                               widget.title,
-                              style: CupertinoTheme.of(context)
-                                  .textTheme
-                                  .textStyle
-                                  .copyWith(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                              style: CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             if (widget.subtitle != null &&
                                 widget.subtitle!.isNotEmpty) ...[
@@ -452,12 +452,14 @@ class EmptyStateView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final brightness = CupertinoTheme.of(context).brightness;
-    final textColor = brightness == Brightness.dark
-        ? CupertinoColors.white
-        : CupertinoColors.black;
-    final secondaryTextColor = brightness == Brightness.dark
-        ? CupertinoColors.systemGrey
-        : CupertinoColors.systemGrey;
+    final textColor =
+        brightness == Brightness.dark
+            ? CupertinoColors.white
+            : CupertinoColors.black;
+    final secondaryTextColor =
+        brightness == Brightness.dark
+            ? CupertinoColors.systemGrey
+            : CupertinoColors.systemGrey;
 
     return Padding(
       padding: padding,
@@ -471,11 +473,7 @@ class EmptyStateView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min, // Use minimum space needed
             children: [
-              Icon(
-                icon,
-                size: 64,
-                color: CupertinoColors.systemGrey,
-              ),
+              Icon(icon, size: 64, color: CupertinoColors.systemGrey),
               const SizedBox(height: 16),
               Text(
                 title,
@@ -490,10 +488,7 @@ class EmptyStateView extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   message!,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: secondaryTextColor,
-                  ),
+                  style: TextStyle(fontSize: 16, color: secondaryTextColor),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -535,7 +530,8 @@ class CalendarTaskDataSource extends CalendarDataSource {
 
   @override
   Color getColor(int index) => _getCategoryColor(
-      appointments![index].parentTask?.category.name ?? 'default');
+    appointments![index].parentTask?.category.name ?? 'default',
+  );
 
   Color _getCategoryColor(String category) {
     switch (category.toLowerCase()) {
@@ -587,10 +583,7 @@ class _DateSelectorState extends State<DateSelector>
       duration: const Duration(milliseconds: 200),
     );
     _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
     _animationController.value = 1.0; // Start fully visible
   }
@@ -669,10 +662,7 @@ class _DateSelectorState extends State<DateSelector>
       child: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: child,
-          );
+          return Transform.scale(scale: _scaleAnimation.value, child: child);
         },
         child: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -724,7 +714,7 @@ class _DateSelectorState extends State<DateSelector>
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     return months[month - 1];
   }
@@ -737,7 +727,7 @@ class _DateSelectorState extends State<DateSelector>
       'Thursday',
       'Friday',
       'Saturday',
-      'Sunday'
+      'Sunday',
     ];
     return weekdays[weekday - 1];
   }

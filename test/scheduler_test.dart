@@ -1,12 +1,12 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flowo_client/utils/scheduler.dart';
-import 'package:flowo_client/models/task.dart';
-import 'package:flowo_client/models/day.dart';
-import 'package:flowo_client/models/time_frame.dart';
-import 'package:flowo_client/models/scheduled_task_type.dart';
-import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/models/category.dart';
+import 'package:flowo_client/models/day.dart';
+import 'package:flowo_client/models/scheduled_task_type.dart';
+import 'package:flowo_client/models/task.dart';
+import 'package:flowo_client/models/time_frame.dart';
+import 'package:flowo_client/models/user_settings.dart';
+import 'package:flowo_client/utils/scheduler.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
 
 class TestBox<T> extends Box<T> {
@@ -165,7 +165,7 @@ void main() {
           'Thursday': true,
           'Friday': true,
           'Saturday': true,
-          'Sunday': true
+          'Sunday': true,
         },
         sleepTime: [],
         mealBreaks: [],

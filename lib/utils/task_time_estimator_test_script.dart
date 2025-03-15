@@ -53,11 +53,7 @@ Future<void> main() async {
   await testEstimation(
     estimator,
     'Quick Task',
-    [
-      'Step 1',
-      'Step 2',
-      'Step 3',
-    ],
+    ['Step 1', 'Step 2', 'Step 3'],
     30, // 30 minutes
     DateTime.now().add(const Duration(hours: 3)).millisecondsSinceEpoch,
   );
@@ -79,7 +75,8 @@ Future<void> testEstimation(
     print('\n--- Testing estimation for "$taskName" ---');
     print('Parent task estimated time: $parentEstimatedTime minutes');
     print(
-        'Parent task deadline: ${DateTime.fromMillisecondsSinceEpoch(parentDeadline)}');
+      'Parent task deadline: ${DateTime.fromMillisecondsSinceEpoch(parentDeadline)}',
+    );
     print('Subtasks:');
     for (var i = 0; i < subtaskTitles.length; i++) {
       print('  ${i + 1}. ${subtaskTitles[i]}');
@@ -112,24 +109,28 @@ Future<void> testEstimation(
     if ((totalEstimatedTime - parentEstimatedTime).abs() <=
         parentEstimatedTime * 0.2) {
       print(
-          'SUCCESS: Total estimated time is within 20% of parent task estimated time.');
+        'SUCCESS: Total estimated time is within 20% of parent task estimated time.',
+      );
     } else {
       print(
-          'WARNING: Total estimated time differs from parent task estimated time by more than 20%.');
+        'WARNING: Total estimated time differs from parent task estimated time by more than 20%.',
+      );
     }
   }
 
   // Create mock subtasks and apply estimates
   final subtasks = <Task>[];
   for (var i = 0; i < subtaskTitles.length; i++) {
-    subtasks.add(Task(
-      id: 'test_subtask_$i',
-      title: subtaskTitles[i],
-      priority: 2,
-      estimatedTime: 0, // Will be set by applyEstimates
-      deadline: parentDeadline,
-      category: flowo.Category(name: 'Test'),
-    ));
+    subtasks.add(
+      Task(
+        id: 'test_subtask_$i',
+        title: subtaskTitles[i],
+        priority: 2,
+        estimatedTime: 0, // Will be set by applyEstimates
+        deadline: parentDeadline,
+        category: flowo.Category(name: 'Test'),
+      ),
+    );
   }
 
   if (kDebugMode) {
@@ -142,7 +143,8 @@ Future<void> testEstimation(
     print('Subtasks with applied estimates:');
     for (var i = 0; i < subtasks.length; i++) {
       print(
-          '  ${i + 1}. ${subtasks[i].title}: ${subtasks[i].estimatedTime} minutes');
+        '  ${i + 1}. ${subtasks[i].title}: ${subtasks[i].estimatedTime} minutes',
+      );
     }
   }
 }

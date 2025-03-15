@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flowo_client/utils/task_breakdown_api.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Pipeline', () {
@@ -18,9 +18,11 @@ void main() {
       expect(pipe.model, equals("HuggingFaceH4/zephyr-7b-beta"));
       expect(pipe.apiKey, equals("test_api_key"));
       expect(
-          pipe.apiUrl,
-          equals(
-              "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"));
+        pipe.apiUrl,
+        equals(
+          "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
+        ),
+      );
     });
 
     test('Pipeline call method formats messages correctly', () async {
@@ -42,18 +44,18 @@ void main() {
     late TaskBreakdownAPI api;
 
     setUp(() {
-      api = TaskBreakdownAPI(
-        apiKey: "test_api_key",
-      );
+      api = TaskBreakdownAPI(apiKey: "test_api_key");
     });
 
     test('TaskBreakdownAPI uses Pipeline for requests', () async {
       // This is a structural test to ensure the API is set up correctly
       expect(api.apiKey, equals("test_api_key"));
       expect(
-          api.apiUrl,
-          equals(
-              "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta"));
+        api.apiUrl,
+        equals(
+          "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta",
+        ),
+      );
     });
 
     test('breakdownTask returns subtasks', () async {

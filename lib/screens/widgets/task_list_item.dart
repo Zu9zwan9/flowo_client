@@ -55,8 +55,9 @@ class TaskListItem extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: task.color != null ? Color(task.color!) : categoryColor,
-                borderRadius:
-                    const BorderRadius.horizontal(left: Radius.circular(2)),
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(2),
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -66,12 +67,13 @@ class TaskListItem extends StatelessWidget {
                 children: [
                   Text(
                     '${task.title} (${task.scheduledTasks.length})',
-                    style:
-                        CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: CupertinoColors.label,
-                            ),
+                    style: CupertinoTheme.of(
+                      context,
+                    ).textTheme.textStyle.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: CupertinoColors.label,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -109,9 +111,10 @@ class TaskListItem extends StatelessWidget {
                 task.isDone
                     ? CupertinoIcons.check_mark_circled
                     : CupertinoIcons.circle,
-                color: task.isDone
-                    ? CupertinoColors.activeGreen
-                    : CupertinoColors.systemGrey,
+                color:
+                    task.isDone
+                        ? CupertinoColors.activeGreen
+                        : CupertinoColors.systemGrey,
                 size: 24,
               ),
             ),

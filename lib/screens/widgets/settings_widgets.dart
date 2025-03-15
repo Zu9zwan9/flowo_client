@@ -34,9 +34,12 @@ class SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBackgroundColor = backgroundColor ??
+    final effectiveBackgroundColor =
+        backgroundColor ??
         CupertinoDynamicColor.resolve(
-            CupertinoColors.systemBackground, context);
+          CupertinoColors.systemBackground,
+          context,
+        );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -59,25 +62,25 @@ class SettingsSection extends StatelessWidget {
 
           // Section content with rounded corners if enabled
           ClipRRect(
-            borderRadius: useRoundedCorners
-                ? BorderRadius.circular(cornerRadius)
-                : BorderRadius.zero,
+            borderRadius:
+                useRoundedCorners
+                    ? BorderRadius.circular(cornerRadius)
+                    : BorderRadius.zero,
             child: Container(
               decoration: BoxDecoration(
                 color: effectiveBackgroundColor,
-                boxShadow: useRoundedCorners
-                    ? [
-                        BoxShadow(
-                          color: CupertinoColors.systemGrey5.withOpacity(0.3),
-                          blurRadius: 5,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
+                boxShadow:
+                    useRoundedCorners
+                        ? [
+                          BoxShadow(
+                            color: CupertinoColors.systemGrey5.withOpacity(0.3),
+                            blurRadius: 5,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                        : null,
               ),
-              child: Column(
-                children: children,
-              ),
+              child: Column(children: children),
             ),
           ),
 
@@ -85,8 +88,13 @@ class SettingsSection extends StatelessWidget {
           if (footerText != null || customFooter != null)
             Padding(
               padding: const EdgeInsets.only(
-                  top: 8.0, left: 16.0, right: 16.0, bottom: 16.0),
-              child: customFooter ??
+                top: 8.0,
+                left: 16.0,
+                right: 16.0,
+                bottom: 16.0,
+              ),
+              child:
+                  customFooter ??
                   Text(
                     footerText!,
                     style: const TextStyle(
@@ -158,10 +166,7 @@ class _SettingsItemState extends State<SettingsItem>
       duration: const Duration(milliseconds: 100),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -194,17 +199,22 @@ class _SettingsItemState extends State<SettingsItem>
 
   @override
   Widget build(BuildContext context) {
-    final effectiveBackgroundColor = widget.backgroundColor ??
+    final effectiveBackgroundColor =
+        widget.backgroundColor ??
         CupertinoDynamicColor.resolve(
-            CupertinoColors.systemBackground, context);
+          CupertinoColors.systemBackground,
+          context,
+        );
 
-    final effectiveActiveBackgroundColor = widget.activeBackgroundColor ??
+    final effectiveActiveBackgroundColor =
+        widget.activeBackgroundColor ??
         CupertinoDynamicColor.resolve(CupertinoColors.systemGrey6, context);
 
     final effectiveLabelStyle =
         widget.labelStyle ?? const TextStyle(fontSize: 16);
 
-    final effectiveSubtitleStyle = widget.subtitleStyle ??
+    final effectiveSubtitleStyle =
+        widget.subtitleStyle ??
         const TextStyle(fontSize: 14, color: CupertinoColors.systemGrey);
 
     return Semantics(
@@ -227,14 +237,16 @@ class _SettingsItemState extends State<SettingsItem>
           behavior: HitTestBehavior.opaque,
           child: Container(
             decoration: BoxDecoration(
-              color: _isTapped
-                  ? effectiveActiveBackgroundColor
-                  : effectiveBackgroundColor,
+              color:
+                  _isTapped
+                      ? effectiveActiveBackgroundColor
+                      : effectiveBackgroundColor,
               border: Border(
                 bottom: BorderSide(
-                  color: widget.showDivider
-                      ? CupertinoColors.systemGrey5
-                      : CupertinoColors.systemBackground,
+                  color:
+                      widget.showDivider
+                          ? CupertinoColors.systemGrey5
+                          : CupertinoColors.systemBackground,
                   width: 0.5,
                 ),
               ),
@@ -254,10 +266,7 @@ class _SettingsItemState extends State<SettingsItem>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            widget.label,
-                            style: effectiveLabelStyle,
-                          ),
+                          Text(widget.label, style: effectiveLabelStyle),
                           if (widget.subtitle != null) ...[
                             const SizedBox(height: 4),
                             Text(
@@ -376,7 +385,8 @@ class _SettingsToggleItemState extends State<SettingsToggleItem>
 
     return Semantics(
       toggled: widget.value,
-      label: widget.semanticsLabel ??
+      label:
+          widget.semanticsLabel ??
           '${widget.label}, ${widget.value ? 'enabled' : 'disabled'}',
       child: SettingsItem(
         label: widget.label,
@@ -435,8 +445,11 @@ class SettingsSegmentedItem extends StatefulWidget {
     this.subtitleStyle,
     this.semanticsLabel,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-    this.segmentPadding =
-        const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 16.0),
+    this.segmentPadding = const EdgeInsets.only(
+      left: 16.0,
+      right: 16.0,
+      bottom: 16.0,
+    ),
   }) : super(key: key);
 
   @override
@@ -458,10 +471,7 @@ class _SettingsSegmentedItemState extends State<SettingsSegmentedItem>
       duration: const Duration(milliseconds: 200),
     );
     _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
     _animationController.value = 1.0; // Start fully visible
   }
@@ -593,8 +603,11 @@ class SettingsSliderItem extends StatefulWidget {
     this.subtitleStyle,
     this.semanticsLabel,
     this.padding = const EdgeInsets.only(left: 16.0, right: 16.0, top: 12.0),
-    this.sliderPadding =
-        const EdgeInsets.only(left: 12.0, right: 12.0, bottom: 12.0),
+    this.sliderPadding = const EdgeInsets.only(
+      left: 12.0,
+      right: 12.0,
+      bottom: 12.0,
+    ),
     this.valueBuilder,
   }) : super(key: key);
 
@@ -616,12 +629,11 @@ class _SettingsSliderItemState extends State<SettingsSliderItem>
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
-    _valueAnimation =
-        Tween<double>(begin: widget.value, end: widget.value).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutCubic,
-      ),
+    _valueAnimation = Tween<double>(
+      begin: widget.value,
+      end: widget.value,
+    ).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
     _animationController.addListener(() {
       setState(() {
@@ -671,9 +683,11 @@ class _SettingsSliderItemState extends State<SettingsSliderItem>
         widget.activeColor ?? CupertinoColors.activeBlue;
     final effectiveLabelStyle =
         widget.labelStyle ?? const TextStyle(fontSize: 16);
-    final effectiveValueStyle = widget.valueStyle ??
+    final effectiveValueStyle =
+        widget.valueStyle ??
         const TextStyle(fontSize: 16, color: CupertinoColors.systemGrey);
-    final effectiveSubtitleStyle = widget.subtitleStyle ??
+    final effectiveSubtitleStyle =
+        widget.subtitleStyle ??
         const TextStyle(fontSize: 14, color: CupertinoColors.systemGrey);
 
     return Semantics(
@@ -693,24 +707,15 @@ class _SettingsSliderItemState extends State<SettingsSliderItem>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      widget.label,
-                      style: effectiveLabelStyle,
-                    ),
+                    Text(widget.label, style: effectiveLabelStyle),
                     widget.valueBuilder != null
                         ? widget.valueBuilder!(_displayValue)
-                        : Text(
-                            _formatValue(),
-                            style: effectiveValueStyle,
-                          ),
+                        : Text(_formatValue(), style: effectiveValueStyle),
                   ],
                 ),
                 if (widget.subtitle != null) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    widget.subtitle!,
-                    style: effectiveSubtitleStyle,
-                  ),
+                  Text(widget.subtitle!, style: effectiveSubtitleStyle),
                 ],
               ],
             ),
@@ -806,10 +811,7 @@ class _SettingsButtonState extends State<SettingsButton>
       duration: const Duration(milliseconds: 100),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -842,21 +844,24 @@ class _SettingsButtonState extends State<SettingsButton>
 
   @override
   Widget build(BuildContext context) {
-    final buttonColor = widget.color ??
+    final buttonColor =
+        widget.color ??
         (widget.isDestructive
             ? CupertinoColors.systemRed
             : widget.isPrimary
-                ? CupertinoColors.systemBlue
-                : CupertinoColors.systemGrey);
+            ? CupertinoColors.systemBlue
+            : CupertinoColors.systemGrey);
 
-    final effectiveTextStyle = widget.textStyle ??
+    final effectiveTextStyle =
+        widget.textStyle ??
         TextStyle(
           color: widget.isPrimary ? CupertinoColors.white : buttonColor,
           fontSize: 16,
           fontWeight: widget.isPrimary ? FontWeight.w500 : FontWeight.normal,
         );
 
-    final effectiveBorderRadius = widget.borderRadius ??
+    final effectiveBorderRadius =
+        widget.borderRadius ??
         BorderRadius.circular(widget.isPrimary ? 8.0 : 8.0);
 
     return Semantics(
@@ -890,17 +895,15 @@ class _SettingsButtonState extends State<SettingsButton>
                   if (widget.icon != null) ...[
                     Icon(
                       widget.icon,
-                      color: widget.isPrimary
-                          ? CupertinoColors.white
-                          : buttonColor,
+                      color:
+                          widget.isPrimary
+                              ? CupertinoColors.white
+                              : buttonColor,
                       size: widget.iconSize,
                     ),
                     const SizedBox(width: 8),
                   ],
-                  Text(
-                    widget.label,
-                    style: effectiveTextStyle,
-                  ),
+                  Text(widget.label, style: effectiveTextStyle),
                   if (widget.trailing != null) ...[
                     const SizedBox(width: 8),
                     widget.trailing!,
@@ -963,7 +966,8 @@ class SettingsTimePickerItem extends StatefulWidget {
   State<SettingsTimePickerItem> createState() => _SettingsTimePickerItemState();
 }
 
-class _SettingsTimePickerItemState extends State<SettingsTimePickerItem> with SingleTickerProviderStateMixin {
+class _SettingsTimePickerItemState extends State<SettingsTimePickerItem>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   bool _isSelecting = false;
@@ -976,10 +980,7 @@ class _SettingsTimePickerItemState extends State<SettingsTimePickerItem> with Si
       duration: const Duration(milliseconds: 200),
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
@@ -993,9 +994,13 @@ class _SettingsTimePickerItemState extends State<SettingsTimePickerItem> with Si
     if (widget.timeFormat != null) {
       // Replace HH with hour and mm with minute in the format string
       String formatted = widget.timeFormat!;
-      final hour = widget.use24HourFormat 
-          ? time.hour.toString().padLeft(2, '0')
-          : (time.hour > 12 ? (time.hour - 12) : (time.hour == 0 ? 12 : time.hour)).toString();
+      final hour =
+          widget.use24HourFormat
+              ? time.hour.toString().padLeft(2, '0')
+              : (time.hour > 12
+                      ? (time.hour - 12)
+                      : (time.hour == 0 ? 12 : time.hour))
+                  .toString();
       final minute = time.minute.toString().padLeft(2, '0');
       final period = time.hour < 12 ? 'AM' : 'PM';
 
@@ -1006,11 +1011,16 @@ class _SettingsTimePickerItemState extends State<SettingsTimePickerItem> with Si
       return formatted;
     }
 
-    final hour = widget.use24HourFormat 
-        ? time.hour.toString().padLeft(2, '0')
-        : (time.hour > 12 ? (time.hour - 12) : (time.hour == 0 ? 12 : time.hour)).toString();
+    final hour =
+        widget.use24HourFormat
+            ? time.hour.toString().padLeft(2, '0')
+            : (time.hour > 12
+                    ? (time.hour - 12)
+                    : (time.hour == 0 ? 12 : time.hour))
+                .toString();
     final minute = time.minute.toString().padLeft(2, '0');
-    final period = !widget.use24HourFormat ? (time.hour < 12 ? ' AM' : ' PM') : '';
+    final period =
+        !widget.use24HourFormat ? (time.hour < 12 ? ' AM' : ' PM') : '';
 
     return '$hour:$minute$period';
   }
@@ -1023,57 +1033,62 @@ class _SettingsTimePickerItemState extends State<SettingsTimePickerItem> with Si
 
     showCupertinoModalPopup(
       context: context,
-      builder: (_) => Container(
-        height: 280,
-        color: CupertinoDynamicColor.resolve(CupertinoColors.systemBackground, context),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder:
+          (_) => Container(
+            height: 280,
+            color: CupertinoDynamicColor.resolve(
+              CupertinoColors.systemBackground,
+              context,
+            ),
+            child: Column(
               children: [
-                CupertinoButton(
-                  child: const Text('Cancel'),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    setState(() => _isSelecting = false);
-                    _animationController.reverse();
-                  },
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        setState(() => _isSelecting = false);
+                        _animationController.reverse();
+                      },
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () {
+                        Navigator.pop(context);
+                        setState(() => _isSelecting = false);
+                        _animationController.reverse();
+                      },
+                    ),
+                  ],
                 ),
-                CupertinoButton(
-                  child: const Text('Done'),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    setState(() => _isSelecting = false);
-                    _animationController.reverse();
-                  },
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.time,
+                    initialDateTime: DateTime(
+                      DateTime.now().year,
+                      DateTime.now().month,
+                      DateTime.now().day,
+                      widget.time.hour,
+                      widget.time.minute,
+                    ),
+                    minimumDate: widget.minimumDate,
+                    maximumDate: widget.maximumDate,
+                    minuteInterval: widget.minuteInterval,
+                    use24hFormat: widget.use24HourFormat,
+                    onDateTimeChanged:
+                        (dateTime) => widget.onTimeSelected(
+                          TimeOfDay(
+                            hour: dateTime.hour,
+                            minute: dateTime.minute,
+                          ),
+                        ),
+                  ),
                 ),
               ],
             ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.time,
-                initialDateTime: DateTime(
-                  DateTime.now().year,
-                  DateTime.now().month,
-                  DateTime.now().day,
-                  widget.time.hour,
-                  widget.time.minute,
-                ),
-                minimumDate: widget.minimumDate,
-                maximumDate: widget.maximumDate,
-                minuteInterval: widget.minuteInterval,
-                use24hFormat: widget.use24HourFormat,
-                onDateTimeChanged: (dateTime) => widget.onTimeSelected(
-                  TimeOfDay(
-                    hour: dateTime.hour,
-                    minute: dateTime.minute,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     ).then((_) {
       if (_isSelecting) {
         setState(() => _isSelecting = false);
@@ -1084,7 +1099,8 @@ class _SettingsTimePickerItemState extends State<SettingsTimePickerItem> with Si
 
   @override
   Widget build(BuildContext context) {
-    final effectiveTimeStyle = widget.timeStyle ?? 
+    final effectiveTimeStyle =
+        widget.timeStyle ??
         TextStyle(
           color: widget.textColor ?? CupertinoColors.systemGrey,
           fontSize: 16,
@@ -1093,14 +1109,13 @@ class _SettingsTimePickerItemState extends State<SettingsTimePickerItem> with Si
     return Semantics(
       button: true,
       enabled: widget.enabled,
-      label: widget.semanticsLabel ?? '${widget.label}, current time: ${_formatTimeOfDay(widget.time)}',
+      label:
+          widget.semanticsLabel ??
+          '${widget.label}, current time: ${_formatTimeOfDay(widget.time)}',
       child: AnimatedBuilder(
         animation: _animationController,
         builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: child,
-          );
+          return Transform.scale(scale: _scaleAnimation.value, child: child);
         },
         child: SettingsItem(
           label: widget.label,

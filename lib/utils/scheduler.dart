@@ -1,5 +1,4 @@
 import 'dart:developer';
-import 'dart:math' as math;
 
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/coordinates.dart';
@@ -13,7 +12,6 @@ import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
-import '../main.dart';
 import '../models/time_frame.dart';
 import '../services/notification_manager.dart';
 
@@ -25,8 +23,12 @@ class Scheduler {
   final Map<String, Day> _dayCache = {};
   final NotificationManager? notificationManager;
 
-  Scheduler(this.daysDB, this.tasksDB, this.userSettings,
-      {this.notificationManager}) {
+  Scheduler(
+    this.daysDB,
+    this.tasksDB,
+    this.userSettings, {
+    this.notificationManager,
+  }) {
     _initializeFreeTimeManager();
   }
 
@@ -37,7 +39,8 @@ class Scheduler {
 
   void _initializeFreeTimeManager() {
     const freeTimeManagerId = 'free_time_manager';
-    freeTimeManager = tasksDB.get(freeTimeManagerId) ??
+    freeTimeManager =
+        tasksDB.get(freeTimeManagerId) ??
         Task(
           id: freeTimeManagerId,
           title: 'Free Time',
@@ -50,16 +53,24 @@ class Scheduler {
 
     if (!tasksDB.containsKey(freeTimeManagerId)) {
       tasksDB.put(freeTimeManagerId, freeTimeManager);
-      appLogger.info('Persisted new freeTimeManager to tasksDB', 'Scheduler',
-          {'id': freeTimeManagerId});
+      appLogger.info('Persisted new freeTimeManager to tasksDB', 'Scheduler', {
+        'id': freeTimeManagerId,
+      });
     } else {
-      appLogger.info('Loaded existing freeTimeManager from tasksDB',
-          'Scheduler', {'id': freeTimeManagerId});
+      appLogger.info(
+        'Loaded existing freeTimeManager from tasksDB',
+        'Scheduler',
+        {'id': freeTimeManagerId},
+      );
     }
   }
 
-  ScheduledTask? scheduleTask(Task task, int minSessionDuration,
-      {double? urgency, List<String>? availableDates}) {
+  ScheduledTask? scheduleTask(
+    Task task,
+    int minSessionDuration, {
+    double? urgency,
+    List<String>? availableDates,
+  }) {
     _dayCache.clear();
 
     if (urgency != null && urgency > 0) {
@@ -95,7 +106,13 @@ class Scheduler {
 
       // Find all available slots in the current day
       List<ScheduledTask> availableSlots = _findAllAvailableTimeSlots(
-          day, start, remainingTime, minSessionDuration, task.title, dateKey);
+        day,
+        start,
+        remainingTime,
+        minSessionDuration,
+        task.title,
+        dateKey,
+      );
 
       for (ScheduledTask slot in availableSlots) {
         lastScheduledTask = _createScheduledTask(
@@ -136,7 +153,9 @@ class Scheduler {
           );
 
           remainingTime -= _calculateDurationMs(
-              taskToDisplace.startTime, taskToDisplace.endTime);
+            taskToDisplace.startTime,
+            taskToDisplace.endTime,
+          );
 
           if (remainingTime <= 0) break;
         }
@@ -162,7 +181,7 @@ class Scheduler {
       'Thursday',
       'Friday',
       'Saturday',
-      'Sunday'
+      'Sunday',
     ];
     final dayName = weekdayNames[date.weekday - 1];
     return userSettings.activeDays?[dayName] ?? true;
@@ -197,12 +216,19 @@ class Scheduler {
 
     if (tasksToRemove.isNotEmpty) {
       logInfo(
-          'Displaced ${tasksToRemove.length} lower priority tasks for ${highPriorityTask.title}');
+        'Displaced ${tasksToRemove.length} lower priority tasks for ${highPriorityTask.title}',
+      );
     }
   }
 
-  List<ScheduledTask> _findAllAvailableTimeSlots(Day day, DateTime start,
-      int requiredTime, int minSession, String taskTitle, String dateKey) {
+  List<ScheduledTask> _findAllAvailableTimeSlots(
+    Day day,
+    DateTime start,
+    int requiredTime,
+    int minSession,
+    String taskTitle,
+    String dateKey,
+  ) {
     final List<ScheduledTask> availableSlots = [];
     final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
     final dayStart = _parseStartTime(dateKey);
@@ -212,22 +238,36 @@ class Scheduler {
     // If no tasks in the day, use the entire day
     if (sortedTasks.isEmpty) {
       final slot = _tryCreateSlot(
-          dayStart, dayEnd, remainingTimeForSlots, minSession, dateKey);
+        dayStart,
+        dayEnd,
+        remainingTimeForSlots,
+        minSession,
+        dateKey,
+      );
       if (slot != null) {
         availableSlots.add(slot);
-        remainingTimeForSlots -=
-            _calculateDurationMs(slot.startTime, slot.endTime);
+        remainingTimeForSlots -= _calculateDurationMs(
+          slot.startTime,
+          slot.endTime,
+        );
       }
       return availableSlots;
     }
 
     // Check if there's space before the first task
-    ScheduledTask? slot = _tryCreateSlot(dayStart, sortedTasks.first.startTime,
-        remainingTimeForSlots, minSession, dateKey);
+    ScheduledTask? slot = _tryCreateSlot(
+      dayStart,
+      sortedTasks.first.startTime,
+      remainingTimeForSlots,
+      minSession,
+      dateKey,
+    );
     if (slot != null) {
       availableSlots.add(slot);
-      remainingTimeForSlots -=
-          _calculateDurationMs(slot.startTime, slot.endTime);
+      remainingTimeForSlots -= _calculateDurationMs(
+        slot.startTime,
+        slot.endTime,
+      );
     }
 
     // Check spaces between tasks
@@ -235,23 +275,31 @@ class Scheduler {
       if (remainingTimeForSlots <= 0) break;
 
       slot = _tryCreateSlot(
-          sortedTasks[i].endTime,
-          sortedTasks[i + 1].startTime,
-          remainingTimeForSlots,
-          minSession,
-          dateKey);
+        sortedTasks[i].endTime,
+        sortedTasks[i + 1].startTime,
+        remainingTimeForSlots,
+        minSession,
+        dateKey,
+      );
 
       if (slot != null) {
         availableSlots.add(slot);
-        remainingTimeForSlots -=
-            _calculateDurationMs(slot.startTime, slot.endTime);
+        remainingTimeForSlots -= _calculateDurationMs(
+          slot.startTime,
+          slot.endTime,
+        );
       }
     }
 
     // Check if there's space after the last task
     if (remainingTimeForSlots > 0) {
-      slot = _tryCreateSlot(sortedTasks.last.endTime, dayEnd,
-          remainingTimeForSlots, minSession, dateKey);
+      slot = _tryCreateSlot(
+        sortedTasks.last.endTime,
+        dayEnd,
+        remainingTimeForSlots,
+        minSession,
+        dateKey,
+      );
       if (slot != null) {
         availableSlots.add(slot);
       }
@@ -260,8 +308,13 @@ class Scheduler {
     return availableSlots;
   }
 
-  ScheduledTask? _tryCreateSlot(DateTime start, DateTime end, int requiredTime,
-      int minSession, String dateKey) {
+  ScheduledTask? _tryCreateSlot(
+    DateTime start,
+    DateTime end,
+    int requiredTime,
+    int minSession,
+    String dateKey,
+  ) {
     // Ensure start time is not before current time
     final now = DateTime.now();
     if (start.isBefore(now)) {
@@ -274,9 +327,12 @@ class Scheduler {
     final availableTime = _calculateDurationMs(start, end);
     if (availableTime < minSession) return null;
 
-    DateTime slotEnd = start.add(Duration(
+    DateTime slotEnd = start.add(
+      Duration(
         milliseconds:
-            requiredTime > availableTime ? availableTime : requiredTime));
+            requiredTime > availableTime ? availableTime : requiredTime,
+      ),
+    );
 
     return _createTempScheduledTask(start, slotEnd);
   }
@@ -293,17 +349,26 @@ class Scheduler {
         notification: NotificationType.none,
       );
 
-  List<ScheduledTask> _findDisplaceableSlots(Day day, DateTime start,
-      int requiredTime, int minSession, double urgency, String taskTitle) {
+  List<ScheduledTask> _findDisplaceableSlots(
+    Day day,
+    DateTime start,
+    int requiredTime,
+    int minSession,
+    double urgency,
+    String taskTitle,
+  ) {
     final displaceable = <ScheduledTask>[];
     int timeFound = 0;
-    final tasks = day.scheduledTasks
-        .where((task) =>
-            task.startTime.isAfter(start) &&
-            task.type == ScheduledTaskType.defaultType &&
-            (task.urgency ?? 0) < urgency)
-        .toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final tasks =
+        day.scheduledTasks
+            .where(
+              (task) =>
+                  task.startTime.isAfter(start) &&
+                  task.type == ScheduledTaskType.defaultType &&
+                  (task.urgency ?? 0) < urgency,
+            )
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     for (var task in tasks) {
       final duration = _calculateDurationMs(task.startTime, task.endTime);
@@ -311,7 +376,8 @@ class Scheduler {
         displaceable.add(task);
         timeFound += duration;
         logDebug(
-            'Displacing task ${task.parentTaskId} (${task.urgency}) for $taskTitle ($urgency)');
+          'Displacing task ${task.parentTaskId} (${task.urgency}) for $taskTitle ($urgency)',
+        );
         if (timeFound >= requiredTime) break;
       }
     }
@@ -322,7 +388,8 @@ class Scheduler {
     final task = tasksDB.get(scheduledTask.parentTaskId);
     if (task != null) {
       task.scheduledTasks.removeWhere(
-          (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId);
+        (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+      );
       tasksDB.put(task.id, task);
     }
 
@@ -330,7 +397,8 @@ class Scheduler {
     final day = _dayCache[dateKey] ?? daysDB.get(dateKey);
     if (day != null) {
       day.scheduledTasks.removeWhere(
-          (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId);
+        (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+      );
       daysDB.put(dateKey, day);
     }
   }
@@ -351,14 +419,16 @@ class Scheduler {
     for (var entry in taskIdsByDay.entries) {
       final day = daysDB.get(entry.key);
       if (day != null) {
-        day.scheduledTasks
-            .removeWhere((st) => entry.value.contains(st.scheduledTaskId));
+        day.scheduledTasks.removeWhere(
+          (st) => entry.value.contains(st.scheduledTaskId),
+        );
         daysDB.put(entry.key, day);
       }
     }
 
     logDebug(
-        'Cleared ${scheduledTasksCopy.length} previous tasks for ${task.title}');
+      'Cleared ${scheduledTasksCopy.length} previous tasks for ${task.title}',
+    );
   }
 
   List<ScheduledTask> _sortScheduledTasksByTime(List<ScheduledTask> tasks) =>
@@ -392,19 +462,23 @@ class Scheduler {
           timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
         // Split overnight sleep
         _addTimeBlock(
-            day,
-            TimeFrame(
-                startTime: timeFrame.startTime,
-                endTime: const TimeOfDay(hour: 23, minute: 59)),
-            ScheduledTaskType.sleep,
-            date);
+          day,
+          TimeFrame(
+            startTime: timeFrame.startTime,
+            endTime: const TimeOfDay(hour: 23, minute: 59),
+          ),
+          ScheduledTaskType.sleep,
+          date,
+        );
         _addTimeBlock(
-            day,
-            TimeFrame(
-                startTime: const TimeOfDay(hour: 0, minute: 0),
-                endTime: timeFrame.endTime),
-            ScheduledTaskType.sleep,
-            date);
+          day,
+          TimeFrame(
+            startTime: const TimeOfDay(hour: 0, minute: 0),
+            endTime: timeFrame.endTime,
+          ),
+          ScheduledTaskType.sleep,
+          date,
+        );
       } else {
         _addTimeBlock(day, timeFrame, ScheduledTaskType.sleep, date);
       }
@@ -412,14 +486,22 @@ class Scheduler {
   }
 
   void _addTimeBlock(
-      Day day, TimeFrame timeFrame, ScheduledTaskType type, DateTime baseDate) {
+    Day day,
+    TimeFrame timeFrame,
+    ScheduledTaskType type,
+    DateTime baseDate,
+  ) {
     if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
         timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
       // Split overnight task
-      final firstDayStart =
-          _combineDateKeyAndTimeOfDay(day.day, timeFrame.startTime);
+      final firstDayStart = _combineDateKeyAndTimeOfDay(
+        day.day,
+        timeFrame.startTime,
+      );
       final firstDayEnd = _combineDateKeyAndTimeOfDay(
-          day.day, const TimeOfDay(hour: 23, minute: 59));
+        day.day,
+        const TimeOfDay(hour: 23, minute: 59),
+      );
 
       _createScheduledTask(
         task: freeTimeManager,
@@ -431,9 +513,13 @@ class Scheduler {
 
       final nextDay = _formatDateKey(baseDate.add(const Duration(days: 1)));
       final nextDayStart = _combineDateKeyAndTimeOfDay(
-          nextDay, const TimeOfDay(hour: 0, minute: 0));
-      final nextDayEnd =
-          _combineDateKeyAndTimeOfDay(nextDay, timeFrame.endTime);
+        nextDay,
+        const TimeOfDay(hour: 0, minute: 0),
+      );
+      final nextDayEnd = _combineDateKeyAndTimeOfDay(
+        nextDay,
+        timeFrame.endTime,
+      );
 
       _createScheduledTask(
         task: freeTimeManager,

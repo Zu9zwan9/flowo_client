@@ -10,9 +10,7 @@ Future<void> main() async {
     print('Starting TaskBreakdownAPI test script...');
   }
 
-  final api = TaskBreakdownAPI(
-    apiKey: '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',
-  );
+  final api = TaskBreakdownAPI(apiKey: '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');
 
   // Test with a valid task
   if (kDebugMode) {

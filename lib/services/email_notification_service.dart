@@ -58,8 +58,9 @@ class EmailNotificationService implements IEmailNotificationService {
 
   @override
   bool isValidEmail(String email) {
-    final emailRegExp =
-        RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
+    final emailRegExp = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
     return emailRegExp.hasMatch(email);
   }
 
@@ -72,11 +73,12 @@ class EmailNotificationService implements IEmailNotificationService {
     }
 
     try {
-      final message = Message()
-        ..from = Address(_senderEmail, 'Flowo Planning')
-        ..recipients.add(_recipientEmail)
-        ..subject = 'Task Started: ${task.title}'
-        ..html = '''
+      final message =
+          Message()
+            ..from = Address(_senderEmail, 'Flowo Planning')
+            ..recipients.add(_recipientEmail)
+            ..subject = 'Task Started: ${task.title}'
+            ..html = '''
           <h1>Task Started</h1>
           <p>Your task "${task.title}" has started.</p>
           <p><strong>Details:</strong></p>
@@ -98,11 +100,15 @@ class EmailNotificationService implements IEmailNotificationService {
 
   @override
   Future<void> notifyTaskReminder(
-      Task task, ScheduledTask scheduledTask, Duration timeBeforeStart) async {
+    Task task,
+    ScheduledTask scheduledTask,
+    Duration timeBeforeStart,
+  ) async {
     if (!_isInitialized) await initialize();
     if (_recipientEmail.isEmpty) {
       logWarning(
-          'No recipient email set, cannot send task reminder notification');
+        'No recipient email set, cannot send task reminder notification',
+      );
       return;
     }
 
@@ -112,11 +118,12 @@ class EmailNotificationService implements IEmailNotificationService {
       final reminderText =
           minutes > 0 ? 'Starting in $minutes minutes' : 'Starting now';
 
-      final message = Message()
-        ..from = Address(_senderEmail, 'Flowo Planning')
-        ..recipients.add(_recipientEmail)
-        ..subject = 'Reminder: ${task.title}'
-        ..html = '''
+      final message =
+          Message()
+            ..from = Address(_senderEmail, 'Flowo Planning')
+            ..recipients.add(_recipientEmail)
+            ..subject = 'Reminder: ${task.title}'
+            ..html = '''
           <h1>Task Reminder</h1>
           <p>Your task "${task.title}" is $reminderText.</p>
           <p><strong>Details:</strong></p>
@@ -131,7 +138,8 @@ class EmailNotificationService implements IEmailNotificationService {
 
       final sendReport = await send(message, _smtpServer);
       logInfo(
-          'Task reminder email notification sent: ${sendReport.toString()}');
+        'Task reminder email notification sent: ${sendReport.toString()}',
+      );
     } catch (e) {
       logError('Failed to send task reminder email notification: $e');
     }
@@ -142,7 +150,8 @@ class EmailNotificationService implements IEmailNotificationService {
     // Email notifications cannot be "cancelled" once sent
     // This method is implemented for interface compliance
     logInfo(
-        'Email notifications for task $taskId cannot be cancelled once sent');
+      'Email notifications for task $taskId cannot be cancelled once sent',
+    );
   }
 
   @override

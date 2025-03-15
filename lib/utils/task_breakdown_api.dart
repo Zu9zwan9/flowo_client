@@ -1,17 +1,17 @@
-import 'dart:convert';
 import 'dart:async';
-import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import 'package:flowo_client/utils/logger.dart';
+import 'package:http/http.dart' as http;
 
 /// A factory function to create a pipeline for various NLP tasks
-Pipeline pipeline(String task,
-    {required String model, required String apiKey, String? apiUrl}) {
-  return Pipeline(
-    task: task,
-    model: model,
-    apiKey: apiKey,
-    apiUrl: apiUrl,
-  );
+Pipeline pipeline(
+  String task, {
+  required String model,
+  required String apiKey,
+  String? apiUrl,
+}) {
+  return Pipeline(task: task, model: model, apiKey: apiKey, apiUrl: apiUrl);
 }
 
 /// A pipeline for text generation using Hugging Face models
@@ -40,12 +40,12 @@ class Pipeline {
   Future<dynamic> call(List<Map<String, String>> messages) async {
     final data = {
       "inputs": jsonEncode(messages),
-      "parameters": {"max_new_tokens": 500, "return_full_text": false}
+      "parameters": {"max_new_tokens": 500, "return_full_text": false},
     };
 
     final headers = {
       "Authorization": "Bearer $apiKey",
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     };
 
     try {
@@ -61,13 +61,14 @@ class Pipeline {
         return jsonDecode(response.body);
       } else {
         logError(
-            'Error from Hugging Face API: ${response.statusCode} - ${response.body}');
+          'Error from Hugging Face API: ${response.statusCode} - ${response.body}',
+        );
 
         // If the API is unavailable, return a fallback response
         logWarning('Using fallback response due to API error');
         return {
           "generated_text":
-              "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work"
+              "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
         };
       }
     } catch (e) {
@@ -77,7 +78,7 @@ class Pipeline {
       logWarning('Using fallback response due to exception');
       return {
         "generated_text":
-            "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work"
+            "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
       };
     }
   }
@@ -97,11 +98,11 @@ class TaskBreakdownAPI {
     this.apiUrl =
         'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta',
   }) : _pipeline = pipeline(
-          "text-generation",
-          model: 'HuggingFaceH4/zephyr-7b-beta',
-          apiKey: apiKey,
-          apiUrl: apiUrl,
-        );
+         "text-generation",
+         model: 'HuggingFaceH4/zephyr-7b-beta',
+         apiKey: apiKey,
+         apiUrl: apiUrl,
+       );
 
   /// Makes a request to the Hugging Face API to break down a task into subtasks
   ///
@@ -113,7 +114,7 @@ class TaskBreakdownAPI {
       logWarning('Empty task provided, returning mock response');
       return {
         "generated_text":
-            "1. First subtask\n2. Second subtask\n3. Third subtask"
+            "1. First subtask\n2. Second subtask\n3. Third subtask",
       };
     }
 
@@ -122,8 +123,8 @@ class TaskBreakdownAPI {
       {
         "role": "user",
         "content":
-            "You are a helpful assistant that breaks down tasks into clear, actionable subtasks. Format your response as a numbered list. Break down the task into specific subtasks: $task"
-      }
+            "You are a helpful assistant that breaks down tasks into clear, actionable subtasks. Format your response as a numbered list. Break down the task into specific subtasks: $task",
+      },
     ];
 
     // Use the pipeline to generate the response
@@ -142,7 +143,7 @@ class TaskBreakdownAPI {
         "Create an outline",
         "Draft the content",
         "Review and revise",
-        "Finalize the work"
+        "Finalize the work",
       ];
     }
 
@@ -154,14 +155,15 @@ class TaskBreakdownAPI {
         text = response["generated_text"] ?? "";
       } else {
         logWarning(
-            'Unexpected response format from Hugging Face API: $response');
+          'Unexpected response format from Hugging Face API: $response',
+        );
         // Return default subtasks for unexpected format
         return [
           "Research the topic",
           "Create an outline",
           "Draft the content",
           "Review and revise",
-          "Finalize the work"
+          "Finalize the work",
         ];
       }
 
@@ -177,7 +179,7 @@ class TaskBreakdownAPI {
           "Create an outline",
           "Draft the content",
           "Review and revise",
-          "Finalize the work"
+          "Finalize the work",
         ];
       }
 
@@ -206,7 +208,8 @@ class TaskBreakdownAPI {
       // If no subtasks were found, try to split the text into sentences
       if (subtasks.isEmpty) {
         logWarning(
-            'No subtasks found in structured format, trying sentence splitting');
+          'No subtasks found in structured format, trying sentence splitting',
+        );
         final sentences = text.split(RegExp(r'[.!?]\s+'));
         for (var sentence in sentences) {
           final trimmed = sentence.trim();
@@ -224,12 +227,13 @@ class TaskBreakdownAPI {
           "Create an outline",
           "Draft the content",
           "Review and revise",
-          "Finalize the work"
+          "Finalize the work",
         ];
       }
 
       logInfo(
-          'Parsed ${subtasks.length} subtasks from Hugging Face API response');
+        'Parsed ${subtasks.length} subtasks from Hugging Face API response',
+      );
 
       if (subtasks.isNotEmpty) {
         subtasks.removeAt(0);
@@ -243,7 +247,7 @@ class TaskBreakdownAPI {
         "Create an outline",
         "Draft the content",
         "Review and revise",
-        "Finalize the work"
+        "Finalize the work",
       ];
     }
   }
@@ -259,7 +263,7 @@ class TaskBreakdownAPI {
         "Break down into smaller steps",
         "Prioritize the steps",
         "Estimate time for each step",
-        "Execute the plan"
+        "Execute the plan",
       ];
     }
 

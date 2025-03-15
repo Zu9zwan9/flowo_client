@@ -14,8 +14,8 @@ class NotificationScheduler {
   NotificationScheduler({
     required Scheduler scheduler,
     required NotificationManager notificationManager,
-  })  : _scheduler = scheduler,
-        _notificationManager = notificationManager;
+  }) : _scheduler = scheduler,
+       _notificationManager = notificationManager;
 
   /// Initialize the notification manager
   Future<void> initialize() async {
@@ -24,11 +24,19 @@ class NotificationScheduler {
   }
 
   /// Schedule a task and set up notifications for it
-  ScheduledTask? scheduleTask(Task task, int minSessionDuration,
-      {double? urgency, List<String>? availableDates}) {
+  ScheduledTask? scheduleTask(
+    Task task,
+    int minSessionDuration, {
+    double? urgency,
+    List<String>? availableDates,
+  }) {
     // Use the original scheduler to schedule the task
-    final scheduledTask = _scheduler.scheduleTask(task, minSessionDuration,
-        urgency: urgency, availableDates: availableDates);
+    final scheduledTask = _scheduler.scheduleTask(
+      task,
+      minSessionDuration,
+      urgency: urgency,
+      availableDates: availableDates,
+    );
 
     if (scheduledTask != null) {
       _scheduleNotificationsForTask(task, scheduledTask);
@@ -53,8 +61,9 @@ class NotificationScheduler {
       );
 
       // Schedule reminder notification if needed (e.g., 15 minutes before start)
-      final reminderTime =
-          scheduledTask.startTime.subtract(const Duration(minutes: 15));
+      final reminderTime = scheduledTask.startTime.subtract(
+        const Duration(minutes: 15),
+      );
       if (reminderTime.isAfter(DateTime.now())) {
         _notificationManager.scheduleTaskReminderNotification(
           task,
@@ -87,7 +96,9 @@ class NotificationScheduler {
 
   /// Update the notification type for a scheduled task
   void updateNotificationType(
-      ScheduledTask scheduledTask, NotificationType notificationType) {
+    ScheduledTask scheduledTask,
+    NotificationType notificationType,
+  ) {
     scheduledTask.notification = notificationType;
   }
 

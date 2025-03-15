@@ -4,11 +4,7 @@ class CupertinoDivider extends StatelessWidget {
   final double height;
   final Color? color;
 
-  const CupertinoDivider({
-    super.key,
-    this.height = 1.0,
-    this.color,
-  });
+  const CupertinoDivider({super.key, this.height = 1.0, this.color});
 
   @override
   Widget build(BuildContext context) {

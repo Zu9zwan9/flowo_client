@@ -25,21 +25,22 @@ class LocalNotificationService implements INotificationService {
 
     final DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
     final InitializationSettings initializationSettings =
         InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsIOS,
-    );
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsIOS,
+        );
 
     await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse:
-          (NotificationResponse notificationResponse) async {
+      onDidReceiveNotificationResponse: (
+        NotificationResponse notificationResponse,
+      ) async {
         // Handle notification tap
         final String? payload = notificationResponse.payload;
         if (payload != null) {
@@ -62,25 +63,27 @@ class LocalNotificationService implements INotificationService {
 
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'task_start_channel',
-      'Task Start Notifications',
-      channelDescription: 'Notifications for when tasks start',
-      importance: Importance.high,
-      priority: Priority.high,
-      enableVibration:
-          scheduledTask.notification == NotificationType.vibration ||
+          'task_start_channel',
+          'Task Start Notifications',
+          channelDescription: 'Notifications for when tasks start',
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration:
+              scheduledTask.notification == NotificationType.vibration ||
               scheduledTask.notification == NotificationType.both,
-      playSound: scheduledTask.notification == NotificationType.sound ||
-          scheduledTask.notification == NotificationType.both,
-    );
+          playSound:
+              scheduledTask.notification == NotificationType.sound ||
+              scheduledTask.notification == NotificationType.both,
+        );
 
     final DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: scheduledTask.notification == NotificationType.sound ||
-          scheduledTask.notification == NotificationType.both,
-    );
+          presentAlert: true,
+          presentBadge: true,
+          presentSound:
+              scheduledTask.notification == NotificationType.sound ||
+              scheduledTask.notification == NotificationType.both,
+        );
 
     final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -100,7 +103,10 @@ class LocalNotificationService implements INotificationService {
 
   @override
   Future<void> notifyTaskReminder(
-      Task task, ScheduledTask scheduledTask, Duration timeBeforeStart) async {
+    Task task,
+    ScheduledTask scheduledTask,
+    Duration timeBeforeStart,
+  ) async {
     if (!_isInitialized) await initialize();
 
     // Skip if notification type is none
@@ -108,25 +114,27 @@ class LocalNotificationService implements INotificationService {
 
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'task_reminder_channel',
-      'Task Reminder Notifications',
-      channelDescription: 'Reminders for upcoming tasks',
-      importance: Importance.high,
-      priority: Priority.high,
-      enableVibration:
-          scheduledTask.notification == NotificationType.vibration ||
+          'task_reminder_channel',
+          'Task Reminder Notifications',
+          channelDescription: 'Reminders for upcoming tasks',
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration:
+              scheduledTask.notification == NotificationType.vibration ||
               scheduledTask.notification == NotificationType.both,
-      playSound: scheduledTask.notification == NotificationType.sound ||
-          scheduledTask.notification == NotificationType.both,
-    );
+          playSound:
+              scheduledTask.notification == NotificationType.sound ||
+              scheduledTask.notification == NotificationType.both,
+        );
 
     final DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: scheduledTask.notification == NotificationType.sound ||
-          scheduledTask.notification == NotificationType.both,
-    );
+          presentAlert: true,
+          presentBadge: true,
+          presentSound:
+              scheduledTask.notification == NotificationType.sound ||
+              scheduledTask.notification == NotificationType.both,
+        );
 
     final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -154,8 +162,9 @@ class LocalNotificationService implements INotificationService {
     if (!_isInitialized) await initialize();
 
     await _flutterLocalNotificationsPlugin.cancel(taskId.hashCode);
-    await _flutterLocalNotificationsPlugin
-        .cancel(taskId.hashCode + 1000); // Cancel reminder too
+    await _flutterLocalNotificationsPlugin.cancel(
+      taskId.hashCode + 1000,
+    ); // Cancel reminder too
 
     logInfo('Notifications cancelled for task: $taskId');
   }
@@ -170,8 +179,12 @@ class LocalNotificationService implements INotificationService {
   }
 
   // Schedule a notification for a future time
-  Future<void> scheduleNotification(Task task, ScheduledTask scheduledTask,
-      DateTime scheduledTime, bool isReminder) async {
+  Future<void> scheduleNotification(
+    Task task,
+    ScheduledTask scheduledTask,
+    DateTime scheduledTime,
+    bool isReminder,
+  ) async {
     if (!_isInitialized) await initialize();
 
     // Skip if notification type is none
@@ -179,27 +192,32 @@ class LocalNotificationService implements INotificationService {
 
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      isReminder ? 'task_reminder_channel' : 'task_start_channel',
-      isReminder ? 'Task Reminder Notifications' : 'Task Start Notifications',
-      channelDescription: isReminder
-          ? 'Reminders for upcoming tasks'
-          : 'Notifications for when tasks start',
-      importance: Importance.high,
-      priority: Priority.high,
-      enableVibration:
-          scheduledTask.notification == NotificationType.vibration ||
+          isReminder ? 'task_reminder_channel' : 'task_start_channel',
+          isReminder
+              ? 'Task Reminder Notifications'
+              : 'Task Start Notifications',
+          channelDescription:
+              isReminder
+                  ? 'Reminders for upcoming tasks'
+                  : 'Notifications for when tasks start',
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration:
+              scheduledTask.notification == NotificationType.vibration ||
               scheduledTask.notification == NotificationType.both,
-      playSound: scheduledTask.notification == NotificationType.sound ||
-          scheduledTask.notification == NotificationType.both,
-    );
+          playSound:
+              scheduledTask.notification == NotificationType.sound ||
+              scheduledTask.notification == NotificationType.both,
+        );
 
     final DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: scheduledTask.notification == NotificationType.sound ||
-          scheduledTask.notification == NotificationType.both,
-    );
+          presentAlert: true,
+          presentBadge: true,
+          presentSound:
+              scheduledTask.notification == NotificationType.sound ||
+              scheduledTask.notification == NotificationType.both,
+        );
 
     final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -225,30 +243,34 @@ class LocalNotificationService implements INotificationService {
     );
 
     logInfo(
-        '${isReminder ? "Reminder" : "Task start"} notification scheduled for: ${task.title} at ${scheduledTime.toString()}');
+      '${isReminder ? "Reminder" : "Task start"} notification scheduled for: ${task.title} at ${scheduledTime.toString()}',
+    );
   }
 
   /// Show a notification to check if a task is completed
-  Future<void> showCompletionCheckNotification(Task task, String notificationId) async {
+  Future<void> showCompletionCheckNotification(
+    Task task,
+    String notificationId,
+  ) async {
     if (!_isInitialized) await initialize();
 
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
         const AndroidNotificationDetails(
-      'task_completion_channel',
-      'Task Completion Check Notifications',
-      channelDescription: 'Notifications to check if tasks are completed',
-      importance: Importance.high,
-      priority: Priority.high,
-      enableVibration: true,
-      playSound: true,
-    );
+          'task_completion_channel',
+          'Task Completion Check Notifications',
+          channelDescription: 'Notifications to check if tasks are completed',
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration: true,
+          playSound: true,
+        );
 
     final DarwinNotificationDetails iOSPlatformChannelSpecifics =
         const DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        );
 
     final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -268,26 +290,29 @@ class LocalNotificationService implements INotificationService {
 
   /// Schedule a notification to check if a task is completed
   Future<void> scheduleCompletionCheckNotification(
-      Task task, String notificationId, DateTime scheduledTime) async {
+    Task task,
+    String notificationId,
+    DateTime scheduledTime,
+  ) async {
     if (!_isInitialized) await initialize();
 
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
         const AndroidNotificationDetails(
-      'task_completion_channel',
-      'Task Completion Check Notifications',
-      channelDescription: 'Notifications to check if tasks are completed',
-      importance: Importance.high,
-      priority: Priority.high,
-      enableVibration: true,
-      playSound: true,
-    );
+          'task_completion_channel',
+          'Task Completion Check Notifications',
+          channelDescription: 'Notifications to check if tasks are completed',
+          importance: Importance.high,
+          priority: Priority.high,
+          enableVibration: true,
+          playSound: true,
+        );
 
     final DarwinNotificationDetails iOSPlatformChannelSpecifics =
         const DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        );
 
     final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
@@ -306,6 +331,8 @@ class LocalNotificationService implements INotificationService {
       payload: '${task.id}|completion_check',
     );
 
-    logInfo('Task completion check notification scheduled for: ${task.title} at ${scheduledTime.toString()}');
+    logInfo(
+      'Task completion check notification scheduled for: ${task.title} at ${scheduledTime.toString()}',
+    );
   }
 }

@@ -85,10 +85,7 @@ class PriorityDataPoint {
   final int priority;
   final int value;
 
-  PriorityDataPoint({
-    required this.priority,
-    required this.value,
-  });
+  PriorityDataPoint({required this.priority, required this.value});
 }
 
 /// Internal class for chart data

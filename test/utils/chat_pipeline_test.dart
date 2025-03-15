@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flowo_client/utils/chat_pipeline.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('ChatPipeline', () {
@@ -16,9 +16,11 @@ void main() {
       expect(pipe.model, equals("HuggingFaceH4/zephyr-7b-beta"));
       expect(pipe.apiKey, equals("test_api_key"));
       expect(
-          pipe.apiUrl,
-          equals(
-              "https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta/v1/chat/completions"));
+        pipe.apiUrl,
+        equals(
+          "https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta/v1/chat/completions",
+        ),
+      );
       expect(pipe.maxTokens, equals(500));
       expect(pipe.shouldStream, equals(false));
     });

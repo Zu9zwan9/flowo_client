@@ -13,9 +13,5 @@ class UserProfile extends HiveObject {
   @HiveField(2)
   String? avatarPath;
 
-  UserProfile({
-    required this.name,
-    required this.email,
-    this.avatarPath,
-  });
+  UserProfile({required this.name, required this.email, this.avatarPath});
 }

@@ -65,38 +65,39 @@ void main() async {
     userProfiles = await Hive.openBox<UserProfile>('user_profiles');
   }
 
-  var selectedProfile = profiles.values.isNotEmpty
-      ? profiles.values.first
-      : UserSettings(
-          name: 'Default',
-          minSession: 15,
-          sleepTime: [
-            TimeFrame(
-              startTime: const TimeOfDay(hour: 22, minute: 0),
-              endTime: const TimeOfDay(hour: 7, minute: 0),
-            ),
-          ],
-          mealBreaks: [
-            TimeFrame(
-              startTime: const TimeOfDay(hour: 8, minute: 0),
-              endTime: const TimeOfDay(hour: 8, minute: 30),
-            ),
-            TimeFrame(
-              startTime: const TimeOfDay(hour: 12, minute: 0),
-              endTime: const TimeOfDay(hour: 13, minute: 0),
-            ),
-            TimeFrame(
-              startTime: const TimeOfDay(hour: 18, minute: 0),
-              endTime: const TimeOfDay(hour: 19, minute: 0),
-            ),
-          ],
-          freeTime: [
-            TimeFrame(
-              startTime: const TimeOfDay(hour: 19, minute: 0),
-              endTime: const TimeOfDay(hour: 22, minute: 0),
-            ),
-          ],
-        );
+  var selectedProfile =
+      profiles.values.isNotEmpty
+          ? profiles.values.first
+          : UserSettings(
+            name: 'Default',
+            minSession: 15,
+            sleepTime: [
+              TimeFrame(
+                startTime: const TimeOfDay(hour: 22, minute: 0),
+                endTime: const TimeOfDay(hour: 7, minute: 0),
+              ),
+            ],
+            mealBreaks: [
+              TimeFrame(
+                startTime: const TimeOfDay(hour: 8, minute: 0),
+                endTime: const TimeOfDay(hour: 8, minute: 30),
+              ),
+              TimeFrame(
+                startTime: const TimeOfDay(hour: 12, minute: 0),
+                endTime: const TimeOfDay(hour: 13, minute: 0),
+              ),
+              TimeFrame(
+                startTime: const TimeOfDay(hour: 18, minute: 0),
+                endTime: const TimeOfDay(hour: 19, minute: 0),
+              ),
+            ],
+            freeTime: [
+              TimeFrame(
+                startTime: const TimeOfDay(hour: 19, minute: 0),
+                endTime: const TimeOfDay(hour: 22, minute: 0),
+              ),
+            ],
+          );
 
   // Create default user profile if none exists
   if (userProfiles.isEmpty) {
@@ -128,11 +129,7 @@ void main() async {
         Provider<AnalyticsService>.value(value: analyticsService),
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         BlocProvider<CalendarCubit>(
-          create: (context) => CalendarCubit(
-            tasksDB,
-            daysDB,
-            taskManager,
-          ),
+          create: (context) => CalendarCubit(tasksDB, daysDB, taskManager),
         ),
         BlocProvider<TaskManagerCubit>(
           create: (context) => TaskManagerCubit(taskManager),
@@ -162,7 +159,7 @@ class MyApp extends StatelessWidget {
             scaffoldBackgroundColor:
                 themeNotifier.currentTheme.scaffoldBackgroundColor,
           ),
-          home: HomeScreen(),
+          home: const HomeScreen(),
         );
       },
     );

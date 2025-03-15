@@ -1,7 +1,8 @@
-import 'dart:convert';
 import 'dart:async';
-import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import 'package:flowo_client/utils/logger.dart';
+import 'package:http/http.dart' as http;
 
 /// A pipeline for chat completions using Hugging Face models
 class ChatPipeline {
@@ -21,8 +22,9 @@ class ChatPipeline {
     this.maxTokens = 500,
     this.shouldStream = false,
     String? apiUrl,
-  }) : apiUrl = apiUrl ??
-            'https://router.huggingface.co/hf-inference/models/$model/v1/chat/completions';
+  }) : apiUrl =
+           apiUrl ??
+           'https://router.huggingface.co/hf-inference/models/$model/v1/chat/completions';
 
   /// Calls the pipeline with the given messages
   ///
@@ -32,12 +34,12 @@ class ChatPipeline {
       "model": model,
       "messages": messages,
       "max_tokens": maxTokens,
-      "stream": false
+      "stream": false,
     };
 
     final headers = {
       "Authorization": "Bearer $apiKey",
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     };
 
     try {
@@ -53,7 +55,8 @@ class ChatPipeline {
         return jsonDecode(response.body);
       } else {
         logError(
-            'Error from Hugging Face Chat API: ${response.statusCode} - ${response.body}');
+          'Error from Hugging Face Chat API: ${response.statusCode} - ${response.body}',
+        );
 
         // If the API is unavailable, return a fallback response
         logWarning('Using fallback response due to API error');
@@ -62,10 +65,10 @@ class ChatPipeline {
             {
               "message": {
                 "content":
-                    "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work"
-              }
-            }
-          ]
+                    "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
+              },
+            },
+          ],
         };
       }
     } catch (e) {
@@ -78,10 +81,10 @@ class ChatPipeline {
           {
             "message": {
               "content":
-                  "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work"
-            }
-          }
-        ]
+                  "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
+            },
+          },
+        ],
       };
     }
   }
@@ -94,17 +97,18 @@ class ChatPipeline {
       "model": model,
       "messages": messages,
       "max_tokens": maxTokens,
-      "stream": true
+      "stream": true,
     };
 
     final headers = {
       "Authorization": "Bearer $apiKey",
-      "Content-Type": "application/json"
+      "Content-Type": "application/json",
     };
 
     try {
       logInfo(
-          'Making streaming request to Hugging Face Chat API for model: $model');
+        'Making streaming request to Hugging Face Chat API for model: $model',
+      );
       final request = http.Request('POST', Uri.parse(apiUrl));
       request.headers.addAll(headers);
       request.body = jsonEncode(data);
@@ -114,8 +118,9 @@ class ChatPipeline {
       if (streamedResponse.statusCode == 200) {
         logInfo('Receiving streamed response from Hugging Face Chat API');
 
-        await for (var chunk
-            in streamedResponse.stream.transform(utf8.decoder)) {
+        await for (var chunk in streamedResponse.stream.transform(
+          utf8.decoder,
+        )) {
           // Process each chunk of the streamed response
           // The format is typically "data: {JSON}" for each chunk
           final lines = chunk.split('\n');
@@ -136,7 +141,8 @@ class ChatPipeline {
         }
       } else {
         logError(
-            'Error from Hugging Face Chat API stream: ${streamedResponse.statusCode}');
+          'Error from Hugging Face Chat API stream: ${streamedResponse.statusCode}',
+        );
 
         // If the API is unavailable, yield a fallback response
         logWarning('Using fallback response due to API error');
@@ -144,7 +150,8 @@ class ChatPipeline {
       }
     } catch (e) {
       logError(
-          'Exception making streaming request to Hugging Face Chat API: $e');
+        'Exception making streaming request to Hugging Face Chat API: $e',
+      );
 
       // If there's an exception, yield a fallback response
       logWarning('Using fallback response due to exception');

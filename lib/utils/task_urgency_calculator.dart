@@ -13,15 +13,20 @@ class TaskUrgencyCalculator {
   TaskUrgencyCalculator(this.daysDB);
 
   Map<Task, double> calculateUrgency(
-      List<Task> tasks, List<ScheduledTask>? justScheduledTasks) {
+    List<Task> tasks,
+    List<ScheduledTask>? justScheduledTasks,
+  ) {
     final Map<Task, double> taskUrgencyMap = {};
 
     for (var task in tasks) {
-      log('Title: ${task.title}, Deadline: ${task.deadline}, EstimatedTime: ${task.estimatedTime}, Priority: ${task.priority}');
+      log(
+        'Title: ${task.title}, Deadline: ${task.deadline}, EstimatedTime: ${task.estimatedTime}, Priority: ${task.priority}',
+      );
       final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
       final trueTimeLeft =
           timeLeft - _busyTime(task.deadline, justScheduledTasks);
-      final timeCoefficient = (trueTimeLeft - task.estimatedTime) *
+      final timeCoefficient =
+          (trueTimeLeft - task.estimatedTime) *
           (trueTimeLeft + task.estimatedTime);
       double urgency = task.priority / timeCoefficient;
 
@@ -56,20 +61,24 @@ class TaskUrgencyCalculator {
     final now = DateTime.now().millisecondsSinceEpoch;
 
     // Filter days and tasks before the loop
-    final relevantDays = daysDB.values.where((day) => day.scheduledTasks.any(
+    final relevantDays = daysDB.values.where(
+      (day) => day.scheduledTasks.any(
         (task) =>
             task.type == ScheduledTaskType.timeSensitive &&
             task.startTime.millisecondsSinceEpoch >= now &&
-            task.endTime.millisecondsSinceEpoch <= deadline));
+            task.endTime.millisecondsSinceEpoch <= deadline,
+      ),
+    );
 
     for (var day in relevantDays) {
       for (var scheduledTask in day.scheduledTasks) {
         if (scheduledTask.type == ScheduledTaskType.timeSensitive &&
             scheduledTask.startTime.millisecondsSinceEpoch >= now &&
             scheduledTask.endTime.millisecondsSinceEpoch <= deadline) {
-          busyTime += scheduledTask.endTime
-              .difference(scheduledTask.startTime)
-              .inMilliseconds;
+          busyTime +=
+              scheduledTask.endTime
+                  .difference(scheduledTask.startTime)
+                  .inMilliseconds;
         }
       }
     }
@@ -78,9 +87,10 @@ class TaskUrgencyCalculator {
       for (var scheduledTask in justScheduledTasks) {
         if (scheduledTask.startTime.millisecondsSinceEpoch >= now &&
             scheduledTask.endTime.millisecondsSinceEpoch <= deadline) {
-          busyTime += scheduledTask.endTime
-              .difference(scheduledTask.startTime)
-              .inMilliseconds;
+          busyTime +=
+              scheduledTask.endTime
+                  .difference(scheduledTask.startTime)
+                  .inMilliseconds;
         }
       }
     }

@@ -22,12 +22,12 @@ class LogEntry {
   }) : timestamp = DateTime.now().toUtc();
 
   Map<String, dynamic> toJson() => {
-        'timestamp': timestamp.toIso8601String(),
-        'level': level,
-        'message': message,
-        'module': module,
-        'details': details,
-      };
+    'timestamp': timestamp.toIso8601String(),
+    'level': level,
+    'message': message,
+    'module': module,
+    'details': details,
+  };
 
   @override
   String toString() {
@@ -74,7 +74,11 @@ class Logger {
   /// Log an informational message
   void info(String message, String module, [dynamic details]) {
     final log = LogEntry(
-        level: 'INFO', message: message, module: module, details: details);
+      level: 'INFO',
+      message: message,
+      module: module,
+      details: details,
+    );
     _logs.add(log);
     if (kDebugMode) {
       _packageLogger.i(log.toString());
@@ -84,7 +88,11 @@ class Logger {
   /// Log a debug message
   void debug(String message, String module, [dynamic details]) {
     final log = LogEntry(
-        level: 'DEBUG', message: message, module: module, details: details);
+      level: 'DEBUG',
+      message: message,
+      module: module,
+      details: details,
+    );
     _logs.add(log);
     if (kDebugMode) {
       _packageLogger.d(log.toString());
@@ -94,7 +102,11 @@ class Logger {
   /// Log an error message
   void error(String message, String module, [dynamic details]) {
     final log = LogEntry(
-        level: 'ERROR', message: message, module: module, details: details);
+      level: 'ERROR',
+      message: message,
+      module: module,
+      details: details,
+    );
     _logs.add(log);
     _packageLogger.e(log.toString());
   }
@@ -102,7 +114,11 @@ class Logger {
   /// Log a warning message
   void warning(String message, String module, [dynamic details]) {
     final log = LogEntry(
-        level: 'WARNING', message: message, module: module, details: details);
+      level: 'WARNING',
+      message: message,
+      module: module,
+      details: details,
+    );
     _logs.add(log);
     if (kDebugMode) {
       _packageLogger.w(log.toString());
@@ -118,8 +134,9 @@ class Logger {
       final file = File('${directory.path}/$fileName');
 
       // Save logs as a JSON array
-      await file
-          .writeAsString(jsonEncode(_logs.map((log) => log.toJson()).toList()));
+      await file.writeAsString(
+        jsonEncode(_logs.map((log) => log.toJson()).toList()),
+      );
 
       if (kDebugMode) {
         print('Logs saved to: ${file.path}');
@@ -131,9 +148,9 @@ class Logger {
         print('Error saving logs: $e');
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save logs: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to save logs: $e')));
 
       return null;
     }

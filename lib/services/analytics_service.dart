@@ -67,8 +67,9 @@ class AnalyticsService {
         mostCommonCategory: mostCommonCategory,
       );
     } catch (e) {
-      appLogger.error('Error getting analytics data', 'AnalyticsService',
-          {'error': e.toString()});
+      appLogger.error('Error getting analytics data', 'AnalyticsService', {
+        'error': e.toString(),
+      });
       return AnalyticsData.empty();
     }
   }
@@ -106,40 +107,47 @@ class AnalyticsService {
     // Suggestion based on completion rate
     if (completionRate < 50) {
       suggestions.add(
-          'Your task completion rate is below 50%. Try breaking down large tasks into smaller, more manageable subtasks.');
+        'Your task completion rate is below 50%. Try breaking down large tasks into smaller, more manageable subtasks.',
+      );
     } else if (completionRate > 80) {
       suggestions.add(
-          'Great job! Your task completion rate is above 80%. Keep up the good work!');
+        'Great job! Your task completion rate is above 80%. Keep up the good work!',
+      );
     }
 
     // Suggestion based on overdue rate
     if (overdueRate > 30) {
       suggestions.add(
-          'You have a high rate of overdue tasks. Consider setting more realistic deadlines or allocating more time for tasks.');
+        'You have a high rate of overdue tasks. Consider setting more realistic deadlines or allocating more time for tasks.',
+      );
     }
 
     // Suggestion based on category distribution
     if (timeSpentByCategory.isNotEmpty) {
-      final mostTimeCategory = timeSpentByCategory.entries
-          .reduce((a, b) => a.value > b.value ? a : b)
-          .key;
+      final mostTimeCategory =
+          timeSpentByCategory.entries
+              .reduce((a, b) => a.value > b.value ? a : b)
+              .key;
 
       suggestions.add(
-          'You spend most of your time on "${mostTimeCategory.name}" tasks. Consider if this aligns with your priorities.');
+        'You spend most of your time on "${mostTimeCategory.name}" tasks. Consider if this aligns with your priorities.',
+      );
     }
 
     // Suggestion based on task priority
     final highPriorityTasks =
         tasks.where((task) => task.priority >= 3).toList();
-    final highPriorityCompletionRate = highPriorityTasks.isNotEmpty
-        ? highPriorityTasks.where((task) => task.isDone).length /
-            highPriorityTasks.length *
-            100
-        : 0;
+    final highPriorityCompletionRate =
+        highPriorityTasks.isNotEmpty
+            ? highPriorityTasks.where((task) => task.isDone).length /
+                highPriorityTasks.length *
+                100
+            : 0;
 
     if (highPriorityCompletionRate < 70) {
       suggestions.add(
-          'Your completion rate for high-priority tasks is below 70%. Try focusing on high-priority tasks first.');
+        'Your completion rate for high-priority tasks is below 70%. Try focusing on high-priority tasks first.',
+      );
     }
 
     // Suggestion based on estimated time accuracy
@@ -163,11 +171,12 @@ class AnalyticsService {
     // Bonus for completing high-priority tasks (0-20 points)
     final highPriorityTasks =
         tasks.where((task) => task.priority >= 3).toList();
-    final highPriorityCompletionRate = highPriorityTasks.isNotEmpty
-        ? highPriorityTasks.where((task) => task.isDone).length /
-            highPriorityTasks.length *
-            100
-        : 0;
+    final highPriorityCompletionRate =
+        highPriorityTasks.isNotEmpty
+            ? highPriorityTasks.where((task) => task.isDone).length /
+                highPriorityTasks.length *
+                100
+            : 0;
 
     score += highPriorityCompletionRate * 0.2;
 
@@ -183,8 +192,10 @@ class AnalyticsService {
       return 0;
     }
 
-    final totalEstimatedTime =
-        completedTasks.fold<int>(0, (sum, task) => sum + task.estimatedTime);
+    final totalEstimatedTime = completedTasks.fold<int>(
+      0,
+      (sum, task) => sum + task.estimatedTime,
+    );
 
     return totalEstimatedTime / completedTasks.length;
   }
@@ -257,8 +268,11 @@ class AnalyticsService {
         );
       }).toList();
     } catch (e) {
-      appLogger.error('Error getting category distribution', 'AnalyticsService',
-          {'error': e.toString()});
+      appLogger.error(
+        'Error getting category distribution',
+        'AnalyticsService',
+        {'error': e.toString()},
+      );
       return [];
     }
   }
@@ -285,14 +299,14 @@ class AnalyticsService {
       }
 
       return priorityCount.entries.map((entry) {
-        return PriorityDataPoint(
-          priority: entry.key,
-          value: entry.value,
-        );
+        return PriorityDataPoint(priority: entry.key, value: entry.value);
       }).toList();
     } catch (e) {
-      appLogger.error('Error getting priority distribution', 'AnalyticsService',
-          {'error': e.toString()});
+      appLogger.error(
+        'Error getting priority distribution',
+        'AnalyticsService',
+        {'error': e.toString()},
+      );
       return [];
     }
   }
@@ -331,8 +345,11 @@ class AnalyticsService {
         );
       }).toList();
     } catch (e) {
-      appLogger.error('Error getting completion rate by category',
-          'AnalyticsService', {'error': e.toString()});
+      appLogger.error(
+        'Error getting completion rate by category',
+        'AnalyticsService',
+        {'error': e.toString()},
+      );
       return [];
     }
   }

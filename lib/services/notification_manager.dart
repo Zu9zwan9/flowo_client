@@ -22,9 +22,9 @@ class NotificationManager {
     required LocalNotificationService localNotificationService,
     required PushNotificationService pushNotificationService,
     required EmailNotificationService emailNotificationService,
-  })  : _localNotificationService = localNotificationService,
-        _pushNotificationService = pushNotificationService,
-        _emailNotificationService = emailNotificationService;
+  }) : _localNotificationService = localNotificationService,
+       _pushNotificationService = pushNotificationService,
+       _emailNotificationService = emailNotificationService;
 
   /// Factory method to create a NotificationManager with default services
   factory NotificationManager.createDefault() {
@@ -59,7 +59,10 @@ class NotificationManager {
 
   /// Schedule a notification for a task start
   Future<void> scheduleTaskStartNotification(
-      Task task, ScheduledTask scheduledTask, DateTime scheduledTime) async {
+    Task task,
+    ScheduledTask scheduledTask,
+    DateTime scheduledTime,
+  ) async {
     if (!_isInitialized) await initialize();
 
     try {
@@ -72,30 +75,41 @@ class NotificationManager {
         case NotificationType.both:
           // Local notification
           await _localNotificationService.scheduleNotification(
-              task, scheduledTask, scheduledTime, false // Not a reminder
-              );
+            task,
+            scheduledTask,
+            scheduledTime,
+            false, // Not a reminder
+          );
           break;
         case NotificationType.push:
           // Push notification
           // Since we can't directly schedule push notifications from the client,
           // we would typically schedule this on a server. For now, we'll just log it.
           logInfo(
-              'Would schedule push notification for task start: ${task.title} at $scheduledTime');
+            'Would schedule push notification for task start: ${task.title} at $scheduledTime',
+          );
           break;
         case NotificationType.email:
           // Email notification
           // We'll schedule this locally and send it at the appropriate time
           _scheduleEmailNotification(
-              task, scheduledTask, scheduledTime, false // Not a reminder
-              );
+            task,
+            scheduledTask,
+            scheduledTime,
+            false, // Not a reminder
+          );
           break;
         case NotificationType.pushAndEmail:
           // Both push and email
           logInfo(
-              'Would schedule push notification for task start: ${task.title} at $scheduledTime');
+            'Would schedule push notification for task start: ${task.title} at $scheduledTime',
+          );
           _scheduleEmailNotification(
-              task, scheduledTask, scheduledTime, false // Not a reminder
-              );
+            task,
+            scheduledTask,
+            scheduledTime,
+            false, // Not a reminder
+          );
           break;
       }
     } catch (e) {
@@ -105,10 +119,11 @@ class NotificationManager {
 
   /// Schedule a notification for a task reminder
   Future<void> scheduleTaskReminderNotification(
-      Task task,
-      ScheduledTask scheduledTask,
-      DateTime scheduledTime,
-      Duration timeBeforeStart) async {
+    Task task,
+    ScheduledTask scheduledTask,
+    DateTime scheduledTime,
+    Duration timeBeforeStart,
+  ) async {
     if (!_isInitialized) await initialize();
 
     try {
@@ -121,27 +136,40 @@ class NotificationManager {
         case NotificationType.both:
           // Local notification
           await _localNotificationService.scheduleNotification(
-              task, scheduledTask, scheduledTime, true // Is a reminder
-              );
+            task,
+            scheduledTask,
+            scheduledTime,
+            true, // Is a reminder
+          );
           break;
         case NotificationType.push:
           // Push notification
           logInfo(
-              'Would schedule push notification for task reminder: ${task.title} at $scheduledTime');
+            'Would schedule push notification for task reminder: ${task.title} at $scheduledTime',
+          );
           break;
         case NotificationType.email:
           // Email notification
           _scheduleEmailNotification(
-              task, scheduledTask, scheduledTime, true, // Is a reminder
-              timeBeforeStart: timeBeforeStart);
+            task,
+            scheduledTask,
+            scheduledTime,
+            true, // Is a reminder
+            timeBeforeStart: timeBeforeStart,
+          );
           break;
         case NotificationType.pushAndEmail:
           // Both push and email
           logInfo(
-              'Would schedule push notification for task reminder: ${task.title} at $scheduledTime');
+            'Would schedule push notification for task reminder: ${task.title} at $scheduledTime',
+          );
           _scheduleEmailNotification(
-              task, scheduledTask, scheduledTime, true, // Is a reminder
-              timeBeforeStart: timeBeforeStart);
+            task,
+            scheduledTask,
+            scheduledTime,
+            true, // Is a reminder
+            timeBeforeStart: timeBeforeStart,
+          );
           break;
       }
     } catch (e) {
@@ -185,7 +213,10 @@ class NotificationManager {
 
   /// Send a notification for a task reminder
   Future<void> notifyTaskReminder(
-      Task task, ScheduledTask scheduledTask, Duration timeBeforeStart) async {
+    Task task,
+    ScheduledTask scheduledTask,
+    Duration timeBeforeStart,
+  ) async {
     if (!_isInitialized) await initialize();
 
     try {
@@ -198,24 +229,39 @@ class NotificationManager {
         case NotificationType.both:
           // Local notification
           await _localNotificationService.notifyTaskReminder(
-              task, scheduledTask, timeBeforeStart);
+            task,
+            scheduledTask,
+            timeBeforeStart,
+          );
           break;
         case NotificationType.push:
           // Push notification
           await _pushNotificationService.notifyTaskReminder(
-              task, scheduledTask, timeBeforeStart);
+            task,
+            scheduledTask,
+            timeBeforeStart,
+          );
           break;
         case NotificationType.email:
           // Email notification
           await _emailNotificationService.notifyTaskReminder(
-              task, scheduledTask, timeBeforeStart);
+            task,
+            scheduledTask,
+            timeBeforeStart,
+          );
           break;
         case NotificationType.pushAndEmail:
           // Both push and email
           await _pushNotificationService.notifyTaskReminder(
-              task, scheduledTask, timeBeforeStart);
+            task,
+            scheduledTask,
+            timeBeforeStart,
+          );
           await _emailNotificationService.notifyTaskReminder(
-              task, scheduledTask, timeBeforeStart);
+            task,
+            scheduledTask,
+            timeBeforeStart,
+          );
           break;
       }
     } catch (e) {
@@ -256,15 +302,20 @@ class NotificationManager {
   }
 
   /// Schedule an email notification to be sent at a specific time
-  void _scheduleEmailNotification(Task task, ScheduledTask scheduledTask,
-      DateTime scheduledTime, bool isReminder,
-      {Duration? timeBeforeStart}) {
+  void _scheduleEmailNotification(
+    Task task,
+    ScheduledTask scheduledTask,
+    DateTime scheduledTime,
+    bool isReminder, {
+    Duration? timeBeforeStart,
+  }) {
     // In a real implementation, this would use a background task scheduler
     // or a server-side solution to send the email at the scheduled time.
     // For simplicity, we'll just log that we would schedule it.
     final actionType = isReminder ? 'reminder' : 'start';
     logInfo(
-        'Would schedule email notification for task $actionType: ${task.title} at $scheduledTime');
+      'Would schedule email notification for task $actionType: ${task.title} at $scheduledTime',
+    );
 
     // In a real implementation, you might do something like:
     // _backgroundTaskScheduler.scheduleTask(
@@ -301,7 +352,9 @@ class NotificationManager {
 
   /// Schedule a notification to check if a task is completed
   Future<void> scheduleTaskCompletionCheckNotification(
-      Task task, DateTime scheduledTime) async {
+    Task task,
+    DateTime scheduledTime,
+  ) async {
     if (!_isInitialized) await initialize();
 
     try {
@@ -317,7 +370,8 @@ class NotificationManager {
       );
 
       logInfo(
-          'Scheduled completion check notification for task: ${task.title} at $scheduledTime');
+        'Scheduled completion check notification for task: ${task.title} at $scheduledTime',
+      );
     } catch (e) {
       logError('Failed to schedule completion check notification: $e');
     }

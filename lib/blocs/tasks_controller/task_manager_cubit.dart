@@ -34,8 +34,16 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     RepeatRule? frequency,
   }) {
     taskManager.createTask(
-        title, priority, estimatedTime, deadline, category, parentTask, notes,
-        color: color, frequency: frequency);
+      title,
+      priority,
+      estimatedTime,
+      deadline,
+      category,
+      parentTask,
+      notes,
+      color: color,
+      frequency: frequency,
+    );
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
@@ -66,10 +74,13 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       category: category,
       notes: notes,
       color: color,
-      location: location != null && location.isNotEmpty
-          ? Coordinates(
-              latitude: 1.0, longitude: 1.0) // Placeholder coordinates
-          : null,
+      location:
+          location != null && location.isNotEmpty
+              ? Coordinates(
+                latitude: 1.0,
+                longitude: 1.0,
+              ) // Placeholder coordinates
+              : null,
     );
 
     // Save the task
@@ -83,13 +94,15 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       endTime: end,
       urgency: null, // Not required
       type: ScheduledTaskType.timeSensitive,
-      travelingTime: travelingTime ??
+      travelingTime:
+          travelingTime ??
           (location != null && location.isNotEmpty
               ? 15 *
                   60 *
                   1000 // Default 15 minutes in milliseconds if location is provided
               : 0),
-      breakTime: taskManager.userSettings.breakTime ??
+      breakTime:
+          taskManager.userSettings.breakTime ??
           5 * 60 * 1000, // From user settings
       notification: NotificationType.none,
     );
@@ -118,7 +131,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }
 
   Future<List<TaskWithSchedules>> getScheduledTasksForDate(
-      DateTime date) async {
+    DateTime date,
+  ) async {
     final dateKey = _formatDateKey(date);
 
     final scheduledTasks = taskManager.daysDB.values
@@ -133,9 +147,10 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       }
     }
 
-    final result = grouped.entries
-        .map((entry) => TaskWithSchedules(entry.key, entry.value))
-        .toList();
+    final result =
+        grouped.entries
+            .map((entry) => TaskWithSchedules(entry.key, entry.value))
+            .toList();
 
     return result;
   }
@@ -145,9 +160,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
   void deleteTask(Task task) {
     taskManager.deleteTask(task);
-    emit(state.copyWith(
-        tasks: taskManager.tasksDB.values
-            .toList())); // Refresh state after deletion
+    emit(
+      state.copyWith(tasks: taskManager.tasksDB.values.toList()),
+    ); // Refresh state after deletion
   }
 
   void editTask({
@@ -164,8 +179,17 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }) {
     // Update task properties
     taskManager.editTask(
-        task, title, priority, estimatedTime, deadline, category, parentTask,
-        notes: notes, color: color, frequency: frequency);
+      task,
+      title,
+      priority,
+      estimatedTime,
+      deadline,
+      category,
+      parentTask,
+      notes: notes,
+      color: color,
+      frequency: frequency,
+    );
 
     // No need to update notes, color, and frequency separately as they're now part of the TaskManager.editTask method
     taskManager.tasksDB.put(task.id, task);
@@ -206,9 +230,12 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     _deleteAllDays();
     // removeScheduledTasks();
     scheduleTasks();
-    emit(state.copyWith(
+    emit(
+      state.copyWith(
         tasks: taskManager.tasksDB.values.toList(),
-        userSettings: userSettings));
+        userSettings: userSettings,
+      ),
+    );
   }
 
   void _deleteAllDays() {
@@ -255,15 +282,18 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       }
 
       // Calculate the total estimated time from the subtasks
-      final totalEstimatedTime =
-          subtasks.fold(0, (sum, subtask) => sum + subtask.estimatedTime);
+      final totalEstimatedTime = subtasks.fold(
+        0,
+        (sum, subtask) => sum + subtask.estimatedTime,
+      );
 
       // Update the task with the estimated time
       task.estimatedTime = totalEstimatedTime;
       taskManager.tasksDB.put(task.id, task);
 
       logInfo(
-          'Estimated time for task "${task.title}": $totalEstimatedTime minutes');
+        'Estimated time for task "${task.title}": $totalEstimatedTime minutes',
+      );
 
       // Update the state to reflect the changes
       emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
@@ -288,9 +318,10 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
     try {
       // Get all top-level tasks (tasks without a parent)
-      final tasks = taskManager.tasksDB.values
-          .where((task) => task.parentTaskId == null)
-          .toList();
+      final tasks =
+          taskManager.tasksDB.values
+              .where((task) => task.parentTaskId == null)
+              .toList();
 
       int updatedCount = 0;
 
@@ -331,7 +362,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
             subtask.isDone = true;
             taskManager.tasksDB.put(subtask.id, subtask);
             logInfo(
-                'Subtask "${subtask.title}" automatically marked as completed');
+              'Subtask "${subtask.title}" automatically marked as completed',
+            );
           }
         }
       }
@@ -343,7 +375,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
 
       logInfo(
-          'Task "${task.title}" marked as ${task.isDone ? "completed" : "incomplete"}');
+        'Task "${task.title}" marked as ${task.isDone ? "completed" : "incomplete"}',
+      );
 
       return task.isDone;
     } catch (e) {
@@ -374,13 +407,16 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
   /// Schedule a reminder to check if a task is completed
   Future<void> scheduleCompletionCheckReminder(
-      Task task, DateTime scheduledTime) async {
+    Task task,
+    DateTime scheduledTime,
+  ) async {
     try {
       // Schedule a notification for the task completion check
       // This would typically use a notification service, but for simplicity,
       // we'll just log it for now
       logInfo(
-          'Would schedule completion check reminder for task "${task.title}" at $scheduledTime');
+        'Would schedule completion check reminder for task "${task.title}" at $scheduledTime',
+      );
 
       // In a real implementation, you would use a notification service:
       // await _notificationService.scheduleCompletionCheckReminder(task, scheduledTime);

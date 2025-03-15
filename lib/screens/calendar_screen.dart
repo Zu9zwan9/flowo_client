@@ -93,8 +93,9 @@ class CalendarScreenState extends State<CalendarScreen> {
     setState(() {
       _selectedDate = newDate;
       // Update the Future when the selected date changes
-      _scheduledTasksFuture =
-          context.read<TaskManagerCubit>().getScheduledTasksForDate(newDate);
+      _scheduledTasksFuture = context
+          .read<TaskManagerCubit>()
+          .getScheduledTasksForDate(newDate);
     });
     context.read<CalendarCubit>().selectDate(newDate);
   }
@@ -175,84 +176,83 @@ class CalendarScreenState extends State<CalendarScreen> {
   void _showEventDetails(Task task, ScheduledTask scheduledTask) {
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: Text(task.title),
-        message: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Text(
-              '${DateTimeFormatter.formatTime(scheduledTask.startTime)} - ${DateTimeFormatter.formatTime(scheduledTask.endTime)}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+      builder:
+          (context) => CupertinoActionSheet(
+            title: Text(task.title),
+            message: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Text(
+                  '${DateTimeFormatter.formatTime(scheduledTask.startTime)} - ${DateTimeFormatter.formatTime(scheduledTask.endTime)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (task.notes != null && task.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(task.notes!, style: const TextStyle(fontSize: 14)),
+                ],
+                const SizedBox(height: 8),
+                Text(
+                  'Category: ${task.category.name}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            if (task.notes != null && task.notes!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text(
-                task.notes!,
-                style: const TextStyle(fontSize: 14),
+            actions: [
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Navigate to edit event screen
+                  // This would be implemented in a real app
+                },
+                child: const Text('Edit Event'),
+              ),
+              CupertinoActionSheetAction(
+                isDestructiveAction: true,
+                onPressed: () {
+                  Navigator.pop(context);
+                  _showDeleteConfirmation(task);
+                },
+                child: const Text('Delete Event'),
               ),
             ],
-            const SizedBox(height: 8),
-            Text(
-              'Category: ${task.category.name}',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+            cancelButton: CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
-          ],
-        ),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.pop(context);
-              // Navigate to edit event screen
-              // This would be implemented in a real app
-            },
-            child: const Text('Edit Event'),
           ),
-          CupertinoActionSheetAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              Navigator.pop(context);
-              _showDeleteConfirmation(task);
-            },
-            child: const Text('Delete Event'),
-          ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-      ),
     );
   }
 
   void _showDeleteConfirmation(Task task) {
     showCupertinoDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Delete Event'),
-        content: Text('Are you sure you want to delete "${task.title}"?'),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Delete Event'),
+            content: Text('Are you sure you want to delete "${task.title}"?'),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                onPressed: () {
+                  Navigator.pop(context);
+                  _deleteTask(task);
+                },
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteTask(task);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
   }
 
@@ -268,35 +268,34 @@ class CalendarScreenState extends State<CalendarScreen> {
   void _showSuccessMessage(String message) {
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        message: Text(
-          message,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+      builder:
+          (context) => CupertinoActionSheet(
+            message: Text(
+              message,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            ),
+            cancelButton: CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
           ),
-        ),
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('OK'),
-        ),
-      ),
     );
   }
 
   void _showErrorMessage(String message) {
     showCupertinoDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Error'),
+            content: Text(message),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -324,17 +323,13 @@ class CalendarScreenState extends State<CalendarScreen> {
           child: const Icon(CupertinoIcons.add),
         ),
       ),
-      child: SafeArea(
-        child: _buildContent(),
-      ),
+      child: SafeArea(child: _buildContent()),
     );
   }
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Center(
-        child: CupertinoActivityIndicator(radius: 16),
-      );
+      return const Center(child: CupertinoActivityIndicator(radius: 16));
     }
 
     if (_errorMessage != null) {
@@ -349,65 +344,82 @@ class CalendarScreenState extends State<CalendarScreen> {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Calendar view selector
-        CalendarViewSelector(
-          selectedView: _calendarView,
-          onViewChanged: _onViewChanged,
-        ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Calendar view selector
+                  CalendarViewSelector(
+                    selectedView: _calendarView,
+                    onViewChanged: _onViewChanged,
+                  ),
 
-        // Calendar header
-        CalendarHeader(
-          selectedDate: _selectedDate,
-          onTodayPressed: _goToToday,
-          onPreviousPressed: _goToPreviousPeriod,
-          onNextPressed: _goToNextPeriod,
-        ),
+                  // Calendar header
+                  CalendarHeader(
+                    selectedDate: _selectedDate,
+                    onTodayPressed: _goToToday,
+                    onPreviousPressed: _goToPreviousPeriod,
+                    onNextPressed: _goToNextPeriod,
+                  ),
 
-        // Calendar view with responsive height
-        // Using a percentage of screen height instead of fixed height
-        // This prevents layout issues on smaller screens and different orientations
-        // and ensures the calendar scales appropriately on all devices
-        LayoutBuilder(
-          builder: (context, constraints) {
-            return SizedBox(
-              height: MediaQuery.of(context).size.height *
-                  0.4, // 40% of screen height
-              child: _buildCalendar(),
-            );
-          },
-        ),
+                  // Calendar view with responsive height
+                  // Using a percentage of screen height instead of fixed height
+                  // This prevents layout issues on smaller screens and different orientations
+                  // and ensures the calendar scales appropriately on all devices
+                  SizedBox(
+                    height:
+                        MediaQuery.of(context).size.height *
+                        0.4, // 40% of screen height
+                    child: _buildCalendar(),
+                  ),
 
-        // Selected date header
-        Padding(
-          padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-          child: Text(
-            '${_weekdayName(_selectedDate.weekday)}, ${_monthName(_selectedDate.month)} ${_selectedDate.day}',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: CupertinoColors.label,
+                  // Selected date header
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+                    child: Text(
+                      '${_weekdayName(_selectedDate.weekday)}, ${_monthName(_selectedDate.month)} ${_selectedDate.day}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: CupertinoColors.label,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+
+                  // Search field
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: CupertinoSearchTextField(
+                      controller: _searchController,
+                      placeholder: 'Search events',
+                      onChanged: (value) => setState(() {}),
+                    ),
+                  ),
+
+                  // Agenda view
+                  Flexible(
+                    child: SizedBox(
+                      height:
+                          MediaQuery.of(context).size.height *
+                          0.3, // 30% of screen height
+                      child: _buildAgendaView(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-
-        // Search field
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: CupertinoSearchTextField(
-            controller: _searchController,
-            placeholder: 'Search events',
-            onChanged: (value) => setState(() {}),
-          ),
-        ),
-
-        // Agenda view
-        Expanded(
-          child: _buildAgendaView(),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -419,7 +431,8 @@ class CalendarScreenState extends State<CalendarScreen> {
           showNavigationArrow: false,
           showDatePickerButton: false,
           dataSource: CalendarTaskDataSource(
-              context.read<TaskManagerCubit>().getScheduledTasks()),
+            context.read<TaskManagerCubit>().getScheduledTasks(),
+          ),
           initialSelectedDate: _selectedDate,
           onTap: (details) {
             if (details.date != null) {
@@ -449,8 +462,10 @@ class CalendarScreenState extends State<CalendarScreen> {
           todayHighlightColor: CupertinoColors.activeBlue,
           headerHeight: 0, // Hide the default header
           viewHeaderStyle: const ViewHeaderStyle(
-            dayTextStyle:
-                TextStyle(fontSize: 12, color: CupertinoColors.systemGrey),
+            dayTextStyle: TextStyle(
+              fontSize: 12,
+              color: CupertinoColors.systemGrey,
+            ),
           ),
           appointmentTextStyle: const TextStyle(fontSize: 14),
         );
@@ -462,12 +477,8 @@ class CalendarScreenState extends State<CalendarScreen> {
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
-        CupertinoSliverRefreshControl(
-          onRefresh: _refreshData,
-        ),
-        SliverFillRemaining(
-          child: _buildAgendaContent(),
-        ),
+        CupertinoSliverRefreshControl(onRefresh: _refreshData),
+        SliverFillRemaining(child: _buildAgendaContent()),
       ],
     );
   }
@@ -489,51 +500,53 @@ class CalendarScreenState extends State<CalendarScreen> {
         .getScheduledTasksForDate(_selectedDate);
 
     return FutureBuilder<List<TaskWithSchedules>>(
-        future: _scheduledTasksFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CupertinoActivityIndicator());
-          } else if (snapshot.hasError) {
-            return Center(
-              child: EmptyStateView(
-                title: 'Error Loading Events',
-                message: 'Pull down to refresh and try again',
-                icon: CupertinoIcons.exclamationmark_circle,
-                actionLabel: 'Retry',
-                onActionPressed: _refreshData,
-              ),
-            );
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(
-              child: EmptyStateView(
-                title: 'No Events For This Day',
-                message:
-                    'Your schedule is clear. Tap the + button to add a new event or activity.',
-                icon: CupertinoIcons.calendar_badge_plus,
-                actionLabel: 'Add Event',
-                onActionPressed: _navigateToAddEvent,
-              ),
-            );
-          } else {
-            // Extract and prepare tasks for display
-            var taskSchedulePairs = _prepareTaskSchedulePairs(snapshot.data!);
+      future: _scheduledTasksFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CupertinoActivityIndicator());
+        } else if (snapshot.hasError) {
+          return Center(
+            child: EmptyStateView(
+              title: 'Error Loading Events',
+              message: 'Pull down to refresh and try again',
+              icon: CupertinoIcons.exclamationmark_circle,
+              actionLabel: 'Retry',
+              onActionPressed: _refreshData,
+            ),
+          );
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(
+            child: EmptyStateView(
+              title: 'No Events For This Day',
+              message:
+                  'Your schedule is clear. Tap the + button to add a new event or activity.',
+              icon: CupertinoIcons.calendar_badge_plus,
+              actionLabel: 'Add Event',
+              onActionPressed: _navigateToAddEvent,
+            ),
+          );
+        } else {
+          // Extract and prepare tasks for display
+          var taskSchedulePairs = _prepareTaskSchedulePairs(snapshot.data!);
 
-            // Filter tasks based on search query
-            if (_searchQuery.isNotEmpty) {
-              final query = _searchQuery.toLowerCase();
-              taskSchedulePairs = taskSchedulePairs.where((pair) {
-                final task = pair.task;
-                return task.title.toLowerCase().contains(query) ||
-                    (task.notes != null &&
-                        task.notes!.toLowerCase().contains(query)) ||
-                    task.category.name.toLowerCase().contains(query);
-              }).toList();
-            }
+          // Filter tasks based on search query
+          if (_searchQuery.isNotEmpty) {
+            final query = _searchQuery.toLowerCase();
+            taskSchedulePairs =
+                taskSchedulePairs.where((pair) {
+                  final task = pair.task;
+                  return task.title.toLowerCase().contains(query) ||
+                      (task.notes != null &&
+                          task.notes!.toLowerCase().contains(query)) ||
+                      task.category.name.toLowerCase().contains(query);
+                }).toList();
+          }
 
-            return CupertinoScrollbar(
-              controller: _scrollController,
-              child: taskSchedulePairs.isEmpty
-                  ? Center(
+          return CupertinoScrollbar(
+            controller: _scrollController,
+            child:
+                taskSchedulePairs.isEmpty
+                    ? Center(
                       child: EmptyStateView(
                         title: 'No Matching Events',
                         message: 'Try changing your search query',
@@ -547,7 +560,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                         },
                       ),
                     )
-                  : ListView.builder(
+                    : ListView.builder(
                       controller: _scrollController,
                       itemCount: taskSchedulePairs.length,
                       itemBuilder: (context, index) {
@@ -556,10 +569,15 @@ class CalendarScreenState extends State<CalendarScreen> {
                         final scheduledTask = pair.scheduledTask;
 
                         return AgendaItem(
-                          title: task.title == 'Free Time'
-                              ? _freeTimeName(
-                                  scheduledTask.type.toString().split('.').last)
-                              : task.title,
+                          title:
+                              task.title == 'Free Time'
+                                  ? _freeTimeName(
+                                    scheduledTask.type
+                                        .toString()
+                                        .split('.')
+                                        .last,
+                                  )
+                                  : task.title,
                           subtitle: task.notes,
                           startTime: scheduledTask.startTime,
                           endTime: scheduledTask.endTime,
@@ -568,9 +586,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                         );
                       },
                     ),
-            );
-          }
-        });
+          );
+        }
+      },
+    );
   }
 
   // Moving these method definitions up so they can be used earlier in the code
@@ -595,7 +614,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       'Thursday',
       'Friday',
       'Saturday',
-      'Sunday'
+      'Sunday',
     ];
     return names[weekday - 1];
   }
@@ -613,7 +632,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       'September',
       'October',
       'November',
-      'December'
+      'December',
     ];
     return months[month - 1];
   }
@@ -640,16 +659,24 @@ class CalendarScreenState extends State<CalendarScreen> {
   /// Prepares the task-schedule pairs from raw data for display
   /// Transforms nested data structure into a flat list and sorts by start time
   List<({Task task, ScheduledTask scheduledTask})> _prepareTaskSchedulePairs(
-      List<TaskWithSchedules> tasksWithSchedules) {
-    final pairs = tasksWithSchedules
-        .expand((taskWithSchedules) => taskWithSchedules.scheduledTasks.map(
-            (scheduledTask) =>
-                (task: taskWithSchedules.task, scheduledTask: scheduledTask)))
-        .toList();
+    List<TaskWithSchedules> tasksWithSchedules,
+  ) {
+    final pairs =
+        tasksWithSchedules
+            .expand(
+              (taskWithSchedules) => taskWithSchedules.scheduledTasks.map(
+                (scheduledTask) => (
+                  task: taskWithSchedules.task,
+                  scheduledTask: scheduledTask,
+                ),
+              ),
+            )
+            .toList();
 
     // Sort by start time for chronological display
-    pairs.sort((a, b) =>
-        a.scheduledTask.startTime.compareTo(b.scheduledTask.startTime));
+    pairs.sort(
+      (a, b) => a.scheduledTask.startTime.compareTo(b.scheduledTask.startTime),
+    );
 
     return pairs;
   }
