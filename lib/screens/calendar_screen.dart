@@ -484,89 +484,96 @@ class CalendarScreenState extends State<CalendarScreen> {
   Widget _buildAgendaContent() {
     // If _scheduledTasksFuture is null, initialize it
     // This is a fallback in case it wasn't initialized elsewhere
-    if (_scheduledTasksFuture == null) {
-      _scheduledTasksFuture = context
-          .read<TaskManagerCubit>()
-          .getScheduledTasksForDate(_selectedDate);
-    }
+    _scheduledTasksFuture ??= context
+        .read<TaskManagerCubit>()
+        .getScheduledTasksForDate(_selectedDate);
 
     return FutureBuilder<List<TaskWithSchedules>>(
-      future: _scheduledTasksFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CupertinoActivityIndicator());
-        } else if (snapshot.hasError) {
-          return Center(
-            child: EmptyStateView(
-              title: 'Error Loading Events',
-              message: 'Pull down to refresh and try again',
-              icon: CupertinoIcons.exclamationmark_circle,
-              actionLabel: 'Retry',
-              onActionPressed: _refreshData,
-            ),
-          );
-        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: EmptyStateView(
-              title: 'No Events Scheduled',
-              message: 'Tap the + button to add a new event',
-              icon: CupertinoIcons.calendar_badge_plus,
-              actionLabel: 'Add Event',
-              onActionPressed: _navigateToAddEvent,
-            ),
-          );
-        } else {
-          var taskSchedulePairs = snapshot.data!
-              .expand((taskWithSchedules) => taskWithSchedules.scheduledTasks
-                  .map((scheduledTask) => (
-                        task: taskWithSchedules.task,
-                        scheduledTask: scheduledTask
-                      )))
-              .toList()
-            ..sort((a, b) =>
-                a.scheduledTask.startTime.compareTo(b.scheduledTask.startTime));
+        future: _scheduledTasksFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CupertinoActivityIndicator());
+          } else if (snapshot.hasError) {
+            return Center(
+              child: EmptyStateView(
+                title: 'Error Loading Events',
+                message: 'Pull down to refresh and try again',
+                icon: CupertinoIcons.exclamationmark_circle,
+                actionLabel: 'Retry',
+                onActionPressed: _refreshData,
+              ),
+            );
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
+              child: EmptyStateView(
+                title: 'No Events For This Day',
+                message:
+                    'Your schedule is clear. Tap the + button to add a new event or activity.',
+                icon: CupertinoIcons.calendar_badge_plus,
+                actionLabel: 'Add Event',
+                onActionPressed: _navigateToAddEvent,
+              ),
+            );
+          } else {
+            // Extract and prepare tasks for display
+            var taskSchedulePairs = _prepareTaskSchedulePairs(snapshot.data!);
 
-          // Filter tasks based on search query
-          if (_searchQuery.isNotEmpty) {
-            final query = _searchQuery.toLowerCase();
-            taskSchedulePairs = taskSchedulePairs.where((pair) {
-              final task = pair.task;
-              return task.title.toLowerCase().contains(query) ||
-                  (task.notes != null &&
-                      task.notes!.toLowerCase().contains(query)) ||
-                  task.category.name.toLowerCase().contains(query);
-            }).toList();
-          }
-
-          return CupertinoScrollbar(
-            controller: _scrollController,
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: taskSchedulePairs.length,
-              itemBuilder: (context, index) {
-                final pair = taskSchedulePairs[index];
+            // Filter tasks based on search query
+            if (_searchQuery.isNotEmpty) {
+              final query = _searchQuery.toLowerCase();
+              taskSchedulePairs = taskSchedulePairs.where((pair) {
                 final task = pair.task;
-                final scheduledTask = pair.scheduledTask;
+                return task.title.toLowerCase().contains(query) ||
+                    (task.notes != null &&
+                        task.notes!.toLowerCase().contains(query)) ||
+                    task.category.name.toLowerCase().contains(query);
+              }).toList();
+            }
 
-                return AgendaItem(
-                  title: task.title == 'Free Time'
-                      ? _freeTimeName(
-                          scheduledTask.type.toString().split('.').last)
-                      : task.title,
-                  subtitle: task.notes,
-                  startTime: scheduledTask.startTime,
-                  endTime: scheduledTask.endTime,
-                  categoryColor: _getCategoryColor(task.category.name),
-                  onTap: () => _showEventDetails(task, scheduledTask),
-                );
-              },
-            ),
-          );
-        }
-      },
-    );
+            return CupertinoScrollbar(
+              controller: _scrollController,
+              child: taskSchedulePairs.isEmpty
+                  ? Center(
+                      child: EmptyStateView(
+                        title: 'No Matching Events',
+                        message: 'Try changing your search query',
+                        icon: CupertinoIcons.search,
+                        actionLabel: 'Clear Search',
+                        onActionPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      itemCount: taskSchedulePairs.length,
+                      itemBuilder: (context, index) {
+                        final pair = taskSchedulePairs[index];
+                        final task = pair.task;
+                        final scheduledTask = pair.scheduledTask;
+
+                        return AgendaItem(
+                          title: task.title == 'Free Time'
+                              ? _freeTimeName(
+                                  scheduledTask.type.toString().split('.').last)
+                              : task.title,
+                          subtitle: task.notes,
+                          startTime: scheduledTask.startTime,
+                          endTime: scheduledTask.endTime,
+                          categoryColor: _getCategoryColor(task.category.name),
+                          onTap: () => _showEventDetails(task, scheduledTask),
+                        );
+                      },
+                    ),
+            );
+          }
+        });
   }
 
+  // Moving these method definitions up so they can be used earlier in the code
   String _freeTimeName(String type) {
     switch (type) {
       case 'sleep':
@@ -628,5 +635,22 @@ class CalendarScreenState extends State<CalendarScreen> {
       default:
         return CupertinoColors.systemGrey;
     }
+  }
+
+  /// Prepares the task-schedule pairs from raw data for display
+  /// Transforms nested data structure into a flat list and sorts by start time
+  List<({Task task, ScheduledTask scheduledTask})> _prepareTaskSchedulePairs(
+      List<TaskWithSchedules> tasksWithSchedules) {
+    final pairs = tasksWithSchedules
+        .expand((taskWithSchedules) => taskWithSchedules.scheduledTasks.map(
+            (scheduledTask) =>
+                (task: taskWithSchedules.task, scheduledTask: scheduledTask)))
+        .toList();
+
+    // Sort by start time for chronological display
+    pairs.sort((a, b) =>
+        a.scheduledTask.startTime.compareTo(b.scheduledTask.startTime));
+
+    return pairs;
   }
 }
