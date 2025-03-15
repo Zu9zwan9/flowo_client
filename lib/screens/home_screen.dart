@@ -429,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen>
             top: 0,
             left:
                 _isExpanded
-                    ? 288
+                    ? 320
                     : -50, // Position on right side of sidebar when open
             child: SafeArea(
               child: Visibility(
