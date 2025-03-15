@@ -6,6 +6,7 @@ import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flowo_client/utils/scheduler.dart';
 import 'package:flowo_client/utils/task_breakdown_api.dart';
+import 'package:flowo_client/utils/task_estimator_api.dart';
 import 'package:flowo_client/utils/task_urgency_calculator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
@@ -19,6 +20,7 @@ class TaskManager {
   final Scheduler scheduler;
   final TaskUrgencyCalculator taskUrgencyCalculator;
   final TaskBreakdownAPI taskBreakdownAPI;
+  final TaskEstimatorAPI taskEstimatorAPI;
   UserSettings userSettings;
   final Box<Day> daysDB;
   final Box<Task> tasksDB;
@@ -31,6 +33,9 @@ class TaskManager {
   })  : scheduler = Scheduler(daysDB, tasksDB, userSettings),
         taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
         taskBreakdownAPI = TaskBreakdownAPI(
+          apiKey: huggingFaceApiKey ?? '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',
+        ),
+        taskEstimatorAPI = TaskEstimatorAPI(
           apiKey: huggingFaceApiKey ?? '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',
         );
 

@@ -255,32 +255,96 @@ class TaskEditScreenState extends State<TaskEditScreen> {
         ),
       );
 
-  Widget _buildEstimatedTimeButton(BuildContext context) => GestureDetector(
-        onTap: () async {
-          final estimatedTime = await _showEstimatedTimePicker(context);
-          if (mounted) {
-            setState(() => _estimatedTime = estimatedTime);
-          }
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            color: CupertinoColors.systemBlue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+  Widget _buildEstimatedTimeButton(BuildContext context) => Column(
+        children: [
+          GestureDetector(
+            onTap: () async {
+              final estimatedTime = await _showEstimatedTimePicker(context);
+              if (mounted) {
+                setState(() => _estimatedTime = estimatedTime);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemBlue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Estimated Time',
+                      style: TextStyle(
+                          fontSize: 16, color: CupertinoColors.systemBlue)),
+                  Text(
+                      '${(_estimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_estimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+                      style: const TextStyle(
+                          fontSize: 16, color: CupertinoColors.label)),
+                ],
+              ),
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          const SizedBox(height: 8),
+          Row(
             children: [
-              const Text('Estimated Time',
-                  style: TextStyle(
-                      fontSize: 16, color: CupertinoColors.systemBlue)),
-              Text(
-                  '${(_estimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_estimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
-                  style: const TextStyle(
-                      fontSize: 16, color: CupertinoColors.label)),
+              Expanded(
+                child: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => _estimateTimeWithAI(context),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.systemGreen.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(CupertinoIcons.wand_stars,
+                            color: CupertinoColors.systemGreen, size: 16),
+                        SizedBox(width: 4),
+                        Text('Estimate with AI',
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: CupertinoColors.systemGreen,
+                                fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () => _rescheduleTask(context),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.systemOrange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(CupertinoIcons.calendar_badge_plus,
+                            color: CupertinoColors.systemOrange, size: 16),
+                        SizedBox(width: 4),
+                        Text('Reschedule',
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: CupertinoColors.systemOrange,
+                                fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
+        ],
       );
 
   Widget _buildPrioritySlider() => SizedBox(
@@ -544,6 +608,159 @@ class TaskEditScreenState extends State<TaskEditScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _estimateTimeWithAI(BuildContext context) async {
+    // Show loading indicator
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const CupertinoAlertDialog(
+        title: Text('Estimating Time'),
+        content: Padding(
+          padding: EdgeInsets.only(top: 16.0),
+          child: Center(
+            child: CupertinoActivityIndicator(),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // Call the TaskManagerCubit to estimate time for the task
+      final estimatedTime =
+          await context.read<TaskManagerCubit>().estimateTaskTime(widget.task);
+
+      // Close the loading dialog
+      Navigator.pop(context);
+
+      if (mounted) {
+        setState(() {
+          _estimatedTime = estimatedTime;
+        });
+
+        // Show success dialog
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Time Estimated'),
+            content: Text(
+                'The AI estimates this task will take ${(_estimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_estimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m to complete.'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Reschedule Now'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _rescheduleTask(context);
+                },
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      // Close the loading dialog
+      Navigator.pop(context);
+
+      // Show error dialog
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Estimation Error'),
+          content: Text('Failed to estimate time: $e'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _rescheduleTask(BuildContext context) async {
+    // Show loading indicator
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const CupertinoAlertDialog(
+        title: Text('Rescheduling Task'),
+        content: Padding(
+          padding: EdgeInsets.only(top: 16.0),
+          child: Center(
+            child: CupertinoActivityIndicator(),
+          ),
+        ),
+      ),
+    );
+
+    try {
+      // Update the task with current values before rescheduling
+      final selectedTime = DateTime(_selectedDate.year, _selectedDate.month,
+          _selectedDate.day, _selectedTime.hour, _selectedTime.minute);
+
+      context.read<TaskManagerCubit>().editTask(
+            task: widget.task,
+            title: _titleController.text,
+            priority: _priority,
+            estimatedTime: _estimatedTime,
+            deadline: selectedTime.millisecondsSinceEpoch,
+            category: Category(name: _selectedCategory),
+            notes:
+                _notesController.text.isNotEmpty ? _notesController.text : null,
+            color: _selectedColor,
+          );
+
+      // Close the loading dialog
+      Navigator.pop(context);
+
+      // Show success dialog
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Task Rescheduled'),
+          content: const Text(
+              'The task has been rescheduled with the new estimated time.'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.pop(context);
+                // Navigate back to home screen
+                Navigator.pushReplacement(
+                    context,
+                    CupertinoPageRoute(
+                        builder: (_) => const HomeScreen(initialIndex: 1)));
+              },
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      // Close the loading dialog
+      Navigator.pop(context);
+
+      // Show error dialog
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Rescheduling Error'),
+          content: Text('Failed to reschedule task: $e'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Future<void> _saveTask(BuildContext context) async {
