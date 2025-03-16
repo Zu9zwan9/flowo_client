@@ -37,45 +37,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final currentSettings =
         context.read<TaskManagerCubit>().taskManager.userSettings;
     setState(() {
-      _sleepTime = currentSettings.sleepTime.isNotEmpty
-          ? currentSettings.sleepTime.first.startTime
-          : const TimeOfDay(hour: 22, minute: 0);
-      _wakeupTime = currentSettings.sleepTime.isNotEmpty
-          ? currentSettings.sleepTime.first.endTime
-          : const TimeOfDay(hour: 7, minute: 0);
+      _sleepTime =
+          currentSettings.sleepTime.isNotEmpty
+              ? currentSettings.sleepTime.first.startTime
+              : const TimeOfDay(hour: 22, minute: 0);
+      _wakeupTime =
+          currentSettings.sleepTime.isNotEmpty
+              ? currentSettings.sleepTime.first.endTime
+              : const TimeOfDay(hour: 7, minute: 0);
       _breakDuration =
           (currentSettings.breakTime ?? 15 * 60 * 1000) ~/ (60 * 1000);
       _minSessionDuration = currentSettings.minSession ~/ (60 * 1000);
-      _mealTimes = List.from(currentSettings.mealBreaks.isNotEmpty
-          ? currentSettings.mealBreaks
-          : [
+      _mealTimes = List.from(
+        currentSettings.mealBreaks.isNotEmpty
+            ? currentSettings.mealBreaks
+            : [
               TimeFrame(
-                  startTime: const TimeOfDay(hour: 8, minute: 0),
-                  endTime: const TimeOfDay(hour: 8, minute: 30)),
+                startTime: const TimeOfDay(hour: 8, minute: 0),
+                endTime: const TimeOfDay(hour: 8, minute: 30),
+              ),
               TimeFrame(
-                  startTime: const TimeOfDay(hour: 13, minute: 0),
-                  endTime: const TimeOfDay(hour: 13, minute: 30)),
+                startTime: const TimeOfDay(hour: 13, minute: 0),
+                endTime: const TimeOfDay(hour: 13, minute: 30),
+              ),
               TimeFrame(
-                  startTime: const TimeOfDay(hour: 19, minute: 0),
-                  endTime: const TimeOfDay(hour: 19, minute: 30)),
-            ]);
-      _freeTimes = List.from(currentSettings.freeTime.isNotEmpty
-          ? currentSettings.freeTime
-          : [
+                startTime: const TimeOfDay(hour: 19, minute: 0),
+                endTime: const TimeOfDay(hour: 19, minute: 30),
+              ),
+            ],
+      );
+      _freeTimes = List.from(
+        currentSettings.freeTime.isNotEmpty
+            ? currentSettings.freeTime
+            : [
               TimeFrame(
-                  startTime: const TimeOfDay(hour: 17, minute: 0),
-                  endTime: const TimeOfDay(hour: 18, minute: 30))
-            ]);
-      _activeDays = Map.from(currentSettings.activeDays ??
-          {
-            'Monday': true,
-            'Tuesday': true,
-            'Wednesday': true,
-            'Thursday': true,
-            'Friday': true,
-            'Saturday': true,
-            'Sunday': true,
-          });
+                startTime: const TimeOfDay(hour: 17, minute: 0),
+                endTime: const TimeOfDay(hour: 18, minute: 30),
+              ),
+            ],
+      );
+      _activeDays = Map.from(
+        currentSettings.activeDays ??
+            {
+              'Monday': true,
+              'Tuesday': true,
+              'Wednesday': true,
+              'Thursday': true,
+              'Friday': true,
+              'Saturday': true,
+              'Sunday': true,
+            },
+      );
     });
   }
 
@@ -95,16 +107,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showCupertinoDialog(
       context: context,
-      builder: (_) => CupertinoAlertDialog(
-        title: const Text('Settings Saved'),
-        content: const Text('Your schedule preferences have been updated.'),
-        actions: [
-          CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context))
-        ],
-      ),
+      builder:
+          (_) => CupertinoAlertDialog(
+            title: const Text('Settings Saved'),
+            content: const Text('Your schedule preferences have been updated.'),
+            actions: [
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
     );
   }
 
@@ -119,34 +133,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // Show success dialog with options
       showCupertinoDialog(
         context: context,
-        builder: (_) => CupertinoAlertDialog(
-          title: const Text('Logs Saved'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Logs have been saved successfully.'),
-              const SizedBox(height: 8),
-              Text('Location: $filePath',
-                  style: const TextStyle(
-                      fontSize: 12, color: CupertinoColors.systemGrey)),
-            ],
-          ),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('Share'),
-              onPressed: () {
-                Navigator.pop(context);
-                _shareLogFile(filePath);
-              },
+        builder:
+            (_) => CupertinoAlertDialog(
+              title: const Text('Logs Saved'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Logs have been saved successfully.'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Location: $filePath',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: CupertinoColors.systemGrey,
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('Share'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _shareLogFile(filePath);
+                  },
+                ),
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
       );
 
       // Log success
@@ -160,121 +179,150 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // without additional setup
       showCupertinoDialog(
         context: context,
-        builder: (_) => CupertinoAlertDialog(
-          title: const Text('Log File Location'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Your log file is saved at:'),
-              const SizedBox(height: 8),
-              Text(filePath,
-                  style: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              const Text(
-                  'You can access this file through your device\'s file manager.'),
-            ],
-          ),
-          actions: [
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
+        builder:
+            (_) => CupertinoAlertDialog(
+              title: const Text('Log File Location'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Your log file is saved at:'),
+                  const SizedBox(height: 8),
+                  Text(
+                    filePath,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'You can access this file through your device\'s file manager.',
+                  ),
+                ],
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-          ],
-        ),
       );
 
       appLogger.info('Log file location shown', 'Settings');
     } catch (e) {
-      appLogger.error('Error showing log file location', 'Settings',
-          {'error': e.toString()});
+      appLogger.error('Error showing log file location', 'Settings', {
+        'error': e.toString(),
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to show log file location: $e')),
       );
     }
   }
 
-  void _showTimePicker(
-      {required TimeOfDay initialTime,
-      required Function(TimeOfDay) onTimeSelected}) {
+  void _showTimePicker({
+    required TimeOfDay initialTime,
+    required Function(TimeOfDay) onTimeSelected,
+  }) {
     showCupertinoModalPopup(
       context: context,
-      builder: (_) => Container(
-        height: 280,
-        color: CupertinoColors.systemBackground,
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder:
+          (_) => Container(
+            height: 280,
+            color: CupertinoColors.systemBackground,
+            child: Column(
               children: [
-                CupertinoButton(
-                    child: const Text('Cancel'),
-                    onPressed: () => Navigator.pop(context)),
-                CupertinoButton(
-                    child: const Text('Done'),
-                    onPressed: () => Navigator.pop(context)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.time,
+                    initialDateTime: DateTime(
+                      2022,
+                      1,
+                      1,
+                      initialTime.hour,
+                      initialTime.minute,
+                    ),
+                    onDateTimeChanged:
+                        (dateTime) => onTimeSelected(
+                          TimeOfDay(
+                            hour: dateTime.hour,
+                            minute: dateTime.minute,
+                          ),
+                        ),
+                  ),
+                ),
               ],
             ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.time,
-                initialDateTime:
-                    DateTime(2022, 1, 1, initialTime.hour, initialTime.minute),
-                onDateTimeChanged: (dateTime) => onTimeSelected(
-                    TimeOfDay(hour: dateTime.hour, minute: dateTime.minute)),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
-  void _showAddTimeSlotDialog(
-      {required String title,
-      required Function(TimeOfDay, TimeOfDay) onAdd,
-      Color iconColor = CupertinoColors.systemBlue}) {
+  void _showAddTimeSlotDialog({
+    required String title,
+    required Function(TimeOfDay, TimeOfDay) onAdd,
+    Color iconColor = CupertinoColors.systemBlue,
+  }) {
     var startTime = const TimeOfDay(hour: 12, minute: 0);
     var endTime = const TimeOfDay(hour: 13, minute: 0);
 
     showCupertinoModalPopup(
       context: context,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setDialogState) => CupertinoActionSheet(
-          title: Text('Add $title'),
-          message: Text('Set your $title start and end times'),
-          actions: [
-            CupertinoActionSheetAction(
-              child: Text('Start Time: ${_formatTimeOfDay(startTime)}'),
-              onPressed: () => _showTimePicker(
-                initialTime: startTime,
-                onTimeSelected: (time) =>
-                    setDialogState(() => startTime = time),
-              ),
-            ),
-            CupertinoActionSheetAction(
-              child: Text('End Time: ${_formatTimeOfDay(endTime)}'),
-              onPressed: () => _showTimePicker(
-                initialTime: endTime,
-                onTimeSelected: (time) => setDialogState(() => endTime = time),
-              ),
-            ),
-            CupertinoActionSheetAction(
-              isDefaultAction: true,
-              child: Text('Add $title'),
-              onPressed: () {
-                onAdd(startTime, endTime);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(context)),
-        ),
-      ),
+      builder:
+          (_) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => CupertinoActionSheet(
+                  title: Text('Add $title'),
+                  message: Text('Set your $title start and end times'),
+                  actions: [
+                    CupertinoActionSheetAction(
+                      child: Text('Start Time: ${_formatTimeOfDay(startTime)}'),
+                      onPressed:
+                          () => _showTimePicker(
+                            initialTime: startTime,
+                            onTimeSelected:
+                                (time) =>
+                                    setDialogState(() => startTime = time),
+                          ),
+                    ),
+                    CupertinoActionSheetAction(
+                      child: Text('End Time: ${_formatTimeOfDay(endTime)}'),
+                      onPressed:
+                          () => _showTimePicker(
+                            initialTime: endTime,
+                            onTimeSelected:
+                                (time) => setDialogState(() => endTime = time),
+                          ),
+                    ),
+                    CupertinoActionSheetAction(
+                      isDefaultAction: true,
+                      child: Text('Add $title'),
+                      onPressed: () {
+                        onAdd(startTime, endTime);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                  cancelButton: CupertinoActionSheetAction(
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+          ),
     );
   }
 
@@ -282,8 +330,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _showAddTimeSlotDialog(
       title: 'Meal Time',
       iconColor: CupertinoColors.systemOrange,
-      onAdd: (startTime, endTime) => setState(() =>
-          _mealTimes.add(TimeFrame(startTime: startTime, endTime: endTime))),
+      onAdd:
+          (startTime, endTime) => setState(
+            () => _mealTimes.add(
+              TimeFrame(startTime: startTime, endTime: endTime),
+            ),
+          ),
     );
   }
 
@@ -291,8 +343,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _showAddTimeSlotDialog(
       title: 'Free Time',
       iconColor: CupertinoColors.systemGreen,
-      onAdd: (startTime, endTime) => setState(() =>
-          _freeTimes.add(TimeFrame(startTime: startTime, endTime: endTime))),
+      onAdd:
+          (startTime, endTime) => setState(
+            () => _freeTimes.add(
+              TimeFrame(startTime: startTime, endTime: endTime),
+            ),
+          ),
     );
   }
 
@@ -324,14 +380,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   groupValue: themeNotifier.currentThemeName,
                   children: const {
                     'Light': Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Light')),
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('Light'),
+                    ),
                     'Night': Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('Night')),
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('Night'),
+                    ),
                     'ADHD': Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Text('ADHD')),
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('ADHD'),
+                    ),
                   },
                   onValueChanged: (value) => themeNotifier.setTheme(value),
                 ),
@@ -348,16 +407,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   label: 'Sleep Time',
                   time: _sleepTime,
                   onTimeSelected: (time) => setState(() => _sleepTime = time),
-                  leading: const Icon(CupertinoIcons.moon_fill,
-                      color: CupertinoColors.systemIndigo),
+                  leading: const Icon(
+                    CupertinoIcons.moon_fill,
+                    color: CupertinoColors.systemIndigo,
+                  ),
                   use24HourFormat: false,
                 ),
                 SettingsTimePickerItem(
                   label: 'Wake Up Time',
                   time: _wakeupTime,
                   onTimeSelected: (time) => setState(() => _wakeupTime = time),
-                  leading: const Icon(CupertinoIcons.sunrise_fill,
-                      color: CupertinoColors.systemOrange),
+                  leading: const Icon(
+                    CupertinoIcons.sunrise_fill,
+                    color: CupertinoColors.systemOrange,
+                  ),
                   use24HourFormat: false,
                 ),
               ],
@@ -370,22 +433,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.symmetric(
-                      vertical: 16.0, horizontal: 16.0),
+                    vertical: 16.0,
+                    horizontal: 16.0,
+                  ),
                   child: Wrap(
                     spacing: 8.0,
                     runSpacing: 8.0,
-                    children: _activeDays.keys
-                        .map((day) => SettingsButton(
-                              label: day.substring(0, 3),
-                              isPrimary: _activeDays[day]!,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12.0, vertical: 6.0),
-                              borderRadius: BorderRadius.circular(16.0),
-                              minSize: 0,
-                              onPressed: () => setState(
-                                  () => _activeDays[day] = !_activeDays[day]!),
-                            ))
-                        .toList(),
+                    children:
+                        _activeDays.keys
+                            .map(
+                              (day) => SettingsButton(
+                                label: day.substring(0, 3),
+                                isPrimary: _activeDays[day]!,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12.0,
+                                  vertical: 6.0,
+                                ),
+                                borderRadius: BorderRadius.circular(16.0),
+                                minSize: 0,
+                                onPressed:
+                                    () => setState(
+                                      () =>
+                                          _activeDays[day] = !_activeDays[day]!,
+                                    ),
+                              ),
+                            )
+                            .toList(),
                   ),
                 ),
               ],
@@ -398,24 +471,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'Set your regular meal times to help schedule your day.',
               children: [
                 ..._mealTimes
-                    .map((meal) => SettingsItem(
-                          label:
-                              'Meal ${_formatTimeOfDay(meal.startTime)} - ${_formatTimeOfDay(meal.endTime)}',
-                          leading: const Icon(CupertinoIcons.clock,
-                              color: CupertinoColors.systemOrange),
-                          trailing: CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            child: const Icon(CupertinoIcons.delete,
-                                color: CupertinoColors.systemRed),
-                            onPressed: () =>
-                                setState(() => _mealTimes.remove(meal)),
+                    .map(
+                      (meal) => SettingsItem(
+                        label:
+                            'Meal ${_formatTimeOfDay(meal.startTime)} - ${_formatTimeOfDay(meal.endTime)}',
+                        leading: const Icon(
+                          CupertinoIcons.clock,
+                          color: CupertinoColors.systemOrange,
+                        ),
+                        trailing: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          child: const Icon(
+                            CupertinoIcons.delete,
+                            color: CupertinoColors.systemRed,
                           ),
-                        ))
+                          onPressed:
+                              () => setState(() => _mealTimes.remove(meal)),
+                        ),
+                      ),
+                    )
                     .toList(),
                 SettingsItem(
                   label: 'Add Meal Time',
-                  leading: const Icon(CupertinoIcons.add_circled,
-                      color: CupertinoColors.systemOrange),
+                  leading: const Icon(
+                    CupertinoIcons.add_circled,
+                    color: CupertinoColors.systemOrange,
+                  ),
                   onTap: _showAddMealDialog,
                 ),
               ],
@@ -428,24 +509,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   'Set your free time periods to avoid scheduling tasks during these times.',
               children: [
                 ..._freeTimes
-                    .map((freeTime) => SettingsItem(
-                          label:
-                              'Free ${_formatTimeOfDay(freeTime.startTime)} - ${_formatTimeOfDay(freeTime.endTime)}',
-                          leading: const Icon(CupertinoIcons.clock,
-                              color: CupertinoColors.systemGreen),
-                          trailing: CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            child: const Icon(CupertinoIcons.delete,
-                                color: CupertinoColors.systemRed),
-                            onPressed: () =>
-                                setState(() => _freeTimes.remove(freeTime)),
+                    .map(
+                      (freeTime) => SettingsItem(
+                        label:
+                            'Free ${_formatTimeOfDay(freeTime.startTime)} - ${_formatTimeOfDay(freeTime.endTime)}',
+                        leading: const Icon(
+                          CupertinoIcons.clock,
+                          color: CupertinoColors.systemGreen,
+                        ),
+                        trailing: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          child: const Icon(
+                            CupertinoIcons.delete,
+                            color: CupertinoColors.systemRed,
                           ),
-                        ))
+                          onPressed:
+                              () => setState(() => _freeTimes.remove(freeTime)),
+                        ),
+                      ),
+                    )
                     .toList(),
                 SettingsItem(
                   label: 'Add Free Time',
-                  leading: const Icon(CupertinoIcons.add_circled,
-                      color: CupertinoColors.systemGreen),
+                  leading: const Icon(
+                    CupertinoIcons.add_circled,
+                    color: CupertinoColors.systemGreen,
+                  ),
                   onTap: _showAddFreeTimeDialog,
                 ),
               ],
@@ -464,8 +553,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   max: 120,
                   divisions: 23,
                   valueLabel: '${_minSessionDuration.round()} min',
-                  onChanged: (value) =>
-                      setState(() => _minSessionDuration = value.round()),
+                  onChanged:
+                      (value) =>
+                          setState(() => _minSessionDuration = value.round()),
                   subtitle: 'The minimum time you want to spend on a task',
                 ),
               ],
@@ -484,8 +574,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   max: 30,
                   divisions: 5,
                   valueLabel: '${_breakDuration.round()} min',
-                  onChanged: (value) =>
-                      setState(() => _breakDuration = value.round()),
+                  onChanged:
+                      (value) => setState(() => _breakDuration = value.round()),
                   subtitle:
                       'The time you want to take for breaks between tasks',
                 ),
@@ -501,8 +591,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 SettingsItem(
                   label: 'Save Logs',
                   subtitle: 'Save application logs to a file',
-                  leading: const Icon(CupertinoIcons.doc_text,
-                      color: CupertinoColors.systemBlue),
+                  leading: const Icon(
+                    CupertinoIcons.doc_text,
+                    color: CupertinoColors.systemBlue,
+                  ),
                   onTap: _saveLogs,
                 ),
               ],
