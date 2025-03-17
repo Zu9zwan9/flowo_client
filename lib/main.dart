@@ -21,6 +21,7 @@ import 'models/category.dart';
 import 'models/coordinates.dart';
 import 'models/day.dart';
 import 'models/notification_type.dart';
+import 'models/pomodoro_session.dart';
 import 'models/scheduled_task.dart';
 import 'models/scheduled_task_type.dart';
 import 'models/time_frame.dart';
@@ -46,19 +47,24 @@ void main() async {
   Hive.registerAdapter(UserProfileAdapter());
   Hive.registerAdapter(TimeFrameAdapter());
   Hive.registerAdapter(TimeOfDayAdapter());
-
+  Hive.registerAdapter(PomodoroSessionAdapter());
+  Hive.registerAdapter(PomodoroStateAdapter());
   await Hive.initFlutter();
 
   Box<Task> tasksDB;
   Box<Day> daysDB;
   Box<UserSettings> profiles;
   Box<UserProfile> userProfiles;
+  Box<PomodoroSession> pomodoroSessionsDB;
 
   if (kIsWeb) {
     tasksDB = await Hive.openBox<Task>('tasks');
     daysDB = await Hive.openBox<Day>('scheduled_tasks');
     profiles = await Hive.openBox<UserSettings>('user_settings');
     userProfiles = await Hive.openBox<UserProfile>('user_profiles');
+    pomodoroSessionsDB = await Hive.openBox<PomodoroSession>(
+      'pomodoro_sessions',
+    );
   } else {
     final dir = await getApplicationDocumentsDirectory();
     Hive.init(dir.path);
@@ -66,6 +72,9 @@ void main() async {
     daysDB = await Hive.openBox<Day>('scheduled_tasks');
     profiles = await Hive.openBox<UserSettings>('user_settings');
     userProfiles = await Hive.openBox<UserProfile>('user_profiles');
+    pomodoroSessionsDB = await Hive.openBox<PomodoroSession>(
+      'pomodoro_sessions',
+    );
   }
 
   var selectedProfile =
@@ -149,6 +158,7 @@ void main() async {
         Provider<TaskManager>.value(value: taskManager),
         Provider<AnalyticsService>.value(value: analyticsService),
         Provider<Box<UserProfile>>.value(value: userProfiles),
+        Provider<Box<PomodoroSession>>.value(value: pomodoroSessionsDB),
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         BlocProvider<CalendarCubit>(
           create: (context) => CalendarCubit(tasksDB, daysDB, taskManager),

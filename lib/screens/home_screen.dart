@@ -7,6 +7,7 @@ import 'package:flowo_client/screens/daily_overview_screen.dart';
 import 'package:flowo_client/screens/profile_screen.dart';
 import 'package:flowo_client/screens/settings_screen.dart';
 import 'package:flowo_client/screens/task_list_screen.dart';
+import 'package:flowo_client/screens/task_selection_screen.dart';
 import 'package:flowo_client/screens/widgets/sidebar_menu_item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -83,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   // List of pages with their respective icons and labels
   final List<({Widget page, IconData icon, String label, Color accentColor})>
-  _pageData = const [
+  _pageData = [
     (
       page: DailyOverviewScreen(),
       icon: CupertinoIcons.home,
@@ -101,6 +102,12 @@ class _HomeScreenState extends State<HomeScreen>
       icon: CupertinoIcons.add_circled,
       label: 'Add Task',
       accentColor: CupertinoColors.systemIndigo,
+    ),
+    (
+      page: TaskSelectionScreen(),
+      icon: CupertinoIcons.timer,
+      label: 'Pomodoro',
+      accentColor: CupertinoColors.systemRed,
     ),
     (
       page: ProfileScreen(),
