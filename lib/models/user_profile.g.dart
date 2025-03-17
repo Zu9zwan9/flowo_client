@@ -21,7 +21,7 @@ class UserProfileAdapter extends TypeAdapter<UserProfile> {
       email: fields[1] as String,
       avatarPath: fields[2] as String?,
       goal: fields[3] as String?,
-      onboardingCompleted: fields[4] as bool,
+      onboardingCompleted: fields[4] as bool? ?? false,
     );
   }
 
