@@ -7,6 +7,8 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/task_manager_state.dart';
+import '../models/category.dart';
+import '../models/repeat_rule.dart';
 import '../models/scheduled_task.dart';
 import '../models/task.dart';
 
@@ -131,6 +133,11 @@ class CalendarScreenState extends State<CalendarScreen> {
   void _onViewChanged(CalendarView newView) {
     setState(() {
       _calendarView = newView;
+
+      // Update the Future for scheduled tasks when view changes
+      _scheduledTasksFuture = context
+          .read<TaskManagerCubit>()
+          .getScheduledTasksForDate(_selectedDate);
     });
   }
 
@@ -301,8 +308,99 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _navigateToAddEvent() {
-    // This would navigate to the add event screen in a real app
-    _showSuccessMessage('Add Event functionality would be implemented here');
+    _showAddActionSheet();
+  }
+
+  void _showAddActionSheet() {
+    showCupertinoModalPopup(
+      context: context,
+      builder:
+          (BuildContext context) => CupertinoActionSheet(
+            title: const Text('Add New'),
+            message: const Text('Choose what you want to create'),
+            actions: <CupertinoActionSheetAction>[
+              CupertinoActionSheetAction(
+                child: const Text('Add Task'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _addTask();
+                },
+              ),
+              CupertinoActionSheetAction(
+                child: const Text('Add Event'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _addEvent();
+                },
+              ),
+              CupertinoActionSheetAction(
+                child: const Text('Add Habit'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _addHabit();
+                },
+              ),
+            ],
+            cancelButton: CupertinoActionSheetAction(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ),
+    );
+  }
+
+  void _addTask() {
+    // Create a simple task with default values
+    final now = DateTime.now();
+    final deadline = now.add(const Duration(days: 1));
+
+    context.read<TaskManagerCubit>().createTask(
+      title: 'New Task',
+      priority: 1,
+      estimatedTime: 60 * 60 * 1000, // 1 hour in milliseconds
+      deadline: deadline.millisecondsSinceEpoch,
+      category: Category(name: 'Task'),
+      notes: 'Task created from calendar',
+    );
+
+    _showSuccessMessage('Task added successfully');
+    _refreshData();
+  }
+
+  void _addEvent() {
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month, now.day, now.hour, 0);
+    final end = start.add(const Duration(hours: 1));
+
+    context.read<TaskManagerCubit>().createEvent(
+      title: 'New Event',
+      start: start,
+      end: end,
+      notes: 'Event created from calendar',
+    );
+
+    _showSuccessMessage('Event added successfully');
+    _refreshData();
+  }
+
+  void _addHabit() {
+    final now = DateTime.now();
+    final deadline = now.add(const Duration(days: 30)); // 30 days from now
+
+    context.read<TaskManagerCubit>().createTask(
+      title: 'New Habit',
+      priority: 1,
+      estimatedTime: 30 * 60 * 1000, // 30 minutes in milliseconds
+      deadline: deadline.millisecondsSinceEpoch,
+      category: Category(name: 'Habit'),
+      notes: 'Habit created from calendar',
+      frequency: RepeatRule(frequency: 'daily', interval: 1, until: deadline),
+    );
+
+    _showSuccessMessage('Habit added successfully');
+    _refreshData();
   }
 
   @override
@@ -427,16 +525,21 @@ class CalendarScreenState extends State<CalendarScreen> {
   Widget _buildCalendar() {
     return BlocBuilder<TaskManagerCubit, TaskManagerState>(
       builder: (context, state) {
+        // Create a key that changes when the view changes to force a rebuild
+        final calendarKey = ValueKey(
+          '${_calendarView}_${_selectedDate.millisecondsSinceEpoch}',
+        );
+
         return SfCalendar(
+          key: calendarKey,
           view: _calendarView,
-          showNavigationArrow: false,
-          showDatePickerButton: false,
+          showNavigationArrow: true, // Enable navigation arrows
+          showDatePickerButton: true, // Enable date picker button
           dataSource: CalendarTaskDataSource(
             context.read<TaskManagerCubit>().getScheduledTasks(),
           ),
           initialSelectedDate: _selectedDate,
-          initialDisplayDate:
-              _selectedDate, // Add this to control displayed month/week/day
+          initialDisplayDate: _selectedDate,
           onViewChanged: (ViewChangedDetails details) {
             // This captures swipe navigation
             if (details.visibleDates.isNotEmpty) {
@@ -444,9 +547,19 @@ class CalendarScreenState extends State<CalendarScreen> {
                   details.visibleDates[details.visibleDates.length ~/ 2];
               if (newDate.month != _selectedDate.month ||
                   newDate.year != _selectedDate.year) {
-                _onDateSelected(
-                  DateTime(newDate.year, newDate.month, newDate.day),
-                );
+                setState(() {
+                  _selectedDate = DateTime(
+                    newDate.year,
+                    newDate.month,
+                    newDate.day,
+                  );
+                });
+                context.read<CalendarCubit>().selectDate(_selectedDate);
+
+                // Update the Future for scheduled tasks
+                _scheduledTasksFuture = context
+                    .read<TaskManagerCubit>()
+                    .getScheduledTasksForDate(_selectedDate);
               }
             }
           },
@@ -458,6 +571,8 @@ class CalendarScreenState extends State<CalendarScreen> {
           monthViewSettings: const MonthViewSettings(
             appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
             showAgenda: false,
+            navigationDirection:
+                MonthNavigationDirection.horizontal, // Enable horizontal swipe
           ),
           timeSlotViewSettings: const TimeSlotViewSettings(
             startHour: 6,
@@ -476,7 +591,7 @@ class CalendarScreenState extends State<CalendarScreen> {
             color: CupertinoColors.activeBlue.withOpacity(0.2),
           ),
           todayHighlightColor: CupertinoColors.activeBlue,
-          headerHeight: 0, // Hide the default header
+          headerHeight: 0, // Hide the default header since we have our own
           viewHeaderStyle: const ViewHeaderStyle(
             dayTextStyle: TextStyle(
               fontSize: 12,
@@ -484,6 +599,13 @@ class CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
           appointmentTextStyle: const TextStyle(fontSize: 14),
+          allowViewNavigation: true, // Enable view navigation
+          allowedViews: const [
+            // Define allowed views
+            CalendarView.day,
+            CalendarView.week,
+            CalendarView.month,
+          ],
         );
       },
     );
