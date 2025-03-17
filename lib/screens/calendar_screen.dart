@@ -63,7 +63,8 @@ class CalendarScreenState extends State<CalendarScreen> {
 
     try {
       // Select the current date in the calendar cubit
-      context.read<CalendarCubit>().selectDate(_selectedDate);;
+      context.read<CalendarCubit>().selectDate(_selectedDate);
+      ;
 
       // Ensure tasks are scheduled
       // Select the current date in the calendar cubit
@@ -434,6 +435,21 @@ class CalendarScreenState extends State<CalendarScreen> {
             context.read<TaskManagerCubit>().getScheduledTasks(),
           ),
           initialSelectedDate: _selectedDate,
+          initialDisplayDate:
+              _selectedDate, // Add this to control displayed month/week/day
+          onViewChanged: (ViewChangedDetails details) {
+            // This captures swipe navigation
+            if (details.visibleDates.isNotEmpty) {
+              final newDate =
+                  details.visibleDates[details.visibleDates.length ~/ 2];
+              if (newDate.month != _selectedDate.month ||
+                  newDate.year != _selectedDate.year) {
+                _onDateSelected(
+                  DateTime(newDate.year, newDate.month, newDate.day),
+                );
+              }
+            }
+          },
           onTap: (details) {
             if (details.date != null) {
               _onDateSelected(details.date!);

@@ -132,9 +132,10 @@ class TaskManager {
   }
 
   void scheduleTasks() {
-    final tasks = tasksDB.values
-        .where((task) => (task.frequency == null) && task.subtasks.isEmpty)
-        .toList();
+    final tasks =
+        tasksDB.values
+            .where((task) => (task.frequency == null) && task.subtasks.isEmpty)
+            .toList();
 
     tasks.removeWhere((task) => task.id == 'free_time_manager');
     final justScheduledTasks = <ScheduledTask>[];
@@ -149,9 +150,19 @@ class TaskManager {
         break;
       }
 
-      final mostUrgentEntry = taskUrgencyMap.entries
-          .where((entry) => _isOrderCorrect(entry.key))
-          .reduce((a, b) => a.value > b.value ? a : b);
+      final filteredEntries =
+          taskUrgencyMap.entries
+              .where((entry) => _isOrderCorrect(entry.key))
+              .toList();
+
+      if (filteredEntries.isEmpty) {
+        log('No tasks with correct order to schedule');
+        break;
+      }
+
+      final mostUrgentEntry = filteredEntries.reduce(
+        (a, b) => a.value > b.value ? a : b,
+      );
       final mostUrgentTask = mostUrgentEntry.key;
 
       List<String>? availableDates;
@@ -176,9 +187,10 @@ class TaskManager {
     logInfo('Scheduled ${justScheduledTasks.length} tasks');
   }
 
-  void manageHabits() { // TODO: remake this method
+  void manageHabits() {
+    // TODO: remake this method
     List<Task> habits =
-    tasksDB.values.where((task) => task.frequency != null).toList();
+        tasksDB.values.where((task) => task.frequency != null).toList();
 
     for (Task habit in habits) {
       List<DateTime> scheduledDates = _calculateHabitDates(habit);
