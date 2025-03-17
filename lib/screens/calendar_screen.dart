@@ -7,10 +7,11 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/task_manager_state.dart';
-import '../models/category.dart';
-import '../models/repeat_rule.dart';
 import '../models/scheduled_task.dart';
 import '../models/task.dart';
+import 'add_event_page.dart';
+import 'add_habit_page.dart';
+import 'add_task_page.dart';
 
 /// An improved Calendar screen with enhanced UI/UX following iOS design guidelines
 /// and implementing best practices, SOLID principles, and proper error handling.
@@ -352,55 +353,30 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _addTask() {
-    // Create a simple task with default values
-    final now = DateTime.now();
-    final deadline = now.add(const Duration(days: 1));
-
-    context.read<TaskManagerCubit>().createTask(
-      title: 'New Task',
-      priority: 1,
-      estimatedTime: 60 * 60 * 1000, // 1 hour in milliseconds
-      deadline: deadline.millisecondsSinceEpoch,
-      category: Category(name: 'Task'),
-      notes: 'Task created from calendar',
-    );
-
-    _showSuccessMessage('Task added successfully');
-    _refreshData();
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => AddTaskPage(selectedDate: _selectedDate),
+      ),
+    ).then((_) => _refreshData());
   }
 
   void _addEvent() {
-    final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day, now.hour, 0);
-    final end = start.add(const Duration(hours: 1));
-
-    context.read<TaskManagerCubit>().createEvent(
-      title: 'New Event',
-      start: start,
-      end: end,
-      notes: 'Event created from calendar',
-    );
-
-    _showSuccessMessage('Event added successfully');
-    _refreshData();
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => AddEventPage(selectedDate: _selectedDate),
+      ),
+    ).then((_) => _refreshData());
   }
 
   void _addHabit() {
-    final now = DateTime.now();
-    final deadline = now.add(const Duration(days: 30)); // 30 days from now
-
-    context.read<TaskManagerCubit>().createTask(
-      title: 'New Habit',
-      priority: 1,
-      estimatedTime: 30 * 60 * 1000, // 30 minutes in milliseconds
-      deadline: deadline.millisecondsSinceEpoch,
-      category: Category(name: 'Habit'),
-      notes: 'Habit created from calendar',
-      frequency: RepeatRule(frequency: 'daily', interval: 1, until: deadline),
-    );
-
-    _showSuccessMessage('Habit added successfully');
-    _refreshData();
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => AddHabitPage(selectedDate: _selectedDate),
+      ),
+    ).then((_) => _refreshData());
   }
 
   @override
