@@ -1,6 +1,8 @@
+import 'package:flowo_client/models/ambient_scene.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
+import 'package:flowo_client/services/ambient_service.dart';
 import 'package:flowo_client/services/analytics_service.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
 import 'package:flowo_client/utils/task_manager.dart';
@@ -49,6 +51,7 @@ void main() async {
   Hive.registerAdapter(TimeOfDayAdapter());
   Hive.registerAdapter(PomodoroSessionAdapter());
   Hive.registerAdapter(PomodoroStateAdapter());
+  Hive.registerAdapter(AmbientSceneAdapter());
   await Hive.initFlutter();
 
   Box<Task> tasksDB;
@@ -56,6 +59,7 @@ void main() async {
   Box<UserSettings> profiles;
   Box<UserProfile> userProfiles;
   Box<PomodoroSession> pomodoroSessionsDB;
+  Box<AmbientScene> ambientScenesDB;
 
   if (kIsWeb) {
     tasksDB = await Hive.openBox<Task>('tasks');
@@ -65,6 +69,7 @@ void main() async {
     pomodoroSessionsDB = await Hive.openBox<PomodoroSession>(
       'pomodoro_sessions',
     );
+    ambientScenesDB = await Hive.openBox<AmbientScene>('ambient_scenes');
   } else {
     final dir = await getApplicationDocumentsDirectory();
     Hive.init(dir.path);
@@ -75,6 +80,7 @@ void main() async {
     pomodoroSessionsDB = await Hive.openBox<PomodoroSession>(
       'pomodoro_sessions',
     );
+    ambientScenesDB = await Hive.openBox<AmbientScene>('ambient_scenes');
   }
 
   var selectedProfile =
@@ -150,7 +156,11 @@ void main() async {
   appLogger.info('Hive initialized and task boxes opened', 'App');
 
   // Create analytics service
+  // Create services
   final analyticsService = AnalyticsService();
+  final ambientService = AmbientService(ambientScenesDB);
+
+  appLogger.info('Hive initialized and task boxes opened', 'App');
 
   runApp(
     MultiProvider(
@@ -159,6 +169,8 @@ void main() async {
         Provider<AnalyticsService>.value(value: analyticsService),
         Provider<Box<UserProfile>>.value(value: userProfiles),
         Provider<Box<PomodoroSession>>.value(value: pomodoroSessionsDB),
+        Provider<Box<AmbientScene>>.value(value: ambientScenesDB),
+        ChangeNotifierProvider<AmbientService>.value(value: ambientService),
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         BlocProvider<CalendarCubit>(
           create: (context) => CalendarCubit(tasksDB, daysDB, taskManager),

@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/screens/add_item_screen.dart';
+import 'package:flowo_client/screens/ambient_screen.dart';
 import 'package:flowo_client/screens/analytics_screen.dart';
 import 'package:flowo_client/screens/daily_overview_screen.dart';
 import 'package:flowo_client/screens/profile_screen.dart';
@@ -108,6 +109,12 @@ class _HomeScreenState extends State<HomeScreen>
       icon: CupertinoIcons.timer,
       label: 'Pomodoro',
       accentColor: CupertinoColors.systemRed,
+    ),
+    (
+      page: AmbientScreen(),
+      icon: CupertinoIcons.music_note_2,
+      label: 'Ambient',
+      accentColor: CupertinoColors.systemTeal,
     ),
     (
       page: ProfileScreen(),
