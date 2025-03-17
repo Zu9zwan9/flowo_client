@@ -509,33 +509,38 @@ class CalendarScreenState extends State<CalendarScreen> {
         return SfCalendar(
           key: calendarKey,
           view: _calendarView,
-          showNavigationArrow: true, // Enable navigation arrows
-          showDatePickerButton: true, // Enable date picker button
+          showNavigationArrow: true,
+          showDatePickerButton: true,
           dataSource: CalendarTaskDataSource(
             context.read<TaskManagerCubit>().getScheduledTasks(),
           ),
           initialSelectedDate: _selectedDate,
           initialDisplayDate: _selectedDate,
           onViewChanged: (ViewChangedDetails details) {
-            // This captures swipe navigation
+            // Don't call setState during build
             if (details.visibleDates.isNotEmpty) {
               final newDate =
                   details.visibleDates[details.visibleDates.length ~/ 2];
               if (newDate.month != _selectedDate.month ||
                   newDate.year != _selectedDate.year) {
-                setState(() {
-                  _selectedDate = DateTime(
-                    newDate.year,
-                    newDate.month,
-                    newDate.day,
-                  );
-                });
-                context.read<CalendarCubit>().selectDate(_selectedDate);
+                // Schedule state update for after the build is complete
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (mounted) {
+                    setState(() {
+                      _selectedDate = DateTime(
+                        newDate.year,
+                        newDate.month,
+                        newDate.day,
+                      );
+                    });
+                    context.read<CalendarCubit>().selectDate(_selectedDate);
 
-                // Update the Future for scheduled tasks
-                _scheduledTasksFuture = context
-                    .read<TaskManagerCubit>()
-                    .getScheduledTasksForDate(_selectedDate);
+                    // Update the Future for scheduled tasks
+                    _scheduledTasksFuture = context
+                        .read<TaskManagerCubit>()
+                        .getScheduledTasksForDate(_selectedDate);
+                  }
+                });
               }
             }
           },

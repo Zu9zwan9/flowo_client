@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/screens/add_item_screen.dart';
 import 'package:flowo_client/screens/analytics_screen.dart';
-import 'package:flowo_client/screens/calendar_screen.dart';
+import 'package:flowo_client/screens/daily_overview_screen.dart';
 import 'package:flowo_client/screens/profile_screen.dart';
 import 'package:flowo_client/screens/settings_screen.dart';
 import 'package:flowo_client/screens/task_list_screen.dart';
@@ -85,9 +85,9 @@ class _HomeScreenState extends State<HomeScreen>
   final List<({Widget page, IconData icon, String label, Color accentColor})>
   _pageData = const [
     (
-      page: CalendarScreen(),
-      icon: CupertinoIcons.calendar,
-      label: 'Calendar',
+      page: DailyOverviewScreen(),
+      icon: CupertinoIcons.home,
+      label: 'Today',
       accentColor: CupertinoColors.systemBlue,
     ),
     (
