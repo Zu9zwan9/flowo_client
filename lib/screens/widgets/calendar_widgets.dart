@@ -172,26 +172,26 @@ class CalendarHeader extends StatelessWidget {
                 children: [
                   CupertinoButton(
                     padding: EdgeInsets.zero,
-                    child: const Text('Today'),
                     onPressed: onTodayPressed,
+                    child: const Text('Today'),
                   ),
                   if (onPreviousPressed != null)
                     CupertinoButton(
                       padding: EdgeInsets.zero,
+                      onPressed: onPreviousPressed,
                       child: const Icon(
                         CupertinoIcons.chevron_left,
                         color: CupertinoColors.systemBlue,
                       ),
-                      onPressed: onPreviousPressed,
                     ),
                   if (onNextPressed != null)
                     CupertinoButton(
                       padding: EdgeInsets.zero,
+                      onPressed: onNextPressed,
                       child: const Icon(
                         CupertinoIcons.chevron_right,
                         color: CupertinoColors.systemBlue,
                       ),
-                      onPressed: onNextPressed,
                     ),
                 ],
               ),
@@ -500,8 +500,8 @@ class EmptyStateView extends StatelessWidget {
                     vertical: 12,
                   ),
                   color: CupertinoColors.systemBlue,
-                  child: Text(actionLabel!),
                   onPressed: onActionPressed,
+                  child: Text(actionLabel!),
                 ),
               ],
             ],
@@ -730,5 +730,81 @@ class _DateSelectorState extends State<DateSelector>
       'Sunday',
     ];
     return weekdays[weekday - 1];
+  }
+}
+
+/// A floating action button for adding new tasks, events, or habits
+class CalendarActionButton extends StatelessWidget {
+  final VoidCallback onAddTask;
+  final VoidCallback onAddEvent;
+  final VoidCallback onAddHabit;
+
+  const CalendarActionButton({
+    Key? key,
+    required this.onAddTask,
+    required this.onAddEvent,
+    required this.onAddHabit,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _showActionSheet(context),
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: const BoxDecoration(
+          color: CupertinoColors.systemBlue,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          CupertinoIcons.add,
+          color: CupertinoColors.white,
+          size: 32,
+        ),
+      ),
+    );
+  }
+
+  VoidCallback _showActionSheet(BuildContext context) {
+    return () {
+      showCupertinoModalPopup(
+        context: context,
+        builder:
+            (BuildContext context) => CupertinoActionSheet(
+              title: const Text('Add New'),
+              message: const Text('Choose what you want to create'),
+              actions: <CupertinoActionSheetAction>[
+                CupertinoActionSheetAction(
+                  child: const Text('Add Task'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onAddTask();
+                  },
+                ),
+                CupertinoActionSheetAction(
+                  child: const Text('Add Event'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onAddEvent();
+                  },
+                ),
+                CupertinoActionSheetAction(
+                  child: const Text('Add Habit'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onAddHabit();
+                  },
+                ),
+              ],
+              cancelButton: CupertinoActionSheetAction(
+                child: const Text('Cancel'),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+      );
+    };
   }
 }

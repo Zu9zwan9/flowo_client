@@ -1,17 +1,20 @@
-import 'package:flowo_client/blocs/analytics/analytics_cubit.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/task.dart';
+import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/analytics_service.dart';
+import 'package:flowo_client/services/onboarding_service.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import 'adapters/time_of_day_adapter.dart';
+import 'blocs/analytics/analytics_cubit.dart';
 import 'blocs/tasks_controller/task_manager_cubit.dart';
 import 'blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'models/category.dart';
@@ -104,9 +107,27 @@ void main() async {
     final defaultProfile = UserProfile(
       name: selectedProfile.name,
       email: 'user@example.com',
+      goal: null, // Explicitly set to null
+      onboardingCompleted: false, // Explicitly set to false
     );
     userProfiles.put('current', defaultProfile);
-    appLogger.info('Created default user profile', 'App');
+
+    // Verify the profile was saved
+    final savedProfile = userProfiles.get('current');
+    if (savedProfile == null) {
+      appLogger.error('Failed to save default user profile', 'App');
+    } else {
+      appLogger.info(
+        'Created default user profile: name=${savedProfile.name}, goal=${savedProfile.goal}, onboardingCompleted=${savedProfile.onboardingCompleted}',
+        'App',
+      );
+    }
+  } else {
+    final userProfile = userProfiles.get('current');
+    appLogger.info(
+      'Using existing user profile: name=${userProfile?.name}, goal=${userProfile?.goal}, onboardingCompleted=${userProfile?.onboardingCompleted}',
+      'App',
+    );
   }
 
   final taskManager = TaskManager(
@@ -127,6 +148,7 @@ void main() async {
       providers: [
         Provider<TaskManager>.value(value: taskManager),
         Provider<AnalyticsService>.value(value: analyticsService),
+        Provider<Box<UserProfile>>.value(value: userProfiles),
         ChangeNotifierProvider(create: (_) => ThemeNotifier()),
         BlocProvider<CalendarCubit>(
           create: (context) => CalendarCubit(tasksDB, daysDB, taskManager),
@@ -149,17 +171,39 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     appLogger.info('Building MyApp', 'App');
+
+    // Create onboarding service
+    final userProfileBox = Provider.of<Box<UserProfile>>(context);
+    final onboardingService = OnboardingService(userProfileBox);
+
+    // Check if onboarding is completed
+    final isOnboardingCompleted = onboardingService.isOnboardingCompleted();
+
     return Consumer<ThemeNotifier>(
       builder: (context, themeNotifier, child) {
-        return CupertinoApp(
-          debugShowCheckedModeBanner: false,
-          theme: CupertinoThemeData(
-            brightness: themeNotifier.currentTheme.brightness,
-            primaryColor: themeNotifier.currentTheme.primaryColor,
-            scaffoldBackgroundColor:
-                themeNotifier.currentTheme.scaffoldBackgroundColor,
+        return Provider<OnboardingService>.value(
+          value: onboardingService,
+          child: CupertinoApp(
+            debugShowCheckedModeBanner: false,
+            theme: CupertinoThemeData(
+              brightness: themeNotifier.currentTheme.brightness,
+              primaryColor: themeNotifier.currentTheme.primaryColor,
+              scaffoldBackgroundColor:
+                  themeNotifier.currentTheme.scaffoldBackgroundColor,
+            ),
+            // Add these two lines to support localization:
+            localizationsDelegates: const [
+              DefaultCupertinoLocalizations.delegate,
+              DefaultWidgetsLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', 'US')],
+            home:
+                isOnboardingCompleted
+                    ? const HomeScreen()
+                    : const NameInputScreen(),
           ),
-          home: const HomeScreen(),
         );
       },
     );
