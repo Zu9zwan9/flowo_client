@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:bloc/bloc.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/utils/logger.dart';
@@ -97,10 +99,14 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     DateTime date,
   ) async {
     final dateKey = _formatDateKey(date);
-
+    
     final scheduledTasks = taskManager.daysDB.values
         .where((day) => day.day == dateKey)
         .expand((day) => day.scheduledTasks);
+    
+    logInfo('For date $dateKey, found ${scheduledTasks.length} scheduled tasks');
+
+     // TODO: Find out why scheduledTasks is empty for habits
 
     final grouped = <Task, List<ScheduledTask>>{};
     for (var scheduledTask in scheduledTasks) {
@@ -171,6 +177,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }
 
   void scheduleHabits(){
+    logDebug('Scheduling habits');
     taskManager.manageHabits();
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }

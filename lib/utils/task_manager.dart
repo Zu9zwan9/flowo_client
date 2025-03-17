@@ -192,13 +192,18 @@ class TaskManager {
     List<Task> habits =
         tasksDB.values.where((task) => task.frequency != null).toList();
 
+    if (daysDB.values.isNotEmpty){
+      logDebug(daysDB.values.first.toString() );
+    }
+
     for (Task habit in habits) {
       List<DateTime> scheduledDates = _calculateHabitDates(habit);
 
-      logDebug(scheduledDates.toString());
+      logDebug('Scheduled dates: $scheduledDates');
 
       for (DateTime date in scheduledDates) {
         logDebug(date.toIso8601String().split('T').first);
+
         scheduler.scheduleTask(
           habit,
           userSettings.minSession,

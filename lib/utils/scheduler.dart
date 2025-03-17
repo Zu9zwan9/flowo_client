@@ -88,6 +88,7 @@ class Scheduler {
       String dateKey;
       if (availableDates != null && dateIndex < availableDates.length) {
         dateKey = availableDates[dateIndex++];
+        logDebug('Got available date $dateKey');
       } else if (availableDates != null) {
         logDebug('All available dates exhausted for: ${task.title}');
         return lastScheduledTask;
