@@ -82,19 +82,13 @@ class Scheduler {
     int dateIndex = 0;
     ScheduledTask? lastScheduledTask;
 
-    removePreviousScheduledTasks(task);
+    if (task.frequency == null) {
+      removePreviousScheduledTasks(task);
+      logDebug('No available dates provided for: ${task.title}');
+    }
 
-    while (remainingTime > 0) {
-      String dateKey;
-      if (availableDates != null && dateIndex < availableDates.length) {
-        dateKey = availableDates[dateIndex++];
-        logDebug('Got available date $dateKey');
-      } else if (availableDates != null) {
-        logDebug('All available dates exhausted for: ${task.title}');
-        return lastScheduledTask;
-      } else {
-        dateKey = _formatDateKey(currentDate);
-      }
+    while (remainingTime > 0 || (availableDates != null && availableDates.isNotEmpty)) {
+      String dateKey = _formatDateKey(currentDate);
 
       if (!_isActiveDay(dateKey)) {
         logDebug('Skipping inactive day: $dateKey');
@@ -163,7 +157,7 @@ class Scheduler {
       }
 
       currentDate = currentDate.add(const Duration(days: 1));
-      if (remainingTime > 0 && availableDates == null && dateIndex >= 30) {
+      if (remainingTime > 0 && dateIndex >= 30) {
         logDebug('Exceeded 30 days for: ${task.title}');
         break;
       }
@@ -183,9 +177,12 @@ class Scheduler {
 
     final day = _getOrCreateDay(dateKey);
     final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
-    for (ScheduledTask scheduledTask in sortedTasks){
-      if (scheduledTask.startTime.isBefore(end) && scheduledTask.endTime.isAfter(start)){
-        logDebug('Event overlaps with existing task: ${scheduledTask.parentTaskId}');
+    for (ScheduledTask scheduledTask in sortedTasks) {
+      if (scheduledTask.startTime.isBefore(end) &&
+          scheduledTask.endTime.isAfter(start)) {
+        logDebug(
+          'Event overlaps with existing task: ${scheduledTask.parentTaskId}',
+        );
         return;
       }
     }
@@ -195,7 +192,7 @@ class Scheduler {
       start: start,
       end: end,
       dateKey: dateKey,
-      type: ScheduledTaskType.timeSensitive
+      type: ScheduledTaskType.timeSensitive,
     );
   }
 
