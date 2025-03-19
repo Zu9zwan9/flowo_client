@@ -6,6 +6,8 @@ class CupertinoTaskForm {
   final BuildContext context;
 
   // MARK: - Theme accessors
+  Color get backgroundColor => _backgroundColor;
+  Color get secondaryBackgroundColor => _secondaryBackgroundColor;
 
   /// Gets the current CupertinoTheme from the context
   CupertinoThemeData get _theme => CupertinoTheme.of(context);

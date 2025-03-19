@@ -1,11 +1,12 @@
+import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
-import '../design/cupertino_form_theme.dart';
-import '../design/cupertino_form_widgets.dart';
 import '../models/category.dart';
+import '../models/task_form_data.dart';
 import '../screens/home_screen.dart';
+import '../utils/date_formatter.dart';
 import '../utils/logger.dart';
 
 class AddTaskPage extends StatefulWidget {
@@ -14,27 +15,31 @@ class AddTaskPage extends StatefulWidget {
   const AddTaskPage({super.key, this.selectedDate});
 
   @override
-  AddTaskPageState createState() => AddTaskPageState();
+  State<AddTaskPage> createState() => _AddTaskPageState();
 }
 
-class AddTaskPageState extends State<AddTaskPage>
+class _AddTaskPageState extends State<AddTaskPage>
     with SingleTickerProviderStateMixin {
+  // MARK: - Form data and controllers
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
 
-  late DateTime _selectedDate;
-  late DateTime _selectedTime;
-  String _selectedCategory = 'Brainstorm';
-  int _priority = 1;
-  int? _selectedColor;
-  int _estimatedTime = 0;
+  // Task data model
+  late final TaskFormData _formData;
+
+  // Animation for button feedback
+  late final AnimationController _animationController;
+  late final Animation<double> _buttonScaleAnimation;
+
+  // Available task options
   final List<String> _categoryOptions = [
     'Brainstorm',
     'Design',
     'Workout',
     'Add',
   ];
+
   final List<Color> _colorOptions = [
     CupertinoColors.systemRed,
     CupertinoColors.systemOrange,
@@ -45,19 +50,25 @@ class AddTaskPageState extends State<AddTaskPage>
     CupertinoColors.systemGrey,
   ];
 
-  late AnimationController _animationController;
-  late Animation<double> _buttonScaleAnimation;
-
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.selectedDate ?? DateTime.now();
-    _selectedTime = _selectedDate;
 
+    // Initialize form data
+    _formData = TaskFormData(
+      selectedDate: widget.selectedDate ?? DateTime.now(),
+      selectedTime: widget.selectedDate ?? DateTime.now(),
+      category: 'Brainstorm',
+      priority: 1,
+      estimatedTime: 0,
+    );
+
+    // Setup button animation
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
+
     _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
@@ -73,160 +84,171 @@ class AddTaskPageState extends State<AddTaskPage>
 
   @override
   Widget build(BuildContext context) {
+    // Get form styling helper
+    final form = CupertinoTaskForm(context);
+
     return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('New Task'),
+        backgroundColor: form.backgroundColor,
+        border: null,
+      ),
+      backgroundColor: form.secondaryBackgroundColor,
       child: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(CupertinoFormTheme.horizontalSpacing),
+          padding: const EdgeInsets.symmetric(
+            horizontal: CupertinoTaskForm.horizontalSpacing,
+            vertical: CupertinoTaskForm.verticalSpacing,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CupertinoFormWidgets.formGroup(
-                  title: 'Task Details',
+                // Task Details Section
+                form.sectionTitle('Task Details'),
+                form.formGroup(
                   children: [
-                    CupertinoFormWidgets.textField(
+                    form.textField(
                       controller: _titleController,
                       placeholder: 'Task Name *',
-                      validator: (value) => value!.isEmpty ? 'Required' : null,
+                      autofocus: true,
+                      validator:
+                          (value) => value?.isEmpty == true ? 'Required' : null,
                     ),
-                    SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.textField(
+                    const SizedBox(height: CupertinoTaskForm.elementSpacing),
+                    form.textField(
                       controller: _notesController,
                       placeholder: 'Notes',
                       maxLines: 3,
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
-                  title: 'Deadline',
+
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+
+                // Deadline Section
+                form.sectionTitle('Deadline'),
+                form.formGroup(
                   children: [
-                    CupertinoFormWidgets.selectionButton(
+                    form.selectionButton(
                       label: 'Date',
-                      value: CupertinoFormTheme.formatDate(_selectedDate),
+                      value: DateFormatter.formatDate(_formData.selectedDate),
                       onTap: () => _showDatePicker(context),
-                      color: CupertinoFormTheme.primaryColor,
                       icon: CupertinoIcons.calendar,
                     ),
-                    SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.selectionButton(
+                    form.divider(),
+                    form.selectionButton(
                       label: 'Time',
-                      value: CupertinoFormTheme.formatTime(_selectedTime),
+                      value: DateFormatter.formatTime(_formData.selectedTime),
                       onTap: () => _showTimePicker(context),
-                      color: CupertinoFormTheme.secondaryColor,
                       icon: CupertinoIcons.time,
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
-                  title: 'Estimated Time',
+
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+
+                // Duration Section
+                form.sectionTitle('Estimated Time'),
+                form.formGroup(
                   children: [
-                    CupertinoFormWidgets.selectionButton(
+                    form.selectionButton(
                       label: 'Duration',
-                      value:
-                          '${(_estimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_estimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
-                      onTap: () async {
-                        final duration =
-                            await CupertinoFormWidgets.showDurationPicker(
-                              context: context,
-                              initialHours: _estimatedTime ~/ 3600000,
-                              initialMinutes:
-                                  (_estimatedTime % 3600000) ~/ 60000,
-                            );
-                        if (mounted) setState(() => _estimatedTime = duration);
-                      },
-                      color: CupertinoFormTheme.accentColor,
+                      value: _formatDuration(_formData.estimatedTime),
+                      onTap: () => _showDurationPicker(context),
                       icon: CupertinoIcons.timer,
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
-                  title: 'Category',
+
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+
+                // Category Section
+                form.sectionTitle('Category'),
+                form.formGroup(
                   children: [
-                    CupertinoFormWidgets.segmentedControl(
+                    form.segmentedControl(
                       children: {
                         for (var item in _categoryOptions)
                           item: Padding(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: CupertinoFormTheme.smallSpacing,
-                              vertical: CupertinoFormTheme.smallSpacing / 2,
+                              horizontal: 8,
+                              vertical: 4,
                             ),
                             child: Text(item),
                           ),
                       },
-                      groupValue: _selectedCategory,
+                      groupValue: _formData.category,
                       onValueChanged: _handleCategoryChange,
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
-                  title: 'Priority',
+
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+
+                // Priority Section
+                form.sectionTitle('Priority'),
+                form.formGroup(
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Level: $_priority',
-                          style: CupertinoFormTheme.labelTextStyle,
+                          'Level: ${_formData.priority}',
+                          style: form.labelTextStyle(),
                         ),
                         Text(
-                          _priority <= 3
-                              ? 'Low'
-                              : _priority <= 7
-                              ? 'Medium'
-                              : 'High',
-                          style: CupertinoFormTheme.valueTextStyle.copyWith(
-                            color: CupertinoFormTheme.getPriorityColor(
-                              _priority,
-                            ),
+                          _getPriorityLabel(_formData.priority),
+                          style: form.valueTextStyle.copyWith(
+                            color: _getPriorityColor(_formData.priority),
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: CupertinoFormTheme.smallSpacing),
-                    SizedBox(
-                      width: double.infinity,
-                      child: CupertinoFormWidgets.prioritySlider(
-                        value: _priority,
-                        onChanged: (value) => setState(() => _priority = value),
-                      ),
+                    const SizedBox(height: CupertinoTaskForm.elementSpacing),
+                    form.prioritySlider(
+                      value: _formData.priority.toDouble(),
+                      onChanged:
+                          (value) => setState(
+                            () => _formData.priority = value.toInt(),
+                          ),
+                      getPriorityColor: (value) => _getPriorityColor(value),
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
-                  title: 'Color',
+
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+
+                // Color Section
+                form.sectionTitle('Color'),
+                form.formGroup(
                   children: [
-                    Text(
-                      'Select a color for your task',
-                      style: CupertinoFormTheme.helperTextStyle,
-                    ),
-                    SizedBox(height: CupertinoFormTheme.smallSpacing),
-                    CupertinoFormWidgets.colorPicker(
+                    form.helperText('Select a color for your task'),
+                    const SizedBox(height: CupertinoTaskForm.elementSpacing),
+                    form.colorSelector(
                       colors: _colorOptions,
-                      selectedColor: _selectedColor,
+                      selectedColorValue: _formData.color,
                       onColorSelected:
-                          (color) => setState(() => _selectedColor = color),
+                          (color) => setState(() => _formData.color = color),
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.largeSpacing),
-                ScaleTransition(
-                  scale: _buttonScaleAnimation,
-                  child: CupertinoFormWidgets.primaryButton(
-                    text: 'Save Task',
-                    onPressed: () {
-                      _animationController.forward().then(
-                        (_) => _animationController.reverse(),
-                      );
-                      _saveTask(context);
-                    },
+
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing * 2),
+
+                // Save Button
+                Center(
+                  child: ScaleTransition(
+                    scale: _buttonScaleAnimation,
+                    child: form.primaryButton(
+                      text: 'Save Task',
+                      onPressed: () => _saveTaskWithAnimation(context),
+                    ),
                   ),
                 ),
+
+                const SizedBox(height: CupertinoTaskForm.verticalSpacing),
               ],
             ),
           ),
@@ -235,43 +257,108 @@ class AddTaskPageState extends State<AddTaskPage>
     );
   }
 
+  // MARK: - UI Helpers
+
+  String _formatDuration(int milliseconds) {
+    final hours = milliseconds ~/ 3600000;
+    final minutes = (milliseconds % 3600000) ~/ 60000;
+    return '${hours.toString().padLeft(2, '0')}h ${minutes.toString().padLeft(2, '0')}m';
+  }
+
+  String _getPriorityLabel(int priority) {
+    if (priority <= 3) return 'Low';
+    if (priority <= 7) return 'Medium';
+    return 'High';
+  }
+
+  Color _getPriorityColor(int priority) {
+    if (priority <= 3) {
+      return CupertinoColors.systemBlue.resolveFrom(context);
+    } else if (priority <= 7) {
+      return CupertinoColors.systemOrange.resolveFrom(context);
+    } else {
+      return CupertinoColors.systemRed.resolveFrom(context);
+    }
+  }
+
+  // MARK: - Action Methods
+
+  void _saveTaskWithAnimation(BuildContext context) {
+    // Play button animation
+    _animationController.forward().then((_) => _animationController.reverse());
+
+    // Execute save operation
+    _saveTask(context);
+  }
+
   Future<void> _showDatePicker(BuildContext context) async {
     final now = DateTime.now();
-    final pickedDate = await CupertinoFormWidgets.showDatePicker(
+
+    // Show the date picker
+    final pickedDate = await showCupertinoModalPopup<DateTime>(
       context: context,
-      initialDate: _selectedDate.isBefore(now) ? now : _selectedDate,
-      minimumDate: now,
+      builder:
+          (context) => _buildDatePickerModal(
+            context: context,
+            initialDate:
+                _formData.selectedDate.isBefore(now)
+                    ? now
+                    : _formData.selectedDate,
+            minimumDate: now,
+          ),
     );
+
+    // Update state if a date was picked
     if (pickedDate != null && mounted) {
-      setState(() => _selectedDate = pickedDate);
+      setState(() => _formData.selectedDate = pickedDate);
     }
   }
 
   Future<void> _showTimePicker(BuildContext context) async {
     final now = DateTime.now();
+
+    // Determine the initial time to show
     DateTime initialTime;
-    if (_selectedDate.year == now.year &&
-        _selectedDate.month == now.month &&
-        _selectedDate.day == now.day &&
-        _selectedTime.isBefore(now)) {
+    bool isSameDay = _isSameDay(_formData.selectedDate, now);
+
+    if (isSameDay && _formData.selectedTime.isBefore(now)) {
       initialTime = now;
     } else {
-      initialTime = _selectedTime;
+      initialTime = _formData.selectedTime;
     }
 
-    final pickedTime = await CupertinoFormWidgets.showTimePicker(
+    // Show the time picker
+    final pickedTime = await showCupertinoModalPopup<DateTime>(
       context: context,
-      initialTime: initialTime,
-      minimumDate:
-          _selectedDate.year == now.year &&
-                  _selectedDate.month == now.month &&
-                  _selectedDate.day == now.day
-              ? now
-              : null,
+      builder:
+          (context) => _buildTimePickerModal(
+            context: context,
+            initialTime: initialTime,
+            minimumTime: isSameDay ? now : null,
+          ),
     );
 
+    // Update state if a time was picked
     if (pickedTime != null && mounted) {
-      setState(() => _selectedTime = pickedTime);
+      setState(() => _formData.selectedTime = pickedTime);
+    }
+  }
+
+  Future<void> _showDurationPicker(BuildContext context) async {
+    // Show the duration picker
+    final duration = await showCupertinoModalPopup<int>(
+      context: context,
+      builder:
+          (context) => _buildDurationPickerModal(
+            context: context,
+            initialHours: _formData.estimatedTime ~/ 3600000,
+            initialMinutes: (_formData.estimatedTime % 3600000) ~/ 60000,
+          ),
+    );
+
+    // Update state if a duration was picked
+    if (duration != null && mounted) {
+      setState(() => _formData.estimatedTime = duration);
     }
   }
 
@@ -279,22 +366,28 @@ class AddTaskPageState extends State<AddTaskPage>
     if (value == 'Add') {
       _showAddCategoryDialog(context);
     } else {
-      setState(() => _selectedCategory = value);
+      setState(() => _formData.category = value);
     }
   }
 
   void _showAddCategoryDialog(BuildContext context) {
     final controller = TextEditingController();
+    final form = CupertinoTaskForm(context);
+
     showCupertinoDialog(
       context: context,
       builder:
           (context) => CupertinoAlertDialog(
             title: const Text('Add Custom Category'),
             content: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: CupertinoFormWidgets.textField(
+              padding: const EdgeInsets.only(top: 12),
+              child: CupertinoTextField(
                 controller: controller,
                 placeholder: 'Category Name',
+                padding: const EdgeInsets.all(10),
+                decoration: form.inputDecoration,
+                style: form.inputTextStyle,
+                autofocus: true,
               ),
             ),
             actions: [
@@ -306,19 +399,7 @@ class AddTaskPageState extends State<AddTaskPage>
                 isDefaultAction: true,
                 child: const Text('Add'),
                 onPressed: () {
-                  final newCategory = controller.text.trim();
-                  if (newCategory.isNotEmpty &&
-                      mounted &&
-                      !_categoryOptions.contains(newCategory)) {
-                    setState(() {
-                      _categoryOptions.insert(
-                        _categoryOptions.length - 1,
-                        newCategory,
-                      );
-                      _selectedCategory = newCategory;
-                    });
-                    logInfo('Custom category added: $newCategory');
-                  }
+                  _addNewCategory(controller.text.trim());
                   Navigator.pop(context);
                 },
               ),
@@ -327,47 +408,219 @@ class AddTaskPageState extends State<AddTaskPage>
     );
   }
 
+  void _addNewCategory(String newCategory) {
+    if (newCategory.isNotEmpty &&
+        mounted &&
+        !_categoryOptions.contains(newCategory)) {
+      setState(() {
+        _categoryOptions.insert(_categoryOptions.length - 1, newCategory);
+        _formData.category = newCategory;
+      });
+      logInfo('Custom category added: $newCategory');
+    }
+  }
+
   void _saveTask(BuildContext context) {
+    // Validate the form
     if (!_formKey.currentState!.validate()) {
-      showCupertinoDialog(
-        context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please fill in all required fields.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-      );
+      _showValidationError(context);
       return;
     }
 
-    final selectedTime = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-      _selectedTime.hour,
-      _selectedTime.minute,
+    // Combine date and time
+    final selectedDateTime = DateTime(
+      _formData.selectedDate.year,
+      _formData.selectedDate.month,
+      _formData.selectedDate.day,
+      _formData.selectedTime.hour,
+      _formData.selectedTime.minute,
     );
 
+    // Create the task via BLoC
     context.read<TaskManagerCubit>().createTask(
       title: _titleController.text,
-      priority: _priority,
-      estimatedTime: _estimatedTime,
-      deadline: selectedTime.millisecondsSinceEpoch,
-      category: Category(name: _selectedCategory),
+      priority: _formData.priority,
+      estimatedTime: _formData.estimatedTime,
+      deadline: selectedDateTime.millisecondsSinceEpoch,
+      category: Category(name: _formData.category),
       notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-      color: _selectedColor,
+      color: _formData.color,
     );
 
+    // Log and navigate
+    logInfo('Saved Task: ${_titleController.text}');
     Navigator.pushReplacement(
       context,
       CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),
     );
-    logInfo('Saved Task: ${_titleController.text}');
+  }
+
+  void _showValidationError(BuildContext context) {
+    showCupertinoDialog(
+      context: context,
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Validation Error'),
+            content: const Text('Please fill in all required fields.'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // MARK: - Helper methods
+
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  // MARK: - Modal Builders
+
+  Widget _buildDatePickerModal({
+    required BuildContext context,
+    required DateTime initialDate,
+    required DateTime minimumDate,
+  }) {
+    DateTime? selectedDate = initialDate;
+
+    return Container(
+      height: 300,
+      color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CupertinoButton(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoButton(
+                child: const Text('Done'),
+                onPressed: () => Navigator.pop(context, selectedDate),
+              ),
+            ],
+          ),
+          Expanded(
+            child: CupertinoDatePicker(
+              mode: CupertinoDatePickerMode.date,
+              initialDateTime: initialDate,
+              minimumDate: minimumDate,
+              maximumDate: DateTime.now().add(const Duration(days: 365)),
+              onDateTimeChanged: (date) => selectedDate = date,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimePickerModal({
+    required BuildContext context,
+    required DateTime initialTime,
+    DateTime? minimumTime,
+  }) {
+    DateTime? selectedTime = initialTime;
+
+    return Container(
+      height: 300,
+      color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CupertinoButton(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoButton(
+                child: const Text('Done'),
+                onPressed: () => Navigator.pop(context, selectedTime),
+              ),
+            ],
+          ),
+          Expanded(
+            child: CupertinoDatePicker(
+              mode: CupertinoDatePickerMode.time,
+              initialDateTime: initialTime,
+              minimumDate: minimumTime,
+              use24hFormat: true,
+              minuteInterval: 5,
+              onDateTimeChanged: (time) => selectedTime = time,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDurationPickerModal({
+    required BuildContext context,
+    required int initialHours,
+    required int initialMinutes,
+  }) {
+    int hours = initialHours;
+    int minutes = initialMinutes;
+
+    return Container(
+      height: 300,
+      color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CupertinoButton(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoButton(
+                child: const Text('Done'),
+                onPressed:
+                    () => Navigator.pop(
+                      context,
+                      hours * 3600000 + minutes * 60000,
+                    ),
+              ),
+            ],
+          ),
+          Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: initialHours,
+                    ),
+                    onSelectedItemChanged: (index) => hours = index,
+                    children: [for (var i = 0; i <= 120; i++) Text('$i hours')],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: initialMinutes ~/ 15,
+                    ),
+                    onSelectedItemChanged: (index) => minutes = index * 15,
+                    children: [
+                      for (var i = 0; i < 4; i++) Text('${i * 15} minutes'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
