@@ -70,8 +70,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isUploading = true);
 
     try {
-      final pickedFile =
-          await ImagePicker().pickImage(source: ImageSource.gallery);
+      final pickedFile = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+      );
 
       if (pickedFile != null) {
         // Get the app's documents directory
@@ -153,8 +154,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _emailError = 'Email is required';
       });
       return;
-    } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
-        .hasMatch(_emailController.text)) {
+    } else if (!RegExp(
+      r'^[^@]+@[^@]+\.[^@]+',
+    ).hasMatch(_emailController.text)) {
       setState(() {
         _emailError = 'Enter a valid email address';
       });
@@ -194,18 +196,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         showCupertinoDialog(
           context: context,
-          builder: (_) => CupertinoAlertDialog(
-            title: const Text('Profile Updated'),
-            content: const Text(
-                'Your profile information has been updated successfully.'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () => Navigator.of(context).pop(),
+          builder:
+              (_) => CupertinoAlertDialog(
+                title: const Text('Profile Updated'),
+                content: const Text(
+                  'Your profile information has been updated successfully.',
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
       }
 
@@ -220,17 +224,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         showCupertinoDialog(
           context: context,
-          builder: (_) => CupertinoAlertDialog(
-            title: const Text('Update Failed'),
-            content: Text('Failed to update profile: ${e.toString()}'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () => Navigator.of(context).pop(),
+          builder:
+              (_) => CupertinoAlertDialog(
+                title: const Text('Update Failed'),
+                content: Text('Failed to update profile: ${e.toString()}'),
+                actions: [
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
       }
     }
@@ -239,22 +244,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _deleteAccount() async {
     final confirm = await showCupertinoDialog<bool>(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-            'Are you sure you want to delete your account and all associated data? This action cannot be undone.'),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.of(context).pop(false),
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Delete Account'),
+            content: const Text(
+              'Are you sure you want to delete your account and all associated data? This action cannot be undone.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                child: const Text('Delete'),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
           ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            child: const Text('Delete'),
-            onPressed: () => Navigator.of(context).pop(true),
-          ),
-        ],
-      ),
     );
 
     if (confirm == true && mounted) {
@@ -281,22 +288,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         showCupertinoDialog(
           context: context,
-          builder: (_) => CupertinoAlertDialog(
-            title: const Text('Account Deleted'),
-            content: const Text('Your account has been deleted successfully.'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (mounted) {
-                    Navigator.of(context).pushReplacementNamed('/login');
-                  }
-                },
+          builder:
+              (_) => CupertinoAlertDialog(
+                title: const Text('Account Deleted'),
+                content: const Text(
+                  'Your account has been deleted successfully.',
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    child: const Text('OK'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      if (mounted) {
+                        Navigator.of(context).pushReplacementNamed('/login');
+                      }
+                    },
+                  ),
+                ],
               ),
-            ],
-          ),
         );
         logWarning('Account deleted');
       } catch (e) {
@@ -304,17 +314,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (mounted) {
           showCupertinoDialog(
             context: context,
-            builder: (_) => CupertinoAlertDialog(
-              title: const Text('Error'),
-              content: Text('Failed to delete account: ${e.toString()}'),
-              actions: [
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.of(context).pop(),
+            builder:
+                (_) => CupertinoAlertDialog(
+                  title: const Text('Error'),
+                  content: Text('Failed to delete account: ${e.toString()}'),
+                  actions: [
+                    CupertinoDialogAction(
+                      isDefaultAction: true,
+                      child: const Text('OK'),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           );
         }
       }
@@ -337,8 +348,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Personal Information Section
               Container(
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 decoration: BoxDecoration(
                   color:
                       CupertinoTheme.of(context).brightness == Brightness.dark
@@ -358,7 +371,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(
-                          left: 16.0, top: 16.0, bottom: 8.0),
+                        left: 16.0,
+                        top: 16.0,
+                        bottom: 8.0,
+                      ),
                       child: Text(
                         'PERSONAL INFORMATION',
                         style: TextStyle(
@@ -378,8 +394,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Footer text for personal information
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 8.0,
+                ),
                 child: Text(
                   'Your personal information is used to identify you in the app.',
                   style: TextStyle(
@@ -395,8 +413,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Actions Section
               Container(
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 decoration: BoxDecoration(
                   color:
                       CupertinoTheme.of(context).brightness == Brightness.dark
@@ -499,8 +519,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Danger Zone Section
               Container(
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                margin: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 decoration: BoxDecoration(
                   color:
                       CupertinoTheme.of(context).brightness == Brightness.dark
@@ -520,7 +542,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(
-                          left: 16.0, top: 16.0, bottom: 8.0),
+                        left: 16.0,
+                        top: 16.0,
+                        bottom: 8.0,
+                      ),
                       child: Text(
                         'DANGER ZONE',
                         style: TextStyle(
@@ -564,8 +589,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Footer text for danger zone
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32.0,
+                  vertical: 8.0,
+                ),
                 child: Text(
                   'Deleting your account will permanently remove all your data from the app. This action cannot be undone.',
                   style: TextStyle(
@@ -598,14 +625,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildAvatarSection() {
     // Get initials from name for avatar placeholder
-    final initials = _nameController.text.trim().isNotEmpty
-        ? _nameController.text
-            .split(' ')
-            .map((e) => e.isNotEmpty ? e[0] : '')
-            .take(2)
-            .join()
-            .toUpperCase()
-        : '??';
+    final initials =
+        _nameController.text.trim().isNotEmpty
+            ? _nameController.text
+                .split(' ')
+                .map((e) => e.isNotEmpty ? e[0] : '')
+                .take(2)
+                .join()
+                .toUpperCase()
+            : '??';
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 32.0),
@@ -623,7 +651,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _showAvatarOptions();
               },
               child: Hero(
-                tag: 'profile_avatar',
+                tag: 'profile_avatar1',
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   width: 120,
@@ -643,30 +671,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: _isUploading
-                      ? const CupertinoActivityIndicator(radius: 20)
-                      : _avatarImage != null
+                  child:
+                      _isUploading
+                          ? const CupertinoActivityIndicator(radius: 20)
+                          : _avatarImage != null
                           ? Image.file(
-                              _avatarImage!,
-                              fit: BoxFit.cover,
-                              semanticLabel: 'Your profile picture',
-                            )
+                            _avatarImage!,
+                            fit: BoxFit.cover,
+                            semanticLabel: 'Your profile picture',
+                          )
                           : Center(
-                              child: ExcludeSemantics(
-                                child: Text(
-                                  initials,
-                                  style: TextStyle(
-                                    fontSize: 48,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        CupertinoTheme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? CupertinoColors.white
-                                            : CupertinoColors.black,
-                                  ),
+                            child: ExcludeSemantics(
+                              child: Text(
+                                initials,
+                                style: TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      CupertinoTheme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? CupertinoColors.white
+                                          : CupertinoColors.black,
                                 ),
                               ),
                             ),
+                          ),
                 ),
               ),
             ),
@@ -762,19 +791,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               placeholder: 'Enter your name',
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: CupertinoTheme.of(context).brightness == Brightness.dark
-                    ? CupertinoColors.systemGrey6.darkColor
-                    : CupertinoColors.systemGrey6,
+                color:
+                    CupertinoTheme.of(context).brightness == Brightness.dark
+                        ? CupertinoColors.systemGrey6.darkColor
+                        : CupertinoColors.systemGrey6,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: _nameError != null
-                      ? CupertinoColors.systemRed
-                      : CupertinoColors.systemGrey4,
+                  color:
+                      _nameError != null
+                          ? CupertinoColors.systemRed
+                          : CupertinoColors.systemGrey4,
                 ),
               ),
               style: const TextStyle(fontSize: 16),
-              placeholderStyle:
-                  const TextStyle(color: CupertinoColors.systemGrey2),
+              placeholderStyle: const TextStyle(
+                color: CupertinoColors.systemGrey2,
+              ),
               prefix: const Padding(
                 padding: EdgeInsets.only(left: 12.0),
                 child: Icon(
@@ -852,19 +884,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               placeholder: 'Enter your email',
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: CupertinoTheme.of(context).brightness == Brightness.dark
-                    ? CupertinoColors.systemGrey6.darkColor
-                    : CupertinoColors.systemGrey6,
+                color:
+                    CupertinoTheme.of(context).brightness == Brightness.dark
+                        ? CupertinoColors.systemGrey6.darkColor
+                        : CupertinoColors.systemGrey6,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: _emailError != null
-                      ? CupertinoColors.systemRed
-                      : CupertinoColors.systemGrey4,
+                  color:
+                      _emailError != null
+                          ? CupertinoColors.systemRed
+                          : CupertinoColors.systemGrey4,
                 ),
               ),
               style: const TextStyle(fontSize: 16),
-              placeholderStyle:
-                  const TextStyle(color: CupertinoColors.systemGrey2),
+              placeholderStyle: const TextStyle(
+                color: CupertinoColors.systemGrey2,
+              ),
               prefix: const Padding(
                 padding: EdgeInsets.only(left: 12.0),
                 child: Icon(
@@ -923,9 +958,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Text(
         text,
         style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: CupertinoColors.white),
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: CupertinoColors.white,
+        ),
       ),
     );
   }
@@ -936,136 +972,136 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Avatar Options'),
-        message: const Text('Choose how you want to set your profile picture'),
-        actions: [
-          // Upload from gallery option with icon
-          CupertinoActionSheetAction(
-            isDefaultAction: true,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  CupertinoIcons.photo,
-                  color: CupertinoColors.activeBlue,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Upload from Gallery',
-                  style: TextStyle(
-                    color: CupertinoColors.activeBlue,
-                  ),
-                ),
-              ],
+      builder:
+          (context) => CupertinoActionSheet(
+            title: const Text('Avatar Options'),
+            message: const Text(
+              'Choose how you want to set your profile picture',
             ),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              _changeAvatar();
-              Navigator.pop(context);
-            },
-          ),
-
-          // Generate from initials option with icon
-          CupertinoActionSheetAction(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  CupertinoIcons.textformat_abc,
-                  color: CupertinoColors.activeBlue,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Generate from Initials',
-                  style: TextStyle(
-                    color: CupertinoColors.activeBlue,
-                  ),
-                ),
-              ],
-            ),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              _generateAvatar();
-              Navigator.pop(context);
-            },
-          ),
-
-          // Take photo option with icon (if camera is available)
-          if (Platform.isIOS || Platform.isAndroid)
-            CupertinoActionSheetAction(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    CupertinoIcons.camera,
-                    color: CupertinoColors.activeBlue,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Take Photo',
-                    style: TextStyle(
+            actions: [
+              // Upload from gallery option with icon
+              CupertinoActionSheetAction(
+                isDefaultAction: true,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      CupertinoIcons.photo,
                       color: CupertinoColors.activeBlue,
+                      size: 20,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Upload from Gallery',
+                      style: TextStyle(color: CupertinoColors.activeBlue),
+                    ),
+                  ],
+                ),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  _changeAvatar();
+                  Navigator.pop(context);
+                },
               ),
-              onPressed: () async {
-                HapticFeedback.selectionClick();
-                Navigator.pop(context);
 
-                // Take photo using camera
-                setState(() => _isUploading = true);
-                try {
-                  final pickedFile = await ImagePicker().pickImage(
-                    source: ImageSource.camera,
-                    preferredCameraDevice: CameraDevice.front,
-                  );
+              // Generate from initials option with icon
+              CupertinoActionSheetAction(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      CupertinoIcons.textformat_abc,
+                      color: CupertinoColors.activeBlue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Generate from Initials',
+                      style: TextStyle(color: CupertinoColors.activeBlue),
+                    ),
+                  ],
+                ),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  _generateAvatar();
+                  Navigator.pop(context);
+                },
+              ),
 
-                  if (pickedFile != null) {
-                    // Get the app's documents directory
-                    final appDir = await getApplicationDocumentsDirectory();
-                    final fileName =
-                        'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                    final savedImage = File('${appDir.path}/$fileName');
+              // Take photo option with icon (if camera is available)
+              if (Platform.isIOS || Platform.isAndroid)
+                CupertinoActionSheetAction(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        CupertinoIcons.camera,
+                        color: CupertinoColors.activeBlue,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Take Photo',
+                        style: TextStyle(color: CupertinoColors.activeBlue),
+                      ),
+                    ],
+                  ),
+                  onPressed: () async {
+                    HapticFeedback.selectionClick();
+                    Navigator.pop(context);
 
-                    // Copy the picked image to the app's documents directory
-                    await File(pickedFile.path).copy(savedImage.path);
+                    // Take photo using camera
+                    setState(() => _isUploading = true);
+                    try {
+                      final pickedFile = await ImagePicker().pickImage(
+                        source: ImageSource.camera,
+                        preferredCameraDevice: CameraDevice.front,
+                      );
 
-                    setState(() {
-                      _avatarImage = savedImage;
-                      _isUploading = false;
-                    });
+                      if (pickedFile != null) {
+                        // Get the app's documents directory
+                        final appDir = await getApplicationDocumentsDirectory();
+                        final fileName =
+                            'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                        final savedImage = File('${appDir.path}/$fileName');
 
-                    // Update the avatar path in the user profile
-                    if (_currentProfile != null) {
-                      _currentProfile!.avatarPath = savedImage.path;
-                      await _userProfilesBox.put('current', _currentProfile!);
+                        // Copy the picked image to the app's documents directory
+                        await File(pickedFile.path).copy(savedImage.path);
+
+                        setState(() {
+                          _avatarImage = savedImage;
+                          _isUploading = false;
+                        });
+
+                        // Update the avatar path in the user profile
+                        if (_currentProfile != null) {
+                          _currentProfile!.avatarPath = savedImage.path;
+                          await _userProfilesBox.put(
+                            'current',
+                            _currentProfile!,
+                          );
+                        }
+
+                        logInfo('Avatar saved to: ${savedImage.path}');
+                      } else {
+                        setState(() => _isUploading = false);
+                      }
+                    } catch (e) {
+                      setState(() => _isUploading = false);
+                      logError('Error taking photo: $e');
                     }
-
-                    logInfo('Avatar saved to: ${savedImage.path}');
-                  } else {
-                    setState(() => _isUploading = false);
-                  }
-                } catch (e) {
-                  setState(() => _isUploading = false);
-                  logError('Error taking photo: $e');
-                }
+                  },
+                ),
+            ],
+            cancelButton: CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              child: const Text('Cancel'),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.pop(context);
               },
             ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          isDestructiveAction: true,
-          child: const Text('Cancel'),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
-          },
-        ),
-      ),
+          ),
     );
   }
 }

@@ -445,6 +445,7 @@ class _AddTaskPageState extends State<AddTaskPage>
       category: Category(name: _formData.category),
       notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       color: _formData.color,
+      instances: [],
     );
 
     // Log and navigate

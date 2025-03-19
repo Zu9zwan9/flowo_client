@@ -910,6 +910,7 @@ class HabitScreenState extends State<HabitScreen> {
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         color: _selectedColor,
         frequency: repeatRule,
+        instances: [],
       );
     } else {
       // Update existing habit

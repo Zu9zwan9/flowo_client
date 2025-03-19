@@ -252,6 +252,11 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }
 
   Widget _buildTaskSection(String title, List<ScheduledTask> tasks) {
+    final sortedTasks = List<ScheduledTask>.from(tasks)..sort((a, b) {
+      final cmp = a.startTime.compareTo(b.startTime);
+      return cmp != 0 ? cmp : a.endTime.compareTo(b.endTime);
+    });
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
       child: Column(
@@ -259,7 +264,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
         children: [
           _buildSectionHeader(title),
           const SizedBox(height: 10),
-          if (tasks.isEmpty)
+          if (sortedTasks.isEmpty)
             Text(
               'No tasks scheduled for $title',
               style: TextStyle(
@@ -272,7 +277,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
               ),
             )
           else
-            ...tasks.map((task) => _buildTaskItem(task)).toList(),
+            ...sortedTasks.map((task) => _buildTaskItem(task)).toList(),
         ],
       ),
     );
