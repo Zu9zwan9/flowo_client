@@ -29,6 +29,16 @@ class TaskListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final backgroundColor = CupertinoColors.systemBackground.resolveFrom(
+      context,
+    );
+    final textColor = CupertinoColors.label.resolveFrom(context);
+    final secondaryTextColor = CupertinoColors.secondaryLabel.resolveFrom(
+      context,
+    );
+    final taskColor = task.color != null ? Color(task.color!) : categoryColor;
+
     return CupertinoButton(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       onPressed: () {
@@ -38,26 +48,33 @@ class TaskListItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: CupertinoColors.white,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: CupertinoColors.black.withOpacity(0.1),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow:
+              isDarkMode
+                  ? [
+                    BoxShadow(
+                      color: CupertinoColors.black.withOpacity(0.3),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                  : [
+                    BoxShadow(
+                      color: CupertinoColors.systemGrey4.withOpacity(0.2),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
         ),
         child: Row(
           children: [
             Container(
               width: 4,
-              height: 40,
+              height: 46,
               decoration: BoxDecoration(
-                color: task.color != null ? Color(task.color!) : categoryColor,
-                borderRadius: const BorderRadius.horizontal(
-                  left: Radius.circular(2),
-                ),
+                color: taskColor,
+                borderRadius: BorderRadius.circular(2),
               ),
             ),
             const SizedBox(width: 12),
@@ -71,8 +88,10 @@ class TaskListItem extends StatelessWidget {
                       context,
                     ).textTheme.textStyle.copyWith(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: CupertinoColors.label,
+                      fontWeight: FontWeight.w600,
+                      color: task.isDone ? secondaryTextColor : textColor,
+                      decoration:
+                          task.isDone ? TextDecoration.lineThrough : null,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -81,9 +100,11 @@ class TaskListItem extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       task.notes!,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: CupertinoColors.systemGrey,
+                        color: secondaryTextColor,
+                        decoration:
+                            task.isDone ? TextDecoration.lineThrough : null,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -101,7 +122,7 @@ class TaskListItem extends StatelessWidget {
                       ? CupertinoIcons.chevron_down
                       : CupertinoIcons.chevron_right,
                   size: 20,
-                  color: CupertinoColors.systemGrey,
+                  color: secondaryTextColor,
                 ),
               ),
             CupertinoButton(
@@ -109,18 +130,22 @@ class TaskListItem extends StatelessWidget {
               onPressed: onToggleCompletion,
               child: Icon(
                 task.isDone
-                    ? CupertinoIcons.check_mark_circled
+                    ? CupertinoIcons.check_mark_circled_solid
                     : CupertinoIcons.circle,
                 color:
                     task.isDone
-                        ? CupertinoColors.activeGreen
-                        : CupertinoColors.systemGrey,
+                        ? CupertinoColors.activeGreen.resolveFrom(context)
+                        : secondaryTextColor,
                 size: 24,
               ),
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,
-              child: const Icon(CupertinoIcons.pencil, size: 24),
+              child: Icon(
+                CupertinoIcons.pencil,
+                size: 24,
+                color: secondaryTextColor,
+              ),
               onPressed: () {
                 HapticFeedback.selectionClick();
                 onEdit();
@@ -128,7 +153,11 @@ class TaskListItem extends StatelessWidget {
             ),
             CupertinoButton(
               padding: EdgeInsets.zero,
-              child: const Icon(CupertinoIcons.delete, size: 24),
+              child: Icon(
+                CupertinoIcons.delete,
+                size: 24,
+                color: CupertinoColors.destructiveRed.resolveFrom(context),
+              ),
               onPressed: () {
                 HapticFeedback.selectionClick();
                 onDelete();

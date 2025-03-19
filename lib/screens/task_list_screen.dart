@@ -105,20 +105,25 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+
     return CupertinoPageScaffold(
-      backgroundColor: CupertinoColors.systemGrey6,
-      navigationBar: const CupertinoNavigationBar(
+      backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
+      navigationBar: CupertinoNavigationBar(
         middle: Text('Reminders'),
         backgroundColor: CupertinoColors.systemGrey6,
         border: null,
       ),
-      child: Stack(
-        children: [
-          SafeArea(
-            child: Column(
+      child: SafeArea(
+        child: Stack(
+          children: [
+            Column(
               children: [
                 const SizedBox(height: 8),
-                TaskSearchBar(controller: _searchController),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: TaskSearchBar(controller: _searchController),
+                ),
                 const SizedBox(height: 8),
                 TaskTypeFilter(
                   selectedFilter: _selectedFilter,
@@ -133,28 +138,28 @@ class _TaskListScreenState extends State<TaskListScreen> {
                 Expanded(child: _buildTaskList(context)),
               ],
             ),
-          ),
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TaskActionButton(
-                  onPressed: () => _showAddTaskDialog(context),
-                  icon: CupertinoIcons.add,
-                  label: 'Add Task',
-                ),
-                const SizedBox(height: 8),
-                TaskActionButton(
-                  onPressed: () => _showScheduleDialog(context),
-                  icon: CupertinoIcons.calendar,
-                  label: 'Schedule',
-                ),
-              ],
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TaskActionButton(
+                    onPressed: () => _showAddTaskDialog(context),
+                    icon: CupertinoIcons.add,
+                    label: 'Add Task',
+                  ),
+                  const SizedBox(height: 8),
+                  TaskActionButton(
+                    onPressed: () => _showScheduleDialog(context),
+                    icon: CupertinoIcons.calendar,
+                    label: 'Schedule',
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -235,147 +240,167 @@ class _TaskListScreenState extends State<TaskListScreen> {
     String category,
     List<Task> tasks,
     bool isExpanded,
-  ) => Container(
-    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-    decoration: BoxDecoration(
-      color: CupertinoColors.white,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: CupertinoColors.systemGrey5),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        CupertinoButton(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          onPressed: () {
-            HapticFeedback.selectionClick();
-            setState(() => _expandedCategories[category] = !isExpanded);
-          },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    category,
-                    style: CupertinoTheme.of(
-                      context,
-                    ).textTheme.navTitleTextStyle.copyWith(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: CupertinoColors.label,
+  ) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: CupertinoTheme.of(context).barBackgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color:
+                isDarkMode
+                    ? CupertinoColors.black.withOpacity(0.2)
+                    : CupertinoColors.systemGrey5.withOpacity(0.5),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            onPressed: () {
+              HapticFeedback.selectionClick();
+              setState(() => _expandedCategories[category] = !isExpanded);
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      category,
+                      style: CupertinoTheme.of(context)
+                          .textTheme
+                          .navTitleTextStyle
+                          .copyWith(fontSize: 17, fontWeight: FontWeight.w600),
+                      semanticsLabel: '$category category',
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: CupertinoColors.systemGrey6,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${tasks.length}',
-                      style: const TextStyle(
-                        color: CupertinoColors.systemGrey,
-                        fontSize: 14,
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            isDarkMode
+                                ? CupertinoColors.systemGrey6.darkColor
+                                : CupertinoColors.systemGrey6,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${tasks.length}',
+                        style: TextStyle(
+                          color:
+                              CupertinoTheme.of(
+                                context,
+                              ).textTheme.tabLabelTextStyle.color,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              Icon(
-                isExpanded
-                    ? CupertinoIcons.chevron_down
-                    : CupertinoIcons.chevron_right,
-                size: 20,
-                color: CupertinoColors.systemGrey,
-              ),
-            ],
-          ),
-        ),
-        if (isExpanded) ...[
-          const CupertinoDivider(),
-          ...tasks.map((task) {
-            final hasSubtasks = task.subtasks.isNotEmpty;
-            final isExpanded = _expandedTasks[task.id] ?? false;
-            return Column(
-              children: [
-                TaskListItem(
-                  task: task,
-                  onTap: () => _onTaskTap(context, task),
-                  onEdit: () => _editTask(context, task),
-                  onDelete: () => _deleteTask(context, task),
-                  categoryColor: CategoryUtils.getCategoryColor(
-                    task.category.name,
-                  ),
-                  hasSubtasks: hasSubtasks,
-                  isExpanded: isExpanded,
-                  onToggleExpand:
-                      hasSubtasks
-                          ? () {
-                            HapticFeedback.selectionClick();
-                            setState(() {
-                              _expandedTasks[task.id] = !isExpanded;
-                            });
-                          }
-                          : null,
-                  onToggleCompletion:
-                      () => _toggleTaskCompletion(context, task),
+                  ],
                 ),
-                if (hasSubtasks && isExpanded)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 20),
-                    child: Column(
-                      children:
-                          task.subtasks.map((subtask) {
-                            return Column(
-                              children: [
-                                const CupertinoDivider(),
-                                TaskListItem(
-                                  task: subtask,
-                                  onTap: () => _onTaskTap(context, subtask),
-                                  onEdit: () => _editTask(context, subtask),
-                                  onDelete: () => _deleteTask(context, subtask),
-                                  categoryColor: CategoryUtils.getCategoryColor(
-                                    subtask.category.name,
-                                  ),
-                                  hasSubtasks: subtask.subtasks.isNotEmpty,
-                                  isExpanded:
-                                      _expandedTasks[subtask.id] ?? false,
-                                  onToggleExpand:
-                                      subtask.subtasks.isNotEmpty
-                                          ? () {
-                                            HapticFeedback.selectionClick();
-                                            setState(() {
-                                              _expandedTasks[subtask.id] =
-                                                  !(_expandedTasks[subtask
-                                                          .id] ??
-                                                      false);
-                                            });
-                                          }
-                                          : null,
-                                  onToggleCompletion:
-                                      () => _toggleTaskCompletion(
-                                        context,
-                                        subtask,
-                                      ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                    ),
-                  ),
-                if (task != tasks.last) const CupertinoDivider(),
+                Icon(
+                  isExpanded
+                      ? CupertinoIcons.chevron_down
+                      : CupertinoIcons.chevron_right,
+                  size: 20,
+                  color: CupertinoColors.systemGrey,
+                ),
               ],
-            );
-          }),
+            ),
+          ),
+          if (isExpanded) ...[
+            const CupertinoDivider(),
+            ...tasks.map((task) {
+              final hasSubtasks = task.subtasks.isNotEmpty;
+              final isExpanded = _expandedTasks[task.id] ?? false;
+              return Column(
+                children: [
+                  TaskListItem(
+                    task: task,
+                    onTap: () => _onTaskTap(context, task),
+                    onEdit: () => _editTask(context, task),
+                    onDelete: () => _deleteTask(context, task),
+                    categoryColor: CategoryUtils.getCategoryColor(
+                      task.category.name,
+                    ),
+                    hasSubtasks: hasSubtasks,
+                    isExpanded: isExpanded,
+                    onToggleExpand:
+                        hasSubtasks
+                            ? () {
+                              HapticFeedback.selectionClick();
+                              setState(() {
+                                _expandedTasks[task.id] = !isExpanded;
+                              });
+                            }
+                            : null,
+                    onToggleCompletion:
+                        () => _toggleTaskCompletion(context, task),
+                  ),
+                  if (hasSubtasks && isExpanded)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 20),
+                      child: Column(
+                        children:
+                            task.subtasks.map((subtask) {
+                              return Column(
+                                children: [
+                                  const CupertinoDivider(),
+                                  TaskListItem(
+                                    task: subtask,
+                                    onTap: () => _onTaskTap(context, subtask),
+                                    onEdit: () => _editTask(context, subtask),
+                                    onDelete:
+                                        () => _deleteTask(context, subtask),
+                                    categoryColor:
+                                        CategoryUtils.getCategoryColor(
+                                          subtask.category.name,
+                                        ),
+                                    hasSubtasks: subtask.subtasks.isNotEmpty,
+                                    isExpanded:
+                                        _expandedTasks[subtask.id] ?? false,
+                                    onToggleExpand:
+                                        subtask.subtasks.isNotEmpty
+                                            ? () {
+                                              HapticFeedback.selectionClick();
+                                              setState(() {
+                                                _expandedTasks[subtask.id] =
+                                                    !(_expandedTasks[subtask
+                                                            .id] ??
+                                                        false);
+                                              });
+                                            }
+                                            : null,
+                                    onToggleCompletion:
+                                        () => _toggleTaskCompletion(
+                                          context,
+                                          subtask,
+                                        ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                      ),
+                    ),
+                  if (task != tasks.last) const CupertinoDivider(),
+                ],
+              );
+            }),
+          ],
         ],
-      ],
-    ),
-  );
+      ),
+    );
+  }
 
   void _onTaskTap(BuildContext context, Task task) {
     Navigator.push(
@@ -428,58 +453,70 @@ class _TaskListScreenState extends State<TaskListScreen> {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context) => Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      CupertinoButton(
-        padding: EdgeInsets.zero,
-        onPressed: () {
-          HapticFeedback.mediumImpact();
-          Navigator.pushReplacement(
-            context,
-            CupertinoPageRoute(
-              builder: (_) => const HomeScreen(initialIndex: 2),
+  void _toggleTaskCompletion(BuildContext context, Task task) {
+    HapticFeedback.selectionClick();
+
+    // Use the TaskManagerCubit to toggle the completion status
+    final tasksCubit = context.read<TaskManagerCubit>();
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    tasksCubit.toggleTaskCompletion(task).then((isCompleted) {
+      // Clear the cache to refresh the task list
+      _clearCache();
+
+      // Show a confirmation message
+      final message =
+          isCompleted
+              ? 'Task "${task.title}" marked as completed'
+              : 'Task "${task.title}" marked as incomplete';
+
+      // Show a non-intrusive overlay notification
+      final overlay = OverlayEntry(
+        builder:
+            (context) => Positioned(
+              bottom: 80,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color:
+                        isDarkMode
+                            ? CupertinoColors.darkBackgroundGray.withOpacity(
+                              0.9,
+                            )
+                            : CupertinoColors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: CupertinoColors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    message,
+                    style: TextStyle(
+                      color:
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          );
-        },
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: CupertinoColors.activeBlue,
-          ),
-          child: const Icon(
-            CupertinoIcons.add,
-            color: CupertinoColors.white,
-            size: 28,
-          ),
-        ),
-      ),
-      const SizedBox(height: 8),
-      CupertinoButton(
-        padding: EdgeInsets.zero,
-        onPressed: () {
-          HapticFeedback.mediumImpact();
-          _showScheduleDialog(context);
-          _showScheduleConfirmation();
-        },
-        child: Container(
-          width: 56,
-          height: 56,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: CupertinoColors.activeGreen,
-          ),
-          child: const Icon(
-            CupertinoIcons.calendar,
-            color: CupertinoColors.white,
-            size: 28,
-          ),
-        ),
-      ),
-    ],
-  );
+      );
+
+      Overlay.of(context).insert(overlay);
+      // Auto-dismiss the notification after a short delay
+      Future.delayed(const Duration(seconds: 1), () {
+        overlay.remove();
+      });
+    });
+  }
 
   void _showScheduleConfirmation() {
     showCupertinoDialog(
@@ -505,38 +542,5 @@ class _TaskListScreenState extends State<TaskListScreen> {
             ],
           ),
     );
-  }
-
-  /// Toggle the completion status of a task
-  void _toggleTaskCompletion(BuildContext context, Task task) {
-    HapticFeedback.selectionClick();
-
-    // Use the TaskManagerCubit to toggle the completion status
-    final tasksCubit = context.read<TaskManagerCubit>();
-    tasksCubit.toggleTaskCompletion(task).then((isCompleted) {
-      // Clear the cache to refresh the task list
-      _clearCache();
-
-      // Show a confirmation message
-      final message =
-          isCompleted
-              ? 'Task "${task.title}" marked as completed'
-              : 'Task "${task.title}" marked as incomplete';
-
-      // Show a snackbar or toast message (not available in Cupertino)
-      // Instead, we'll show a quick dialog that auto-dismisses
-      showCupertinoDialog(
-        context: context,
-        barrierDismissible: true,
-        builder: (context) => CupertinoAlertDialog(content: Text(message)),
-      );
-
-      // Auto-dismiss the dialog after a short delay
-      Future.delayed(const Duration(seconds: 1), () {
-        if (Navigator.canPop(context)) {
-          Navigator.pop(context);
-        }
-      });
-    });
   }
 }

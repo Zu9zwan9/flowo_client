@@ -70,14 +70,14 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Today'),
-        backgroundColor: CupertinoColors.systemBackground,
+        backgroundColor: CupertinoTheme.of(context).barBackgroundColor,
         border: null,
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: _navigateToCalendar,
-          child: const Icon(
+          child: Icon(
             CupertinoIcons.calendar,
-            color: CupertinoColors.activeBlue,
+            color: CupertinoTheme.of(context).primaryColor,
           ),
         ),
       ),
@@ -122,6 +122,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
 
   Widget _buildHeader() {
     final formattedDate = DateFormat('EEEE, MMMM d').format(_today);
+    final textTheme = CupertinoTheme.of(context);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
@@ -130,26 +131,28 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
         children: [
           Text(
             '$_greeting, $_userName',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: CupertinoColors.label,
+              color: CupertinoTheme.of(context).textTheme.textStyle.color,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             formattedDate,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
-              color: CupertinoColors.secondaryLabel,
+              color:
+                  CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color,
             ),
           ),
           const SizedBox(height: 16),
           Text(
             'For today, we have the following tasks:',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: CupertinoColors.secondaryLabel,
+              color:
+                  CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color,
             ),
           ),
           const SizedBox(height: 20),
@@ -217,7 +220,12 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
         children: [
           _buildSectionHeader(title),
           const SizedBox(height: 10),
-          const CupertinoActivityIndicator(),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: CupertinoActivityIndicator(),
+            ),
+          ),
         ],
       ),
     );
@@ -233,7 +241,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
           const SizedBox(height: 10),
           Text(
             'Error loading tasks: $error',
-            style: const TextStyle(
+            style: TextStyle(
               color: CupertinoColors.destructiveRed,
               fontSize: 14,
             ),
@@ -254,8 +262,11 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
           if (tasks.isEmpty)
             Text(
               'No tasks scheduled for $title',
-              style: const TextStyle(
-                color: CupertinoColors.secondaryLabel,
+              style: TextStyle(
+                color:
+                    CupertinoTheme.of(
+                      context,
+                    ).textTheme.tabLabelTextStyle.color,
                 fontSize: 14,
                 fontStyle: FontStyle.italic,
               ),
@@ -272,14 +283,21 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
-            color: CupertinoColors.label,
+            color: CupertinoTheme.of(context).textTheme.textStyle.color,
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(child: Container(height: 1, color: CupertinoColors.separator)),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: CupertinoTheme.of(
+              context,
+            ).barBackgroundColor.withOpacity(0.4),
+          ),
+        ),
       ],
     );
   }
@@ -291,6 +309,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
 
     final startTime = DateTimeFormatter.formatTime(scheduledTask.startTime);
     final endTime = DateTimeFormatter.formatTime(scheduledTask.endTime);
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -299,15 +318,25 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: CupertinoColors.systemBackground,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
-                color: CupertinoColors.systemGrey5.withOpacity(0.5),
+                color:
+                    isDarkMode
+                        ? CupertinoColors.black.withOpacity(0.3)
+                        : CupertinoColors.systemGrey5.withOpacity(0.5),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
+            border: Border.all(
+              color:
+                  isDarkMode
+                      ? CupertinoColors.systemGrey4.withOpacity(0.2)
+                      : CupertinoColors.systemGrey5,
+              width: 0.5,
+            ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -327,18 +356,24 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                   children: [
                     Text(
                       task.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: CupertinoColors.label,
+                        color:
+                            CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle.color,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '$startTime - $endTime',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: CupertinoColors.secondaryLabel,
+                        color:
+                            CupertinoTheme.of(
+                              context,
+                            ).textTheme.tabLabelTextStyle.color,
                       ),
                     ),
                   ],
@@ -351,7 +386,9 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                 color:
                     task.isDone
                         ? CupertinoColors.activeGreen
-                        : CupertinoColors.systemGrey3,
+                        : CupertinoTheme.of(
+                          context,
+                        ).textTheme.tabLabelTextStyle.color,
                 size: 22,
               ),
             ],
@@ -362,23 +399,41 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }
 
   Color _getCategoryColor(String category) {
+    // Use dynamic colors that adapt to light/dark mode
+    final brightness = CupertinoTheme.of(context).brightness;
+    final isDark = brightness == Brightness.dark;
+
     switch (category.toLowerCase()) {
       case 'work':
-        return CupertinoColors.systemBlue;
+        return isDark
+            ? CupertinoColors.systemBlue.darkColor
+            : CupertinoColors.systemBlue;
       case 'personal':
-        return CupertinoColors.systemGreen;
+        return isDark
+            ? CupertinoColors.systemGreen.darkColor
+            : CupertinoColors.systemGreen;
       case 'health':
-        return CupertinoColors.systemRed;
+        return isDark
+            ? CupertinoColors.systemRed.darkColor
+            : CupertinoColors.systemRed;
       case 'education':
-        return CupertinoColors.systemOrange;
+        return isDark
+            ? CupertinoColors.systemOrange.darkColor
+            : CupertinoColors.systemOrange;
       case 'social':
-        return CupertinoColors.systemPurple;
+        return isDark
+            ? CupertinoColors.systemPurple.darkColor
+            : CupertinoColors.systemPurple;
       default:
-        return CupertinoColors.systemIndigo;
+        return isDark
+            ? CupertinoColors.systemIndigo.darkColor
+            : CupertinoColors.systemIndigo;
     }
   }
 
   void _showTaskDetails(Task task, ScheduledTask scheduledTask) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+
     showCupertinoModalPopup(
       context: context,
       builder:
@@ -391,22 +446,47 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                 const SizedBox(height: 8),
                 Text(
                   '${DateTimeFormatter.formatTime(scheduledTask.startTime)} - ${DateTimeFormatter.formatTime(scheduledTask.endTime)}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
                 if (task.notes != null && task.notes!.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(task.notes!, style: const TextStyle(fontSize: 14)),
+                  Text(
+                    task.notes!,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color:
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
+                    ),
+                  ),
                 ],
                 const SizedBox(height: 8),
-                Text(
-                  'Category: ${task.category.name}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: _getCategoryColor(task.category.name),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Category: ${task.category.name}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color:
+                            CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle.color,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -418,7 +498,12 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                   task.isDone = !task.isDone;
                   context.read<CalendarCubit>().updateTask(task);
                 },
-                child: Text(task.isDone ? 'Mark as Undone' : 'Mark as Done'),
+                child: Text(
+                  task.isDone ? 'Mark as Undone' : 'Mark as Done',
+                  style: TextStyle(
+                    color: CupertinoTheme.of(context).primaryColor,
+                  ),
+                ),
               ),
             ],
             cancelButton: CupertinoActionSheetAction(

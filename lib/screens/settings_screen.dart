@@ -374,25 +374,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
               footerText:
                   'Choose a theme that suits your preferences and needs.',
               children: [
+                // dart
                 SettingsSegmentedItem(
                   label: 'Appearance',
                   subtitle: 'Select your preferred visual style',
-                  groupValue: themeNotifier.currentThemeName,
+                  groupValue:
+                      themeNotifier.themeMode == AppTheme.light
+                          ? 'light'
+                          : themeNotifier.themeMode == AppTheme.dark
+                          ? 'dark'
+                          : 'adhd',
                   children: const {
-                    'Light': Padding(
+                    'light': Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8.0),
                       child: Text('Light'),
                     ),
-                    'Night': Padding(
+                    'dark': Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8.0),
                       child: Text('Night'),
                     ),
-                    'ADHD': Padding(
+                    'adhd': Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8.0),
                       child: Text('ADHD'),
                     ),
                   },
-                  onValueChanged: (value) => themeNotifier.setTheme(value),
+                  onValueChanged: (value) {
+                    AppTheme themeValue;
+                    switch (value) {
+                      case 'light':
+                        themeValue = AppTheme.light;
+                        break;
+                      case 'dark':
+                        themeValue = AppTheme.dark;
+                        break;
+                      case 'adhd':
+                        themeValue = AppTheme.adhd;
+                        break;
+                      default:
+                        themeValue = AppTheme.light;
+                    }
+                    themeNotifier.setThemeMode(themeValue);
+                  },
                 ),
               ],
             ),

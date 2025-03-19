@@ -1,84 +1,105 @@
 import 'package:flutter/cupertino.dart';
 
-/// A collection of reusable Cupertino form widgets for task forms
-/// that follow Apple's Human Interface Guidelines.
 class CupertinoTaskForm {
-  // Typography
-  static const TextStyle sectionTitleStyle = TextStyle(
+  const CupertinoTaskForm(this.context);
+
+  final BuildContext context;
+
+  // MARK: - Theme accessors
+
+  /// Gets the current CupertinoTheme from the context
+  CupertinoThemeData get _theme => CupertinoTheme.of(context);
+
+  /// Gets appropriate text color based on current brightness
+  Color get _textColor => _theme.textTheme.textStyle.color!;
+
+  /// Gets appropriate label color based on current brightness
+  Color get _labelColor => _theme.primaryColor;
+
+  /// Gets appropriate background color based on current brightness
+  Color get _backgroundColor =>
+      CupertinoColors.systemBackground.resolveFrom(context);
+
+  /// Gets appropriate secondary background color
+  Color get _secondaryBackgroundColor =>
+      CupertinoColors.systemGroupedBackground.resolveFrom(context);
+
+  /// Gets a muted text color for placeholders and helper text
+  Color get _mutedTextColor => CupertinoColors.systemGrey.resolveFrom(context);
+
+  /// Gets border color appropriate for the current theme
+  Color get _borderColor => CupertinoColors.systemGrey4.resolveFrom(context);
+
+  // MARK: - Typography
+
+  /// Section title style that adapts to the current theme
+  TextStyle get sectionTitleStyle => TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
-    color: CupertinoColors.label,
+    color: _textColor,
   );
 
-  static const TextStyle inputTextStyle = TextStyle(
-    fontSize: 17,
-    color: CupertinoColors.label,
-  );
+  /// Input text style that adapts to the current theme
+  TextStyle get inputTextStyle => TextStyle(fontSize: 17, color: _textColor);
 
-  static const TextStyle placeholderStyle = TextStyle(
-    fontSize: 17,
-    color: CupertinoColors.systemGrey,
-  );
+  /// Placeholder style that adapts to the current theme
+  TextStyle get placeholderStyle =>
+      TextStyle(fontSize: 17, color: _mutedTextColor);
 
-  static const TextStyle buttonTextStyle = TextStyle(
-    fontSize: 17,
-    fontWeight: FontWeight.w600,
-  );
+  /// Button text style with appropriate weight
+  TextStyle get buttonTextStyle =>
+      const TextStyle(fontSize: 17, fontWeight: FontWeight.w600);
 
-  static const TextStyle labelTextStyle = TextStyle(
-    fontSize: 15,
-    color: CupertinoColors.systemBlue,
-  );
+  /// Label style that adapts to the current theme
+  TextStyle labelTextStyle({Color? color}) =>
+      TextStyle(fontSize: 15, color: color ?? _labelColor);
 
-  static const TextStyle valueTextStyle = TextStyle(
-    fontSize: 17,
-    color: CupertinoColors.label,
-  );
+  /// Value text style that adapts to the current theme
+  TextStyle get valueTextStyle => TextStyle(fontSize: 17, color: _textColor);
 
-  static const TextStyle helperTextStyle = TextStyle(
-    fontSize: 13,
-    color: CupertinoColors.systemGrey,
-  );
+  /// Helper text style that adapts to the current theme
+  TextStyle get helperTextStyle =>
+      TextStyle(fontSize: 13, color: _mutedTextColor);
 
-  // Spacing
+  // MARK: - Spacing Constants
+
   static const double verticalSpacing = 16.0;
   static const double horizontalSpacing = 16.0;
   static const double sectionSpacing = 24.0;
   static const double elementSpacing = 12.0;
 
-  // Colors
-  static const Color primaryColor = CupertinoColors.systemBlue;
-  static const Color secondaryColor = CupertinoColors.systemGreen;
-  static const Color accentColor = CupertinoColors.systemOrange;
-  static const Color backgroundColor = CupertinoColors.systemBackground;
-  static const Color groupedBackgroundColor =
-      CupertinoColors.systemGroupedBackground;
+  // MARK: - Decorations
 
-  // Decorations
-  static BoxDecoration inputDecoration = BoxDecoration(
-    color: CupertinoColors.systemBackground,
+  /// Adaptive input decoration that respects the current theme
+  BoxDecoration get inputDecoration => BoxDecoration(
+    color: _backgroundColor,
     borderRadius: BorderRadius.circular(10),
-    border: Border.all(color: CupertinoColors.systemGrey4),
+    border: Border.all(color: _borderColor),
   );
 
-  static BoxDecoration buttonDecoration(Color color) => BoxDecoration(
-    color: color.withOpacity(0.1),
+  /// Button decoration with adaptive coloring
+  BoxDecoration buttonDecoration({Color? color}) => BoxDecoration(
+    color: (color ?? _theme.primaryColor).withOpacity(0.1),
     borderRadius: BorderRadius.circular(10),
   );
 
+  /// Standard padding for input fields
   static const EdgeInsets inputPadding = EdgeInsets.symmetric(
     vertical: 12,
     horizontal: 16,
   );
 
+  /// Standard padding for buttons
   static const EdgeInsets buttonPadding = EdgeInsets.symmetric(
     vertical: 12,
     horizontal: 16,
   );
 
+  // MARK: - Widget Factories
+
   /// Creates a section title with consistent styling
-  static Widget sectionTitle(String title) {
+  Widget sectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(title, style: sectionTitleStyle),
@@ -86,13 +107,16 @@ class CupertinoTaskForm {
   }
 
   /// Creates a styled text field with consistent appearance
-  static Widget textField({
+  Widget textField({
     required TextEditingController controller,
     required String placeholder,
     int maxLines = 1,
     String? Function(String?)? validator,
     TextInputType keyboardType = TextInputType.text,
     bool autofocus = false,
+    FocusNode? focusNode,
+    VoidCallback? onEditingComplete,
+    ValueChanged<String>? onChanged,
   }) {
     return CupertinoTextField(
       controller: controller,
@@ -104,32 +128,38 @@ class CupertinoTaskForm {
       placeholderStyle: placeholderStyle,
       keyboardType: keyboardType,
       autofocus: autofocus,
+      focusNode: focusNode,
+      onEditingComplete: onEditingComplete,
+      onChanged: onChanged,
+      cursorColor: _theme.primaryColor,
     );
   }
 
   /// Creates a styled button for date/time selection
-  static Widget selectionButton({
+  Widget selectionButton({
     required String label,
     required String value,
     required VoidCallback onTap,
-    Color color = primaryColor,
+    Color? color,
     IconData? icon,
   }) {
+    final buttonColor = color ?? _theme.primaryColor;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: buttonPadding,
-        decoration: buttonDecoration(color),
+        decoration: buttonDecoration(color: buttonColor),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: color, size: 18),
+                  Icon(icon, color: buttonColor, size: 18),
                   const SizedBox(width: 8),
                 ],
-                Text(label, style: labelTextStyle.copyWith(color: color)),
+                Text(label, style: labelTextStyle(color: buttonColor)),
               ],
             ),
             Text(value, style: valueTextStyle),
@@ -140,38 +170,51 @@ class CupertinoTaskForm {
   }
 
   /// Creates a segmented control with consistent styling
-  static Widget segmentedControl<T extends Object>({
+  Widget segmentedControl<T extends Object>({
     required Map<T, Widget> children,
     required T groupValue,
     required ValueChanged<T> onValueChanged,
-    Color selectedColor = primaryColor,
+    Color? selectedColor,
   }) {
+    final themeColor = selectedColor ?? _theme.primaryColor;
+
     return CupertinoSegmentedControl<T>(
       children: children,
       groupValue: groupValue,
       onValueChanged: onValueChanged,
-      borderColor: CupertinoColors.systemGrey4,
-      selectedColor: selectedColor,
-      unselectedColor: CupertinoColors.systemBackground,
-      pressedColor: selectedColor.withOpacity(0.2),
+      borderColor: _borderColor,
+      selectedColor: themeColor,
+      unselectedColor: _backgroundColor,
+      pressedColor: themeColor.withOpacity(0.2),
     );
   }
 
   /// Creates a primary action button
-  static Widget primaryButton({
+  Widget primaryButton({
     required String text,
     required VoidCallback onPressed,
+    bool isLoading = false,
+    bool isDestructive = false,
   }) {
+    final color =
+        isDestructive
+            ? CupertinoColors.destructiveRed.resolveFrom(context)
+            : null;
+
     return CupertinoButton.filled(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
       borderRadius: BorderRadius.circular(10),
-      onPressed: onPressed,
-      child: Text(text, style: buttonTextStyle),
+      onPressed: isLoading ? null : onPressed,
+      disabledColor: CupertinoColors.systemGrey3.resolveFrom(context),
+      child:
+          isLoading
+              ? const CupertinoActivityIndicator()
+              : Text(text, style: buttonTextStyle),
     );
   }
 
   /// Creates a color selector with consistent styling
-  static Widget colorSelector({
+  Widget colorSelector({
     required List<Color> colors,
     required int? selectedColorValue,
     required Function(int?) onColorSelected,
@@ -184,6 +227,9 @@ class CupertinoTaskForm {
         itemBuilder: (context, index) {
           if (index == 0) {
             // "No color" option
+            final isSelected = selectedColorValue == null;
+            final borderColor = isSelected ? _theme.primaryColor : _borderColor;
+
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: GestureDetector(
@@ -193,20 +239,14 @@ class CupertinoTaskForm {
                   height: 40,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: CupertinoColors.white,
-                    border: Border.all(
-                      color:
-                          selectedColorValue == null
-                              ? primaryColor
-                              : CupertinoColors.systemGrey,
-                      width: 2,
-                    ),
+                    color: _backgroundColor,
+                    border: Border.all(color: borderColor, width: 2),
                   ),
                   child:
-                      selectedColorValue == null
+                      isSelected
                           ? Icon(
                             CupertinoIcons.checkmark,
-                            color: primaryColor,
+                            color: _theme.primaryColor,
                             size: 20,
                           )
                           : null,
@@ -218,6 +258,7 @@ class CupertinoTaskForm {
           final color = colors[index - 1];
           final colorValue = color.value;
           final isSelected = selectedColorValue == colorValue;
+          final borderColor = isSelected ? _theme.primaryColor : _borderColor;
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -229,11 +270,7 @@ class CupertinoTaskForm {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: color,
-                  border: Border.all(
-                    color:
-                        isSelected ? primaryColor : CupertinoColors.systemGrey,
-                    width: 2,
-                  ),
+                  border: Border.all(color: borderColor, width: 2),
                 ),
                 child:
                     isSelected
@@ -252,7 +289,7 @@ class CupertinoTaskForm {
   }
 
   /// Creates an improved priority slider with visual indicators
-  static Widget prioritySlider({
+  Widget prioritySlider({
     required double value,
     required ValueChanged<double> onChanged,
     required Color Function(int) getPriorityColor,
@@ -277,19 +314,14 @@ class CupertinoTaskForm {
             value: value,
             onChanged: onChanged,
             activeColor: getPriorityColor(value.toInt()),
-            thumbColor: CupertinoColors.white,
+            thumbColor: _backgroundColor,
           ),
         ),
         const SizedBox(height: 4),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: List.generate(5, (index) {
-            final value = index * 2 + 1; // 1, 3, 5, 7, 9
-            return Container(
-              width: 2,
-              height: 8,
-              color: CupertinoColors.systemGrey4,
-            );
+            return Container(width: 2, height: 8, color: _borderColor);
           }),
         ),
       ],
@@ -297,15 +329,15 @@ class CupertinoTaskForm {
   }
 
   /// Creates a styled form group container
-  static Widget formGroup({
+  Widget formGroup({
     required List<Widget> children,
     EdgeInsets padding = const EdgeInsets.all(16),
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: CupertinoColors.systemBackground,
+        color: _backgroundColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: CupertinoColors.systemGrey5),
+        border: Border.all(color: _borderColor),
       ),
       padding: padding,
       child: Column(
@@ -316,10 +348,32 @@ class CupertinoTaskForm {
   }
 
   /// Creates a helper text with consistent styling
-  static Widget helperText(String text) {
+  Widget helperText(String text) {
     return Padding(
       padding: const EdgeInsets.only(top: 4.0),
       child: Text(text, style: helperTextStyle),
+    );
+  }
+
+  /// Creates a divider with appropriate styling for the current theme
+  Widget divider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Container(height: 0.5, color: _borderColor),
+    );
+  }
+
+  /// Creates a secondary action button
+  Widget secondaryButton({
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return CupertinoButton(
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+      borderRadius: BorderRadius.circular(10),
+      color: CupertinoColors.systemGrey5.resolveFrom(context),
+      onPressed: onPressed,
+      child: Text(text, style: buttonTextStyle.copyWith(color: _textColor)),
     );
   }
 }
