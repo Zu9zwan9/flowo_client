@@ -1,17 +1,10 @@
-import 'dart:math';
-
 import 'package:bloc/bloc.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/utils/logger.dart';
-import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 import '../../models/category.dart';
-import '../../models/coordinates.dart';
-import '../../models/day.dart';
-import '../../models/notification_type.dart';
 import '../../models/repeat_rule.dart';
-import '../../models/scheduled_task_type.dart';
 import '../../models/task.dart';
 import '../../models/user_settings.dart';
 import '../../utils/task_manager.dart';
@@ -77,10 +70,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       color: color,
     );
 
-    taskManager.scheduler.scheduleEvent(
-        task: task,
-        start: start,
-        end: end);
+    taskManager.scheduler.scheduleEvent(task: task, start: start, end: end);
 
     // Update the state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
@@ -99,14 +89,16 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     DateTime date,
   ) async {
     final dateKey = _formatDateKey(date);
-    
+
     final scheduledTasks = taskManager.daysDB.values
         .where((day) => day.day == dateKey)
         .expand((day) => day.scheduledTasks);
-    
-    logInfo('For date $dateKey, found ${scheduledTasks.length} scheduled tasks');
 
-     // TODO: Find out why scheduledTasks is empty for habits
+    logInfo(
+      'For date $dateKey, found ${scheduledTasks.length} scheduled tasks',
+    );
+
+    // TODO: Find out why scheduledTasks is empty for habits
 
     final grouped = <Task, List<ScheduledTask>>{};
     for (var scheduledTask in scheduledTasks) {
@@ -176,7 +168,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  void scheduleHabits(){
+  void scheduleHabits() {
     logDebug('Scheduling habits');
     taskManager.manageHabits();
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));

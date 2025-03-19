@@ -60,6 +60,7 @@ class _AddItemScreenState extends State<AddItemScreen>
 
   @override
   Widget build(BuildContext context) {
+    final theme = CupertinoFormTheme(context);
     return CupertinoPageScaffold(
       navigationBar: const CupertinoNavigationBar(
         middle: Text('Add Item'),
@@ -98,15 +99,12 @@ class _AddItemScreenState extends State<AddItemScreen>
                   ),
                 },
                 groupValue: _tabController.index,
-                onValueChanged: (index) {
-                  setState(() {
-                    _tabController.index = index;
-                  });
-                },
+                onValueChanged:
+                    (index) => setState(() => _tabController.index = index),
                 borderColor: CupertinoColors.systemGrey4,
-                selectedColor: CupertinoFormTheme.primaryColor,
+                selectedColor: theme.primaryColor,
                 unselectedColor: CupertinoColors.systemBackground,
-                pressedColor: CupertinoFormTheme.primaryColor.withOpacity(0.2),
+                pressedColor: theme.primaryColor.withOpacity(0.2),
               ),
             ),
             Expanded(

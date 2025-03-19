@@ -70,16 +70,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isUploading = true);
 
     try {
-      final pickedFile =
-          await ImagePicker().pickImage(source: ImageSource.gallery);
+      final pickedFile = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+      );
 
       if (pickedFile != null) {
-        // Get the app's documents directory
         final appDir = await getApplicationDocumentsDirectory();
         final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final savedImage = File('${appDir.path}/$fileName');
 
-        // Copy the picked image to the app's documents directory
         await File(pickedFile.path).copy(savedImage.path);
 
         setState(() {
@@ -87,7 +86,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isUploading = false;
         });
 
-        // Update the avatar path in the user profile
         if (_currentProfile != null) {
           _currentProfile!.avatarPath = savedImage.path;
           await _userProfilesBox.put('current', _currentProfile!);
@@ -107,14 +105,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isUploading = true);
 
     try {
-      // For initials avatar, we'll just clear the file
-      // so the initials will be shown in the UI
       setState(() {
         _avatarImage = null;
         _isUploading = false;
       });
 
-      // Clear the avatar path in the user profile
       if (_currentProfile != null) {
         _currentProfile!.avatarPath = null;
         await _userProfilesBox.put('current', _currentProfile!);
@@ -127,19 +122,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Form validation error messages
   String? _nameError;
   String? _emailError;
 
-  // Validate form fields and update profile if valid
   Future<void> _validateAndUpdateProfile() async {
-    // Reset error messages
     setState(() {
       _nameError = null;
       _emailError = null;
     });
 
-    // Validate name
     if (_nameController.text.trim().isEmpty) {
       setState(() {
         _nameError = 'Name is required';
@@ -147,21 +138,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    // Validate email
     if (_emailController.text.trim().isEmpty) {
       setState(() {
         _emailError = 'Email is required';
       });
       return;
-    } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
-        .hasMatch(_emailController.text)) {
+    } else if (!RegExp(
+      r'^[^@]+@[^@]+\.[^@]+',
+    ).hasMatch(_emailController.text)) {
       setState(() {
         _emailError = 'Enter a valid email address';
       });
       return;
     }
 
-    // If validation passes, update profile
     await _updateProfile();
   }
 
@@ -170,42 +160,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       if (_currentProfile == null) {
-        // Create a new profile if none exists
         _currentProfile = UserProfile(
           name: _nameController.text,
           email: _emailController.text,
           avatarPath: _avatarImage?.path,
         );
       } else {
-        // Update existing profile
         _currentProfile!.name = _nameController.text;
         _currentProfile!.email = _emailController.text;
         _currentProfile!.avatarPath = _avatarImage?.path;
       }
 
-      // Save to Hive
       await _userProfilesBox.put('current', _currentProfile!);
 
       setState(() => _isUpdating = false);
 
       if (mounted) {
-        // Add haptic feedback for success
         HapticFeedback.mediumImpact();
 
         showCupertinoDialog(
           context: context,
-          builder: (_) => CupertinoAlertDialog(
-            title: const Text('Profile Updated'),
-            content: const Text(
-                'Your profile information has been updated successfully.'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () => Navigator.of(context).pop(),
+          builder:
+              (_) => CupertinoAlertDialog(
+                title: const Text('Profile Updated'),
+                content: const Text(
+                  'Your profile information has been updated successfully.',
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
       }
 
@@ -215,22 +203,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       logError('Error updating profile: $e');
 
       if (mounted) {
-        // Add haptic feedback for error
         HapticFeedback.vibrate();
 
         showCupertinoDialog(
           context: context,
-          builder: (_) => CupertinoAlertDialog(
-            title: const Text('Update Failed'),
-            content: Text('Failed to update profile: ${e.toString()}'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () => Navigator.of(context).pop(),
+          builder:
+              (_) => CupertinoAlertDialog(
+                title: const Text('Update Failed'),
+                content: Text('Failed to update profile: ${e.toString()}'),
+                actions: [
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
       }
     }
@@ -239,27 +227,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _deleteAccount() async {
     final confirm = await showCupertinoDialog<bool>(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-            'Are you sure you want to delete your account and all associated data? This action cannot be undone.'),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.of(context).pop(false),
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Delete Account'),
+            content: const Text(
+              'Are you sure you want to delete your account and all associated data? This action cannot be undone.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                child: const Text('Delete'),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
           ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            child: const Text('Delete'),
-            onPressed: () => Navigator.of(context).pop(true),
-          ),
-        ],
-      ),
     );
 
     if (confirm == true && mounted) {
       try {
-        // Delete the avatar file if it exists
         if (_currentProfile?.avatarPath != null) {
           final avatarFile = File(_currentProfile!.avatarPath!);
           if (avatarFile.existsSync()) {
@@ -268,11 +257,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
         }
 
-        // Delete the user profile from the Hive box
         await _userProfilesBox.delete('current');
         _currentProfile = null;
 
-        // Clear the form
         setState(() {
           _nameController.clear();
           _emailController.clear();
@@ -281,22 +268,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         showCupertinoDialog(
           context: context,
-          builder: (_) => CupertinoAlertDialog(
-            title: const Text('Account Deleted'),
-            content: const Text('Your account has been deleted successfully.'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  if (mounted) {
-                    Navigator.of(context).pushReplacementNamed('/login');
-                  }
-                },
+          builder:
+              (_) => CupertinoAlertDialog(
+                title: const Text('Account Deleted'),
+                content: const Text(
+                  'Your account has been deleted successfully.',
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    child: const Text('OK'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      if (mounted) {
+                        Navigator.of(context).pushReplacementNamed('/login');
+                      }
+                    },
+                  ),
+                ],
               ),
-            ],
-          ),
         );
         logWarning('Account deleted');
       } catch (e) {
@@ -304,17 +294,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (mounted) {
           showCupertinoDialog(
             context: context,
-            builder: (_) => CupertinoAlertDialog(
-              title: const Text('Error'),
-              content: Text('Failed to delete account: ${e.toString()}'),
-              actions: [
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.of(context).pop(),
+            builder:
+                (_) => CupertinoAlertDialog(
+                  title: const Text('Error'),
+                  content: Text('Failed to delete account: ${e.toString()}'),
+                  actions: [
+                    CupertinoDialogAction(
+                      isDefaultAction: true,
+                      child: const Text('OK'),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           );
         }
       }
@@ -323,295 +314,285 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: const Text('Profile'),
-        backgroundColor: CupertinoTheme.of(context).barBackgroundColor,
-      ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              _buildAvatarSection(),
-
-              // Personal Information Section
-              Container(
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                decoration: BoxDecoration(
-                  color:
-                      CupertinoTheme.of(context).brightness == Brightness.dark
-                          ? CupertinoColors.systemBackground.darkColor
-                          : CupertinoColors.systemBackground,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: CupertinoColors.systemGrey5.withOpacity(0.3),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          left: 16.0, top: 16.0, bottom: 8.0),
-                      child: Text(
-                        'PERSONAL INFORMATION',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: CupertinoColors.systemGrey,
-                          letterSpacing: 0.1,
-                        ),
-                      ),
-                    ),
-                    _buildNameField(),
-                    _buildEmailField(),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _buildAvatarSection(),
+            Container(
+              margin: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
               ),
-
-              // Footer text for personal information
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
-                child: Text(
-                  'Your personal information is used to identify you in the app.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: CupertinoColors.systemGrey,
-                    height: 1.3,
+              decoration: BoxDecoration(
+                color:
+                    CupertinoTheme.of(context).brightness == Brightness.dark
+                        ? CupertinoColors.systemBackground.darkColor
+                        : CupertinoColors.systemBackground,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: CupertinoColors.systemGrey5.withOpacity(0.3),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
                   ),
-                  textAlign: TextAlign.center,
-                ),
+                ],
               ),
-
-              const SizedBox(height: 16),
-
-              // Actions Section
-              Container(
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                decoration: BoxDecoration(
-                  color:
-                      CupertinoTheme.of(context).brightness == Brightness.dark
-                          ? CupertinoColors.systemBackground.darkColor
-                          : CupertinoColors.systemBackground,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: CupertinoColors.systemGrey5.withOpacity(0.3),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      top: 16.0,
+                      bottom: 8.0,
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Update Profile Button
-                    CupertinoButton(
-                      padding: const EdgeInsets.all(16),
-                      onPressed: () {
-                        HapticFeedback.mediumImpact();
-                        _validateAndUpdateProfile();
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            CupertinoIcons.person_crop_circle_badge_checkmark,
-                            color: CupertinoColors.activeBlue,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Update Profile',
-                              style: TextStyle(
-                                color: CupertinoTheme.of(context).primaryColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          Icon(
-                            CupertinoIcons.chevron_right,
-                            color: CupertinoColors.systemGrey2,
-                            size: 18,
-                          ),
-                        ],
+                    child: Text(
+                      'PERSONAL INFORMATION',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: CupertinoColors.systemGrey,
+                        letterSpacing: 0.1,
                       ),
                     ),
-
-                    // Divider
-                    Container(
-                      height: 0.5,
-                      margin: const EdgeInsets.symmetric(horizontal: 16),
-                      color: CupertinoColors.systemGrey5,
-                    ),
-
-                    // Analytics Button
-                    CupertinoButton(
-                      padding: const EdgeInsets.all(16),
-                      onPressed: () {
-                        HapticFeedback.selectionClick();
-                        Navigator.of(context).push(
-                          CupertinoPageRoute(
-                            builder: (context) => const AnalyticsScreen(),
-                          ),
-                        );
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            CupertinoIcons.graph_circle,
-                            color: CupertinoColors.activeOrange,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'View Analytics & Insights',
-                              style: TextStyle(
-                                color: CupertinoTheme.of(context).primaryColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
+                  ),
+                  _buildNameField(),
+                  _buildEmailField(),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32.0,
+                vertical: 8.0,
+              ),
+              child: Text(
+                'Your personal information is used to identify you in the app.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: CupertinoColors.systemGrey,
+                  height: 1.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              margin: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              decoration: BoxDecoration(
+                color:
+                    CupertinoTheme.of(context).brightness == Brightness.dark
+                        ? CupertinoColors.systemBackground.darkColor
+                        : CupertinoColors.systemBackground,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: CupertinoColors.systemGrey5.withOpacity(0.3),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  CupertinoButton(
+                    padding: const EdgeInsets.all(16),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      _validateAndUpdateProfile();
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.person_crop_circle_badge_checkmark,
+                          color: CupertinoColors.activeBlue,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Update Profile',
+                            style: TextStyle(
+                              color: CupertinoTheme.of(context).primaryColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          Icon(
-                            CupertinoIcons.chevron_right,
-                            color: CupertinoColors.systemGrey2,
-                            size: 18,
+                        ),
+                        Icon(
+                          CupertinoIcons.chevron_right,
+                          color: CupertinoColors.systemGrey2,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    height: 0.5,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    color: CupertinoColors.systemGrey5,
+                  ),
+                  CupertinoButton(
+                    padding: const EdgeInsets.all(16),
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.of(context).push(
+                        CupertinoPageRoute(
+                          builder: (context) => const AnalyticsScreen(),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.graph_circle,
+                          color: CupertinoColors.activeOrange,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'View Analytics & Insights',
+                            style: TextStyle(
+                              color: CupertinoTheme.of(context).primaryColor,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ],
+                        ),
+                        Icon(
+                          CupertinoIcons.chevron_right,
+                          color: CupertinoColors.systemGrey2,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              margin: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              decoration: BoxDecoration(
+                color:
+                    CupertinoTheme.of(context).brightness == Brightness.dark
+                        ? CupertinoColors.systemBackground.darkColor
+                        : CupertinoColors.systemBackground,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: CupertinoColors.systemGrey5.withOpacity(0.3),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      top: 16.0,
+                      bottom: 8.0,
+                    ),
+                    child: Text(
+                      'DANGER ZONE',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: CupertinoColors.systemRed,
+                        letterSpacing: 0.1,
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Danger Zone Section
-              Container(
-                margin:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                decoration: BoxDecoration(
-                  color:
-                      CupertinoTheme.of(context).brightness == Brightness.dark
-                          ? CupertinoColors.systemBackground.darkColor
-                          : CupertinoColors.systemBackground,
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(
-                      color: CupertinoColors.systemGrey5.withOpacity(0.3),
-                      blurRadius: 5,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(
-                          left: 16.0, top: 16.0, bottom: 8.0),
-                      child: Text(
-                        'DANGER ZONE',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                  ),
+                  CupertinoButton(
+                    padding: const EdgeInsets.all(16),
+                    onPressed: () {
+                      HapticFeedback.heavyImpact();
+                      _deleteAccount();
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.delete,
                           color: CupertinoColors.systemRed,
-                          letterSpacing: 0.1,
+                          size: 24,
                         ),
-                      ),
-                    ),
-                    CupertinoButton(
-                      padding: const EdgeInsets.all(16),
-                      onPressed: () {
-                        HapticFeedback.heavyImpact();
-                        _deleteAccount();
-                      },
-                      child: Row(
-                        children: [
-                          Icon(
-                            CupertinoIcons.delete,
-                            color: CupertinoColors.systemRed,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Delete Account',
-                              style: TextStyle(
-                                color: CupertinoColors.systemRed,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Delete Account',
+                            style: TextStyle(
+                              color: CupertinoColors.systemRed,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
-
-              // Footer text for danger zone
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
-                child: Text(
-                  'Deleting your account will permanently remove all your data from the app. This action cannot be undone.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: CupertinoColors.systemGrey,
-                    height: 1.3,
                   ),
-                  textAlign: TextAlign.center,
-                ),
+                ],
               ),
-
-              // Version info at the bottom
-              Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Text(
-                  'Flowo v1.0.0',
-                  style: TextStyle(
-                    color: CupertinoColors.systemGrey,
-                    fontSize: 12,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 32.0,
+                vertical: 8.0,
               ),
-            ],
-          ),
+              child: Text(
+                'Deleting your account will permanently remove all your data from the app. This action cannot be undone.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: CupertinoColors.systemGrey,
+                  height: 1.3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Text(
+                'Flowo v1.0.0',
+                style: TextStyle(
+                  color: CupertinoColors.systemGrey,
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildAvatarSection() {
-    // Get initials from name for avatar placeholder
-    final initials = _nameController.text.trim().isNotEmpty
-        ? _nameController.text
-            .split(' ')
-            .map((e) => e.isNotEmpty ? e[0] : '')
-            .take(2)
-            .join()
-            .toUpperCase()
-        : '??';
+    final initials =
+        _nameController.text.trim().isNotEmpty
+            ? _nameController.text
+                .split(' ')
+                .map((e) => e.isNotEmpty ? e[0] : '')
+                .take(2)
+                .join()
+                .toUpperCase()
+            : '??';
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 32.0),
       child: Column(
         children: [
-          // Avatar with Hero animation for smooth transitions
           Semantics(
             label: 'Profile picture',
             hint: 'Double tap to change your profile picture',
@@ -643,36 +624,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ],
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: _isUploading
-                      ? const CupertinoActivityIndicator(radius: 20)
-                      : _avatarImage != null
+                  child:
+                      _isUploading
+                          ? const CupertinoActivityIndicator(radius: 20)
+                          : _avatarImage != null
                           ? Image.file(
-                              _avatarImage!,
-                              fit: BoxFit.cover,
-                              semanticLabel: 'Your profile picture',
-                            )
+                            _avatarImage!,
+                            fit: BoxFit.cover,
+                            semanticLabel: 'Your profile picture',
+                          )
                           : Center(
-                              child: ExcludeSemantics(
-                                child: Text(
-                                  initials,
-                                  style: TextStyle(
-                                    fontSize: 48,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        CupertinoTheme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? CupertinoColors.white
-                                            : CupertinoColors.black,
-                                  ),
+                            child: ExcludeSemantics(
+                              child: Text(
+                                initials,
+                                style: TextStyle(
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      CupertinoTheme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? CupertinoColors.white
+                                          : CupertinoColors.black,
                                 ),
                               ),
                             ),
+                          ),
                 ),
               ),
             ),
           ),
           const SizedBox(height: 12),
-          // Change avatar button with icon
           Semantics(
             label: 'Change avatar button',
             hint: 'Double tap to change your profile picture',
@@ -704,7 +685,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-          // Display user name if available
           if (_nameController.text.trim().isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
@@ -762,19 +742,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               placeholder: 'Enter your name',
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: CupertinoTheme.of(context).brightness == Brightness.dark
-                    ? CupertinoColors.systemGrey6.darkColor
-                    : CupertinoColors.systemGrey6,
+                color:
+                    CupertinoTheme.of(context).brightness == Brightness.dark
+                        ? CupertinoColors.systemGrey6.darkColor
+                        : CupertinoColors.systemGrey6,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: _nameError != null
-                      ? CupertinoColors.systemRed
-                      : CupertinoColors.systemGrey4,
+                  color:
+                      _nameError != null
+                          ? CupertinoColors.systemRed
+                          : CupertinoColors.systemGrey4,
                 ),
               ),
               style: const TextStyle(fontSize: 16),
-              placeholderStyle:
-                  const TextStyle(color: CupertinoColors.systemGrey2),
+              placeholderStyle: const TextStyle(
+                color: CupertinoColors.systemGrey2,
+              ),
               prefix: const Padding(
                 padding: EdgeInsets.only(left: 12.0),
                 child: Icon(
@@ -793,7 +776,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   });
                 }
               },
-              // Improve keyboard accessibility
               autofocus: false,
               autocorrect: true,
               enableSuggestions: true,
@@ -804,7 +786,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.only(top: 6.0, left: 12.0),
               child: Semantics(
                 label: 'Name error: $_nameError',
-                liveRegion: true, // Announce changes to this widget
+                liveRegion: true,
                 child: Text(
                   _nameError!,
                   style: const TextStyle(
@@ -852,19 +834,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               placeholder: 'Enter your email',
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: CupertinoTheme.of(context).brightness == Brightness.dark
-                    ? CupertinoColors.systemGrey6.darkColor
-                    : CupertinoColors.systemGrey6,
+                color:
+                    CupertinoTheme.of(context).brightness == Brightness.dark
+                        ? CupertinoColors.systemGrey6.darkColor
+                        : CupertinoColors.systemGrey6,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: _emailError != null
-                      ? CupertinoColors.systemRed
-                      : CupertinoColors.systemGrey4,
+                  color:
+                      _emailError != null
+                          ? CupertinoColors.systemRed
+                          : CupertinoColors.systemGrey4,
                 ),
               ),
               style: const TextStyle(fontSize: 16),
-              placeholderStyle:
-                  const TextStyle(color: CupertinoColors.systemGrey2),
+              placeholderStyle: const TextStyle(
+                color: CupertinoColors.systemGrey2,
+              ),
               prefix: const Padding(
                 padding: EdgeInsets.only(left: 12.0),
                 child: Icon(
@@ -884,7 +869,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   });
                 }
               },
-              // Improve keyboard accessibility
               autofocus: false,
               enableSuggestions: true,
               textCapitalization: TextCapitalization.none,
@@ -895,7 +879,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.only(top: 6.0, left: 12.0),
               child: Semantics(
                 label: 'Email error: $_emailError',
-                liveRegion: true, // Announce changes to this widget
+                liveRegion: true,
                 child: Text(
                   _emailError!,
                   style: const TextStyle(
@@ -910,162 +894,132 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildActionButton({
-    required String text,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return CupertinoButton(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      color: color,
-      borderRadius: BorderRadius.circular(10),
-      onPressed: onPressed,
-      child: Text(
-        text,
-        style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: CupertinoColors.white),
-      ),
-    );
-  }
-
   void _showAvatarOptions() {
-    // Add haptic feedback when opening the options
     HapticFeedback.mediumImpact();
 
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: const Text('Avatar Options'),
-        message: const Text('Choose how you want to set your profile picture'),
-        actions: [
-          // Upload from gallery option with icon
-          CupertinoActionSheetAction(
-            isDefaultAction: true,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  CupertinoIcons.photo,
-                  color: CupertinoColors.activeBlue,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Upload from Gallery',
-                  style: TextStyle(
-                    color: CupertinoColors.activeBlue,
-                  ),
-                ),
-              ],
+      builder:
+          (context) => CupertinoActionSheet(
+            title: const Text('Avatar Options'),
+            message: const Text(
+              'Choose how you want to set your profile picture',
             ),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              _changeAvatar();
-              Navigator.pop(context);
-            },
-          ),
-
-          // Generate from initials option with icon
-          CupertinoActionSheetAction(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  CupertinoIcons.textformat_abc,
-                  color: CupertinoColors.activeBlue,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Generate from Initials',
-                  style: TextStyle(
-                    color: CupertinoColors.activeBlue,
-                  ),
-                ),
-              ],
-            ),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              _generateAvatar();
-              Navigator.pop(context);
-            },
-          ),
-
-          // Take photo option with icon (if camera is available)
-          if (Platform.isIOS || Platform.isAndroid)
-            CupertinoActionSheetAction(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    CupertinoIcons.camera,
-                    color: CupertinoColors.activeBlue,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Take Photo',
-                    style: TextStyle(
+            actions: [
+              CupertinoActionSheetAction(
+                isDefaultAction: true,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      CupertinoIcons.photo,
                       color: CupertinoColors.activeBlue,
+                      size: 20,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Upload from Gallery',
+                      style: TextStyle(color: CupertinoColors.activeBlue),
+                    ),
+                  ],
+                ),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  _changeAvatar();
+                  Navigator.pop(context);
+                },
               ),
-              onPressed: () async {
-                HapticFeedback.selectionClick();
-                Navigator.pop(context);
+              CupertinoActionSheetAction(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      CupertinoIcons.textformat_abc,
+                      color: CupertinoColors.activeBlue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Generate from Initials',
+                      style: TextStyle(color: CupertinoColors.activeBlue),
+                    ),
+                  ],
+                ),
+                onPressed: () {
+                  HapticFeedback.selectionClick();
+                  _generateAvatar();
+                  Navigator.pop(context);
+                },
+              ),
+              if (Platform.isIOS || Platform.isAndroid)
+                CupertinoActionSheetAction(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        CupertinoIcons.camera,
+                        color: CupertinoColors.activeBlue,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Take Photo',
+                        style: TextStyle(color: CupertinoColors.activeBlue),
+                      ),
+                    ],
+                  ),
+                  onPressed: () async {
+                    HapticFeedback.selectionClick();
+                    Navigator.pop(context);
 
-                // Take photo using camera
-                setState(() => _isUploading = true);
-                try {
-                  final pickedFile = await ImagePicker().pickImage(
-                    source: ImageSource.camera,
-                    preferredCameraDevice: CameraDevice.front,
-                  );
+                    setState(() => _isUploading = true);
+                    try {
+                      final pickedFile = await ImagePicker().pickImage(
+                        source: ImageSource.camera,
+                        preferredCameraDevice: CameraDevice.front,
+                      );
 
-                  if (pickedFile != null) {
-                    // Get the app's documents directory
-                    final appDir = await getApplicationDocumentsDirectory();
-                    final fileName =
-                        'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                    final savedImage = File('${appDir.path}/$fileName');
+                      if (pickedFile != null) {
+                        final appDir = await getApplicationDocumentsDirectory();
+                        final fileName =
+                            'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
+                        final savedImage = File('${appDir.path}/$fileName');
 
-                    // Copy the picked image to the app's documents directory
-                    await File(pickedFile.path).copy(savedImage.path);
+                        await File(pickedFile.path).copy(savedImage.path);
 
-                    setState(() {
-                      _avatarImage = savedImage;
-                      _isUploading = false;
-                    });
+                        setState(() {
+                          _avatarImage = savedImage;
+                          _isUploading = false;
+                        });
 
-                    // Update the avatar path in the user profile
-                    if (_currentProfile != null) {
-                      _currentProfile!.avatarPath = savedImage.path;
-                      await _userProfilesBox.put('current', _currentProfile!);
+                        if (_currentProfile != null) {
+                          _currentProfile!.avatarPath = savedImage.path;
+                          await _userProfilesBox.put(
+                            'current',
+                            _currentProfile!,
+                          );
+                        }
+
+                        logInfo('Avatar saved to: ${savedImage.path}');
+                      } else {
+                        setState(() => _isUploading = false);
+                      }
+                    } catch (e) {
+                      setState(() => _isUploading = false);
+                      logError('Error taking photo: $e');
                     }
-
-                    logInfo('Avatar saved to: ${savedImage.path}');
-                  } else {
-                    setState(() => _isUploading = false);
-                  }
-                } catch (e) {
-                  setState(() => _isUploading = false);
-                  logError('Error taking photo: $e');
-                }
+                  },
+                ),
+            ],
+            cancelButton: CupertinoActionSheetAction(
+              isDestructiveAction: true,
+              child: const Text('Cancel'),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                Navigator.pop(context);
               },
             ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          isDestructiveAction: true,
-          child: const Text('Cancel'),
-          onPressed: () {
-            HapticFeedback.lightImpact();
-            Navigator.pop(context);
-          },
-        ),
-      ),
+          ),
     );
   }
 }

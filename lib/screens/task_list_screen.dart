@@ -1,4 +1,3 @@
-import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +7,7 @@ import '../blocs/tasks_controller/task_manager_state.dart';
 import '../models/task.dart';
 import '../utils/category_utils.dart';
 import '../utils/debouncer.dart';
+import 'home_screen.dart';
 import 'task_page_screen.dart';
 import 'widgets/cupertino_divider.dart';
 import 'widgets/task_list_components.dart';
@@ -58,7 +58,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
     return TaskFilterType.task;
   }
 
-  // Cache for filtered tasks to avoid unnecessary recomputation
   Map<String, List<Task>>? _filteredTasksCache;
   String? _lastQuery;
   TaskFilterType? _lastFilter;
@@ -66,7 +65,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
   Map<String, List<Task>> _filterGroupedTasks(
     Map<String, List<Task>> groupedTasks,
   ) {
-    // Return cached results if nothing has changed
     if (_filteredTasksCache != null &&
         _lastQuery == _searchQuery &&
         _lastFilter == _selectedFilter) {
@@ -79,11 +77,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
     groupedTasks.forEach((category, tasks) {
       final tasksFiltered =
           tasks.where((task) {
-            // Check if task title matches search query
             final matchesQuery = task.title.toLowerCase().contains(query);
-            // Get task type for filter matching
             final type = _getTaskType(task);
-            // Check if task matches selected filter type
             final matchesFilter =
                 _selectedFilter == TaskFilterType.all ||
                 _selectedFilter == type;
@@ -95,7 +90,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
       }
     });
 
-    // Update cache and last known state
     _filteredTasksCache = filtered;
     _lastQuery = _searchQuery;
     _lastFilter = _selectedFilter;
@@ -105,66 +99,55 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
-
-    return CupertinoPageScaffold(
-      backgroundColor: CupertinoTheme.of(context).scaffoldBackgroundColor,
-      navigationBar: CupertinoNavigationBar(
-        middle: Text('Reminders'),
-        backgroundColor: CupertinoColors.systemGrey6,
-        border: null,
-      ),
-      child: SafeArea(
-        child: Stack(
-          children: [
-            Column(
+    return SafeArea(
+      child: Stack(
+        children: [
+          Column(
+            children: [
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: TaskSearchBar(controller: _searchController),
+              ),
+              const SizedBox(height: 8),
+              TaskTypeFilter(
+                selectedFilter: _selectedFilter,
+                onFilterChanged: (filter) {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    _selectedFilter = filter;
+                    _clearCache();
+                  });
+                },
+              ),
+              Expanded(child: _buildTaskList(context)),
+            ],
+          ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TaskSearchBar(controller: _searchController),
+                TaskActionButton(
+                  onPressed: () => _showAddTaskDialog(context),
+                  icon: CupertinoIcons.add,
+                  label: 'Add Task',
                 ),
                 const SizedBox(height: 8),
-                TaskTypeFilter(
-                  selectedFilter: _selectedFilter,
-                  onFilterChanged: (filter) {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _selectedFilter = filter;
-                      _clearCache(); // Clear cache when filter changes
-                    });
-                  },
+                TaskActionButton(
+                  onPressed: () => _showScheduleDialog(context),
+                  icon: CupertinoIcons.calendar,
+                  label: 'Schedule',
                 ),
-                Expanded(child: _buildTaskList(context)),
               ],
             ),
-            Positioned(
-              bottom: 16,
-              right: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TaskActionButton(
-                    onPressed: () => _showAddTaskDialog(context),
-                    icon: CupertinoIcons.add,
-                    label: 'Add Task',
-                  ),
-                  const SizedBox(height: 8),
-                  TaskActionButton(
-                    onPressed: () => _showScheduleDialog(context),
-                    icon: CupertinoIcons.calendar,
-                    label: 'Schedule',
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  // Clear the filtered tasks cache
   void _clearCache() {
     _filteredTasksCache = null;
     _lastQuery = null;
@@ -188,7 +171,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     final tasksCubit = context.read<TaskManagerCubit>();
     tasksCubit.scheduleTasks();
     tasksCubit.scheduleHabits();
-    _clearCache(); // Clear cache as tasks will be modified
+    _clearCache();
   }
 
   Widget _buildTaskList(BuildContext context) =>
@@ -227,7 +210,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
   Map<String, List<Task>> _groupTasksByCategory(List<Task> tasks) {
     final grouped = <String, List<Task>>{};
     for (var task in tasks) {
-      // Only add top-level tasks (tasks without a parent) to avoid duplicating subtasks
       if (task.parentTaskId == null) {
         grouped.putIfAbsent(task.category.name, () => []).add(task);
       }
@@ -455,21 +437,15 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   void _toggleTaskCompletion(BuildContext context, Task task) {
     HapticFeedback.selectionClick();
-
-    // Use the TaskManagerCubit to toggle the completion status
     final tasksCubit = context.read<TaskManagerCubit>();
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
     tasksCubit.toggleTaskCompletion(task).then((isCompleted) {
-      // Clear the cache to refresh the task list
       _clearCache();
-
-      // Show a confirmation message
       final message =
           isCompleted
               ? 'Task "${task.title}" marked as completed'
               : 'Task "${task.title}" marked as incomplete';
 
-      // Show a non-intrusive overlay notification
       final overlay = OverlayEntry(
         builder:
             (context) => Positioned(
@@ -511,36 +487,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
       );
 
       Overlay.of(context).insert(overlay);
-      // Auto-dismiss the notification after a short delay
       Future.delayed(const Duration(seconds: 1), () {
         overlay.remove();
       });
     });
-  }
-
-  void _showScheduleConfirmation() {
-    showCupertinoDialog(
-      context: context,
-      builder:
-          (_) => CupertinoAlertDialog(
-            title: const Text('Schedule Tasks'),
-            content: const Text('Tasks have been scheduled successfully.'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacement(
-                    context,
-                    CupertinoPageRoute(
-                      builder: (_) => HomeScreen(initialIndex: 0),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-    );
   }
 }

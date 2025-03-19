@@ -1,63 +1,71 @@
 import 'package:flutter/cupertino.dart';
 
-/// A design system class for Cupertino forms following Apple's HIG.
+/// A design system for Cupertino forms adhering to Apple's HIG with dynamic theming.
 class CupertinoFormTheme {
+  final CupertinoThemeData _themeData;
+  final BuildContext context; // Store context as a field
+
+  CupertinoFormTheme(this.context) : _themeData = CupertinoTheme.of(context);
+
   // Typography
-  static const TextStyle sectionTitleStyle = TextStyle(
+  TextStyle get sectionTitleStyle => TextStyle(
     fontSize: 20,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.5,
-    color: CupertinoColors.label,
+    color: _themeData.textTheme.textStyle.color,
   );
 
-  static const TextStyle inputTextStyle = TextStyle(
+  TextStyle get inputTextStyle =>
+      TextStyle(fontSize: 17, color: _themeData.textTheme.textStyle.color);
+
+  TextStyle get placeholderStyle => TextStyle(
     fontSize: 17,
-    color: CupertinoColors.label,
+    color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey, context),
   );
 
-  static const TextStyle placeholderStyle = TextStyle(
-    fontSize: 17,
-    color: CupertinoColors.systemGrey,
-  );
+  TextStyle get labelTextStyle =>
+      TextStyle(fontSize: 15, color: _themeData.primaryColor);
 
-  static const TextStyle labelTextStyle = TextStyle(
-    fontSize: 15,
-    color: CupertinoColors.systemBlue,
-  );
+  TextStyle get valueTextStyle =>
+      TextStyle(fontSize: 17, color: _themeData.textTheme.textStyle.color);
 
-  static const TextStyle valueTextStyle = TextStyle(
-    fontSize: 17,
-    color: CupertinoColors.label,
-  );
-
-  static const TextStyle helperTextStyle = TextStyle(
+  TextStyle get helperTextStyle => TextStyle(
     fontSize: 13,
-    color: CupertinoColors.systemGrey,
+    color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey, context),
   );
 
-  // Spacing
+  // Spacing (const for performance)
   static const double horizontalSpacing = 16.0;
   static const double sectionSpacing = 24.0;
   static const double elementSpacing = 12.0;
   static const double smallSpacing = 8.0;
   static const double largeSpacing = 32.0;
 
-  // Colors
-  static const Color primaryColor = CupertinoColors.systemBlue;
-  static const Color secondaryColor = CupertinoColors.systemGreen;
-  static const Color accentColor = CupertinoColors.systemOrange;
-  static const Color warningColor = CupertinoColors.systemRed;
+  // Colors (dynamic based on theme)
+  Color get primaryColor => _themeData.primaryColor;
+  Color get secondaryColor =>
+      CupertinoDynamicColor.resolve(CupertinoColors.systemGreen, context);
+  Color get accentColor =>
+      CupertinoDynamicColor.resolve(CupertinoColors.systemOrange, context);
+  Color get warningColor =>
+      CupertinoDynamicColor.resolve(CupertinoColors.systemRed, context);
+  Color get backgroundColor => _themeData.scaffoldBackgroundColor;
 
   // Decorations
-  static BoxDecoration inputDecoration = BoxDecoration(
-    color: CupertinoColors.systemBackground,
-    borderRadius: BorderRadius.circular(10),
-    border: Border.all(color: CupertinoColors.systemGrey4),
+  BoxDecoration get inputDecoration => BoxDecoration(
+    color: backgroundColor,
+    borderRadius: BorderRadius.circular(borderRadius),
+    border: Border.all(
+      color: CupertinoDynamicColor.resolve(
+        CupertinoColors.systemGrey4,
+        context,
+      ),
+    ),
   );
 
-  static BoxDecoration buttonDecoration(Color color) => BoxDecoration(
+  BoxDecoration buttonDecoration(Color color) => BoxDecoration(
     color: color.withOpacity(0.1),
-    borderRadius: BorderRadius.circular(10),
+    borderRadius: BorderRadius.circular(borderRadius),
   );
 
   static const EdgeInsets inputPadding = EdgeInsets.symmetric(
@@ -73,17 +81,16 @@ class CupertinoFormTheme {
   static const double standardIconSize = 22.0;
 
   // Helper Methods
-  static String formatDate(DateTime date) =>
-      '${date.day}/${date.month}/${date.year}';
+  String formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 
-  static String formatTime(DateTime? time) =>
+  String formatTime(DateTime? time) =>
       time != null
           ? '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}'
           : 'Not set';
 
-  static Color getPriorityColor(int priority) {
-    if (priority <= 3) return CupertinoColors.systemGreen;
-    if (priority <= 7) return CupertinoColors.systemOrange;
-    return CupertinoColors.systemRed;
+  Color getPriorityColor(int priority) {
+    if (priority <= 3) return secondaryColor;
+    if (priority <= 7) return accentColor;
+    return warningColor;
   }
 }

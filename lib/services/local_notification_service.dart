@@ -335,17 +335,17 @@ class LocalNotificationService implements INotificationService {
       'Task completion check notification scheduled for: ${task.title} at ${scheduledTime.toString()}',
     );
   }
+
   /// Show a notification for a task that is impossible to complete in time
-  Future<void> showTaskImpossibleToCompleteNotification(
-    Task task,
-  ) async {
+  Future<void> showTaskImpossibleToCompleteNotification(Task task) async {
     if (!_isInitialized) await initialize();
 
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
         const AndroidNotificationDetails(
           'task_impossible_channel',
           'Task Impossible to Complete Notifications',
-          channelDescription: 'Notifications for tasks impossible to complete in time',
+          channelDescription:
+              'Notifications for tasks impossible to complete in time',
           importance: Importance.high,
           priority: Priority.high,
           enableVibration: true,
@@ -376,9 +376,7 @@ class LocalNotificationService implements INotificationService {
   }
 
   /// Show a notification for a task that is possible to complete if rescheduled
-  Future<void> showTaskPossibleIfRescheduledNotification(
-    Task task,
-  ) async {
+  Future<void> showTaskPossibleIfRescheduledNotification(Task task) async {
     if (!_isInitialized) await initialize();
 
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
@@ -412,6 +410,8 @@ class LocalNotificationService implements INotificationService {
       payload: '${task.id}|possible_if_rescheduled',
     );
 
-    logInfo('Task possible if rescheduled notification sent for: ${task.title}');
+    logInfo(
+      'Task possible if rescheduled notification sent for: ${task.title}',
+    );
   }
 }

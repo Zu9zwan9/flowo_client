@@ -79,13 +79,12 @@ class TaskUrgencyCalculator {
       ),
     );
 
-
     for (var day in relevantDays) {
       for (var scheduledTask in day.scheduledTasks) {
         if ((scheduledTask.type == ScheduledTaskType.timeSensitive ||
-            scheduledTask.type == ScheduledTaskType.mealBreak ||
-            scheduledTask.type == ScheduledTaskType.rest ||
-            scheduledTask.type == ScheduledTaskType.sleep) &&
+                scheduledTask.type == ScheduledTaskType.mealBreak ||
+                scheduledTask.type == ScheduledTaskType.rest ||
+                scheduledTask.type == ScheduledTaskType.sleep) &&
             scheduledTask.startTime.millisecondsSinceEpoch >= now &&
             scheduledTask.endTime.millisecondsSinceEpoch <= deadline) {
           busyTime +=

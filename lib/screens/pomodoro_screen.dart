@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show CircularProgressIndicator, AlwaysStoppedAnimation;
+import 'package:flutter/material.dart'
+    show CircularProgressIndicator, AlwaysStoppedAnimation;
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
@@ -13,17 +14,15 @@ class PomodoroScreen extends StatefulWidget {
   final Task? task;
   final int? customDuration;
 
-  const PomodoroScreen({
-    Key? key,
-    this.task,
-    this.customDuration,
-  }) : super(key: key);
+  const PomodoroScreen({Key? key, this.task, this.customDuration})
+    : super(key: key);
 
   @override
   State<PomodoroScreen> createState() => _PomodoroScreenState();
 }
 
-class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObserver {
+class _PomodoroScreenState extends State<PomodoroScreen>
+    with WidgetsBindingObserver {
   late PomodoroSession _session;
   Timer? _timer;
   DateTime? _pausedAt;
@@ -74,9 +73,7 @@ class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObse
         customDuration: widget.customDuration,
       );
     } else if (widget.customDuration != null) {
-      _session = PomodoroSession.custom(
-        duration: widget.customDuration!,
-      );
+      _session = PomodoroSession.custom(duration: widget.customDuration!);
     } else {
       // Default 25-minute pomodoro
       _session = PomodoroSession.custom(
@@ -85,7 +82,10 @@ class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObse
     }
 
     // Save the session to Hive
-    final pomodoroBox = Provider.of<Box<PomodoroSession>>(context, listen: false);
+    final pomodoroBox = Provider.of<Box<PomodoroSession>>(
+      context,
+      listen: false,
+    );
     pomodoroBox.put(_session.id, _session);
 
     // Listen for state changes
@@ -137,70 +137,79 @@ class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObse
     showCupertinoDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Break Time!'),
-        content: Text('You\'ve completed a pomodoro session. Take a ${_session.breakDuration ~/ 60000} minute break.'),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Break Time!'),
+            content: Text(
+              'You\'ve completed a pomodoro session. Take a ${_session.breakDuration ~/ 60000} minute break.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   void _showCompletionDialog() {
     showCupertinoDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Session Completed!'),
-        content: Text('You\'ve completed ${_session.completedPomodoros} pomodoro ${_session.completedPomodoros == 1 ? 'session' : 'sessions'}.'),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Start New Session'),
-            onPressed: () {
-              Navigator.pop(context);
-              _resetTimer();
-            },
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Session Completed!'),
+            content: Text(
+              'You\'ve completed ${_session.completedPomodoros} pomodoro ${_session.completedPomodoros == 1 ? 'session' : 'sessions'}.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Start New Session'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _resetTimer();
+                },
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Done'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
           ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('Done'),
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
     );
   }
 
   void _showResetConfirmation() {
     showCupertinoDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Reset Timer?'),
-        content: const Text('You were away for a while. Would you like to reset the timer?'),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('No, Continue'),
-            onPressed: () {
-              Navigator.pop(context);
-              _resumeTimer();
-            },
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Reset Timer?'),
+            content: const Text(
+              'You were away for a while. Would you like to reset the timer?',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('No, Continue'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _resumeTimer();
+                },
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Yes, Reset'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _resetTimer();
+                },
+              ),
+            ],
           ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('Yes, Reset'),
-            onPressed: () {
-              Navigator.pop(context);
-              _resetTimer();
-            },
-          ),
-        ],
-      ),
     );
   }
 
@@ -235,7 +244,10 @@ class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObse
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
                   'Working on: ${widget.task!.title}',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -268,7 +280,10 @@ class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObse
                             width: 230,
                             height: 230,
                             child: CircularProgressIndicator(
-                              value: isBreak ? _session.breakProgress : _session.progress,
+                              value:
+                                  isBreak
+                                      ? _session.breakProgress
+                                      : _session.progress,
                               strokeWidth: 10,
                               backgroundColor: CupertinoColors.systemGrey5,
                               valueColor: AlwaysStoppedAnimation<Color>(
@@ -288,15 +303,18 @@ class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObse
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
-                                  color: isBreak
-                                      ? CupertinoColors.systemGreen
-                                      : CupertinoColors.activeBlue,
+                                  color:
+                                      isBreak
+                                          ? CupertinoColors.systemGreen
+                                          : CupertinoColors.activeBlue,
                                 ),
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 isBreak
-                                    ? _formatTime(_session.remainingBreakDuration)
+                                    ? _formatTime(
+                                      _session.remainingBreakDuration,
+                                    )
                                     : _formatTime(_session.remainingDuration),
                                 style: const TextStyle(
                                   fontSize: 48,
@@ -317,19 +335,25 @@ class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObse
                       children: [
                         CupertinoButton(
                           padding: EdgeInsets.zero,
-                          onPressed: isInitial || isPaused ? _startTimer : _pauseTimer,
+                          onPressed:
+                              isInitial || isPaused ? _startTimer : _pauseTimer,
                           child: Container(
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: isInitial || isPaused
-                                  ? CupertinoColors.activeGreen.withOpacity(0.1)
-                                  : CupertinoColors.systemOrange.withOpacity(0.1),
+                              color:
+                                  isInitial || isPaused
+                                      ? CupertinoColors.activeGreen.withOpacity(
+                                        0.1,
+                                      )
+                                      : CupertinoColors.systemOrange
+                                          .withOpacity(0.1),
                               border: Border.all(
-                                color: isInitial || isPaused
-                                    ? CupertinoColors.activeGreen
-                                    : CupertinoColors.systemOrange,
+                                color:
+                                    isInitial || isPaused
+                                        ? CupertinoColors.activeGreen
+                                        : CupertinoColors.systemOrange,
                                 width: 2,
                               ),
                             ),
@@ -337,9 +361,10 @@ class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObse
                               isInitial || isPaused
                                   ? CupertinoIcons.play_fill
                                   : CupertinoIcons.pause_fill,
-                              color: isInitial || isPaused
-                                  ? CupertinoColors.activeGreen
-                                  : CupertinoColors.systemOrange,
+                              color:
+                                  isInitial || isPaused
+                                      ? CupertinoColors.activeGreen
+                                      : CupertinoColors.systemOrange,
                               size: 32,
                             ),
                           ),
@@ -355,7 +380,9 @@ class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObse
                             height: 64,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: CupertinoColors.systemGrey.withOpacity(0.1),
+                              color: CupertinoColors.systemGrey.withOpacity(
+                                0.1,
+                              ),
                               border: Border.all(
                                 color: CupertinoColors.systemGrey,
                                 width: 2,
@@ -379,7 +406,10 @@ class _PomodoroScreenState extends State<PomodoroScreen> with WidgetsBindingObse
             Padding(
               padding: const EdgeInsets.only(bottom: 20.0),
               child: CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 color: CupertinoColors.systemIndigo.withOpacity(0.1),
                 onPressed: () {
                   Navigator.push(
@@ -406,9 +436,7 @@ class AmbientModeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Ambient Mode'),
-      ),
+      navigationBar: const CupertinoNavigationBar(middle: Text('Ambient Mode')),
       child: SafeArea(
         child: Column(
           children: [

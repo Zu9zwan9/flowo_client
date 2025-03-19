@@ -57,7 +57,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     });
   }
 
-  // Navigate to calendar screen
   void _navigateToCalendar() {
     Navigator.push(
       context,
@@ -68,27 +67,11 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: const Text('Today'),
-        backgroundColor: CupertinoTheme.of(context).barBackgroundColor,
-        border: null,
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _navigateToCalendar,
-          child: Icon(
-            CupertinoIcons.calendar,
-            color: CupertinoTheme.of(context).primaryColor,
-          ),
-        ),
-      ),
       child: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // Header with greeting
             SliverToBoxAdapter(child: _buildHeader()),
-
-            // Morning tasks
             SliverToBoxAdapter(
               child: _buildTimeSection(
                 'Morning',
@@ -96,8 +79,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                 TimeOfDay(hour: 12, minute: 0),
               ),
             ),
-
-            // Afternoon tasks
             SliverToBoxAdapter(
               child: _buildTimeSection(
                 'Afternoon',
@@ -105,8 +86,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                 TimeOfDay(hour: 17, minute: 0),
               ),
             ),
-
-            // Evening tasks
             SliverToBoxAdapter(
               child: _buildTimeSection(
                 'Evening',
@@ -129,13 +108,26 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '$_greeting, $_userName',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: CupertinoTheme.of(context).textTheme.textStyle.color,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$_greeting, $_userName',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                ),
+              ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _navigateToCalendar,
+                child: Icon(
+                  CupertinoIcons.calendar,
+                  color: CupertinoTheme.of(context).primaryColor,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -194,22 +186,29 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     TimeOfDay startTime,
     TimeOfDay endTime,
   ) {
-    return tasks.where((task) {
-      // Convert all times to minutes since midnight for proper comparison
-      final startTimeMinutes = startTime.hour * 60 + startTime.minute;
-      final endTimeMinutes = endTime.hour * 60 + endTime.minute;
-      final taskStartMinutes = task.startTime.hour * 60 + task.startTime.minute;
-      final taskEndMinutes = task.endTime.hour * 60 + task.endTime.minute;
+    // Filter tasks by time range
+    List<ScheduledTask> filteredTasks =
+        tasks.where((task) {
+          final startTimeMinutes = startTime.hour * 60 + startTime.minute;
+          final endTimeMinutes = endTime.hour * 60 + endTime.minute;
+          final taskStartMinutes =
+              task.startTime.hour * 60 + task.startTime.minute;
+          final taskEndMinutes = task.endTime.hour * 60 + task.endTime.minute;
 
-      // Check if the task overlaps with the time range
-      // A task is in the time range if:
-      // 1. It starts within the range, OR
-      // 2. It starts before the range but ends during or after the range
-      return (taskStartMinutes >= startTimeMinutes &&
-              taskStartMinutes < endTimeMinutes) ||
-          (taskStartMinutes < startTimeMinutes &&
-              taskEndMinutes > startTimeMinutes);
-    }).toList();
+          return (taskStartMinutes >= startTimeMinutes &&
+                  taskStartMinutes < endTimeMinutes) ||
+              (taskStartMinutes < startTimeMinutes &&
+                  taskEndMinutes > startTimeMinutes);
+        }).toList();
+
+    // Always sort by start time
+    filteredTasks.sort((a, b) {
+      final aStart = a.startTime.hour * 60 + a.startTime.minute;
+      final bStart = b.startTime.hour * 60 + b.startTime.minute;
+      return aStart.compareTo(bStart);
+    });
+
+    return filteredTasks;
   }
 
   Widget _buildSectionSkeleton(String title) {
@@ -399,7 +398,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }
 
   Color _getCategoryColor(String category) {
-    // Use dynamic colors that adapt to light/dark mode
     final brightness = CupertinoTheme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
@@ -494,7 +492,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
               CupertinoActionSheetAction(
                 onPressed: () {
                   Navigator.pop(context);
-                  // Mark task as done
                   task.isDone = !task.isDone;
                   context.read<CalendarCubit>().updateTask(task);
                 },

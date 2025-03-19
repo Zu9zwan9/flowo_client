@@ -1,3 +1,4 @@
+// dart
 import 'dart:ui';
 
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
@@ -14,15 +15,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// An enhanced HomeScreen with improved UI/UX following iOS design guidelines
-///
-/// This screen serves as the main container for the app, providing:
-/// - A polished Cupertino-style sidebar navigation
-/// - Smooth transitions between screens
-/// - Intuitive navigation with haptic feedback
-/// - Consistent styling and visual hierarchy
-/// - Accessibility considerations
-/// - Support for all themes (Light, Night, ADHD)
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
   final bool initialExpanded;
@@ -43,11 +35,8 @@ class _HomeScreenState extends State<HomeScreen>
   late bool _isExpanded;
   bool _isTransitioning = false;
 
-  // Animation controller for page transitions
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-
-  // Page controller for smooth transitions
   final PageController _pageController = PageController(initialPage: 0);
 
   @override
@@ -56,7 +45,6 @@ class _HomeScreenState extends State<HomeScreen>
     _selectedIndex = widget.initialIndex;
     _isExpanded = widget.initialExpanded;
 
-    // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -66,14 +54,13 @@ class _HomeScreenState extends State<HomeScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    // Jump to initial page without animation
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_selectedIndex != 0) {
         _pageController.jumpToPage(_selectedIndex);
       }
     });
 
-    _animationController.value = 1.0; // Start fully visible
+    _animationController.value = 1.0;
   }
 
   @override
@@ -83,7 +70,6 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  // List of pages with their respective icons and labels
   final List<({Widget page, IconData icon, String label, Color accentColor})>
   _pageData = [
     (
@@ -136,10 +122,8 @@ class _HomeScreenState extends State<HomeScreen>
     ),
   ];
 
-  // Navigate to a specific page with animation
   void _navigateToPage(int index) {
     if (_selectedIndex == index) {
-      // If already on this page, just close the sidebar
       setState(() {
         _isExpanded = false;
       });
@@ -152,11 +136,9 @@ class _HomeScreenState extends State<HomeScreen>
       _isExpanded = false;
     });
 
-    // Reset animation and start it
     _animationController.reset();
     _animationController.forward();
 
-    // Animate to the selected page
     _pageController
         .animateToPage(
           index,
@@ -170,7 +152,6 @@ class _HomeScreenState extends State<HomeScreen>
         });
   }
 
-  // Toggle sidebar visibility with haptic feedback
   void _toggleSidebar() {
     HapticFeedback.mediumImpact();
     setState(() {
@@ -184,10 +165,17 @@ class _HomeScreenState extends State<HomeScreen>
     final isDarkMode = brightness == Brightness.dark;
 
     return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(_pageData[_selectedIndex].label),
+        leading: GestureDetector(
+          onTap: _toggleSidebar,
+          child: const Icon(CupertinoIcons.line_horizontal_3),
+        ),
+      ),
       child: Stack(
         children: [
-          // Main content area with PageView for smooth transitions
           Positioned.fill(
+            top: 0, // Adjust for navigation bar height
             child: BlocProvider.value(
               value: context.read<CalendarCubit>(),
               child: PageView.builder(
@@ -222,8 +210,6 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
           ),
-
-          // Sidebar overlay with blur effect
           if (_isExpanded)
             Positioned.fill(
               child: GestureDetector(
@@ -239,8 +225,6 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
             ),
-
-          // Enhanced sidebar with animations and styling
           AnimatedPositioned(
             key: const ValueKey('sidebar'),
             duration: const Duration(milliseconds: 300),
@@ -273,7 +257,6 @@ class _HomeScreenState extends State<HomeScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Sidebar header with app logo/name
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
@@ -343,7 +326,6 @@ class _HomeScreenState extends State<HomeScreen>
                             ],
                           ),
                         ),
-                        // Navigation menu items
                         Flexible(
                           child: ListView.builder(
                             shrinkWrap: true,
@@ -363,8 +345,6 @@ class _HomeScreenState extends State<HomeScreen>
                             },
                           ),
                         ),
-
-                        // Footer with version info
                         Flexible(
                           fit: FlexFit.loose,
                           child: Container(
@@ -383,103 +363,6 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Menu button to toggle sidebar
-
-          // Menu button to toggle sidebar (hamburger menu only)
-          Positioned(
-            top: 0,
-            left: 0,
-            child: SafeArea(
-              child: Visibility(
-                visible: !_isExpanded, // Only show when sidebar is closed
-                child: GestureDetector(
-                  onTap: _toggleSidebar,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color:
-                            isDarkMode
-                                ? CupertinoColors.darkBackgroundGray
-                                    .withOpacity(0.8)
-                                : CupertinoColors.white.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color: CupertinoColors.black.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          CupertinoIcons.line_horizontal_3,
-                          color:
-                              isDarkMode
-                                  ? CupertinoColors.white
-                                  : CupertinoColors.black,
-                          size: 22,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Close button (x-mark) on right side of sidebar when expanded
-          Positioned(
-            top: 0,
-            left:
-                _isExpanded
-                    ? 320
-                    : -50, // Position on right side of sidebar when open
-            child: SafeArea(
-              child: Visibility(
-                visible: _isExpanded,
-                child: GestureDetector(
-                  onTap: _toggleSidebar,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Container(
-                      width: 32,
-                      height: 32,
-                      decoration: BoxDecoration(
-                        color:
-                            isDarkMode
-                                ? CupertinoColors.darkBackgroundGray
-                                    .withOpacity(0.8)
-                                : CupertinoColors.white.withOpacity(0.8),
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color: CupertinoColors.black.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          CupertinoIcons.xmark,
-                          color:
-                              isDarkMode
-                                  ? CupertinoColors.white
-                                  : CupertinoColors.black,
-                          size: 22,
-                        ),
-                      ),
                     ),
                   ),
                 ),

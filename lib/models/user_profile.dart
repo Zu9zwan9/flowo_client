@@ -20,8 +20,8 @@ class UserProfile extends HiveObject {
   bool onboardingCompleted;
 
   UserProfile({
-    required this.name, 
-    required this.email, 
+    required this.name,
+    required this.email,
     this.avatarPath,
     this.goal,
     this.onboardingCompleted = false,

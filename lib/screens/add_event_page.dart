@@ -1,14 +1,13 @@
 import 'dart:io';
 
+import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
+import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
+import 'package:flowo_client/design/cupertino_form_theme.dart';
+import 'package:flowo_client/design/cupertino_form_widgets.dart';
+import 'package:flowo_client/screens/home_screen.dart';
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
-import '../blocs/tasks_controller/task_manager_cubit.dart';
-import '../blocs/tasks_controller/tasks_controller_cubit.dart';
-import '../design/cupertino_form_theme.dart';
-import '../design/cupertino_form_widgets.dart';
-import '../screens/home_screen.dart';
-import '../utils/logger.dart';
 
 class AddEventPage extends StatefulWidget {
   final DateTime? selectedDate;
@@ -33,13 +32,13 @@ class AddEventPageState extends State<AddEventPage>
   int? _selectedColor;
   int _travelingTime = 0;
   final List<Color> _colorOptions = [
-    const Color(0xFF4CAF50), // Green
-    const Color(0xFF2196F3), // Blue
-    const Color(0xFFF44336), // Red
-    const Color(0xFFFF9800), // Orange
-    const Color(0xFF9C27B0), // Purple
-    const Color(0xFF795548), // Brown
-    const Color(0xFF607D8B), // Blue Grey
+    const Color(0xFF4CAF50),
+    const Color(0xFF2196F3),
+    const Color(0xFFF44336),
+    const Color(0xFFFF9800),
+    const Color(0xFF9C27B0),
+    const Color(0xFF795548),
+    const Color(0xFF607D8B),
   ];
 
   late AnimationController _animationController;
@@ -71,6 +70,7 @@ class AddEventPageState extends State<AddEventPage>
 
   @override
   Widget build(BuildContext context) {
+    final theme = CupertinoFormTheme(context);
     return CupertinoPageScaffold(
       child: SafeArea(
         child: SingleChildScrollView(
@@ -81,26 +81,31 @@ class AddEventPageState extends State<AddEventPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 CupertinoFormWidgets.formGroup(
+                  context: context,
                   title: 'Event Details',
                   children: [
                     CupertinoFormWidgets.textField(
+                      context: context,
                       controller: _titleController,
                       placeholder: 'Event Name *',
                       validator: (value) => value!.isEmpty ? 'Required' : null,
                     ),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
                     CupertinoFormWidgets.textField(
+                      context: context,
                       controller: _notesController,
                       placeholder: 'Notes',
                       maxLines: 3,
                     ),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
                     CupertinoFormWidgets.textField(
+                      context: context,
                       controller: _locationController,
                       placeholder: 'Location',
                     ),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
                     CupertinoFormWidgets.imagePicker(
+                      context: context,
                       image: _image,
                       onPickImage: _pickImage,
                     ),
@@ -108,14 +113,16 @@ class AddEventPageState extends State<AddEventPage>
                 ),
                 SizedBox(height: CupertinoFormTheme.sectionSpacing),
                 CupertinoFormWidgets.formGroup(
+                  context: context,
                   title: 'Event Color',
                   children: [
                     Text(
                       'Select a color for your event',
-                      style: CupertinoFormTheme.helperTextStyle,
+                      style: theme.helperTextStyle,
                     ),
                     SizedBox(height: CupertinoFormTheme.smallSpacing),
                     CupertinoFormWidgets.colorPicker(
+                      context: context,
                       colors: _colorOptions,
                       selectedColor: _selectedColor,
                       onColorSelected:
@@ -125,14 +132,16 @@ class AddEventPageState extends State<AddEventPage>
                 ),
                 SizedBox(height: CupertinoFormTheme.sectionSpacing),
                 CupertinoFormWidgets.formGroup(
+                  context: context,
                   title: 'Traveling Time',
                   children: [
                     Text(
                       'Optional time needed for travel to the event location',
-                      style: CupertinoFormTheme.helperTextStyle,
+                      style: theme.helperTextStyle,
                     ),
                     SizedBox(height: CupertinoFormTheme.smallSpacing),
                     CupertinoFormWidgets.selectionButton(
+                      context: context,
                       label: 'Duration',
                       value:
                           '${(_travelingTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_travelingTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
@@ -147,51 +156,55 @@ class AddEventPageState extends State<AddEventPage>
                             );
                         if (mounted) setState(() => _travelingTime = duration);
                       },
-                      color: CupertinoFormTheme.accentColor,
+                      color: theme.accentColor,
                       icon: CupertinoIcons.timer,
                     ),
                   ],
                 ),
                 SizedBox(height: CupertinoFormTheme.sectionSpacing),
                 CupertinoFormWidgets.formGroup(
+                  context: context,
                   title: 'Start',
                   children: [
                     CupertinoFormWidgets.selectionButton(
+                      context: context,
                       label: 'Date',
-                      value: CupertinoFormTheme.formatDate(_selectedDate),
+                      value: theme.formatDate(_selectedDate),
                       onTap: () => _showDatePicker(context, isStart: true),
-                      color: CupertinoFormTheme.primaryColor,
+                      color: theme.primaryColor,
                       icon: CupertinoIcons.calendar,
                     ),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
                     CupertinoFormWidgets.selectionButton(
+                      context: context,
                       label: 'Time',
-                      value: CupertinoFormTheme.formatTime(_startTime),
+                      value: theme.formatTime(_startTime),
                       onTap: () => _showTimePicker(context, isStart: true),
-                      color: CupertinoFormTheme.secondaryColor,
+                      color: theme.secondaryColor,
                       icon: CupertinoIcons.time,
                     ),
                   ],
                 ),
                 SizedBox(height: CupertinoFormTheme.sectionSpacing),
                 CupertinoFormWidgets.formGroup(
+                  context: context,
                   title: 'End',
                   children: [
                     CupertinoFormWidgets.selectionButton(
+                      context: context,
                       label: 'Date',
-                      value: CupertinoFormTheme.formatDate(
-                        _endTime ?? _selectedDate,
-                      ),
+                      value: theme.formatDate(_endTime ?? _selectedDate),
                       onTap: () => _showDatePicker(context, isStart: false),
-                      color: CupertinoFormTheme.primaryColor,
+                      color: theme.primaryColor,
                       icon: CupertinoIcons.calendar,
                     ),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
                     CupertinoFormWidgets.selectionButton(
+                      context: context,
                       label: 'Time',
-                      value: CupertinoFormTheme.formatTime(_endTime),
+                      value: theme.formatTime(_endTime),
                       onTap: () => _showTimePicker(context, isStart: false),
-                      color: CupertinoFormTheme.accentColor,
+                      color: theme.accentColor,
                       icon: CupertinoIcons.time_solid,
                     ),
                   ],
@@ -200,6 +213,7 @@ class AddEventPageState extends State<AddEventPage>
                 ScaleTransition(
                   scale: _buttonScaleAnimation,
                   child: CupertinoFormWidgets.primaryButton(
+                    context: context,
                     text: 'Save Event',
                     onPressed: () {
                       _animationController.forward().then(
@@ -268,11 +282,10 @@ class AddEventPageState extends State<AddEventPage>
     );
     if (pickedTime != null && mounted) {
       setState(() {
-        if (isStart) {
+        if (isStart)
           _startTime = pickedTime;
-        } else {
+        else
           _endTime = pickedTime;
-        }
       });
     }
   }

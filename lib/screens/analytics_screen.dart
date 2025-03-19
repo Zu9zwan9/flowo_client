@@ -40,9 +40,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         child: BlocBuilder<AnalyticsCubit, AnalyticsState>(
           builder: (context, state) {
             if (state is AnalyticsLoading) {
-              return const Center(
-                child: CupertinoActivityIndicator(),
-              );
+              return const Center(child: CupertinoActivityIndicator());
             } else if (state is AnalyticsError) {
               return Center(
                 child: Column(
@@ -56,9 +54,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'Error loading analytics',
-                      style: CupertinoTheme.of(context)
-                          .textTheme
-                          .navTitleTextStyle,
+                      style:
+                          CupertinoTheme.of(
+                            context,
+                          ).textTheme.navTitleTextStyle,
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -78,9 +77,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
               return _buildAnalyticsContent(context, state.analyticsData);
             }
 
-            return const Center(
-              child: CupertinoActivityIndicator(),
-            );
+            return const Center(child: CupertinoActivityIndicator());
           },
         ),
       ),
@@ -164,28 +161,29 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       title: 'AI Suggestions',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: data.aiSuggestions.map((suggestion) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  CupertinoIcons.lightbulb,
-                  color: CupertinoColors.systemYellow,
-                  size: 20,
+        children:
+            data.aiSuggestions.map((suggestion) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      CupertinoIcons.lightbulb,
+                      color: CupertinoColors.systemYellow,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        suggestion,
+                        style: CupertinoTheme.of(context).textTheme.textStyle,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    suggestion,
-                    style: CupertinoTheme.of(context).textTheme.textStyle,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
+              );
+            }).toList(),
       ),
     );
   }
@@ -260,16 +258,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: CupertinoTheme.of(context).textTheme.textStyle,
-        ),
+        Text(label, style: CupertinoTheme.of(context).textTheme.textStyle),
       ],
     );
   }
@@ -297,24 +289,21 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             ),
             Text(
               '${value.toStringAsFixed(1)}%',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        Text(
-          label,
-          style: CupertinoTheme.of(context).textTheme.textStyle,
-        ),
+        Text(label, style: CupertinoTheme.of(context).textTheme.textStyle),
       ],
     );
   }
 
-  Widget _buildCard(BuildContext context,
-      {required String title, required Widget child}) {
+  Widget _buildCard(
+    BuildContext context, {
+    required String title,
+    required Widget child,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: CupertinoTheme.of(context).barBackgroundColor,
@@ -335,10 +324,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
           Padding(

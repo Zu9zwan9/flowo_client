@@ -13,26 +13,29 @@ class TaskBreakdownScreen extends StatelessWidget {
     await Future.delayed(Duration(seconds: 2));
     return [
       Task(
-          id: UniqueKey().toString(),
-          title: 'Subtask 1',
-          priority: 1,
-          deadline: 0,
-          estimatedTime: 0,
-          category: Category(name: 'General')),
+        id: UniqueKey().toString(),
+        title: 'Subtask 1',
+        priority: 1,
+        deadline: 0,
+        estimatedTime: 0,
+        category: Category(name: 'General'),
+      ),
       Task(
-          id: UniqueKey().toString(),
-          title: 'Subtask 2',
-          priority: 1,
-          deadline: 0,
-          estimatedTime: 0,
-          category: Category(name: 'General')),
+        id: UniqueKey().toString(),
+        title: 'Subtask 2',
+        priority: 1,
+        deadline: 0,
+        estimatedTime: 0,
+        category: Category(name: 'General'),
+      ),
       Task(
-          id: UniqueKey().toString(),
-          title: 'Subtask 3',
-          priority: 1,
-          deadline: 0,
-          estimatedTime: 0,
-          category: Category(name: 'General')),
+        id: UniqueKey().toString(),
+        title: 'Subtask 3',
+        priority: 1,
+        deadline: 0,
+        estimatedTime: 0,
+        category: Category(name: 'General'),
+      ),
     ];
   }
 
@@ -56,9 +59,7 @@ class TaskBreakdownScreen extends StatelessWidget {
             return ListView.builder(
               itemCount: subtasks.length,
               itemBuilder: (context, index) {
-                return CupertinoListTile(
-                  title: Text(subtasks[index].title),
-                );
+                return CupertinoListTile(title: Text(subtasks[index].title));
               },
             );
           }
@@ -98,10 +99,7 @@ class CupertinoListTile extends StatelessWidget {
     Widget content = Row(
       children: [
         if (leading != null) ...[
-          SizedBox(
-            width: minLeadingWidth,
-            child: leading,
-          ),
+          SizedBox(width: minLeadingWidth, child: leading),
           const SizedBox(width: 12),
         ],
         Expanded(
@@ -116,21 +114,19 @@ class CupertinoListTile extends StatelessWidget {
               if (subtitle != null) ...[
                 const SizedBox(height: 4),
                 DefaultTextStyle(
-                  style:
-                      CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                            fontSize: 14,
-                            color: CupertinoColors.systemGrey,
-                          ),
+                  style: CupertinoTheme.of(
+                    context,
+                  ).textTheme.textStyle.copyWith(
+                    fontSize: 14,
+                    color: CupertinoColors.systemGrey,
+                  ),
                   child: subtitle!,
                 ),
               ],
             ],
           ),
         ),
-        if (trailing != null) ...[
-          const SizedBox(width: 8),
-          trailing!,
-        ],
+        if (trailing != null) ...[const SizedBox(width: 8), trailing!],
       ],
     );
 
@@ -147,10 +143,7 @@ class CupertinoListTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor ?? CupertinoColors.systemBackground,
         border: Border(
-          bottom: BorderSide(
-            color: CupertinoColors.separator,
-            width: 0.0,
-          ),
+          bottom: BorderSide(color: CupertinoColors.separator, width: 0.0),
         ),
       ),
       child: content,

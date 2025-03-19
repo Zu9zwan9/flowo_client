@@ -376,15 +376,20 @@ class NotificationManager {
       logError('Failed to schedule completion check notification: $e');
     }
   }
+
   /// Notify the user that a task is impossible to complete in time
   Future<void> notifyTaskImpossibleToComplete(Task task) async {
     if (!_isInitialized) await initialize();
 
     try {
       // For now, we'll use a local notification
-      await _localNotificationService.showTaskImpossibleToCompleteNotification(task);
+      await _localNotificationService.showTaskImpossibleToCompleteNotification(
+        task,
+      );
 
-      logInfo('Sent notification that task is impossible to complete: ${task.title}');
+      logInfo(
+        'Sent notification that task is impossible to complete: ${task.title}',
+      );
     } catch (e) {
       logError('Failed to send task impossible to complete notification: $e');
     }
@@ -396,9 +401,13 @@ class NotificationManager {
 
     try {
       // For now, we'll use a local notification
-      await _localNotificationService.showTaskPossibleIfRescheduledNotification(task);
+      await _localNotificationService.showTaskPossibleIfRescheduledNotification(
+        task,
+      );
 
-      logInfo('Sent notification that task is possible if rescheduled: ${task.title}');
+      logInfo(
+        'Sent notification that task is possible if rescheduled: ${task.title}',
+      );
     } catch (e) {
       logError('Failed to send task possible if rescheduled notification: $e');
     }
