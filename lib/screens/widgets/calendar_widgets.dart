@@ -14,11 +14,11 @@ class CalendarViewSelector extends StatefulWidget {
   final EdgeInsetsGeometry padding;
 
   const CalendarViewSelector({
-    Key? key,
+    super.key,
     required this.selectedView,
     required this.onViewChanged,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-  }) : super(key: key);
+  });
 
   @override
   State<CalendarViewSelector> createState() => _CalendarViewSelectorState();
@@ -133,13 +133,13 @@ class CalendarHeader extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   const CalendarHeader({
-    Key? key,
+    super.key,
     required this.selectedDate,
     required this.onTodayPressed,
     this.onPreviousPressed,
     this.onNextPressed,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -233,7 +233,7 @@ class AgendaItem extends StatefulWidget {
   final bool showDivider;
 
   const AgendaItem({
-    Key? key,
+    super.key,
     required this.title,
     this.subtitle,
     required this.startTime,
@@ -242,7 +242,7 @@ class AgendaItem extends StatefulWidget {
     this.onTap,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
     this.showDivider = true,
-  }) : super(key: key);
+  });
 
   @override
   State<AgendaItem> createState() => _AgendaItemState();
@@ -440,14 +440,14 @@ class EmptyStateView extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   const EmptyStateView({
-    Key? key,
+    super.key,
     required this.title,
     this.message,
     this.icon = CupertinoIcons.calendar_badge_plus,
     this.onActionPressed,
     this.actionLabel,
     this.padding = const EdgeInsets.all(32.0),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -560,11 +560,11 @@ class DateSelector extends StatefulWidget {
   final EdgeInsetsGeometry padding;
 
   const DateSelector({
-    Key? key,
+    super.key,
     required this.selectedDate,
     required this.onDateSelected,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-  }) : super(key: key);
+  });
 
   @override
   State<DateSelector> createState() => _DateSelectorState();
@@ -740,11 +740,11 @@ class CalendarActionButton extends StatelessWidget {
   final VoidCallback onAddHabit;
 
   const CalendarActionButton({
-    Key? key,
+    super.key,
     required this.onAddTask,
     required this.onAddEvent,
     required this.onAddHabit,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

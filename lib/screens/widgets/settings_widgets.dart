@@ -1,11 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay, Divider;
 
-/// A collection of reusable widgets for the settings screen
-/// following iOS design guidelines and best practices for Cupertino UI
-
-/// Represents a section in the settings screen with a header and children
-/// Follows iOS design guidelines for grouped tables
 class SettingsSection extends StatelessWidget {
   final String title;
   final List<Widget> children;
@@ -130,7 +125,7 @@ class SettingsItem extends StatefulWidget {
   final bool useAnimatedTap;
 
   const SettingsItem({
-    Key? key,
+    super.key,
     required this.label,
     this.trailing,
     this.onTap,
@@ -146,7 +141,7 @@ class SettingsItem extends StatefulWidget {
     this.subtitleStyle,
     this.semanticsLabel,
     this.useAnimatedTap = true,
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsItem> createState() => _SettingsItemState();

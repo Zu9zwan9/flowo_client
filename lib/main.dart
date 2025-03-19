@@ -8,7 +8,7 @@ import 'package:flowo_client/services/onboarding_service.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:flutter/material.dart' show TimeOfDay, FontWeight, Brightness;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -203,15 +203,36 @@ class MyApp extends StatelessWidget {
 
     return Consumer<ThemeNotifier>(
       builder: (context, themeNotifier, child) {
+        final brightness = themeNotifier.currentTheme.brightness;
         return Provider<OnboardingService>.value(
           value: onboardingService,
           child: CupertinoApp(
             debugShowCheckedModeBanner: false,
             theme: CupertinoThemeData(
-              brightness: themeNotifier.currentTheme.brightness,
-              primaryColor: themeNotifier.currentTheme.primaryColor,
+              brightness: brightness,
+              primaryColor: CupertinoColors.systemIndigo,
+              primaryContrastingColor: CupertinoColors.white,
+              barBackgroundColor:
+                  brightness == Brightness.dark
+                      ? CupertinoColors.systemGrey6.darkColor
+                      : CupertinoColors.systemGrey6.color,
               scaffoldBackgroundColor:
-                  themeNotifier.currentTheme.scaffoldBackgroundColor,
+                  brightness == Brightness.dark
+                      ? CupertinoColors.systemBackground.darkColor
+                      : CupertinoColors.systemBackground.color,
+              textTheme: CupertinoTextThemeData(
+                navTitleTextStyle: CupertinoTextThemeData().navTitleTextStyle
+                    .copyWith(fontWeight: FontWeight.w600),
+                navLargeTitleTextStyle: CupertinoTextThemeData()
+                    .navLargeTitleTextStyle
+                    .copyWith(fontWeight: FontWeight.bold, letterSpacing: -0.5),
+                textStyle: CupertinoTextThemeData().textStyle.copyWith(
+                  color:
+                      brightness == Brightness.dark
+                          ? CupertinoColors.label.darkColor
+                          : CupertinoColors.label.color,
+                ),
+              ),
             ),
             // Add these two lines to support localization:
             localizationsDelegates: const [

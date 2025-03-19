@@ -1,6 +1,7 @@
 import 'package:flowo_client/screens/onboarding/welcome_screen.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
@@ -68,7 +69,9 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
         );
 
         // Log the error for debugging
-        print('[DEBUG_LOG] Error saving goal: $e');
+        if (kDebugMode) {
+          print('[DEBUG_LOG] Error saving goal: $e');
+        }
       }
     } finally {
       if (mounted) {
@@ -82,12 +85,14 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
   void _showErrorDialog(String message) {
     showCupertinoDialog(
       context: context,
+      barrierDismissible: true,
       builder:
           (context) => CupertinoAlertDialog(
             title: const Text('Error'),
             content: Text(message),
             actions: [
               CupertinoDialogAction(
+                isDefaultAction: true,
                 child: const Text('OK'),
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -98,13 +103,13 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.platformBrightnessOf(context);
-    final isDarkMode = brightness == Brightness.dark;
+    final theme = CupertinoTheme.of(context);
 
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
+      navigationBar: CupertinoNavigationBar(
         previousPageTitle: 'Back',
-        middle: Text('Your Goal'),
+        middle: const Text('Your Goal'),
+        backgroundColor: theme.barBackgroundColor.withOpacity(0.8),
       ),
       child: SafeArea(
         child: Padding(
@@ -121,10 +126,17 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
                   decoration: BoxDecoration(
                     color: CupertinoColors.activeGreen,
                     borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: CupertinoColors.systemGrey.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: const Center(
                     child: Icon(
-                      CupertinoIcons.flag,
+                      CupertinoIcons.flag_fill,
                       color: CupertinoColors.white,
                       size: 40,
                     ),
@@ -133,20 +145,19 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
               ),
               const SizedBox(height: 40),
               // Goal question
-              const Text(
+              Text(
                 'What\'s your main goal?',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: theme.textTheme.navLargeTitleTextStyle.copyWith(
+                  fontSize: 24,
+                ),
               ),
               const SizedBox(height: 12),
               // Goal description
               Text(
                 'This will help us personalize your experience.',
-                style: TextStyle(
+                style: theme.textTheme.textStyle.copyWith(
                   fontSize: 16,
-                  color:
-                      isDarkMode
-                          ? CupertinoColors.systemGrey
-                          : CupertinoColors.systemGrey,
+                  color: CupertinoColors.systemGrey,
                 ),
               ),
               const SizedBox(height: 24),
@@ -158,17 +169,16 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
                 clearButtonMode: OverlayVisibilityMode.editing,
                 maxLines: 3,
                 decoration: BoxDecoration(
-                  color:
-                      isDarkMode
-                          ? CupertinoColors.systemGrey6
-                          : CupertinoColors.systemGrey6,
+                  color: CupertinoColors.systemGrey6.resolveFrom(context),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: CupertinoColors.systemGrey5.resolveFrom(context),
+                    width: 1.0,
+                  ),
                 ),
-                style: TextStyle(
-                  color:
-                      isDarkMode
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
+                style: theme.textTheme.textStyle,
+                placeholderStyle: theme.textTheme.textStyle.copyWith(
+                  color: CupertinoColors.systemGrey,
                 ),
               ),
               const SizedBox(height: 24),
@@ -188,7 +198,8 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
                           'Continue',
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
+                            color: CupertinoColors.white,
                           ),
                         ),
               ),
@@ -197,12 +208,9 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
               Center(
                 child: Text(
                   'FLOWO 1.0.0',
-                  style: TextStyle(
+                  style: theme.textTheme.tabLabelTextStyle.copyWith(
                     fontSize: 12,
-                    color:
-                        isDarkMode
-                            ? CupertinoColors.systemGrey
-                            : CupertinoColors.systemGrey,
+                    color: CupertinoColors.systemGrey,
                   ),
                 ),
               ),

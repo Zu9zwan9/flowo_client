@@ -75,12 +75,14 @@ class _NameInputScreenState extends State<NameInputScreen> {
   void _showErrorDialog(String message) {
     showCupertinoDialog(
       context: context,
+      barrierDismissible: true,
       builder:
           (context) => CupertinoAlertDialog(
             title: const Text('Error'),
             content: Text(message),
             actions: [
               CupertinoDialogAction(
+                isDefaultAction: true,
                 child: const Text('OK'),
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -91,17 +93,20 @@ class _NameInputScreenState extends State<NameInputScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.platformBrightnessOf(context);
-    final isDarkMode = brightness == Brightness.dark;
+    final theme = CupertinoTheme.of(context);
 
     return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('Welcome to Flowo'),
+        backgroundColor: theme.barBackgroundColor.withOpacity(0.8),
+      ),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: 60),
+              const SizedBox(height: 40),
               // App logo
               Center(
                 child: Container(
@@ -110,6 +115,13 @@ class _NameInputScreenState extends State<NameInputScreen> {
                   decoration: BoxDecoration(
                     color: CupertinoColors.activeBlue,
                     borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: CupertinoColors.systemGrey.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: const Center(
                     child: Icon(
@@ -122,10 +134,10 @@ class _NameInputScreenState extends State<NameInputScreen> {
               ),
               const SizedBox(height: 24),
               // App name
-              const Center(
+              Center(
                 child: Text(
                   'Flowo',
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  style: theme.textTheme.navLargeTitleTextStyle,
                 ),
               ),
               const SizedBox(height: 8),
@@ -133,22 +145,29 @@ class _NameInputScreenState extends State<NameInputScreen> {
               Center(
                 child: Text(
                   'Your personal productivity assistant',
-                  style: TextStyle(
+                  style: theme.textTheme.textStyle.copyWith(
                     fontSize: 16,
-                    color:
-                        isDarkMode
-                            ? CupertinoColors.systemGrey
-                            : CupertinoColors.systemGrey,
+                    color: CupertinoColors.systemGrey,
                   ),
                 ),
               ),
               const SizedBox(height: 60),
               // Welcome message
-              const Text(
+              Text(
                 'What\'s your name?',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: theme.textTheme.navLargeTitleTextStyle.copyWith(
+                  fontSize: 24,
+                ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
+              Text(
+                'We\'ll personalize your experience',
+                style: theme.textTheme.textStyle.copyWith(
+                  fontSize: 16,
+                  color: CupertinoColors.systemGrey,
+                ),
+              ),
+              const SizedBox(height: 24),
               // Name input field
               CupertinoTextField(
                 controller: _nameController,
@@ -157,17 +176,16 @@ class _NameInputScreenState extends State<NameInputScreen> {
                 clearButtonMode: OverlayVisibilityMode.editing,
                 autocorrect: false,
                 decoration: BoxDecoration(
-                  color:
-                      isDarkMode
-                          ? CupertinoColors.systemGrey6
-                          : CupertinoColors.systemGrey6,
+                  color: CupertinoColors.systemGrey6.resolveFrom(context),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: CupertinoColors.systemGrey5.resolveFrom(context),
+                    width: 1.0,
+                  ),
                 ),
-                style: TextStyle(
-                  color:
-                      isDarkMode
-                          ? CupertinoColors.white
-                          : CupertinoColors.black,
+                style: theme.textTheme.textStyle,
+                placeholderStyle: theme.textTheme.textStyle.copyWith(
+                  color: CupertinoColors.systemGrey,
                 ),
               ),
               const SizedBox(height: 24),
@@ -187,7 +205,8 @@ class _NameInputScreenState extends State<NameInputScreen> {
                           'Continue',
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
+                            color: CupertinoColors.white,
                           ),
                         ),
               ),
@@ -196,12 +215,9 @@ class _NameInputScreenState extends State<NameInputScreen> {
               Center(
                 child: Text(
                   'FLOWO 1.0.0',
-                  style: TextStyle(
+                  style: theme.textTheme.tabLabelTextStyle.copyWith(
                     fontSize: 12,
-                    color:
-                        isDarkMode
-                            ? CupertinoColors.systemGrey
-                            : CupertinoColors.systemGrey,
+                    color: CupertinoColors.systemGrey,
                   ),
                 ),
               ),

@@ -192,15 +192,20 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     TimeOfDay endTime,
   ) {
     return tasks.where((task) {
-      final taskStartHour = task.startTime.hour;
-      final taskStartMinute = task.startTime.minute;
-
+      // Convert all times to minutes since midnight for proper comparison
       final startTimeMinutes = startTime.hour * 60 + startTime.minute;
       final endTimeMinutes = endTime.hour * 60 + endTime.minute;
-      final taskTimeMinutes = taskStartHour * 60 + taskStartMinute;
+      final taskStartMinutes = task.startTime.hour * 60 + task.startTime.minute;
+      final taskEndMinutes = task.endTime.hour * 60 + task.endTime.minute;
 
-      return taskTimeMinutes >= startTimeMinutes &&
-          taskTimeMinutes < endTimeMinutes;
+      // Check if the task overlaps with the time range
+      // A task is in the time range if:
+      // 1. It starts within the range, OR
+      // 2. It starts before the range but ends during or after the range
+      return (taskStartMinutes >= startTimeMinutes &&
+              taskStartMinutes < endTimeMinutes) ||
+          (taskStartMinutes < startTimeMinutes &&
+              taskEndMinutes > startTimeMinutes);
     }).toList();
   }
 

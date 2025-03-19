@@ -82,12 +82,11 @@ class Scheduler {
     int dateIndex = 0;
     ScheduledTask? lastScheduledTask;
 
-    if (task.frequency == null) {
-      removePreviousScheduledTasks(task);
-      logDebug('No available dates provided for: ${task.title}');
-    }
+    removePreviousScheduledTasks(task);
+    logDebug('No available dates provided for: ${task.title}');
 
-    while (remainingTime > 0 || (availableDates != null && availableDates.isNotEmpty)) {
+    while (remainingTime > 0 ||
+        (availableDates != null && availableDates.isNotEmpty)) {
       String dateKey = _formatDateKey(currentDate);
 
       if (!_isActiveDay(dateKey)) {

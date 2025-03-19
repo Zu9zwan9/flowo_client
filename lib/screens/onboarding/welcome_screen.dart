@@ -75,12 +75,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   void _showErrorDialog(String message) {
     showCupertinoDialog(
       context: context,
+      barrierDismissible: true,
       builder:
           (context) => CupertinoAlertDialog(
             title: const Text('Error'),
             content: Text(message),
             actions: [
               CupertinoDialogAction(
+                isDefaultAction: true,
                 child: const Text('OK'),
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -91,16 +93,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.platformBrightnessOf(context);
-    final isDarkMode = brightness == Brightness.dark;
+    final theme = CupertinoTheme.of(context);
+    final primaryColor = CupertinoColors.systemIndigo;
 
     final userName = _userProfile?.name ?? 'there';
     final userGoal = _userProfile?.goal ?? 'your goals';
 
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
+      navigationBar: CupertinoNavigationBar(
         previousPageTitle: 'Back',
-        middle: Text('Welcome'),
+        middle: const Text('Welcome'),
+        backgroundColor: theme.barBackgroundColor.withOpacity(0.8),
       ),
       child: SafeArea(
         child: Padding(
@@ -115,8 +118,15 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: CupertinoColors.systemIndigo,
+                    color: primaryColor,
                     borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: CupertinoColors.systemGrey.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
                   child: const Center(
                     child: Icon(
@@ -132,9 +142,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Center(
                 child: Text(
                   'Hello, $userName!',
-                  style: const TextStyle(
+                  style: theme.textTheme.navLargeTitleTextStyle.copyWith(
                     fontSize: 28,
-                    fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -144,13 +153,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Center(
                 child: Text(
                   'With your efforts and this app, your dream to "$userGoal" will come true.',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color:
-                        isDarkMode
-                            ? CupertinoColors.white
-                            : CupertinoColors.black,
-                  ),
+                  style: theme.textTheme.textStyle.copyWith(fontSize: 18),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -159,12 +162,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Center(
                 child: Text(
                   'We\'re excited to help you on your journey!',
-                  style: TextStyle(
+                  style: theme.textTheme.textStyle.copyWith(
                     fontSize: 16,
-                    color:
-                        isDarkMode
-                            ? CupertinoColors.systemGrey
-                            : CupertinoColors.systemGrey,
+                    color: CupertinoColors.systemGrey,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -173,7 +173,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               // Get started button
               CupertinoButton(
                 onPressed: _completeOnboarding,
-                color: CupertinoColors.systemIndigo,
+                color: primaryColor,
                 borderRadius: BorderRadius.circular(12),
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child:
@@ -185,7 +185,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           'Get Started',
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
+                            color: CupertinoColors.white,
                           ),
                         ),
               ),
@@ -194,12 +195,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               Center(
                 child: Text(
                   'FLOWO 1.0.0',
-                  style: TextStyle(
+                  style: theme.textTheme.tabLabelTextStyle.copyWith(
                     fontSize: 12,
-                    color:
-                        isDarkMode
-                            ? CupertinoColors.systemGrey
-                            : CupertinoColors.systemGrey,
+                    color: CupertinoColors.systemGrey,
                   ),
                 ),
               ),
