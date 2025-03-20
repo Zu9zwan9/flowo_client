@@ -148,16 +148,16 @@ class AddEventPageState extends State<AddEventPage>
                       context: context,
                       label: 'Duration',
                       value:
-                          '${(_travelingTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_travelingTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+                      '${(_travelingTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_travelingTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
                       onTap: () async {
                         final duration =
-                            await CupertinoFormWidgets.showDurationPicker(
-                              context: context,
-                              initialHours: _travelingTime ~/ 3600000,
-                              initialMinutes:
-                                  (_travelingTime % 3600000) ~/ 60000,
-                              maxHours: 12,
-                            );
+                        await CupertinoFormWidgets.showDurationPicker(
+                          context: context,
+                          initialHours: _travelingTime ~/ 3600000,
+                          initialMinutes:
+                          (_travelingTime % 3600000) ~/ 60000,
+                          maxHours: 12,
+                        );
                         if (mounted) setState(() => _travelingTime = duration);
                       },
                       color: theme.accentColor,
@@ -221,7 +221,7 @@ class AddEventPageState extends State<AddEventPage>
                     text: 'Save Event',
                     onPressed: () {
                       _animationController.forward().then(
-                        (_) => _animationController.reverse(),
+                            (_) => _animationController.reverse(),
                       );
                       _saveEvent(context);
                     },
@@ -236,9 +236,9 @@ class AddEventPageState extends State<AddEventPage>
   }
 
   Future<void> _showDatePicker(
-    BuildContext context, {
-    required bool isStart,
-  }) async {
+      BuildContext context, {
+        required bool isStart,
+      }) async {
     final pickedDate = await CupertinoFormWidgets.showDatePicker(
       context: context,
       initialDate: isStart ? _selectedDate : (_endTime ?? _startTime),
@@ -256,30 +256,30 @@ class AddEventPageState extends State<AddEventPage>
           );
         } else {
           _endTime =
-              _endTime != null
-                  ? DateTime(
-                    pickedDate.year,
-                    pickedDate.month,
-                    pickedDate.day,
-                    _endTime!.hour,
-                    _endTime!.minute,
-                  )
-                  : DateTime(
-                    pickedDate.year,
-                    pickedDate.month,
-                    pickedDate.day,
-                    _startTime.hour + 1,
-                    _startTime.minute,
-                  );
+          _endTime != null
+              ? DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            _endTime!.hour,
+            _endTime!.minute,
+          )
+              : DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            _startTime.hour + 1,
+            _startTime.minute,
+          );
         }
       });
     }
   }
 
   Future<void> _showTimePicker(
-    BuildContext context, {
-    required bool isStart,
-  }) async {
+      BuildContext context, {
+        required bool isStart,
+      }) async {
     final pickedTime = await CupertinoFormWidgets.showTimePicker(
       context: context,
       initialTime: isStart ? _startTime : (_endTime ?? _startTime),
@@ -308,15 +308,15 @@ class AddEventPageState extends State<AddEventPage>
         context: context,
         builder:
             (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please fill in all required fields.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+          title: const Text('Validation Error'),
+          content: const Text('Please fill in all required fields.'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
             ),
+          ],
+        ),
       );
       return;
     }
@@ -329,30 +329,30 @@ class AddEventPageState extends State<AddEventPage>
       _startTime.minute,
     );
     final endTime =
-        _endTime != null
-            ? DateTime(
-              _selectedDate.year,
-              _selectedDate.month,
-              _selectedDate.day,
-              _endTime!.hour,
-              _endTime!.minute,
-            )
-            : startTime.add(const Duration(minutes: 60));
+    _endTime != null
+        ? DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _endTime!.hour,
+      _endTime!.minute,
+    )
+        : startTime.add(const Duration(minutes: 60));
 
     if (endTime.isBefore(startTime)) {
       showCupertinoDialog(
         context: context,
         builder:
             (context) => CupertinoAlertDialog(
-              title: const Text('Invalid Time'),
-              content: const Text('End time must be after start time.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+          title: const Text('Invalid Time'),
+          content: const Text('End time must be after start time.'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK'),
+              onPressed: () => Navigator.pop(context),
             ),
+          ],
+        ),
       );
       return;
     }
@@ -362,7 +362,7 @@ class AddEventPageState extends State<AddEventPage>
       start: startTime,
       end: endTime,
       location:
-          _locationController.text.isNotEmpty ? _locationController.text : null,
+      _locationController.text.isNotEmpty ? _locationController.text : null,
       notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       color: _selectedColor,
       travelingTime: _travelingTime,

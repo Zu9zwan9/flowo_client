@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../design/cupertino_form_theme.dart';
 import 'add_event_page.dart';
@@ -38,19 +39,19 @@ class _AddItemScreenState extends State<AddItemScreen>
       case 0:
         return BlocProvider.value(
           key: const ValueKey('Task'),
-          value: context.read<CalendarCubit>(),
+          value: context.read<TaskManagerCubit>(), // Corrected from CalendarCubit
           child: AddTaskPage(selectedDate: widget.selectedDate),
         );
       case 1:
         return BlocProvider.value(
           key: const ValueKey('Event'),
-          value: context.read<CalendarCubit>(),
+          value: context.read<TaskManagerCubit>(), // Corrected from CalendarCubit
           child: AddEventPage(selectedDate: widget.selectedDate),
         );
       case 2:
         return BlocProvider.value(
           key: const ValueKey('Habit'),
-          value: context.read<CalendarCubit>(),
+          value: context.read<TaskManagerCubit>(), // Corrected from CalendarCubit
           child: AddHabitPage(selectedDate: widget.selectedDate),
         );
       default:

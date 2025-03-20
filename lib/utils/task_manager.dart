@@ -13,6 +13,7 @@ import 'package:hive/hive.dart';
 
 import '../models/day.dart';
 import '../models/repeat_rule.dart';
+import '../models/repeat_rule_instance.dart';
 import '../models/scheduled_task_type.dart';
 import '../models/task.dart';
 
@@ -31,13 +32,13 @@ class TaskManager {
     required this.userSettings,
     String? huggingFaceApiKey,
   }) : scheduler = Scheduler(daysDB, tasksDB, userSettings),
-       taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
-       taskBreakdownAPI = TaskBreakdownAPI(
-         apiKey: huggingFaceApiKey ?? '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',
-       ),
-       taskEstimatorAPI = TaskEstimatorAPI(
-         apiKey: huggingFaceApiKey ?? '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',
-       );
+        taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
+        taskBreakdownAPI = TaskBreakdownAPI(
+          apiKey: huggingFaceApiKey ?? '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',
+        ),
+        taskEstimatorAPI = TaskEstimatorAPI(
+          apiKey: huggingFaceApiKey ?? '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',
+        );
 
   void updateUserSettings(UserSettings userSettings) {
     logInfo('Updating TaskManager user settings');
@@ -46,16 +47,16 @@ class TaskManager {
   }
 
   Task createTask(
-    String title,
-    int priority,
-    int estimatedTime,
-    int deadline,
-    Category category, {
-    Task? parentTask,
-    String? notes,
-    int? color,
-    RepeatRule? frequency,
-  }) {
+      String title,
+      int priority,
+      int estimatedTime,
+      int deadline,
+      Category category, {
+        Task? parentTask,
+        String? notes,
+        int? color,
+        RepeatRule? frequency,
+      }) {
     final task = Task(
       id: UniqueKey().toString(),
       title: title,
@@ -77,8 +78,6 @@ class TaskManager {
     return task;
   }
 
-  // Fixed issue where task.key could be null causing "type 'Null' is not a subtype of type 'String'" error
-  // We use task.id instead of task.key because tasks are stored with their id as the key
   void deleteTask(Task task) {
     tasksDB.delete(task.id);
     final parentTask = task.parentTask;
@@ -101,17 +100,17 @@ class TaskManager {
   }
 
   void editTask(
-    Task task,
-    String title,
-    int priority,
-    int estimatedTime,
-    int deadline,
-    Category category,
-    Task? parentTask, {
-    String? notes,
-    int? color,
-    RepeatRule? frequency,
-  }) {
+      Task task,
+      String title,
+      int priority,
+      int estimatedTime,
+      int deadline,
+      Category category,
+      Task? parentTask, {
+        String? notes,
+        int? color,
+        RepeatRule? frequency,
+      }) {
     task.title = title;
     task.priority = priority;
     task.estimatedTime = estimatedTime;
@@ -133,9 +132,9 @@ class TaskManager {
 
   void scheduleTasks() {
     final tasks =
-        tasksDB.values
-            .where((task) => (task.frequency == null) && task.subtasks.isEmpty)
-            .toList();
+    tasksDB.values
+        .where((task) => (task.frequency == null) && task.subtasks.isEmpty)
+        .toList();
 
     tasks.removeWhere((task) => task.id == 'free_time_manager');
     final justScheduledTasks = <ScheduledTask>[];
@@ -151,9 +150,9 @@ class TaskManager {
       }
 
       final filteredEntries =
-          taskUrgencyMap.entries
-              .where((entry) => _isOrderCorrect(entry.key))
-              .toList();
+      taskUrgencyMap.entries
+          .where((entry) => _isOrderCorrect(entry.key))
+          .toList();
 
       if (filteredEntries.isEmpty) {
         log('No tasks with correct order to schedule');
@@ -161,7 +160,7 @@ class TaskManager {
       }
 
       final mostUrgentEntry = filteredEntries.reduce(
-        (a, b) => a.value > b.value ? a : b,
+            (a, b) => a.value > b.value ? a : b,
       );
       final mostUrgentTask = mostUrgentEntry.key;
 
@@ -175,7 +174,7 @@ class TaskManager {
         mostUrgentTask,
         userSettings.minSession,
         urgency:
-            mostUrgentTask.frequency == null ? mostUrgentEntry.value : null,
+        mostUrgentTask.frequency == null ? mostUrgentEntry.value : null,
         availableDates: availableDates,
       );
 
@@ -189,7 +188,7 @@ class TaskManager {
 
   void manageHabits() {
     List<Task> habits =
-        tasksDB.values.where((task) => task.frequency != null).toList();
+    tasksDB.values.where((task) => task.frequency != null).toList();
 
     for (Task habit in habits) {
       List<DateTime> scheduledDates = _calculateHabitDates(habit);
@@ -205,8 +204,8 @@ class TaskManager {
   bool _isOrderCorrect(Task task) {
     if (task.order != null && task.order! > 0 && task.parentTask != null) {
       return !task.parentTask!.subtasks.any(
-        (subtask) =>
-            subtask.order != null &&
+            (subtask) =>
+        subtask.order != null &&
             subtask.order! < task.order! &&
             subtask.scheduledTasks.isEmpty,
       );
@@ -221,9 +220,9 @@ class TaskManager {
       if (dayDate.isBefore(now)) continue;
 
       final toRemove =
-          day.scheduledTasks
-              .where((st) => st.type == ScheduledTaskType.defaultType)
-              .toList();
+      day.scheduledTasks
+          .where((st) => st.type == ScheduledTaskType.defaultType)
+          .toList();
       for (var scheduledTask in toRemove) {
         day.scheduledTasks.remove(scheduledTask);
         final task = tasksDB.get(scheduledTask.parentTaskId);
@@ -237,9 +236,14 @@ class TaskManager {
     logInfo('Removed scheduled tasks after ${now.toIso8601String()}');
   }
 
+  /// Calculates the dates for a habit based on its RepeatRule, now handling RepeatRuleInstance.
   List<DateTime> _calculateHabitDates(Task habit) {
     final dates = <DateTime>[];
-    var currentDate = habit.startDate;
+    var currentDate = DateTime(
+      habit.startDate.year,
+      habit.startDate.month,
+      habit.startDate.day,
+    ); // Ensure we start from midnight
     final repeatRule = habit.frequency;
 
     if (repeatRule == null) {
@@ -249,74 +253,111 @@ class TaskManager {
 
     final maxDate = DateTime.now().add(const Duration(days: 365 * 3));
     while ((repeatRule.until != null &&
-            currentDate.isBefore(repeatRule.until!)) ||
+        currentDate.isBefore(repeatRule.until!)) ||
         (repeatRule.count != null && dates.length < repeatRule.count!) ||
         (repeatRule.until == null &&
             repeatRule.count == null &&
             currentDate.isBefore(maxDate))) {
       switch (repeatRule.frequency) {
         case 'daily':
-          dates.add(currentDate);
-          currentDate = currentDate.add(Duration(days: repeatRule.interval));
-          break;
-        case 'weekly':
-          if (repeatRule.byDay != null &&
-              repeatRule.byDay!.contains(currentDate.weekday % 7)) {
+        // For daily, byDay contains one RepeatRuleInstance with selectedDay as 'daily'
+          if (repeatRule.byDay != null && repeatRule.byDay!.isNotEmpty) {
             dates.add(currentDate);
           }
-          currentDate = currentDate.add(const Duration(days: 1));
+          currentDate = currentDate.add(Duration(days: repeatRule.interval));
           break;
+
+        case 'weekly':
+          if (repeatRule.byDay != null && repeatRule.byDay!.isNotEmpty) {
+            final weekdays = repeatRule.byDay!
+                .map((instance) => _dayNameToInt(instance.selectedDay))
+                .toSet();
+            // Check each day of the week starting from currentDate
+            for (int i = 0; i < 7; i++) {
+              final checkDate = currentDate.add(Duration(days: i));
+              if (weekdays.contains(checkDate.weekday)) {
+                dates.add(checkDate);
+              }
+            }
+            // Move to the next week
+            currentDate = currentDate.add(Duration(days: 7 * repeatRule.interval));
+          } else {
+            currentDate = currentDate.add(Duration(days: 7 * repeatRule.interval));
+          }
+          break;
+
         case 'monthly':
-          if (repeatRule.byMonthDay != null) {
-            if (repeatRule.byMonthDay!.contains(currentDate.day)) {
-              dates.add(currentDate);
-            } else if (repeatRule.byMonthDay!.any((d) => d < 0)) {
-              final lastDay = DateTime(
-                currentDate.year,
-                currentDate.month + 1,
-                0,
-              );
-              final dayFromEnd =
-                  lastDay.day +
-                  (repeatRule.byMonthDay!.firstWhere((d) => d < 0) + 1);
-              if (currentDate.day == dayFromEnd) {
+          if (repeatRule.byMonthDay != null && repeatRule.byMonthDay!.isNotEmpty) {
+            final monthDays = repeatRule.byMonthDay!
+                .map((instance) => int.parse(instance.selectedDay))
+                .toSet();
+            final lastDayOfMonth = DateTime(currentDate.year, currentDate.month + 1, 0).day;
+            for (var day in monthDays) {
+              int actualDay = day;
+              if (day < 0) {
+                // Negative days count from the end
+                actualDay = lastDayOfMonth + day + 1;
+              }
+              if (actualDay >= 1 && actualDay <= lastDayOfMonth && actualDay == currentDate.day) {
                 dates.add(currentDate);
               }
             }
-          }
-          if (repeatRule.bySetPos != null &&
-              (currentDate.day - 1) ~/ 7 + 1 == repeatRule.bySetPos) {
-            dates.add(currentDate);
+          } else if (repeatRule.bySetPos != null &&
+              repeatRule.byDay != null &&
+              repeatRule.byDay!.isNotEmpty) {
+            final weekday = _dayNameToInt(repeatRule.byDay!.first.selectedDay);
+            final monthStart = DateTime(currentDate.year, currentDate.month, 1);
+            final daysInMonth = DateTime(currentDate.year, currentDate.month + 1, 0).day;
+            int occurrence = 0;
+            for (int day = 1; day <= daysInMonth; day++) {
+              final checkDate = DateTime(currentDate.year, currentDate.month, day);
+              if (checkDate.weekday == weekday) {
+                occurrence++;
+                if (repeatRule.bySetPos! > 0 && occurrence == repeatRule.bySetPos!) {
+                  dates.add(checkDate);
+                  break;
+                } else if (repeatRule.bySetPos! < 0) {
+                  // Handle negative bySetPos (e.g., last Monday)
+                  final lastOccurrence = _findLastOccurrence(monthStart, weekday);
+                  if (checkDate.day == lastOccurrence.day) {
+                    dates.add(checkDate);
+                  }
+                }
+              }
+            }
           }
           currentDate = DateTime(
             currentDate.year,
             currentDate.month + repeatRule.interval,
+            1,
+          );
+          break;
+
+        case 'yearly':
+          if (repeatRule.byDay != null && repeatRule.byDay!.isNotEmpty) {
+            // For yearly, byDay contains one RepeatRuleInstance with selectedDay as 'yearly'
+            dates.add(currentDate);
+          }
+          if (repeatRule.byMonth != null && repeatRule.byMonth!.isNotEmpty) {
+            final months = repeatRule.byMonth!
+                .map((instance) => int.parse(instance.selectedDay))
+                .toSet();
+            for (var month in months) {
+              final daysInMonth = DateTime(currentDate.year, month + 1, 0).day;
+              final day = currentDate.day > daysInMonth ? daysInMonth : currentDate.day;
+              final newDate = DateTime(currentDate.year, month, day);
+              if (newDate.isAfter(currentDate) || newDate == currentDate) {
+                dates.add(newDate);
+              }
+            }
+          }
+          currentDate = DateTime(
+            currentDate.year + repeatRule.interval,
+            currentDate.month,
             currentDate.day,
           );
           break;
-        case 'yearly':
-          dates.add(currentDate);
-          if (repeatRule.byMonth != null && repeatRule.byMonth!.isNotEmpty) {
-            for (var month in repeatRule.byMonth!) {
-              var day = currentDate.day;
-              if (day > DateTime(currentDate.year, month + 1, 0).day) {
-                day = DateTime(currentDate.year, month + 1, 0).day;
-              }
-              final newDate = DateTime(
-                currentDate.year + repeatRule.interval,
-                month,
-                day,
-              );
-              if (newDate.isAfter(currentDate)) dates.add(newDate);
-            }
-          } else {
-            currentDate = DateTime(
-              currentDate.year + repeatRule.interval,
-              currentDate.month,
-              currentDate.day,
-            );
-          }
-          break;
+
         default:
           throw ArgumentError('Invalid frequency: ${repeatRule.frequency}');
       }
@@ -324,39 +365,55 @@ class TaskManager {
     return dates;
   }
 
+  /// Converts day names to weekday integers (1 = Monday, ..., 7 = Sunday).
+  int _dayNameToInt(String dayName) {
+    const dayMap = {
+      'monday': 1,
+      'tuesday': 2,
+      'wednesday': 3,
+      'thursday': 4,
+      'friday': 5,
+      'saturday': 6,
+      'sunday': 7,
+    };
+    return dayMap[dayName.toLowerCase()] ?? 1; // Default to Monday if invalid
+  }
+
+  /// Finds the last occurrence of a weekday in a month.
+  DateTime _findLastOccurrence(DateTime monthStart, int weekday) {
+    final daysInMonth = DateTime(monthStart.year, monthStart.month + 1, 0).day;
+    DateTime lastDate = monthStart;
+    for (int day = 1; day <= daysInMonth; day++) {
+      final checkDate = DateTime(monthStart.year, monthStart.month, day);
+      if (checkDate.weekday == weekday) {
+        lastDate = checkDate;
+      }
+    }
+    return lastDate;
+  }
+
   String _formatDateKey(DateTime date) =>
       '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
 
-  /// Breaks down a task into subtasks using AI and schedules them
-  ///
-  /// Returns a list of the created subtasks
   Future<List<Task>> breakdownAndScheduleTask(Task task) async {
     logInfo('Breaking down task: ${task.title}');
 
-    // Use the API to break down the task into subtasks
     final subtaskTitles = await taskBreakdownAPI.breakdownTask(task.title);
 
     if (subtaskTitles.isEmpty) {
       logWarning('No subtasks generated for task: ${task.title}');
-
-      // If no subtasks were generated, schedule the parent task itself
       logInfo('Scheduling parent task: ${task.title}');
       scheduler.scheduleTask(task, userSettings.minSession, urgency: null);
-
       return [];
     }
 
     logInfo('Generated ${subtaskTitles.length} subtasks for: ${task.title}');
 
-    // Create subtask objects
     final subtasks = <Task>[];
     int order = 1;
 
     for (var subtaskTitle in subtaskTitles) {
-      // Calculate estimated time based on parent task's estimated time
-      // Distribute time proportionally among subtasks
       final estimatedTime = (task.estimatedTime / subtaskTitles.length).round();
-
       final subtask = Task(
         id: UniqueKey().toString(),
         title: subtaskTitle,
@@ -367,39 +424,25 @@ class TaskManager {
         parentTask: task,
         order: order++,
       );
-
       tasksDB.put(subtask.id, subtask);
       subtasks.add(subtask);
-
-      // Add subtask to parent task's subtasks list
       task.subtasks.add(subtask);
     }
 
-    // Update the parent task in the database
     tasksDB.put(task.id, task);
-
-    // Schedule the subtasks
     scheduleSubtasks(subtasks);
 
     return subtasks;
   }
 
-  /// Schedules a list of subtasks in order
-  ///
-  /// This method is protected (not private) to allow subclasses to access it.
   void scheduleSubtasks(List<Task> subtasks) {
     logInfo('Scheduling ${subtasks.length} subtasks');
-
-    // Sort subtasks by order
     subtasks.sort((a, b) => (a.order ?? 0).compareTo(b.order ?? 0));
-
-    // Schedule each subtask
     for (var subtask in subtasks) {
       scheduler.scheduleTask(
         subtask,
         userSettings.minSession,
-        urgency:
-            null, // Let the scheduler determine urgency based on task properties
+        urgency: null,
       );
       logInfo('Scheduled subtask: ${subtask.title}');
     }
