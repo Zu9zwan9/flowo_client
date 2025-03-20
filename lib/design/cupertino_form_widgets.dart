@@ -382,7 +382,9 @@ class CupertinoFormWidgets {
                 colorValue != null ? Color(colorValue) : theme.backgroundColor,
             border: Border.all(
               color:
-                  isSelected ? theme.primaryColor : CupertinoColors.systemGrey4,
+                  isSelected
+                      ? theme.primaryColor
+                      : CupertinoColors.systemBackground,
               width: 2,
             ),
           ),

@@ -87,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen>
     (
       page: AddItemScreen(),
       icon: CupertinoIcons.add_circled,
-      label: 'Add Task',
+      label: 'Create',
       accentColor: CupertinoColors.systemIndigo,
     ),
     (
@@ -161,8 +161,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.platformBrightnessOf(context);
-    final isDarkMode = brightness == Brightness.dark;
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
@@ -240,10 +239,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color:
-                      isDarkMode
-                          ? CupertinoColors.darkBackgroundGray
-                          : CupertinoColors.white,
+                  color: CupertinoTheme.of(context).scaffoldBackgroundColor,
                   boxShadow: [
                     BoxShadow(
                       color: CupertinoColors.black.withOpacity(0.2),
@@ -280,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 width: 36,
                                 height: 36,
                                 decoration: BoxDecoration(
-                                  color: CupertinoColors.activeBlue,
+                                  color: CupertinoColors.systemIndigo,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Center(
@@ -341,6 +337,10 @@ class _HomeScreenState extends State<HomeScreen>
                                 accentColor: item.accentColor,
                                 isSelected: isSelected,
                                 onTap: () => _navigateToPage(index),
+                                textColor:
+                                    isDarkMode
+                                        ? CupertinoColors.white
+                                        : CupertinoColors.black,
                               );
                             },
                           ),

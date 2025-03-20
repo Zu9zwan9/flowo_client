@@ -1,14 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 
-/// A reusable menu button widget with Cupertino styling and haptic feedback
-///
-/// Features:
-/// - Consistent styling across the app
-/// - Visual feedback on press
-/// - Haptic feedback for better user experience
-/// - Smooth animations
-/// - Proper theming support
 class MenuButton extends StatefulWidget {
   final bool isExpanded;
   final VoidCallback onTap;

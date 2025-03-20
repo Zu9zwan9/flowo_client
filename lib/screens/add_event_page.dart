@@ -72,6 +72,10 @@ class AddEventPageState extends State<AddEventPage>
   Widget build(BuildContext context) {
     final theme = CupertinoFormTheme(context);
     return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('Add Event'),
+        trailing: GestureDetector(),
+      ),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(CupertinoFormTheme.horizontalSpacing),

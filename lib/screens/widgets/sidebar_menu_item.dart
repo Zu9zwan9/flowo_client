@@ -2,33 +2,28 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 /// A reusable sidebar menu item with Cupertino styling
-///
-/// Features:
-/// - Consistent styling across the app
-/// - Visual feedback for selected state
-/// - Supports icons and labels
-/// - Proper theming support
-/// - Accessibility support
 class SidebarMenuItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color accentColor;
   final bool isSelected;
   final VoidCallback onTap;
+  final Color textColor;
 
   const SidebarMenuItem({
-    super.key,
+    Key? key,
     required this.icon,
     required this.label,
     required this.accentColor,
     required this.isSelected,
     required this.onTap,
-  });
+    this.textColor = CupertinoColors.black, // Default value
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.platformBrightnessOf(context);
-    final isDarkMode = brightness == Brightness.dark;
+    // Use CupertinoTheme instead of MediaQuery to get the appropriate brightness
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     return CupertinoButton(
       padding: EdgeInsets.zero,

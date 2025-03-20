@@ -84,16 +84,14 @@ class _AddTaskPageState extends State<AddTaskPage>
 
   @override
   Widget build(BuildContext context) {
-    // Get form styling helper
     final form = CupertinoTaskForm(context);
-
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('New Task'),
+        middle: const Text('Add Task'),
         backgroundColor: form.backgroundColor,
         border: null,
       ),
-      backgroundColor: form.secondaryBackgroundColor,
+      backgroundColor: form.backgroundColor,
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
@@ -209,10 +207,11 @@ class _AddTaskPageState extends State<AddTaskPage>
                     const SizedBox(height: CupertinoTaskForm.elementSpacing),
                     form.prioritySlider(
                       value: _formData.priority.toDouble(),
-                      onChanged:
-                          (value) => setState(
-                            () => _formData.priority = value.toInt(),
-                          ),
+                      onChanged: (value) {
+                        setState(() {
+                          _formData.priority = value.round();
+                        });
+                      },
                       getPriorityColor: (value) => _getPriorityColor(value),
                     ),
                   ],

@@ -9,7 +9,7 @@ class ThemeNotifier extends ChangeNotifier {
   // Keep Material ThemeData for backward compatibility
   late ThemeData _currentTheme;
   AppTheme _currentThemeMode = AppTheme.system;
-  String _currentFont = 'SF Pro';
+  String _currentFont = 'SF Pro Display';
 
   // Save reference to override brightness for system theme mode
   Brightness? _brightnessOverride;
@@ -104,10 +104,12 @@ class ThemeNotifier extends ChangeNotifier {
   void _applyTheme(Brightness brightness, {required bool isADHD}) {
     final isDark = brightness == Brightness.dark;
 
-    // Configure colors based on theme type
+    // Configure colors based on theme type with Apple-style colors
+    // Deep blue (#0A84FF) for primary color
     final primaryColor =
-        isADHD ? CupertinoColors.systemOrange : CupertinoColors.systemBlue;
+        isADHD ? CupertinoColors.systemOrange : const Color(0xFF0A84FF);
 
+    // Text color: black for light mode, white for dark mode
     final textColor =
         isADHD
             ? CupertinoColors.black
@@ -115,8 +117,9 @@ class ThemeNotifier extends ChangeNotifier {
             ? CupertinoColors.white
             : CupertinoColors.black;
 
+    // Background color: Apple-style white (#F2F2F7) for light mode, dark mode black (#1C1C1E) for dark mode
     final backgroundColor =
-        isDark ? CupertinoColors.black : CupertinoColors.systemBackground;
+        isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
 
     // Configure text style with appropriate weight for ADHD mode
     final textStyle = TextStyle(
