@@ -411,29 +411,61 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   Widget _buildPrioritySection(BuildContext context, CupertinoFormTheme theme) {
-    final priorityWidgets = {
-      for (var item in ['Low', 'Normal', 'High'])
-        item: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: CupertinoFormTheme.smallSpacing,
-            vertical: CupertinoFormTheme.smallSpacing / 2,
-          ),
-          child: Text(item),
-        ),
-    };
     return CupertinoFormWidgets.formGroup(
       context: context,
       title: 'Priority',
       children: [
-        CupertinoFormWidgets.segmentedControl(
-          context: context,
-          children: priorityWidgets,
-          groupValue: _priority,
-          onValueChanged: (value) => setState(() => _priority = value),
-          selectedColor: theme.accentColor,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Level: ${_getPriorityValue()}', style: theme.labelTextStyle),
+            Text(
+              _getPriorityLabel(),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: _getPriorityColor(),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: CupertinoFormTheme.elementSpacing),
+        CupertinoSlider(
+          value: _getPriorityValue().toDouble(),
+          min: 0,
+          max: 2,
+          divisions: 2,
+          activeColor: _getPriorityColor(),
+          onChanged: (value) {
+            setState(() {
+              _priority = ['Low', 'Normal', 'High'][value.round()];
+            });
+          },
         ),
       ],
     );
+  }
+
+  int _getPriorityValue() {
+    return {'Low': 0, 'Normal': 1, 'High': 2}[_priority] ?? 1;
+  }
+
+  String _getPriorityLabel() {
+    return {
+          'Low': 'Not urgent',
+          'Normal': 'Standard',
+          'High': 'Urgent',
+        }[_priority] ??
+        'Standard';
+  }
+
+  Color _getPriorityColor() {
+    return {
+          'Low': CupertinoColors.systemGreen,
+          'Normal': CupertinoColors.systemOrange,
+          'High': CupertinoColors.systemRed,
+        }[_priority] ??
+        CupertinoColors.systemOrange;
   }
 
   Widget _buildDayChip(
