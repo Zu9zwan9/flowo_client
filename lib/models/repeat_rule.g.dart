@@ -21,9 +21,9 @@ class RepeatRuleAdapter extends TypeAdapter<RepeatRule> {
       interval: fields[1] as int,
       count: fields[2] as int?,
       until: fields[3] as DateTime?,
-      byDay: (fields[4] as List?)?.cast<RepeatRuleInstance>(),
-      byMonthDay: (fields[5] as List?)?.cast<RepeatRuleInstance>(),
-      byMonth: (fields[6] as List?)?.cast<RepeatRuleInstance>(),
+      byDay: (fields[4] as List?)?.cast<int>(),
+      byMonthDay: (fields[5] as List?)?.cast<int>(),
+      byMonth: (fields[6] as List?)?.cast<int>(),
       bySetPos: fields[7] as int?,
     );
   }

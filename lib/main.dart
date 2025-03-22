@@ -1,6 +1,5 @@
 import 'package:flowo_client/models/ambient_scene.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
-import 'package:flowo_client/models/repeat_rule_instance.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient_service.dart';
@@ -53,7 +52,6 @@ void main() async {
   Hive.registerAdapter(PomodoroSessionAdapter());
   Hive.registerAdapter(PomodoroStateAdapter());
   Hive.registerAdapter(AmbientSceneAdapter());
-  Hive.registerAdapter(RepeatRuleInstanceAdapter());
   await Hive.initFlutter();
 
   Box<Task> tasksDB;

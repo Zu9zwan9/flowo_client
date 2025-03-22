@@ -31,7 +31,8 @@ class Pipeline {
     required this.model,
     required this.apiKey,
     String? apiUrl,
-  }) : apiUrl = apiUrl ?? 'https://api-inference.huggingface.co/models/$model';
+  }) : apiUrl =
+           apiUrl ?? 'https://router.huggingface.co/hf-inference/models/$model';
 
   /// Calls the pipeline with the given messages
   ///
@@ -50,7 +51,8 @@ class Pipeline {
 
     try {
       logInfo('Making request to Hugging Face API for model: $model');
-      final response = await http.post(
+      final client = http.Client();
+      final response = await client.post(
         Uri.parse(apiUrl),
         headers: headers,
         body: jsonEncode(data),
@@ -96,7 +98,7 @@ class TaskBreakdownAPI {
   TaskBreakdownAPI({
     required this.apiKey,
     this.apiUrl =
-        'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta',
+        'https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta',
   }) : _pipeline = pipeline(
          "text-generation",
          model: 'HuggingFaceH4/zephyr-7b-beta',

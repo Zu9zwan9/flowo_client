@@ -1,4 +1,3 @@
-import 'package:flowo_client/models/repeat_rule_instance.dart';
 import 'package:hive/hive.dart';
 
 part 'repeat_rule.g.dart';
@@ -18,13 +17,13 @@ class RepeatRule {
   DateTime? until;
 
   @HiveField(4)
-  List<RepeatRuleInstance>? byDay; // monday - 1, tuesday - 2, ..., sunday - 7
+  List<int>? byDay; // monday - 1, tuesday - 2, ..., sunday - 7
 
   @HiveField(5)
-  List<RepeatRuleInstance>? byMonthDay;
+  List<int>? byMonthDay;
 
   @HiveField(6)
-  List<RepeatRuleInstance>? byMonth;
+  List<int>? byMonth;
 
   @HiveField(7)
   int? bySetPos;
