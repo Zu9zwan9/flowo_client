@@ -68,8 +68,19 @@ class Task extends HiveObject {
   int? color;
 
   DateTime get startDate => DateTime.now();
+
   DateTime get endDate => DateTime.now().add(Duration(days: 1));
+
   List<DateTime> get exceptions => [];
+
+  @override
+  String toString() {
+    return 'Task: {id: $id, title: $title, priority: $priority, '
+        'deadline: $deadline, estimatedTime: $estimatedTime, category: $category, '
+        'notes: $notes, location: $location, image: $image, frequency: ${frequency.toString()}, '
+        'subtasks: $subtasks, parentTaskId: $parentTaskId, scheduledTasks: $scheduledTasks, '
+        'isDone: $isDone, order: $order, overdue: $overdue, color: $color}';
+  }
 
   Task({
     required this.id,

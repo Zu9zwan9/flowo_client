@@ -195,6 +195,41 @@ class Scheduler {
     );
   }
 
+  void scheduleHabit(
+    Task task,
+    List<DateTime> dates,
+    TimeOfDay start,
+    TimeOfDay end,
+  ) {
+    _dayCache.clear();
+
+    for (DateTime date in dates) {
+      final dateKey = _formatDateKey(date);
+      final day = _getOrCreateDay(dateKey);
+      final startTime = _combineDateKeyAndTimeOfDay(dateKey, start);
+      final endTime = _combineDateKeyAndTimeOfDay(dateKey, end);
+
+      final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
+      for (ScheduledTask scheduledTask in sortedTasks) {
+        if (scheduledTask.startTime.isBefore(endTime) &&
+            scheduledTask.endTime.isAfter(startTime)) {
+          logDebug(
+            'Habit overlaps with existing task: ${scheduledTask.parentTaskId}',
+          );
+          return;
+        }
+      }
+
+      _createScheduledTask(
+        task: task,
+        start: startTime,
+        end: endTime,
+        dateKey: dateKey,
+        type: ScheduledTaskType.timeSensitive,
+      );
+    }
+  }
+
   bool _isActiveDay(String dateKey) {
     final date = DateTime.parse('$dateKey 00:00:00');
     final weekdayNames = [

@@ -874,7 +874,7 @@ class AddHabitPageState extends State<AddHabitPage>
     RepeatRule repeatRule;
     if (_selectedFrequencyType == 'weekly' && _frequency.isNotEmpty) {
       repeatRule = RepeatRule(
-        frequency: _selectedFrequencyType,
+        type: _selectedFrequencyType,
         interval: _intervalValue,
         byDay:
             _frequency.map((f) => _dayNameToInt(f['day'] as String)).toList(),
@@ -883,7 +883,7 @@ class AddHabitPageState extends State<AddHabitPage>
         _monthlyType == 'specific' &&
         _monthlyDays.isNotEmpty) {
       repeatRule = RepeatRule(
-        frequency: _selectedFrequencyType,
+        type: _selectedFrequencyType,
         interval: _intervalValue,
         byMonthDay: _monthlyDays,
       );
@@ -892,14 +892,14 @@ class AddHabitPageState extends State<AddHabitPage>
         _monthlyWeek != null &&
         _monthlyDayOfWeek != null) {
       repeatRule = RepeatRule(
-        frequency: _selectedFrequencyType,
+        type: _selectedFrequencyType,
         interval: _intervalValue,
         bySetPos: _getSetPosFromWeek(_monthlyWeek!),
         byDay: [_dayNameToInt(_monthlyDayOfWeek!)],
       );
     } else {
       repeatRule = RepeatRule(
-        frequency: _selectedFrequencyType,
+        type: _selectedFrequencyType,
         interval: _intervalValue,
       );
     }

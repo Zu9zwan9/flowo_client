@@ -17,6 +17,11 @@ class RepeatRuleInstance {
   @HiveField(3)
   TimeOfDay end;
 
+  @override
+  String toString() {
+    return 'RepeatRuleInstance: {selectedDay: $selectedDay, name: $name, start: $start, end: $end}';
+  }
+
   RepeatRuleInstance({
     required this.selectedDay,
     required this.name,

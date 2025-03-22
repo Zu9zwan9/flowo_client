@@ -17,36 +17,39 @@ class RepeatRuleAdapter extends TypeAdapter<RepeatRule> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return RepeatRule(
-      frequency: fields[0] as String,
+      type: fields[0] as String,
       interval: fields[1] as int,
       count: fields[2] as int?,
-      until: fields[3] as DateTime?,
-      byDay: (fields[4] as List?)?.cast<RepeatRuleInstance>(),
-      byMonthDay: (fields[5] as List?)?.cast<RepeatRuleInstance>(),
-      byMonth: (fields[6] as List?)?.cast<RepeatRuleInstance>(),
-      bySetPos: fields[7] as int?,
+      startRepeat: fields[3] as DateTime,
+      endRepeat: fields[4] as DateTime?,
+      byDay: (fields[5] as List?)?.cast<RepeatRuleInstance>(),
+      byMonthDay: (fields[6] as List?)?.cast<RepeatRuleInstance>(),
+      byMonth: (fields[7] as List?)?.cast<RepeatRuleInstance>(),
+      bySetPos: fields[8] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, RepeatRule obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
-      ..write(obj.frequency)
+      ..write(obj.type)
       ..writeByte(1)
       ..write(obj.interval)
       ..writeByte(2)
       ..write(obj.count)
       ..writeByte(3)
-      ..write(obj.until)
+      ..write(obj.startRepeat)
       ..writeByte(4)
-      ..write(obj.byDay)
+      ..write(obj.endRepeat)
       ..writeByte(5)
-      ..write(obj.byMonthDay)
+      ..write(obj.byDay)
       ..writeByte(6)
-      ..write(obj.byMonth)
+      ..write(obj.byMonthDay)
       ..writeByte(7)
+      ..write(obj.byMonth)
+      ..writeByte(8)
       ..write(obj.bySetPos);
   }
 

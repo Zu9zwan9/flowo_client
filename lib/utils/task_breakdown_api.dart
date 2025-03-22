@@ -6,11 +6,11 @@ import 'package:http/http.dart' as http;
 
 /// A factory function to create a pipeline for various NLP tasks
 Pipeline pipeline(
-  String task, {
-  required String model,
-  required String apiKey,
-  String? apiUrl,
-}) {
+    String task, {
+      required String model,
+      required String apiKey,
+      String? apiUrl,
+    }) {
   return Pipeline(task: task, model: model, apiKey: apiKey, apiUrl: apiUrl);
 }
 
@@ -31,7 +31,8 @@ class Pipeline {
     required this.model,
     required this.apiKey,
     String? apiUrl,
-  }) : apiUrl = apiUrl ?? 'https://api-inference.huggingface.co/models/$model';
+  }) : apiUrl =
+      apiUrl ?? 'https://router.huggingface.co/hf-inference/models/$model';
 
   /// Calls the pipeline with the given messages
   ///
@@ -50,7 +51,8 @@ class Pipeline {
 
     try {
       logInfo('Making request to Hugging Face API for model: $model');
-      final response = await http.post(
+      final client = http.Client();
+      final response = await client.post(
         Uri.parse(apiUrl),
         headers: headers,
         body: jsonEncode(data),
@@ -68,7 +70,7 @@ class Pipeline {
         logWarning('Using fallback response due to API error');
         return {
           "generated_text":
-              "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
+          "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
         };
       }
     } catch (e) {
@@ -78,7 +80,7 @@ class Pipeline {
       logWarning('Using fallback response due to exception');
       return {
         "generated_text":
-            "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
+        "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
       };
     }
   }
@@ -96,13 +98,13 @@ class TaskBreakdownAPI {
   TaskBreakdownAPI({
     required this.apiKey,
     this.apiUrl =
-        'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta',
+    'https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta',
   }) : _pipeline = pipeline(
-         "text-generation",
-         model: 'HuggingFaceH4/zephyr-7b-beta',
-         apiKey: apiKey,
-         apiUrl: apiUrl,
-       );
+    "text-generation",
+    model: 'HuggingFaceH4/zephyr-7b-beta',
+    apiKey: apiKey,
+    apiUrl: apiUrl,
+  );
 
   /// Makes a request to the Hugging Face API to break down a task into subtasks
   ///
@@ -114,7 +116,7 @@ class TaskBreakdownAPI {
       logWarning('Empty task provided, returning mock response');
       return {
         "generated_text":
-            "1. First subtask\n2. Second subtask\n3. Third subtask",
+        "1. First subtask\n2. Second subtask\n3. Third subtask",
       };
     }
 
@@ -123,7 +125,7 @@ class TaskBreakdownAPI {
       {
         "role": "user",
         "content":
-            "You are a helpful assistant that breaks down tasks into clear, actionable subtasks. Format your response as a numbered list. Break down the task into specific subtasks: $task",
+        "You are a helpful assistant that breaks down tasks into clear, actionable subtasks. Format your response as a numbered list. Break down the task into specific subtasks: $task",
       },
     ];
 

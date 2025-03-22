@@ -72,7 +72,7 @@ class HabitScreenState extends State<HabitScreen> {
 
       // Initialize repeat rule properties
       if (widget.habit!.frequency != null) {
-        _frequency = widget.habit!.frequency!.frequency;
+        _frequency = widget.habit!.frequency!.type;
         _interval = widget.habit!.frequency!.interval;
         _daysOfWeek = widget.habit!.frequency!.byDay ?? [];
         _daysOfMonth = widget.habit!.frequency!.byMonthDay ?? [];
@@ -888,7 +888,7 @@ class HabitScreenState extends State<HabitScreen> {
 
     // Create RepeatRule
     final repeatRule = RepeatRule(
-      frequency: _frequency,
+      type: _frequency,
       interval: _interval,
       byDay: _frequency == 'weekly' ? _daysOfWeek : null,
       byMonthDay: _frequency == 'monthly' ? _daysOfMonth : null,
