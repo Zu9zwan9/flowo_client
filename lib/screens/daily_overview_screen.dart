@@ -307,40 +307,73 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }
 
   Widget _buildSectionSkeleton(String title) {
-    return Container(
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+
+    return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader(title),
-          const SizedBox(height: 10),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: CupertinoActivityIndicator(),
-            ),
-          ),
+      child: GlassmorphicContainer(
+        padding: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(16),
+        blur: glassmorphicTheme.defaultBlur,
+        opacity: glassmorphicTheme.defaultOpacity,
+        borderWidth: glassmorphicTheme.defaultBorderWidth,
+        borderColor: glassmorphicTheme.borderColor,
+        useGradient: true,
+        gradientColors: [
+          glassmorphicTheme.accentColor.withOpacity(0.2),
+          glassmorphicTheme.secondaryAccentColor.withOpacity(0.1),
         ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader(title),
+            const SizedBox(height: 10),
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: CupertinoActivityIndicator(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildErrorSection(String title, String error) {
-    return Container(
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+
+    return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader(title),
-          const SizedBox(height: 10),
-          Text(
-            'Error loading tasks: $error',
-            style: TextStyle(
-              color: CupertinoColors.destructiveRed,
-              fontSize: 14,
-            ),
-          ),
+      child: GlassmorphicContainer(
+        padding: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(16),
+        blur: glassmorphicTheme.defaultBlur,
+        opacity: glassmorphicTheme.defaultOpacity,
+        borderWidth: glassmorphicTheme.defaultBorderWidth,
+        borderColor: CupertinoColors.destructiveRed.withOpacity(0.3),
+        useGradient: true,
+        gradientColors: [
+          CupertinoColors.destructiveRed.withOpacity(0.2),
+          glassmorphicTheme.secondaryAccentColor.withOpacity(0.1),
         ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader(title),
+            const SizedBox(height: 10),
+            Text(
+              'Error loading tasks: $error',
+              style: TextStyle(
+                color: CupertinoColors.destructiveRed,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -417,34 +450,30 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     final startTime = DateTimeFormatter.formatTime(scheduledTask.startTime);
     final endTime = DateTimeFormatter.formatTime(scheduledTask.endTime);
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+    final categoryColor = _getCategoryColor(task.category.name);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: GestureDetector(
-        onTap: () => _showTaskDetails(task, scheduledTask),
-        child: Container(
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          _showTaskDetails(task, scheduledTask);
+        },
+        child: GlassmorphicContainer(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color:
-                    isDarkMode
-                        ? CupertinoColors.black.withOpacity(0.3)
-                        : CupertinoColors.systemGrey5.withOpacity(0.5),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(
-              color:
-                  isDarkMode
-                      ? CupertinoColors.systemGrey4.withOpacity(0.2)
-                      : CupertinoColors.systemGrey5,
-              width: 0.5,
-            ),
-          ),
+          borderRadius: BorderRadius.circular(16),
+          blur: glassmorphicTheme.defaultBlur,
+          opacity: glassmorphicTheme.defaultOpacity,
+          borderWidth: glassmorphicTheme.defaultBorderWidth,
+          borderColor: categoryColor.withOpacity(0.3),
+          useGradient: true,
+          gradientColors: [
+            categoryColor.withOpacity(0.2),
+            glassmorphicTheme.secondaryAccentColor.withOpacity(0.1),
+          ],
+          showShimmer: task.priority > 1,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -539,12 +568,25 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
 
   void _showTaskDetails(Task task, ScheduledTask scheduledTask) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+    final categoryColor = _getCategoryColor(task.category.name);
+
+    // Provide haptic feedback when showing task details
+    HapticFeedback.selectionClick();
 
     showCupertinoModalPopup(
       context: context,
       builder:
           (context) => CupertinoActionSheet(
-            title: Text(task.title),
+            title: Text(
+              task.title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: categoryColor,
+              ),
+            ),
             message: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -555,7 +597,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                    color: glassmorphicTheme.accentColor,
                   ),
                 ),
                 if (task.notes != null && task.notes!.isNotEmpty) ...[
@@ -576,7 +618,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: _getCategoryColor(task.category.name),
+                        color: categoryColor,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -586,10 +628,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color:
-                            CupertinoTheme.of(
-                              context,
-                            ).textTheme.textStyle.color,
+                        color: categoryColor.withOpacity(0.8),
                       ),
                     ),
                   ],
@@ -599,6 +638,8 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
             actions: [
               CupertinoActionSheetAction(
                 onPressed: () {
+                  // Provide haptic feedback when marking task as done/undone
+                  HapticFeedback.mediumImpact();
                   Navigator.pop(context);
                   task.isDone = !task.isDone;
                   context.read<CalendarCubit>().updateTask(task);
@@ -606,13 +647,18 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                 child: Text(
                   task.isDone ? 'Mark as Undone' : 'Mark as Done',
                   style: TextStyle(
-                    color: CupertinoTheme.of(context).primaryColor,
+                    color: glassmorphicTheme.accentColor,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
             cancelButton: CupertinoActionSheetAction(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                // Provide haptic feedback when closing
+                HapticFeedback.lightImpact();
+                Navigator.pop(context);
+              },
               child: const Text('Close'),
             ),
           ),
