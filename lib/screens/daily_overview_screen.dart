@@ -1,13 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../blocs/tasks_controller/tasks_controller_cubit.dart';
+import '../design/animated_particles_background.dart';
+import '../design/glassmorphic_container.dart';
 import '../models/scheduled_task.dart';
 import '../models/task.dart';
 import '../models/user_profile.dart';
+import '../theme_notifier.dart';
 import '../utils/date_time_formatter.dart';
 import 'calendar_screen.dart';
 
@@ -22,6 +26,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   late DateTime _today;
   String _greeting = '';
   String _userName = '';
+  bool _useParticlesBackground = true;
 
   @override
   void initState() {
@@ -58,97 +63,174 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }
 
   void _navigateToCalendar() {
+    HapticFeedback.selectionClick();
     Navigator.push(
       context,
       CupertinoPageRoute(builder: (context) => const CalendarScreen()),
     );
   }
 
+  void _toggleParticlesBackground() {
+    setState(() {
+      _useParticlesBackground = !_useParticlesBackground;
+    });
+    HapticFeedback.mediumImpact();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+    Widget content = CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('Daily Overview'),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _toggleParticlesBackground,
+              child: Icon(
+                CupertinoIcons.sparkles,
+                color: glassmorphicTheme.accentColor,
+              ),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _navigateToCalendar,
+              child: Icon(
+                CupertinoIcons.calendar,
+                color: glassmorphicTheme.accentColor,
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: CupertinoColors.systemBackground.withOpacity(0.8),
+      ),
       child: SafeArea(
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(child: _buildHeader()),
             SliverToBoxAdapter(
-              child: _buildTimeSection(
-                'Morning',
-                TimeOfDay(hour: 5, minute: 0),
-                TimeOfDay(hour: 12, minute: 0),
+              child: AnimatedOpacity(
+                opacity: 1.0,
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                child: _buildTimeSection(
+                  'Morning',
+                  TimeOfDay(hour: 5, minute: 0),
+                  TimeOfDay(hour: 12, minute: 0),
+                ),
               ),
             ),
             SliverToBoxAdapter(
-              child: _buildTimeSection(
-                'Afternoon',
-                TimeOfDay(hour: 12, minute: 0),
-                TimeOfDay(hour: 17, minute: 0),
+              child: AnimatedOpacity(
+                opacity: 1.0,
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeInOut,
+                child: _buildTimeSection(
+                  'Afternoon',
+                  TimeOfDay(hour: 12, minute: 0),
+                  TimeOfDay(hour: 17, minute: 0),
+                ),
               ),
             ),
             SliverToBoxAdapter(
-              child: _buildTimeSection(
-                'Evening',
-                TimeOfDay(hour: 17, minute: 0),
-                TimeOfDay(hour: 23, minute: 59),
+              child: AnimatedOpacity(
+                opacity: 1.0,
+                duration: const Duration(milliseconds: 700),
+                curve: Curves.easeInOut,
+                child: _buildTimeSection(
+                  'Evening',
+                  TimeOfDay(hour: 17, minute: 0),
+                  TimeOfDay(hour: 23, minute: 59),
+                ),
               ),
             ),
           ],
         ),
       ),
     );
+
+    // Wrap with particles background if enabled
+    return _useParticlesBackground
+        ? AnimatedParticlesBackground(
+          particleCount: 30,
+          speedFactor: 0.5,
+          particleOpacity: 0.3,
+          child: content,
+        )
+        : content;
   }
 
   Widget _buildHeader() {
     final formattedDate = DateFormat('EEEE, MMMM d').format(_today);
     final textTheme = CupertinoTheme.of(context);
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
 
-    return Container(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '$_greeting, $_userName',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: CupertinoTheme.of(context).textTheme.textStyle.color,
+      child: GlassmorphicContainer(
+        borderRadius: BorderRadius.circular(16),
+        blur: glassmorphicTheme.defaultBlur,
+        opacity: glassmorphicTheme.defaultOpacity,
+        borderWidth: glassmorphicTheme.defaultBorderWidth,
+        borderColor: glassmorphicTheme.borderColor,
+        useGradient: true,
+        gradientColors: glassmorphicTheme.gradientColors,
+        showShimmer: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '$_greeting, $_userName',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                  ),
                 ),
-              ),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: _navigateToCalendar,
-                child: Icon(
-                  CupertinoIcons.calendar,
-                  color: CupertinoTheme.of(context).primaryColor,
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    _navigateToCalendar();
+                  },
+                  child: Icon(
+                    CupertinoIcons.calendar,
+                    color: glassmorphicTheme.accentColor,
+                    size: 28,
+                  ),
                 ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              formattedDate,
+              style: TextStyle(
+                fontSize: 18,
+                color: glassmorphicTheme.accentColor.withOpacity(0.8),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            formattedDate,
-            style: TextStyle(
-              fontSize: 18,
-              color:
-                  CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color,
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'For today, we have the following tasks:',
-            style: TextStyle(
-              fontSize: 16,
-              color:
-                  CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color,
+            const SizedBox(height: 16),
+            Text(
+              'For today, we have the following tasks:',
+              style: TextStyle(
+                fontSize: 16,
+                color:
+                    CupertinoTheme.of(
+                      context,
+                    ).textTheme.tabLabelTextStyle.color,
+              ),
             ),
-          ),
-          const SizedBox(height: 20),
-        ],
+            const SizedBox(height: 20),
+          ],
+        ),
       ),
     );
   }
@@ -264,28 +346,41 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }
 
   Widget _buildTaskSection(String title, List<ScheduledTask> tasks) {
-    return Container(
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+
+    return Padding(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildSectionHeader(title),
-          const SizedBox(height: 10),
-          if (tasks.isEmpty)
-            Text(
-              'No tasks scheduled for $title',
-              style: TextStyle(
-                color:
-                    CupertinoTheme.of(
-                      context,
-                    ).textTheme.tabLabelTextStyle.color,
-                fontSize: 14,
-                fontStyle: FontStyle.italic,
-              ),
-            )
-          else
-            ...tasks.map((task) => _buildTaskItem(task)).toList(),
+      child: GlassmorphicContainer(
+        padding: const EdgeInsets.all(16),
+        borderRadius: BorderRadius.circular(16),
+        blur: glassmorphicTheme.defaultBlur,
+        opacity: glassmorphicTheme.defaultOpacity,
+        borderWidth: glassmorphicTheme.defaultBorderWidth,
+        borderColor: glassmorphicTheme.borderColor,
+        useGradient: true,
+        gradientColors: [
+          glassmorphicTheme.accentColor.withOpacity(0.2),
+          glassmorphicTheme.secondaryAccentColor.withOpacity(0.1),
         ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader(title),
+            const SizedBox(height: 10),
+            if (tasks.isEmpty)
+              Text(
+                'No tasks scheduled for $title',
+                style: TextStyle(
+                  color: glassmorphicTheme.accentColor.withOpacity(0.7),
+                  fontSize: 14,
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            else
+              ...tasks.map((task) => _buildTaskItem(task)).toList(),
+          ],
+        ),
       ),
     );
   }

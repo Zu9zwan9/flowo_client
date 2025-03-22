@@ -1,5 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+
+import '../../design/glassmorphic_container.dart';
+import '../../theme_notifier.dart';
 
 class MenuButton extends StatefulWidget {
   final bool isExpanded;
@@ -11,55 +15,91 @@ class MenuButton extends StatefulWidget {
   State<MenuButton> createState() => _MenuButtonState();
 }
 
-class _MenuButtonState extends State<MenuButton> {
-  bool _isPressed = false;
+class _MenuButtonState extends State<MenuButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.125).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+
+    if (widget.isExpanded) {
+      _animationController.value = 1.0;
+    }
+  }
+
+  @override
+  void didUpdateWidget(MenuButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isExpanded != oldWidget.isExpanded) {
+      if (widget.isExpanded) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final brightness = MediaQuery.platformBrightnessOf(context);
-    final isDarkMode = brightness == Brightness.dark;
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: GestureDetector(
-          onTapDown: (_) => setState(() => _isPressed = true),
-          onTapUp: (_) {
-            setState(() => _isPressed = false);
-            HapticFeedback.mediumImpact();
-            widget.onTap();
-          },
-          onTapCancel: () => setState(() => _isPressed = false),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 100),
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color:
-                  _isPressed
-                      ? CupertinoColors.systemGrey5
-                      : isDarkMode
-                      ? CupertinoColors.darkBackgroundGray.withOpacity(0.8)
-                      : CupertinoColors.white.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: CupertinoColors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        widget.onTap();
+      },
+      child: GlassmorphicContainer(
+        width: 40,
+        height: 40,
+        blur: glassmorphicTheme.defaultBlur,
+        opacity: 0.25,
+        borderRadius: BorderRadius.circular(12),
+        borderWidth: 1.0,
+        borderColor: glassmorphicTheme.accentColor.withOpacity(0.5),
+        backgroundColor:
+            isDarkMode
+                ? CupertinoColors.darkBackgroundGray.withOpacity(0.5)
+                : CupertinoColors.white.withOpacity(0.5),
+        useGradient: true,
+        gradientColors: [
+          glassmorphicTheme.accentColor.withOpacity(0.2),
+          glassmorphicTheme.secondaryAccentColor.withOpacity(0.1),
+        ],
+        child: Center(
+          child: AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              return Transform.rotate(
+                angle: _rotationAnimation.value * 2 * 3.14159, // Radians
+                child: Icon(
+                  widget.isExpanded
+                      ? CupertinoIcons.xmark
+                      : CupertinoIcons.line_horizontal_3,
+                  color:
+                      isDarkMode
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                  size: 24,
                 ),
-              ],
-            ),
-            child: Center(
-              child: Icon(
-                widget.isExpanded
-                    ? CupertinoIcons.xmark
-                    : CupertinoIcons.line_horizontal_3,
-                color:
-                    isDarkMode ? CupertinoColors.white : CupertinoColors.black,
-                size: 22,
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),

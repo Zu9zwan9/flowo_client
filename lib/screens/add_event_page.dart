@@ -1,13 +1,19 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/design/cupertino_form_theme.dart';
 import 'package:flowo_client/design/cupertino_form_widgets.dart';
+import 'package:flowo_client/design/glassmorphic_container.dart';
+import 'package:flowo_client/design/glassmorphic_form_theme.dart';
+import 'package:flowo_client/design/glassmorphic_form_widgets.dart';
 import 'package:flowo_client/screens/home_screen.dart';
+import 'package:flowo_client/theme_notifier.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 
 class AddEventPage extends StatefulWidget {
   final DateTime? selectedDate;
@@ -70,53 +76,61 @@ class AddEventPageState extends State<AddEventPage>
 
   @override
   Widget build(BuildContext context) {
-    final theme = CupertinoFormTheme(context);
+    final theme = GlassmorphicFormTheme(context);
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Add Event'),
         trailing: GestureDetector(),
+        backgroundColor: CupertinoTheme.of(
+          context,
+        ).barBackgroundColor.withOpacity(0.8),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(CupertinoFormTheme.horizontalSpacing),
+          padding: const EdgeInsets.all(
+            GlassmorphicFormTheme.horizontalSpacing,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CupertinoFormWidgets.formGroup(
+                GlassmorphicFormWidgets.formGroup(
                   context: context,
                   title: 'Event Details',
                   children: [
-                    CupertinoFormWidgets.textField(
+                    GlassmorphicFormWidgets.textField(
                       context: context,
                       controller: _titleController,
                       placeholder: 'Event Name *',
                       validator: (value) => value!.isEmpty ? 'Required' : null,
                     ),
-                    SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.textField(
+                    SizedBox(height: GlassmorphicFormTheme.elementSpacing),
+                    GlassmorphicFormWidgets.textField(
                       context: context,
                       controller: _notesController,
                       placeholder: 'Notes',
                       maxLines: 3,
                     ),
-                    SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.textField(
+                    SizedBox(height: GlassmorphicFormTheme.elementSpacing),
+                    GlassmorphicFormWidgets.textField(
                       context: context,
                       controller: _locationController,
                       placeholder: 'Location',
                     ),
-                    SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.imagePicker(
+                    SizedBox(height: GlassmorphicFormTheme.elementSpacing),
+                    GlassmorphicFormWidgets.imagePicker(
                       context: context,
                       image: _image,
                       onPickImage: _pickImage,
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
+                SizedBox(height: GlassmorphicFormTheme.sectionSpacing),
+                GlassmorphicFormWidgets.formGroup(
                   context: context,
                   title: 'Event Color',
                   children: [
@@ -124,8 +138,8 @@ class AddEventPageState extends State<AddEventPage>
                       'Select a color for your event',
                       style: theme.helperTextStyle,
                     ),
-                    SizedBox(height: CupertinoFormTheme.smallSpacing),
-                    CupertinoFormWidgets.colorPicker(
+                    SizedBox(height: GlassmorphicFormTheme.smallSpacing),
+                    GlassmorphicFormWidgets.colorPicker(
                       context: context,
                       colors: _colorOptions,
                       selectedColor: _selectedColor,
@@ -134,8 +148,8 @@ class AddEventPageState extends State<AddEventPage>
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
+                SizedBox(height: GlassmorphicFormTheme.sectionSpacing),
+                GlassmorphicFormWidgets.formGroup(
                   context: context,
                   title: 'Traveling Time',
                   children: [
@@ -143,15 +157,15 @@ class AddEventPageState extends State<AddEventPage>
                       'Optional time needed for travel to the event location',
                       style: theme.helperTextStyle,
                     ),
-                    SizedBox(height: CupertinoFormTheme.smallSpacing),
-                    CupertinoFormWidgets.selectionButton(
+                    SizedBox(height: GlassmorphicFormTheme.smallSpacing),
+                    GlassmorphicFormWidgets.selectionButton(
                       context: context,
                       label: 'Duration',
                       value:
                           '${(_travelingTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_travelingTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
                       onTap: () async {
                         final duration =
-                            await CupertinoFormWidgets.showDurationPicker(
+                            await GlassmorphicFormWidgets.showDurationPicker(
                               context: context,
                               initialHours: _travelingTime ~/ 3600000,
                               initialMinutes:
@@ -165,12 +179,12 @@ class AddEventPageState extends State<AddEventPage>
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
+                SizedBox(height: GlassmorphicFormTheme.sectionSpacing),
+                GlassmorphicFormWidgets.formGroup(
                   context: context,
                   title: 'Start',
                   children: [
-                    CupertinoFormWidgets.selectionButton(
+                    GlassmorphicFormWidgets.selectionButton(
                       context: context,
                       label: 'Date',
                       value: theme.formatDate(_selectedDate),
@@ -178,8 +192,8 @@ class AddEventPageState extends State<AddEventPage>
                       color: theme.primaryColor,
                       icon: CupertinoIcons.calendar,
                     ),
-                    SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.selectionButton(
+                    SizedBox(height: GlassmorphicFormTheme.elementSpacing),
+                    GlassmorphicFormWidgets.selectionButton(
                       context: context,
                       label: 'Time',
                       value: theme.formatTime(_startTime),
@@ -189,12 +203,12 @@ class AddEventPageState extends State<AddEventPage>
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
+                SizedBox(height: GlassmorphicFormTheme.sectionSpacing),
+                GlassmorphicFormWidgets.formGroup(
                   context: context,
                   title: 'End',
                   children: [
-                    CupertinoFormWidgets.selectionButton(
+                    GlassmorphicFormWidgets.selectionButton(
                       context: context,
                       label: 'Date',
                       value: theme.formatDate(_endTime ?? _selectedDate),
@@ -202,8 +216,8 @@ class AddEventPageState extends State<AddEventPage>
                       color: theme.primaryColor,
                       icon: CupertinoIcons.calendar,
                     ),
-                    SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.selectionButton(
+                    SizedBox(height: GlassmorphicFormTheme.elementSpacing),
+                    GlassmorphicFormWidgets.selectionButton(
                       context: context,
                       label: 'Time',
                       value: theme.formatTime(_endTime),
@@ -213,10 +227,10 @@ class AddEventPageState extends State<AddEventPage>
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.largeSpacing),
+                SizedBox(height: GlassmorphicFormTheme.largeSpacing),
                 ScaleTransition(
                   scale: _buttonScaleAnimation,
-                  child: CupertinoFormWidgets.primaryButton(
+                  child: GlassmorphicFormWidgets.primaryButton(
                     context: context,
                     text: 'Save Event',
                     onPressed: () {
@@ -239,7 +253,7 @@ class AddEventPageState extends State<AddEventPage>
     BuildContext context, {
     required bool isStart,
   }) async {
-    final pickedDate = await CupertinoFormWidgets.showDatePicker(
+    final pickedDate = await GlassmorphicFormWidgets.showDatePicker(
       context: context,
       initialDate: isStart ? _selectedDate : (_endTime ?? _startTime),
     );
@@ -280,7 +294,7 @@ class AddEventPageState extends State<AddEventPage>
     BuildContext context, {
     required bool isStart,
   }) async {
-    final pickedTime = await CupertinoFormWidgets.showTimePicker(
+    final pickedTime = await GlassmorphicFormWidgets.showTimePicker(
       context: context,
       initialTime: isStart ? _startTime : (_endTime ?? _startTime),
     );
@@ -295,7 +309,7 @@ class AddEventPageState extends State<AddEventPage>
   }
 
   Future<void> _pickImage() async {
-    final image = await CupertinoFormWidgets.pickImage(context);
+    final image = await GlassmorphicFormWidgets.pickImage(context);
     if (image != null && mounted) {
       setState(() => _image = image);
       logInfo('Image picked: ${image.path}');
@@ -306,17 +320,20 @@ class AddEventPageState extends State<AddEventPage>
     if (!_formKey.currentState!.validate()) {
       showCupertinoDialog(
         context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please fill in all required fields.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
+        barrierDismissible: true,
+        builder: (context) {
+          final theme = GlassmorphicFormTheme(context);
+          return CupertinoAlertDialog(
+            title: const Text('Validation Error'),
+            content: const Text('Please fill in all required fields.'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          );
+        },
       );
       return;
     }
@@ -342,17 +359,20 @@ class AddEventPageState extends State<AddEventPage>
     if (endTime.isBefore(startTime)) {
       showCupertinoDialog(
         context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('Invalid Time'),
-              content: const Text('End time must be after start time.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
+        barrierDismissible: true,
+        builder: (context) {
+          final theme = GlassmorphicFormTheme(context);
+          return CupertinoAlertDialog(
+            title: const Text('Invalid Time'),
+            content: const Text('End time must be after start time.'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          );
+        },
       );
       return;
     }

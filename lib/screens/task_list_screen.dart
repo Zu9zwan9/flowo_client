@@ -159,9 +159,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     Navigator.push(
       context,
       CupertinoPageRoute(
-        builder:
-            (context) =>
-                const HomeScreen(initialIndex: 2, initialExpanded: false),
+        builder: (context) => const HomeScreen(initialIndex: 2),
       ),
     );
   }

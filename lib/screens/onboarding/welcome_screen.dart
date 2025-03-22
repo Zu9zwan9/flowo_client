@@ -1,6 +1,8 @@
+import 'package:flowo_client/design/glassmorphic_container.dart';
 import 'package:flowo_client/models/user_profile.dart';
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
+import 'package:flowo_client/theme_notifier.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -94,7 +96,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = CupertinoTheme.of(context);
-    final primaryColor = CupertinoColors.systemIndigo;
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final primaryColor = theme.primaryColor;
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
 
     final userName = _userProfile?.name ?? 'there';
     final userGoal = _userProfile?.goal ?? 'your goals';
@@ -112,22 +116,17 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
-              // Celebration icon
+              // Celebration icon with glassmorphic effect
               Center(
-                child: Container(
+                child: GlassmorphicContainer(
                   width: 100,
                   height: 100,
-                  decoration: BoxDecoration(
-                    color: primaryColor,
-                    borderRadius: BorderRadius.circular(25),
-                    boxShadow: [
-                      BoxShadow(
-                        color: CupertinoColors.systemGrey.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
+                  borderRadius: BorderRadius.circular(25),
+                  blur: glassmorphicTheme.defaultBlur,
+                  opacity: 0.3, // Slightly more opaque for the icon
+                  borderWidth: glassmorphicTheme.defaultBorderWidth,
+                  borderColor: primaryColor.withOpacity(0.3),
+                  backgroundColor: primaryColor.withOpacity(0.2),
                   child: const Center(
                     child: Icon(
                       CupertinoIcons.star_fill,
@@ -138,66 +137,86 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-              // Welcome message
-              Center(
-                child: Text(
-                  'Hello, $userName!',
-                  style: theme.textTheme.navLargeTitleTextStyle.copyWith(
-                    fontSize: 28,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Personalized message
-              Center(
-                child: Text(
-                  'With your efforts and this app, your dream to "$userGoal" will come true.',
-                  style: theme.textTheme.textStyle.copyWith(fontSize: 18),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Motivational message
-              Center(
-                child: Text(
-                  'We\'re excited to help you on your journey!',
-                  style: theme.textTheme.textStyle.copyWith(
-                    fontSize: 16,
-                    color: CupertinoColors.systemGrey,
-                  ),
-                  textAlign: TextAlign.center,
+              // Welcome message in a glassmorphic card
+              GlassmorphicCard(
+                borderRadius: BorderRadius.circular(16),
+                blur: glassmorphicTheme.defaultBlur,
+                opacity: glassmorphicTheme.defaultOpacity,
+                borderWidth: glassmorphicTheme.defaultBorderWidth,
+                child: Column(
+                  children: [
+                    // Welcome message
+                    Text(
+                      'Hello, $userName!',
+                      style: theme.textTheme.navLargeTitleTextStyle.copyWith(
+                        fontSize: 28,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    // Personalized message
+                    Text(
+                      'With your efforts and this app, your dream to "$userGoal" will come true.',
+                      style: theme.textTheme.textStyle.copyWith(fontSize: 18),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    // Motivational message
+                    Text(
+                      'We\'re excited to help you on your journey!',
+                      style: theme.textTheme.textStyle.copyWith(
+                        fontSize: 16,
+                        color: CupertinoColors.systemGrey,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
               ),
               const Spacer(),
-              // Get started button
-              CupertinoButton(
-                onPressed: _completeOnboarding,
-                color: primaryColor,
-                borderRadius: BorderRadius.circular(12),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child:
-                    _isLoading
-                        ? const CupertinoActivityIndicator(
-                          color: CupertinoColors.white,
-                        )
-                        : const Text(
-                          'Get Started',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: CupertinoColors.white,
-                          ),
-                        ),
+              // Get started button with glassmorphic effect
+              GestureDetector(
+                onTap: _isLoading ? null : _completeOnboarding,
+                child: GlassmorphicContainer(
+                  height: 56,
+                  borderRadius: BorderRadius.circular(12),
+                  blur: glassmorphicTheme.defaultBlur,
+                  opacity: 0.3, // More opaque for button
+                  borderWidth: glassmorphicTheme.defaultBorderWidth,
+                  borderColor: primaryColor.withOpacity(0.5),
+                  backgroundColor: primaryColor.withOpacity(0.3),
+                  child: Center(
+                    child:
+                        _isLoading
+                            ? const CupertinoActivityIndicator(
+                              color: CupertinoColors.white,
+                            )
+                            : const Text(
+                              'Get Started',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: CupertinoColors.white,
+                              ),
+                            ),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
-              // Footer
-              Center(
-                child: Text(
-                  'FLOWO 1.0.0',
-                  style: theme.textTheme.tabLabelTextStyle.copyWith(
-                    fontSize: 12,
-                    color: CupertinoColors.systemGrey,
+              // Footer in a subtle glassmorphic container
+              GlassmorphicContainer(
+                height: 40,
+                borderRadius: BorderRadius.circular(8),
+                blur: glassmorphicTheme.defaultBlur,
+                opacity: 0.1, // Very subtle for footer
+                borderWidth: 0.5, // Thinner border for footer
+                child: Center(
+                  child: Text(
+                    'FLOWO 1.0.0',
+                    style: theme.textTheme.tabLabelTextStyle.copyWith(
+                      fontSize: 12,
+                      color: CupertinoColors.systemGrey,
+                    ),
                   ),
                 ),
               ),

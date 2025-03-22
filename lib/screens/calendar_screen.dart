@@ -1,8 +1,13 @@
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
+import 'package:flowo_client/design/animated_particles_background.dart';
+import 'package:flowo_client/design/glassmorphic_container.dart';
 import 'package:flowo_client/screens/widgets/calendar_widgets.dart';
+import 'package:flowo_client/theme_notifier.dart';
 import 'package:flowo_client/utils/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
@@ -45,6 +50,7 @@ class CalendarScreenState extends State<CalendarScreen> {
   bool _isRefreshing = false;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _useParticlesBackground = true;
 
   // Store the Future to avoid unnecessary data fetching
   // This improves performance by preventing redundant database queries
@@ -379,6 +385,13 @@ class CalendarScreenState extends State<CalendarScreen> {
     ).then((_) => _refreshData());
   }
 
+  void _toggleParticlesBackground() {
+    setState(() {
+      _useParticlesBackground = !_useParticlesBackground;
+    });
+    HapticFeedback.mediumImpact();
+  }
+
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
@@ -389,17 +402,48 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+
+    Widget content = CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Calendar'),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _navigateToAddEvent,
-          child: const Icon(CupertinoIcons.add),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _toggleParticlesBackground,
+              child: Icon(
+                CupertinoIcons.sparkles,
+                color:
+                    _useParticlesBackground
+                        ? glassmorphicTheme.accentColor
+                        : CupertinoColors.systemGrey,
+              ),
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _navigateToAddEvent,
+              child: const Icon(CupertinoIcons.add),
+            ),
+          ],
         ),
+        backgroundColor: CupertinoColors.systemBackground.withOpacity(0.8),
+        border: null,
       ),
       child: SafeArea(child: _buildContent()),
     );
+
+    // Wrap with particles background if enabled
+    return _useParticlesBackground
+        ? AnimatedParticlesBackground(
+          particleCount: 30,
+          speedFactor: 0.5,
+          particleOpacity: 0.3,
+          child: content,
+        )
+        : content;
   }
 
   Widget _buildContent() {
@@ -429,17 +473,52 @@ class CalendarScreenState extends State<CalendarScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Calendar view selector
-                  CalendarViewSelector(
-                    selectedView: _calendarView,
-                    onViewChanged: _onViewChanged,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: GlassmorphicContainer(
+                      borderRadius: BorderRadius.circular(12),
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: CalendarViewSelector(
+                        selectedView: _calendarView,
+                        onViewChanged: (view) {
+                          HapticFeedback.selectionClick();
+                          _onViewChanged(view);
+                        },
+                      ),
+                    ),
                   ),
 
                   // Calendar header
-                  CalendarHeader(
-                    selectedDate: _selectedDate,
-                    onTodayPressed: _goToToday,
-                    onPreviousPressed: _goToPreviousPeriod,
-                    onNextPressed: _goToNextPeriod,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: GlassmorphicContainer(
+                      borderRadius: BorderRadius.circular(12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8.0,
+                        horizontal: 12.0,
+                      ),
+                      child: CalendarHeader(
+                        selectedDate: _selectedDate,
+                        onTodayPressed: () {
+                          HapticFeedback.mediumImpact();
+                          _goToToday();
+                        },
+                        onPreviousPressed: () {
+                          HapticFeedback.selectionClick();
+                          _goToPreviousPeriod();
+                        },
+                        onNextPressed: () {
+                          HapticFeedback.selectionClick();
+                          _goToNextPeriod();
+                        },
+                      ),
+                    ),
                   ),
 
                   // Calendar view with responsive height
@@ -455,15 +534,27 @@ class CalendarScreenState extends State<CalendarScreen> {
 
                   // Selected date header
                   Padding(
-                    padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
-                    child: Text(
-                      '${_weekdayName(_selectedDate.weekday)}, ${_monthName(_selectedDate.month)} ${_selectedDate.day}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: CupertinoColors.label,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: GlassmorphicContainer(
+                      borderRadius: BorderRadius.circular(12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12.0,
+                        horizontal: 16.0,
                       ),
-                      overflow: TextOverflow.ellipsis,
+                      useGradient: true,
+                      showShimmer: true,
+                      child: Text(
+                        '${_weekdayName(_selectedDate.weekday)}, ${_monthName(_selectedDate.month)} ${_selectedDate.day}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: CupertinoColors.label,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
 
@@ -473,20 +564,41 @@ class CalendarScreenState extends State<CalendarScreen> {
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    child: CupertinoSearchTextField(
-                      controller: _searchController,
-                      placeholder: 'Search events',
-                      onChanged: (value) => setState(() {}),
+                    child: GlassmorphicContainer(
+                      borderRadius: BorderRadius.circular(12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 4.0,
+                        horizontal: 4.0,
+                      ),
+                      child: CupertinoSearchTextField(
+                        controller: _searchController,
+                        placeholder: 'Search events',
+                        onChanged: (value) {
+                          if (value.isNotEmpty) {
+                            HapticFeedback.selectionClick();
+                          }
+                          setState(() {});
+                        },
+                        onSubmitted: (_) => HapticFeedback.mediumImpact(),
+                      ),
                     ),
                   ),
 
                   // Agenda view
                   Flexible(
-                    child: SizedBox(
-                      height:
-                          MediaQuery.of(context).size.height *
-                          0.3, // 30% of screen height
-                      child: _buildAgendaView(),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                        vertical: 8.0,
+                      ),
+                      child: GlassmorphicContainer(
+                        borderRadius: BorderRadius.circular(16),
+                        padding: const EdgeInsets.all(8.0),
+                        height:
+                            MediaQuery.of(context).size.height *
+                            0.3, // 30% of screen height
+                        child: _buildAgendaView(),
+                      ),
                     ),
                   ),
                 ],
@@ -687,21 +799,33 @@ class CalendarScreenState extends State<CalendarScreen> {
                         final task = pair.task;
                         final scheduledTask = pair.scheduledTask;
 
-                        return AgendaItem(
-                          title:
-                              task.title == 'Free Time'
-                                  ? _freeTimeName(
-                                    scheduledTask.type
-                                        .toString()
-                                        .split('.')
-                                        .last,
-                                  )
-                                  : task.title,
-                          subtitle: task.notes,
-                          startTime: scheduledTask.startTime,
-                          endTime: scheduledTask.endTime,
-                          categoryColor: _getCategoryColor(task.category.name),
-                          onTap: () => _showEventDetails(task, scheduledTask),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4.0),
+                          child: GlassmorphicContainer(
+                            borderRadius: BorderRadius.circular(12),
+                            padding: EdgeInsets.zero,
+                            child: AgendaItem(
+                              title:
+                                  task.title == 'Free Time'
+                                      ? _freeTimeName(
+                                        scheduledTask.type
+                                            .toString()
+                                            .split('.')
+                                            .last,
+                                      )
+                                      : task.title,
+                              subtitle: task.notes,
+                              startTime: scheduledTask.startTime,
+                              endTime: scheduledTask.endTime,
+                              categoryColor: _getCategoryColor(
+                                task.category.name,
+                              ),
+                              onTap: () {
+                                HapticFeedback.mediumImpact();
+                                _showEventDetails(task, scheduledTask);
+                              },
+                            ),
+                          ),
                         );
                       },
                     ),

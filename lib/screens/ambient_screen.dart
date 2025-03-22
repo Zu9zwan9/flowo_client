@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
@@ -16,9 +18,12 @@ class AmbientScreen extends StatefulWidget {
   State<AmbientScreen> createState() => _AmbientScreenState();
 }
 
-class _AmbientScreenState extends State<AmbientScreen> {
+class _AmbientScreenState extends State<AmbientScreen>
+    with WidgetsBindingObserver {
   String _selectedCategory = '';
   bool _isFullScreen = false;
+  bool _showControls = true;
+  Timer? _controlsTimer;
   late AmbientService _ambientService;
 
   // Get a color based on the category
@@ -50,12 +55,14 @@ class _AmbientScreenState extends State<AmbientScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Set preferred orientation to landscape for a more immersive experience
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
       DeviceOrientation.portraitUp,
     ]);
+    _resetControlsTimer();
   }
 
   @override
@@ -78,13 +85,31 @@ class _AmbientScreenState extends State<AmbientScreen> {
   @override
   void dispose() {
     _ambientService.dispose();
+    _controlsTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     // Reset orientation when leaving the screen
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     super.dispose();
   }
 
+  void _resetControlsTimer() {
+    _controlsTimer?.cancel();
+    setState(() {
+      _showControls = true;
+    });
+    _controlsTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _showControls = false;
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+
     return CupertinoPageScaffold(
       navigationBar:
           _isFullScreen
@@ -122,27 +147,31 @@ class _AmbientScreenState extends State<AmbientScreen> {
                       color: CupertinoColors.black,
                     ),
                     clipBehavior: Clip.antiAlias,
-                    child:
-                        _ambientService.videoController != null
-                            ? YoutubePlayer(
-                              controller: _ambientService.videoController!,
-                              showVideoProgressIndicator: false,
-                              progressIndicatorColor:
-                                  CupertinoColors.activeBlue,
-                              progressColors: const ProgressBarColors(
-                                playedColor: CupertinoColors.activeBlue,
-                                handleColor: CupertinoColors.activeBlue,
+                    child: GestureDetector(
+                      onTap: _resetControlsTimer,
+                      child:
+                          _ambientService.videoController != null
+                              ? YoutubePlayer(
+                                controller: _ambientService.videoController!,
+                                showVideoProgressIndicator: false,
+                                progressIndicatorColor:
+                                    CupertinoColors.activeBlue,
+                                progressColors: const ProgressBarColors(
+                                  playedColor: CupertinoColors.activeBlue,
+                                  handleColor: CupertinoColors.activeBlue,
+                                ),
+                                aspectRatio: 16 / 9,
+                              )
+                              : const Center(
+                                child: Text(
+                                  'Select a scene to begin',
+                                  style: TextStyle(
+                                    color: CupertinoColors.white,
+                                  ),
+                                ),
                               ),
-                              aspectRatio: 16 / 9,
-                            )
-                            : const Center(
-                              child: Text(
-                                'Select a scene to begin',
-                                style: TextStyle(color: CupertinoColors.white),
-                              ),
-                            ),
+                    ),
                   ),
-
                   // Overlay controls
                   if (_isFullScreen)
                     Positioned(
@@ -169,7 +198,10 @@ class _AmbientScreenState extends State<AmbientScreen> {
                     child: Center(
                       child: AnimatedOpacity(
                         opacity:
-                            _ambientService.currentScene != null ? 1.0 : 0.0,
+                            _ambientService.currentScene != null &&
+                                    _showControls
+                                ? 1.0
+                                : 0.0,
                         duration: const Duration(milliseconds: 300),
                         child: CupertinoButton(
                           padding: const EdgeInsets.all(16),
@@ -188,6 +220,7 @@ class _AmbientScreenState extends State<AmbientScreen> {
                             } else {
                               _ambientService.play();
                             }
+                            _resetControlsTimer();
                           },
                         ),
                       ),
@@ -295,8 +328,13 @@ class _AmbientScreenState extends State<AmbientScreen> {
 
                     return GestureDetector(
                       onTap: () async {
+                        setState(() {
+                          // Show loading state
+                        });
+
                         await _ambientService.selectScene(scene);
                         await _ambientService.play();
+                        _resetControlsTimer();
 
                         // Refresh UI to show the selected scene
                         setState(() {});

@@ -1,7 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:provider/provider.dart';
 
+import '../../design/glassmorphic_container.dart';
 import '../../models/scheduled_task.dart';
+import '../../theme_notifier.dart';
 import '../../utils/date_time_formatter.dart';
 
 /// A collection of reusable widgets for the calendar screen
@@ -231,6 +234,7 @@ class AgendaItem extends StatefulWidget {
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
   final bool showDivider;
+  final bool useGlassmorphism;
 
   const AgendaItem({
     super.key,
@@ -242,6 +246,7 @@ class AgendaItem extends StatefulWidget {
     this.onTap,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
     this.showDivider = true,
+    this.useGlassmorphism = false,
   });
 
   @override
@@ -270,6 +275,65 @@ class _AgendaItemState extends State<AgendaItem>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  Widget _buildGlassmorphicContent(BuildContext context, Color containerColor) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+    final brightness = CupertinoTheme.of(context).brightness;
+    final textColor =
+        brightness == Brightness.dark
+            ? CupertinoColors.white
+            : CupertinoColors.black;
+    final secondaryTextColor =
+        brightness == Brightness.dark
+            ? CupertinoColors.systemGrey
+            : CupertinoColors.systemGrey;
+
+    return GlassmorphicContainer(
+      borderRadius: BorderRadius.circular(12),
+      blur: glassmorphicTheme.defaultBlur * 0.8,
+      opacity: _isTapped ? 0.3 : 0.2,
+      borderWidth: 1.0,
+      borderColor: widget.categoryColor.withOpacity(0.3),
+      backgroundColor: containerColor.withOpacity(0.4),
+      padding: const EdgeInsets.all(12),
+      useGradient: true,
+      gradientColors: [
+        widget.categoryColor.withOpacity(0.1),
+        widget.categoryColor.withOpacity(0.05),
+      ],
+      showShimmer: !_isTapped,
+      child: Row(
+        children: [
+          // Category color indicator
+          Container(width: 4, height: 40, color: widget.categoryColor),
+          const SizedBox(width: 12),
+          // Title and subtitle
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  widget.title,
+                  style: CupertinoTheme.of(context).textTheme.textStyle
+                      .copyWith(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                if (widget.subtitle != null && widget.subtitle!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.subtitle!,
+                    style: TextStyle(fontSize: 14, color: secondaryTextColor),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleTapDown(TapDownDetails details) {
@@ -355,65 +419,70 @@ class _AgendaItemState extends State<AgendaItem>
               const SizedBox(width: 1),
               // Content
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color:
-                        _isTapped
-                            ? CupertinoColors.systemGrey6
-                            : containerColor,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: CupertinoColors.systemGrey4),
-                    boxShadow: [
-                      BoxShadow(
-                        color: CupertinoColors.black.withOpacity(0.05),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Category color indicator
-                      Container(
-                        width: 4,
-                        height: 40,
-                        color: widget.categoryColor,
-                      ),
-                      const SizedBox(width: 12),
-                      // Title and subtitle
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.title,
-                              style: CupertinoTheme.of(
-                                context,
-                              ).textTheme.textStyle.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
+                child:
+                    widget.useGlassmorphism
+                        ? _buildGlassmorphicContent(context, containerColor)
+                        : Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                                _isTapped
+                                    ? CupertinoColors.systemGrey6
+                                    : containerColor,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: CupertinoColors.systemGrey4,
                             ),
-                            if (widget.subtitle != null &&
-                                widget.subtitle!.isNotEmpty) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                widget.subtitle!,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: secondaryTextColor,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                            boxShadow: [
+                              BoxShadow(
+                                color: CupertinoColors.black.withOpacity(0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
                               ),
                             ],
-                          ],
+                          ),
+                          child: Row(
+                            children: [
+                              // Category color indicator
+                              Container(
+                                width: 4,
+                                height: 40,
+                                color: widget.categoryColor,
+                              ),
+                              const SizedBox(width: 12),
+                              // Title and subtitle
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.title,
+                                      style: CupertinoTheme.of(
+                                        context,
+                                      ).textTheme.textStyle.copyWith(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    if (widget.subtitle != null &&
+                                        widget.subtitle!.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        widget.subtitle!,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          color: secondaryTextColor,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ],
           ),

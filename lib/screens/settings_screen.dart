@@ -1,7 +1,13 @@
+import 'dart:ui';
+
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
+import 'package:flowo_client/design/glassmorphic_container.dart';
 import 'package:flowo_client/models/time_frame.dart';
 import 'package:flowo_client/models/user_settings.dart';
-import 'package:flowo_client/screens/widgets/settings_widgets.dart';
+import 'package:flowo_client/screens/widgets/glassmorphic_settings_button.dart';
+import 'package:flowo_client/screens/widgets/glassmorphic_settings_slider_item.dart';
+import 'package:flowo_client/screens/widgets/glassmorphic_settings_time_picker_item.dart';
+import 'package:flowo_client/screens/widgets/glassmorphic_settings_widgets.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -105,19 +111,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
     context.read<TaskManagerCubit>().updateUserSettings(userSettings);
     logInfo('Settings saved');
 
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+
     showCupertinoDialog(
       context: context,
+      barrierDismissible: true,
       builder:
-          (_) => CupertinoAlertDialog(
-            title: const Text('Settings Saved'),
-            content: const Text('Your schedule preferences have been updated.'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(context),
+          (_) => BackdropFilter(
+            filter: ImageFilter.blur(
+              sigmaX: glassmorphicTheme.defaultBlur,
+              sigmaY: glassmorphicTheme.defaultBlur,
+            ),
+            child: CupertinoAlertDialog(
+              title: const Text('Settings Saved'),
+              content: const Text(
+                'Your schedule preferences have been updated.',
               ),
-            ],
+              actions: [
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
           ),
     );
   }
@@ -131,40 +149,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     if (filePath != null) {
       // Show success dialog with options
+      final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+      final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+
       showCupertinoDialog(
         context: context,
+        barrierDismissible: true,
         builder:
-            (_) => CupertinoAlertDialog(
-              title: const Text('Logs Saved'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Logs have been saved successfully.'),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Location: $filePath',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: CupertinoColors.systemGrey,
+            (_) => BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: glassmorphicTheme.defaultBlur,
+                sigmaY: glassmorphicTheme.defaultBlur,
+              ),
+              child: CupertinoAlertDialog(
+                title: const Text('Logs Saved'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Logs have been saved successfully.'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Location: $filePath',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: CupertinoColors.systemGrey,
+                      ),
                     ),
+                  ],
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('Share'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _shareLogFile(filePath);
+                    },
+                  ),
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('Share'),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _shareLogFile(filePath);
-                  },
-                ),
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
             ),
       );
 
@@ -177,37 +205,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       // Show a simple dialog with the file path since we can't directly share files
       // without additional setup
+      final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+      final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+
       showCupertinoDialog(
         context: context,
+        barrierDismissible: true,
         builder:
-            (_) => CupertinoAlertDialog(
-              title: const Text('Log File Location'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Your log file is saved at:'),
-                  const SizedBox(height: 8),
-                  Text(
-                    filePath,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+            (_) => BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: glassmorphicTheme.defaultBlur,
+                sigmaY: glassmorphicTheme.defaultBlur,
+              ),
+              child: CupertinoAlertDialog(
+                title: const Text('Log File Location'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Your log file is saved at:'),
+                    const SizedBox(height: 8),
+                    Text(
+                      filePath,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'You can access this file through your device\'s file manager.',
+                    const SizedBox(height: 16),
+                    const Text(
+                      'You can access this file through your device\'s file manager.',
+                    ),
+                  ],
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    isDefaultAction: true,
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
-              actions: [
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
             ),
       );
 
@@ -226,47 +264,72 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required TimeOfDay initialTime,
     required Function(TimeOfDay) onTimeSelected,
   }) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+
     showCupertinoModalPopup(
       context: context,
       builder:
-          (_) => Container(
-            height: 280,
-            color: CupertinoColors.systemBackground,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          (_) => ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+            ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: glassmorphicTheme.defaultBlur,
+                sigmaY: glassmorphicTheme.defaultBlur,
+              ),
+              child: Container(
+                height: 280,
+                decoration: BoxDecoration(
+                  color: themeNotifier.backgroundColor.withOpacity(0.7),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  border: Border.all(
+                    color: glassmorphicTheme.borderColor,
+                    width: glassmorphicTheme.defaultBorderWidth,
+                  ),
+                ),
+                child: Column(
                   children: [
-                    CupertinoButton(
-                      child: const Text('Cancel'),
-                      onPressed: () => Navigator.pop(context),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        CupertinoButton(
+                          child: const Text('Cancel'),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        CupertinoButton(
+                          child: const Text('Done'),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
                     ),
-                    CupertinoButton(
-                      child: const Text('Done'),
-                      onPressed: () => Navigator.pop(context),
+                    Expanded(
+                      child: CupertinoDatePicker(
+                        mode: CupertinoDatePickerMode.time,
+                        initialDateTime: DateTime(
+                          2022,
+                          1,
+                          1,
+                          initialTime.hour,
+                          initialTime.minute,
+                        ),
+                        onDateTimeChanged:
+                            (dateTime) => onTimeSelected(
+                              TimeOfDay(
+                                hour: dateTime.hour,
+                                minute: dateTime.minute,
+                              ),
+                            ),
+                      ),
                     ),
                   ],
                 ),
-                Expanded(
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.time,
-                    initialDateTime: DateTime(
-                      2022,
-                      1,
-                      1,
-                      initialTime.hour,
-                      initialTime.minute,
-                    ),
-                    onDateTimeChanged:
-                        (dateTime) => onTimeSelected(
-                          TimeOfDay(
-                            hour: dateTime.hour,
-                            minute: dateTime.minute,
-                          ),
-                        ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
     );
@@ -280,46 +343,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
     var startTime = const TimeOfDay(hour: 12, minute: 0);
     var endTime = const TimeOfDay(hour: 13, minute: 0);
 
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+
     showCupertinoModalPopup(
       context: context,
       builder:
           (_) => StatefulBuilder(
             builder:
-                (context, setDialogState) => CupertinoActionSheet(
-                  title: Text('Add $title'),
-                  message: Text('Set your $title start and end times'),
-                  actions: [
-                    CupertinoActionSheetAction(
-                      child: Text('Start Time: ${_formatTimeOfDay(startTime)}'),
-                      onPressed:
-                          () => _showTimePicker(
-                            initialTime: startTime,
-                            onTimeSelected:
-                                (time) =>
-                                    setDialogState(() => startTime = time),
-                          ),
+                (context, setDialogState) => BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: glassmorphicTheme.defaultBlur / 2,
+                    sigmaY: glassmorphicTheme.defaultBlur / 2,
+                  ),
+                  child: CupertinoActionSheet(
+                    title: Text('Add $title'),
+                    message: Text('Set your $title start and end times'),
+                    actions: [
+                      CupertinoActionSheetAction(
+                        child: Text(
+                          'Start Time: ${_formatTimeOfDay(startTime)}',
+                        ),
+                        onPressed:
+                            () => _showTimePicker(
+                              initialTime: startTime,
+                              onTimeSelected:
+                                  (time) =>
+                                      setDialogState(() => startTime = time),
+                            ),
+                      ),
+                      CupertinoActionSheetAction(
+                        child: Text('End Time: ${_formatTimeOfDay(endTime)}'),
+                        onPressed:
+                            () => _showTimePicker(
+                              initialTime: endTime,
+                              onTimeSelected:
+                                  (time) =>
+                                      setDialogState(() => endTime = time),
+                            ),
+                      ),
+                      CupertinoActionSheetAction(
+                        isDefaultAction: true,
+                        child: Text('Add $title'),
+                        onPressed: () {
+                          onAdd(startTime, endTime);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                    cancelButton: CupertinoActionSheetAction(
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    CupertinoActionSheetAction(
-                      child: Text('End Time: ${_formatTimeOfDay(endTime)}'),
-                      onPressed:
-                          () => _showTimePicker(
-                            initialTime: endTime,
-                            onTimeSelected:
-                                (time) => setDialogState(() => endTime = time),
-                          ),
-                    ),
-                    CupertinoActionSheetAction(
-                      isDefaultAction: true,
-                      child: Text('Add $title'),
-                      onPressed: () {
-                        onAdd(startTime, endTime);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
-                  cancelButton: CupertinoActionSheetAction(
-                    child: const Text('Cancel'),
-                    onPressed: () => Navigator.pop(context),
                   ),
                 ),
           ),
@@ -358,74 +433,94 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
 
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Settings'),
+      navigationBar: CupertinoNavigationBar(
         border: null, // Remove the bottom border for a cleaner look
+        backgroundColor: themeNotifier.backgroundColor.withOpacity(0.8),
+        middle: const Text('Settings'),
       ),
       child: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 16.0),
           children: [
             // Theme Section
-            SettingsSection(
+            GlassmorphicSettingsSection(
               title: 'Theme',
               footerText:
                   'Choose a theme that suits your preferences and needs.',
               children: [
-                // dart
-                SettingsSegmentedItem(
-                  label: 'Appearance',
-                  subtitle: 'Select your preferred visual style',
-                  groupValue:
-                      themeNotifier.themeMode == AppTheme.light
-                          ? 'light'
-                          : themeNotifier.themeMode == AppTheme.dark
-                          ? 'dark'
-                          : 'adhd',
-                  children: const {
-                    'light': Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('Light'),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 16.0,
+                    horizontal: 8.0,
+                  ),
+                  child: Center(
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 16.0,
+                      runSpacing: 16.0,
+                      children: [
+                        _buildThemeTab(
+                          context: context,
+                          themeMode: AppTheme.light,
+                          currentTheme: themeNotifier.themeMode,
+                          icon: CupertinoIcons.sun_max_fill,
+                          label: 'Light',
+                          accentColor: CupertinoColors.systemYellow,
+                          onTap:
+                              () => themeNotifier.setThemeMode(AppTheme.light),
+                        ),
+                        _buildThemeTab(
+                          context: context,
+                          themeMode: AppTheme.dark,
+                          currentTheme: themeNotifier.themeMode,
+                          icon: CupertinoIcons.moon_stars_fill,
+                          label: 'Night',
+                          accentColor: CupertinoColors.systemIndigo,
+                          onTap:
+                              () => themeNotifier.setThemeMode(AppTheme.dark),
+                        ),
+                        _buildThemeTab(
+                          context: context,
+                          themeMode: AppTheme.adhd,
+                          currentTheme: themeNotifier.themeMode,
+                          icon: CupertinoIcons.star_fill,
+                          label: 'ADHD',
+                          accentColor: CupertinoColors.systemPink,
+                          onTap:
+                              () => themeNotifier.setThemeMode(AppTheme.adhd),
+                        ),
+                      ],
                     ),
-                    'dark': Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('Night'),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Text(
+                    'Current theme: ${themeNotifier.themeMode == AppTheme.light
+                        ? 'Light'
+                        : themeNotifier.themeMode == AppTheme.dark
+                        ? 'Night'
+                        : 'ADHD'}',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: CupertinoColors.systemGrey,
                     ),
-                    'adhd': Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('ADHD'),
-                    ),
-                  },
-                  onValueChanged: (value) {
-                    AppTheme themeValue;
-                    switch (value) {
-                      case 'light':
-                        themeValue = AppTheme.light;
-                        break;
-                      case 'dark':
-                        themeValue = AppTheme.dark;
-                        break;
-                      case 'adhd':
-                        themeValue = AppTheme.adhd;
-                        break;
-                      default:
-                        themeValue = AppTheme.light;
-                    }
-                    themeNotifier.setThemeMode(themeValue);
-                  },
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ],
             ),
 
             // Sleep Schedule Section
-            SettingsSection(
+            GlassmorphicSettingsSection(
               title: 'Sleep Schedule',
               footerText:
                   'Set your sleep and wake up times to help optimize your schedule.',
               children: [
-                SettingsTimePickerItem(
+                GlassmorphicSettingsTimePickerItem(
                   label: 'Sleep Time',
                   time: _sleepTime,
                   onTimeSelected: (time) => setState(() => _sleepTime = time),
@@ -435,7 +530,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   use24HourFormat: false,
                 ),
-                SettingsTimePickerItem(
+                GlassmorphicSettingsTimePickerItem(
                   label: 'Wake Up Time',
                   time: _wakeupTime,
                   onTimeSelected: (time) => setState(() => _wakeupTime = time),
@@ -449,7 +544,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             // Active Days Section
-            SettingsSection(
+            GlassmorphicSettingsSection(
               title: 'Active Days',
               footerText: 'Select the days when you want to be active.',
               children: [
@@ -464,7 +559,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     children:
                         _activeDays.keys
                             .map(
-                              (day) => SettingsButton(
+                              (day) => GlassmorphicSettingsButton(
                                 label: day.substring(0, 3),
                                 isPrimary: _activeDays[day]!,
                                 padding: const EdgeInsets.symmetric(
@@ -487,14 +582,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             // Meal Times Section
-            SettingsSection(
+            GlassmorphicSettingsSection(
               title: 'Meal Times',
               footerText:
                   'Set your regular meal times to help schedule your day.',
               children: [
                 ..._mealTimes
                     .map(
-                      (meal) => SettingsItem(
+                      (meal) => GlassmorphicSettingsItem(
                         label:
                             'Meal ${_formatTimeOfDay(meal.startTime)} - ${_formatTimeOfDay(meal.endTime)}',
                         leading: const Icon(
@@ -513,7 +608,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     )
                     .toList(),
-                SettingsItem(
+                GlassmorphicSettingsItem(
                   label: 'Add Meal Time',
                   leading: const Icon(
                     CupertinoIcons.add_circled,
@@ -525,14 +620,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             // Free Times Section
-            SettingsSection(
+            GlassmorphicSettingsSection(
               title: 'Free Times',
               footerText:
                   'Set your free time periods to avoid scheduling tasks during these times.',
               children: [
                 ..._freeTimes
                     .map(
-                      (freeTime) => SettingsItem(
+                      (freeTime) => GlassmorphicSettingsItem(
                         label:
                             'Free ${_formatTimeOfDay(freeTime.startTime)} - ${_formatTimeOfDay(freeTime.endTime)}',
                         leading: const Icon(
@@ -551,7 +646,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     )
                     .toList(),
-                SettingsItem(
+                GlassmorphicSettingsItem(
                   label: 'Add Free Time',
                   leading: const Icon(
                     CupertinoIcons.add_circled,
@@ -563,12 +658,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             // Session Duration Section
-            SettingsSection(
+            GlassmorphicSettingsSection(
               title: 'Session Duration',
               footerText:
                   'Set the minimum duration for a task session in minutes.',
               children: [
-                SettingsSliderItem(
+                GlassmorphicSettingsSliderItem(
                   label: 'Minimum Session',
                   value: _minSessionDuration.toDouble(),
                   min: 5,
@@ -584,12 +679,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             // Break Duration Section
-            SettingsSection(
+            GlassmorphicSettingsSection(
               title: 'Break Duration',
               footerText:
                   'Set the duration for breaks between tasks in minutes.',
               children: [
-                SettingsSliderItem(
+                GlassmorphicSettingsSliderItem(
                   label: 'Break Time',
                   value: _breakDuration.toDouble(),
                   min: 5,
@@ -605,12 +700,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
 
             // Logs Section
-            SettingsSection(
+            GlassmorphicSettingsSection(
               title: 'Logs',
               footerText:
                   'Save and share application logs for troubleshooting.',
               children: [
-                SettingsItem(
+                GlassmorphicSettingsItem(
                   label: 'Save Logs',
                   subtitle: 'Save application logs to a file',
                   leading: const Icon(
@@ -625,7 +720,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Save Button
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: SettingsButton(
+              child: GlassmorphicSettingsButton(
                 label: 'Save Settings',
                 isPrimary: true,
                 icon: CupertinoIcons.check_mark,
@@ -637,4 +732,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
   }
+}
+
+/// Builds a custom glassmorphic theme selection tab
+Widget _buildThemeTab({
+  required BuildContext context,
+  required AppTheme themeMode,
+  required AppTheme currentTheme,
+  required IconData icon,
+  required String label,
+  required Color accentColor,
+  required VoidCallback onTap,
+}) {
+  final themeNotifier = Provider.of<ThemeNotifier>(context);
+  final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+  final isSelected = themeMode == currentTheme;
+
+  return GestureDetector(
+    onTap: onTap,
+    child: GlassmorphicContainer(
+      width: 100,
+      height: 90,
+      blur: glassmorphicTheme.defaultBlur * (isSelected ? 1.0 : 0.6),
+      opacity: isSelected ? 0.2 : 0.1,
+      borderRadius: BorderRadius.circular(12),
+      borderWidth: isSelected ? 1.5 : 0.5,
+      borderColor:
+          isSelected
+              ? accentColor
+              : glassmorphicTheme.borderColor.withOpacity(0.3),
+      backgroundColor:
+          isSelected ? accentColor.withOpacity(0.1) : Colors.transparent,
+      useGradient: isSelected,
+      gradientColors: [
+        accentColor.withOpacity(0.15),
+        accentColor.withOpacity(0.05),
+      ],
+      showShimmer: isSelected,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 32,
+            color: isSelected ? accentColor : CupertinoColors.systemGrey,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              color: isSelected ? accentColor : CupertinoColors.systemGrey,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }

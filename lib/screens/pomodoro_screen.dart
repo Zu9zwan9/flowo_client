@@ -436,7 +436,10 @@ class AmbientModeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('Ambient Mode')),
+      navigationBar: CupertinoNavigationBar(
+        middle: Text('Ambient Mode'),
+        heroTag: 'ambientModeNavBar',
+      ),
       child: SafeArea(
         child: Column(
           children: [

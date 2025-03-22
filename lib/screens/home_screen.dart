@@ -1,29 +1,31 @@
-// dart
 import 'dart:ui';
-
-import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
-import 'package:flowo_client/screens/add_item_screen.dart';
-import 'package:flowo_client/screens/ambient_screen.dart';
-import 'package:flowo_client/screens/analytics_screen.dart';
-import 'package:flowo_client/screens/daily_overview_screen.dart';
-import 'package:flowo_client/screens/profile_screen.dart';
-import 'package:flowo_client/screens/settings_screen.dart';
-import 'package:flowo_client/screens/task_list_screen.dart';
-import 'package:flowo_client/screens/task_selection_screen.dart';
-import 'package:flowo_client/screens/widgets/sidebar_menu_item.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../design/animated_particles_background.dart';
+import '../../design/glassmorphic_container.dart';
+import '../../theme_notifier.dart';
+import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
+
+import '../../screens/daily_overview_screen.dart';
+import '../../screens/task_list_screen.dart';
+import '../../screens/add_item_screen.dart';
+import '../../screens/task_selection_screen.dart';
+import '../../screens/ambient_screen.dart';
+import '../../screens/profile_screen.dart';
+import '../../screens/settings_screen.dart';
+import '../../screens/analytics_screen.dart';
+
+import 'widgets/menu_button.dart';
+import 'widgets/sidebar_menu_item.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
-  final bool initialExpanded;
 
-  const HomeScreen({
-    super.key,
-    this.initialIndex = 0,
-    this.initialExpanded = false,
-  });
+  const HomeScreen({super.key, this.initialIndex = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -32,25 +34,22 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late int _selectedIndex;
-  late bool _isExpanded;
-  bool _isTransitioning = false;
-
+  bool _isSidebarOpen = false;
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  late Animation<double> _sidebarAnimation;
   final PageController _pageController = PageController(initialPage: 0);
 
   @override
   void initState() {
     super.initState();
     _selectedIndex = widget.initialIndex;
-    _isExpanded = widget.initialExpanded;
 
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
 
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _sidebarAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
@@ -59,8 +58,6 @@ class _HomeScreenState extends State<HomeScreen>
         _pageController.jumpToPage(_selectedIndex);
       }
     });
-
-    _animationController.value = 1.0;
   }
 
   @override
@@ -73,49 +70,49 @@ class _HomeScreenState extends State<HomeScreen>
   final List<({Widget page, IconData icon, String label, Color accentColor})>
   _pageData = [
     (
-      page: DailyOverviewScreen(),
+      page: const DailyOverviewScreen(),
       icon: CupertinoIcons.home,
       label: 'Today',
       accentColor: CupertinoColors.systemBlue,
     ),
     (
-      page: TaskListScreen(),
+      page: const TaskListScreen(),
       icon: CupertinoIcons.list_bullet,
       label: 'Tasks',
       accentColor: CupertinoColors.systemGreen,
     ),
     (
-      page: AddItemScreen(),
+      page: const AddItemScreen(),
       icon: CupertinoIcons.add_circled,
       label: 'Create',
       accentColor: CupertinoColors.systemIndigo,
     ),
     (
-      page: TaskSelectionScreen(),
+      page: const TaskSelectionScreen(),
       icon: CupertinoIcons.timer,
       label: 'Pomodoro',
       accentColor: CupertinoColors.systemRed,
     ),
     (
-      page: AmbientScreen(),
+      page: const AmbientScreen(),
       icon: CupertinoIcons.music_note_2,
       label: 'Ambient',
       accentColor: CupertinoColors.systemTeal,
     ),
     (
-      page: ProfileScreen(),
+      page: const ProfileScreen(),
       icon: CupertinoIcons.person,
       label: 'Profile',
       accentColor: CupertinoColors.systemOrange,
     ),
     (
-      page: SettingsScreen(),
+      page: const SettingsScreen(),
       icon: CupertinoIcons.settings,
       label: 'Settings',
       accentColor: CupertinoColors.systemGrey,
     ),
     (
-      page: AnalyticsScreen(),
+      page: const AnalyticsScreen(),
       icon: CupertinoIcons.chart_bar_alt_fill,
       label: 'Analytics',
       accentColor: CupertinoColors.systemPurple,
@@ -123,21 +120,14 @@ class _HomeScreenState extends State<HomeScreen>
   ];
 
   void _navigateToPage(int index) {
-    if (_selectedIndex == index) {
-      setState(() {
-        _isExpanded = false;
-      });
+    if (_selectedIndex == index && _isSidebarOpen) {
+      _toggleSidebar();
       return;
     }
 
     setState(() {
-      _isTransitioning = true;
       _selectedIndex = index;
-      _isExpanded = false;
     });
-
-    _animationController.reset();
-    _animationController.forward();
 
     _pageController
         .animateToPage(
@@ -146,228 +136,225 @@ class _HomeScreenState extends State<HomeScreen>
           curve: Curves.easeInOut,
         )
         .then((_) {
-          setState(() {
-            _isTransitioning = false;
-          });
+          if (_isSidebarOpen) {
+            _toggleSidebar();
+          }
         });
   }
 
   void _toggleSidebar() {
     HapticFeedback.mediumImpact();
     setState(() {
-      _isExpanded = !_isExpanded;
+      _isSidebarOpen = !_isSidebarOpen;
     });
+
+    if (_isSidebarOpen) {
+      _animationController.forward();
+    } else {
+      _animationController.reverse();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
-        middle: Text(_pageData[_selectedIndex].label),
-        leading: GestureDetector(
-          onTap: _toggleSidebar,
-          child: const Icon(CupertinoIcons.line_horizontal_3),
+        middle: Text(
+          _pageData[_selectedIndex].label,
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: MenuButton(isExpanded: _isSidebarOpen, onTap: _toggleSidebar),
+        ),
+        backgroundColor: CupertinoColors.systemBackground.withOpacity(0.8),
+        border: null,
       ),
       child: Stack(
         children: [
-          Positioned.fill(
-            top: 0, // Adjust for navigation bar height
+          AnimatedParticlesBackground(
+            particleCount: 20,
+            speedFactor: 0.3,
+            particleOpacity: 0.4,
             child: BlocProvider.value(
               value: context.read<CalendarCubit>(),
               child: PageView.builder(
                 controller: _pageController,
-                physics:
-                    _isTransitioning
-                        ? const NeverScrollableScrollPhysics()
-                        : const ClampingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 onPageChanged: (index) {
-                  if (!_isTransitioning) {
-                    setState(() {
-                      _selectedIndex = index;
-                    });
-                  }
+                  setState(() {
+                    _selectedIndex = index;
+                  });
                 },
                 itemCount: _pageData.length,
                 itemBuilder: (context, index) {
-                  return AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return Opacity(
-                        opacity:
-                            index == _selectedIndex
-                                ? _fadeAnimation.value
-                                : 1.0 - _fadeAnimation.value,
-                        child: child,
-                      );
-                    },
-                    child: _pageData[index].page,
-                  );
+                  return _pageData[index].page;
                 },
               ),
             ),
           ),
-          if (_isExpanded)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _toggleSidebar,
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                  child: Container(
-                    color:
-                        isDarkMode
-                            ? CupertinoColors.black.withOpacity(0.5)
-                            : CupertinoColors.white.withOpacity(0.5),
-                  ),
-                ),
-              ),
-            ),
-          AnimatedPositioned(
-            key: const ValueKey('sidebar'),
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            left: _isExpanded ? 0 : -320,
-            top: 0,
-            bottom: 0,
-            width: 320,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: CupertinoColors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 0),
-                    ),
-                  ],
-                ),
-                child: SafeArea(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color:
-                                    isDarkMode
-                                        ? CupertinoColors.darkBackgroundGray
-                                            .withOpacity(0.3)
-                                        : CupertinoColors.systemGrey5,
-                                width: 0.5,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: CupertinoColors.systemIndigo,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    CupertinoIcons.calendar_today,
-                                    color: CupertinoColors.white,
-                                    size: 20,
+          AnimatedBuilder(
+            animation: _sidebarAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(-280 * (1 - _sidebarAnimation.value), 0),
+                child:
+                    _isSidebarOpen
+                        ? GestureDetector(
+                          onTap: _toggleSidebar,
+                          behavior: HitTestBehavior.translucent,
+                          child: Container(
+                            color: Colors.transparent,
+                            child: Row(
+                              children: [
+                                GlassmorphicContainer(
+                                  width: 280,
+                                  height: MediaQuery.of(context).size.height,
+                                  blur: glassmorphicTheme.defaultBlur,
+                                  opacity: 0.7,
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(20),
+                                    bottomRight: Radius.circular(20),
+                                  ),
+                                  borderWidth: 0,
+                                  backgroundColor:
+                                      isDarkMode
+                                          ? CupertinoColors.black.withOpacity(
+                                            0.2,
+                                          )
+                                          : CupertinoColors.white.withOpacity(
+                                            0.2,
+                                          ),
+                                  useGradient: true,
+                                  gradientColors: [
+                                    glassmorphicTheme.accentColor.withOpacity(
+                                      0.1,
+                                    ),
+                                    glassmorphicTheme.secondaryAccentColor
+                                        .withOpacity(0.05),
+                                  ],
+                                  child: SafeArea(
+                                    child: Column(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                width: 40,
+                                                height: 40,
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [
+                                                      CupertinoColors
+                                                          .systemIndigo,
+                                                      CupertinoColors
+                                                          .systemBlue,
+                                                    ],
+                                                    begin: Alignment.topLeft,
+                                                    end: Alignment.bottomRight,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: const Icon(
+                                                  CupertinoIcons.calendar_today,
+                                                  color: CupertinoColors.white,
+                                                  size: 24,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Flowo',
+                                                    style: TextStyle(
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color:
+                                                          isDarkMode
+                                                              ? CupertinoColors
+                                                                  .white
+                                                              : CupertinoColors
+                                                                  .black,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    'Smart Time Management',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color:
+                                                          CupertinoColors
+                                                              .systemGrey,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: ListView.builder(
+                                            physics:
+                                                const ClampingScrollPhysics(),
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 8,
+                                            ),
+                                            itemCount: _pageData.length,
+                                            itemBuilder: (context, index) {
+                                              final item = _pageData[index];
+                                              return SidebarMenuItem(
+                                                icon: item.icon,
+                                                label: item.label,
+                                                accentColor: item.accentColor,
+                                                isSelected:
+                                                    index == _selectedIndex,
+                                                onTap:
+                                                    () =>
+                                                        _navigateToPage(index),
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(16.0),
+                                          child: Text(
+                                            'Flowo v1.0.0',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: CupertinoColors.systemGrey,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'Flowo',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color:
-                                            isDarkMode
-                                                ? CupertinoColors.white
-                                                : CupertinoColors.black,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      'Productivity App',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color:
-                                            isDarkMode
-                                                ? CupertinoColors.systemGrey
-                                                : CupertinoColors.systemGrey,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
+                                Expanded(
+                                  child: Container(
+                                    color:
+                                        isDarkMode
+                                            ? CupertinoColors.black.withOpacity(
+                                              0.4,
+                                            )
+                                            : CupertinoColors.systemGrey
+                                                .withOpacity(0.4),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Flexible(
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            itemCount: _pageData.length,
-                            itemBuilder: (context, index) {
-                              final item = _pageData[index];
-                              final isSelected = index == _selectedIndex;
-
-                              return SidebarMenuItem(
-                                icon: item.icon,
-                                label: item.label,
-                                accentColor: item.accentColor,
-                                isSelected: isSelected,
-                                onTap: () => _navigateToPage(index),
-                                textColor:
-                                    isDarkMode
-                                        ? CupertinoColors.white
-                                        : CupertinoColors.black,
-                              );
-                            },
-                          ),
-                        ),
-                        Flexible(
-                          fit: FlexFit.loose,
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            child: Text(
-                              'FLOWO 1.0.0',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color:
-                                    isDarkMode
-                                        ? CupertinoColors.systemGrey
-                                        : CupertinoColors.systemGrey,
-                              ),
-                              textAlign: TextAlign.center,
+                              ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+                        )
+                        : const SizedBox.shrink(),
+              );
+            },
           ),
         ],
       ),

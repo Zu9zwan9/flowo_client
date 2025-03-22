@@ -1,11 +1,17 @@
+import 'dart:ui';
+
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
+import 'package:flowo_client/screens/widgets/glassmorphic_task_form.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:provider/provider.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
+import '../design/glassmorphic_container.dart';
 import '../models/category.dart';
 import '../models/task_form_data.dart';
 import '../screens/home_screen.dart';
+import '../theme_notifier.dart';
 import '../utils/date_formatter.dart';
 import '../utils/logger.dart';
 
@@ -84,171 +90,203 @@ class _AddTaskPageState extends State<AddTaskPage>
 
   @override
   Widget build(BuildContext context) {
-    final form = CupertinoTaskForm(context);
+    // Access theme notifier for glassmorphic styling
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+    final form = GlassmorphicTaskForm(context);
+
+    // Create vibrant color accents
+    final primaryColor = themeNotifier.primaryColor;
+    final accentColor = CupertinoColors.systemTeal;
+    final secondaryAccent = CupertinoColors.systemIndigo;
+
+    // Create gradient colors for various elements
+    final headerGradient = [
+      primaryColor.withOpacity(0.7),
+      accentColor.withOpacity(0.5),
+    ];
+
     return CupertinoPageScaffold(
+      // Apply glassmorphic styling to navigation bar
       navigationBar: CupertinoNavigationBar(
-        middle: const Text('Add Task'),
-        backgroundColor: form.backgroundColor,
-        border: null,
+        backgroundColor: themeNotifier.backgroundColor.withOpacity(0.8),
+        border: null, // Remove default border
+        middle: const Text(
+          'Add Task',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
-      backgroundColor: form.backgroundColor,
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: CupertinoTaskForm.horizontalSpacing,
-            vertical: CupertinoTaskForm.verticalSpacing,
+      child: Container(
+        // Add a subtle gradient background
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              themeNotifier.backgroundColor,
+              themeNotifier.backgroundColor.withOpacity(0.8),
+            ],
           ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Task Details Section
-                form.sectionTitle('Task Details'),
-                form.formGroup(
-                  children: [
-                    form.textField(
-                      controller: _titleController,
-                      placeholder: 'Task Name *',
-                      autofocus: true,
-                      validator:
-                          (value) => value?.isEmpty == true ? 'Required' : null,
-                    ),
-                    const SizedBox(height: CupertinoTaskForm.elementSpacing),
-                    form.textField(
-                      controller: _notesController,
-                      placeholder: 'Notes',
-                      maxLines: 3,
-                    ),
-                  ],
-                ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(
+              horizontal: GlassmorphicTaskForm.horizontalSpacing,
+              vertical: GlassmorphicTaskForm.verticalSpacing,
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Task Details Section
+                  form.sectionTitle('Task Details'),
+                  form.formGroup(
+                    children: [
+                      form.textField(
+                        controller: _titleController,
+                        placeholder: 'Task Name *',
+                        autofocus: true,
+                        validator:
+                            (value) =>
+                                value?.isEmpty == true ? 'Required' : null,
+                      ),
+                      const SizedBox(height: CupertinoTaskForm.elementSpacing),
+                      form.textField(
+                        controller: _notesController,
+                        placeholder: 'Notes',
+                        maxLines: 3,
+                      ),
+                    ],
+                  ),
 
-                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+                  const SizedBox(height: CupertinoTaskForm.sectionSpacing),
 
-                // Deadline Section
-                form.sectionTitle('Deadline'),
-                form.formGroup(
-                  children: [
-                    form.selectionButton(
-                      label: 'Date',
-                      value: DateFormatter.formatDate(_formData.selectedDate),
-                      onTap: () => _showDatePicker(context),
-                      icon: CupertinoIcons.calendar,
-                    ),
-                    form.divider(),
-                    form.selectionButton(
-                      label: 'Time',
-                      value: DateFormatter.formatTime(_formData.selectedTime),
-                      onTap: () => _showTimePicker(context),
-                      icon: CupertinoIcons.time,
-                    ),
-                  ],
-                ),
+                  // Deadline Section
+                  form.sectionTitle('Deadline'),
+                  form.formGroup(
+                    children: [
+                      form.selectionButton(
+                        label: 'Date',
+                        value: DateFormatter.formatDate(_formData.selectedDate),
+                        onTap: () => _showDatePicker(context),
+                        icon: CupertinoIcons.calendar,
+                      ),
+                      form.divider(),
+                      form.selectionButton(
+                        label: 'Time',
+                        value: DateFormatter.formatTime(_formData.selectedTime),
+                        onTap: () => _showTimePicker(context),
+                        icon: CupertinoIcons.time,
+                      ),
+                    ],
+                  ),
 
-                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+                  const SizedBox(height: CupertinoTaskForm.sectionSpacing),
 
-                // Duration Section
-                form.sectionTitle('Estimated Time'),
-                form.formGroup(
-                  children: [
-                    form.selectionButton(
-                      label: 'Duration',
-                      value: _formatDuration(_formData.estimatedTime),
-                      onTap: () => _showDurationPicker(context),
-                      icon: CupertinoIcons.timer,
-                    ),
-                  ],
-                ),
+                  // Duration Section
+                  form.sectionTitle('Estimated Time'),
+                  form.formGroup(
+                    children: [
+                      form.selectionButton(
+                        label: 'Duration',
+                        value: _formatDuration(_formData.estimatedTime),
+                        onTap: () => _showDurationPicker(context),
+                        icon: CupertinoIcons.timer,
+                      ),
+                    ],
+                  ),
 
-                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+                  const SizedBox(height: CupertinoTaskForm.sectionSpacing),
 
-                // Category Section
-                form.sectionTitle('Category'),
-                form.formGroup(
-                  children: [
-                    form.segmentedControl(
-                      children: {
-                        for (var item in _categoryOptions)
-                          item: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                  // Category Section
+                  form.sectionTitle('Category'),
+                  form.formGroup(
+                    children: [
+                      form.segmentedControl(
+                        children: {
+                          for (var item in _categoryOptions)
+                            item: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              child: Text(item),
                             ),
-                            child: Text(item),
+                        },
+                        groupValue: _formData.category,
+                        onValueChanged: _handleCategoryChange,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+
+                  // Priority Section
+                  form.sectionTitle('Priority'),
+                  form.formGroup(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Level: ${_formData.priority}',
+                            style: form.labelTextStyle(),
                           ),
-                      },
-                      groupValue: _formData.category,
-                      onValueChanged: _handleCategoryChange,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
-
-                // Priority Section
-                form.sectionTitle('Priority'),
-                form.formGroup(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Level: ${_formData.priority}',
-                          style: form.labelTextStyle(),
-                        ),
-                        Text(
-                          _getPriorityLabel(_formData.priority),
-                          style: form.valueTextStyle.copyWith(
-                            color: _getPriorityColor(_formData.priority),
+                          Text(
+                            _getPriorityLabel(_formData.priority),
+                            style: form.valueTextStyle.copyWith(
+                              color: _getPriorityColor(_formData.priority),
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: CupertinoTaskForm.elementSpacing),
-                    form.prioritySlider(
-                      value: _formData.priority.toDouble(),
-                      onChanged: (value) {
-                        setState(() {
-                          _formData.priority = value.round();
-                        });
-                      },
-                      getPriorityColor: (value) => _getPriorityColor(value),
-                    ),
-                  ],
-                ),
+                        ],
+                      ),
+                      const SizedBox(height: CupertinoTaskForm.elementSpacing),
+                      form.prioritySlider(
+                        value: _formData.priority.toDouble(),
+                        onChanged: (value) {
+                          setState(() {
+                            _formData.priority = value.round();
+                          });
+                        },
+                        getPriorityColor: (value) => _getPriorityColor(value),
+                      ),
+                    ],
+                  ),
 
-                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+                  const SizedBox(height: CupertinoTaskForm.sectionSpacing),
 
-                // Color Section
-                form.sectionTitle('Color'),
-                form.formGroup(
-                  children: [
-                    form.helperText('Select a color for your task'),
-                    const SizedBox(height: CupertinoTaskForm.elementSpacing),
-                    form.colorSelector(
-                      colors: _colorOptions,
-                      selectedColorValue: _formData.color,
-                      onColorSelected:
-                          (color) => setState(() => _formData.color = color),
-                    ),
-                  ],
-                ),
+                  // Color Section
+                  form.sectionTitle('Color'),
+                  form.formGroup(
+                    children: [
+                      form.helperText('Select a color for your task'),
+                      const SizedBox(height: CupertinoTaskForm.elementSpacing),
+                      form.colorSelector(
+                        colors: _colorOptions,
+                        selectedColorValue: _formData.color,
+                        onColorSelected:
+                            (color) => setState(() => _formData.color = color),
+                      ),
+                    ],
+                  ),
 
-                const SizedBox(height: CupertinoTaskForm.sectionSpacing * 2),
+                  const SizedBox(height: CupertinoTaskForm.sectionSpacing * 2),
 
-                // Save Button
-                Center(
-                  child: ScaleTransition(
-                    scale: _buttonScaleAnimation,
-                    child: form.primaryButton(
-                      text: 'Save Task',
-                      onPressed: () => _saveTaskWithAnimation(context),
+                  // Save Button
+                  Center(
+                    child: ScaleTransition(
+                      scale: _buttonScaleAnimation,
+                      child: form.primaryButton(
+                        text: 'Save Task',
+                        onPressed: () => _saveTaskWithAnimation(context),
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: CupertinoTaskForm.verticalSpacing),
-              ],
+                  const SizedBox(height: CupertinoTaskForm.verticalSpacing),
+                ],
+              ),
             ),
           ),
         ),

@@ -1,5 +1,7 @@
+import 'package:flowo_client/design/glassmorphic_container.dart';
 import 'package:flowo_client/screens/onboarding/welcome_screen.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
+import 'package:flowo_client/theme_notifier.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -104,6 +106,10 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = CupertinoTheme.of(context);
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final primaryColor =
+        CupertinoColors.activeGreen; // Use green for this screen
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
 
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
@@ -118,22 +124,17 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 40),
-              // Goal icon
+              // Goal icon with glassmorphic effect
               Center(
-                child: Container(
+                child: GlassmorphicContainer(
                   width: 80,
                   height: 80,
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.activeGreen,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: CupertinoColors.systemGrey.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  blur: glassmorphicTheme.defaultBlur,
+                  opacity: 0.3, // Slightly more opaque for the icon
+                  borderWidth: glassmorphicTheme.defaultBorderWidth,
+                  borderColor: primaryColor.withOpacity(0.3),
+                  backgroundColor: primaryColor.withOpacity(0.2),
                   child: const Center(
                     child: Icon(
                       CupertinoIcons.flag_fill,
@@ -144,73 +145,106 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-              // Goal question
-              Text(
-                'What\'s your main goal?',
-                style: theme.textTheme.navLargeTitleTextStyle.copyWith(
-                  fontSize: 24,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Goal description
-              Text(
-                'This will help us personalize your experience.',
-                style: theme.textTheme.textStyle.copyWith(
-                  fontSize: 16,
-                  color: CupertinoColors.systemGrey,
+              // Goal question and description in a glassmorphic card
+              GlassmorphicCard(
+                borderRadius: BorderRadius.circular(16),
+                blur: glassmorphicTheme.defaultBlur,
+                opacity: glassmorphicTheme.defaultOpacity,
+                borderWidth: glassmorphicTheme.defaultBorderWidth,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Goal question
+                    Text(
+                      'What\'s your main goal?',
+                      style: theme.textTheme.navLargeTitleTextStyle.copyWith(
+                        fontSize: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Goal description
+                    Text(
+                      'This will help us personalize your experience.',
+                      style: theme.textTheme.textStyle.copyWith(
+                        fontSize: 16,
+                        color: CupertinoColors.systemGrey,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    // Goal input field with glassmorphic effect
+                    GlassmorphicContainer(
+                      borderRadius: BorderRadius.circular(12),
+                      blur: glassmorphicTheme.defaultBlur,
+                      opacity: 0.1, // More transparent for input field
+                      borderWidth: 1.0,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: CupertinoTextField(
+                        controller: _goalController,
+                        placeholder:
+                            'e.g., Improve productivity, Learn a new skill',
+                        padding: const EdgeInsets.all(16),
+                        clearButtonMode: OverlayVisibilityMode.editing,
+                        maxLines: 3,
+                        decoration: null, // Remove default decoration
+                        style: theme.textTheme.textStyle,
+                        placeholderStyle: theme.textTheme.textStyle.copyWith(
+                          color: CupertinoColors.systemGrey,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
-              // Goal input field
-              CupertinoTextField(
-                controller: _goalController,
-                placeholder: 'e.g., Improve productivity, Learn a new skill',
-                padding: const EdgeInsets.all(16),
-                clearButtonMode: OverlayVisibilityMode.editing,
-                maxLines: 3,
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey6.resolveFrom(context),
+              // Continue button with glassmorphic effect
+              GestureDetector(
+                onTap: _isGoalValid && !_isSubmitting ? _submitGoal : null,
+                child: GlassmorphicContainer(
+                  height: 56,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: CupertinoColors.systemGrey5.resolveFrom(context),
-                    width: 1.0,
+                  blur: glassmorphicTheme.defaultBlur,
+                  opacity: _isGoalValid ? 0.3 : 0.1, // More opaque when enabled
+                  borderWidth: glassmorphicTheme.defaultBorderWidth,
+                  borderColor:
+                      _isGoalValid
+                          ? primaryColor.withOpacity(0.5)
+                          : CupertinoColors.systemGrey4.withOpacity(0.3),
+                  backgroundColor:
+                      _isGoalValid
+                          ? primaryColor.withOpacity(0.3)
+                          : CupertinoColors.systemGrey4.withOpacity(0.1),
+                  child: Center(
+                    child:
+                        _isSubmitting
+                            ? const CupertinoActivityIndicator(
+                              color: CupertinoColors.white,
+                            )
+                            : const Text(
+                              'Continue',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: CupertinoColors.white,
+                              ),
+                            ),
                   ),
                 ),
-                style: theme.textTheme.textStyle,
-                placeholderStyle: theme.textTheme.textStyle.copyWith(
-                  color: CupertinoColors.systemGrey,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Continue button
-              CupertinoButton(
-                onPressed: _isGoalValid ? _submitGoal : null,
-                color: CupertinoColors.activeGreen,
-                disabledColor: CupertinoColors.systemGrey4,
-                borderRadius: BorderRadius.circular(12),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child:
-                    _isSubmitting
-                        ? const CupertinoActivityIndicator(
-                          color: CupertinoColors.white,
-                        )
-                        : const Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: CupertinoColors.white,
-                          ),
-                        ),
               ),
               const Spacer(),
-              // Footer
-              Center(
-                child: Text(
-                  'FLOWO 1.0.0',
-                  style: theme.textTheme.tabLabelTextStyle.copyWith(
-                    fontSize: 12,
-                    color: CupertinoColors.systemGrey,
+              // Footer in a subtle glassmorphic container
+              GlassmorphicContainer(
+                height: 40,
+                borderRadius: BorderRadius.circular(8),
+                blur: glassmorphicTheme.defaultBlur,
+                opacity: 0.1, // Very subtle for footer
+                borderWidth: 0.5, // Thinner border for footer
+                child: Center(
+                  child: Text(
+                    'FLOWO 1.0.0',
+                    style: theme.textTheme.tabLabelTextStyle.copyWith(
+                      fontSize: 12,
+                      color: CupertinoColors.systemGrey,
+                    ),
                   ),
                 ),
               ),

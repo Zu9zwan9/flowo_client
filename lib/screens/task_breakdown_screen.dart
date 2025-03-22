@@ -1,7 +1,10 @@
 import 'package:flutter/cupertino.dart';
+import 'package:provider/provider.dart';
 
+import '../design/glassmorphic_container.dart';
 import '../models/category.dart';
 import '../models/task.dart';
+import '../theme_notifier.dart';
 
 class TaskBreakdownScreen extends StatelessWidget {
   final Task task;
@@ -59,7 +62,12 @@ class TaskBreakdownScreen extends StatelessWidget {
             return ListView.builder(
               itemCount: subtasks.length,
               itemBuilder: (context, index) {
-                return CupertinoListTile(title: Text(subtasks[index].title));
+                return GlassmorphicCupertinoListTile(
+                  title: Text(subtasks[index].title),
+                  onTap: () {
+                    // Handle tap on subtask
+                  },
+                );
               },
             );
           }
@@ -69,7 +77,8 @@ class TaskBreakdownScreen extends StatelessWidget {
   }
 }
 
-class CupertinoListTile extends StatelessWidget {
+/// A Cupertino-style list tile with glassmorphic effect
+class GlassmorphicCupertinoListTile extends StatefulWidget {
   final Widget title;
   final Widget? subtitle;
   final Widget? leading;
@@ -78,8 +87,11 @@ class CupertinoListTile extends StatelessWidget {
   final EdgeInsetsGeometry? padding;
   final Color? backgroundColor;
   final double minLeadingWidth;
+  final bool useGradient;
+  final List<Color>? gradientColors;
+  final bool showShimmer;
 
-  const CupertinoListTile({
+  const GlassmorphicCupertinoListTile({
     required this.title,
     this.subtitle,
     this.leading,
@@ -88,18 +100,44 @@ class CupertinoListTile extends StatelessWidget {
     this.padding,
     this.backgroundColor,
     this.minLeadingWidth = 28.0,
+    this.useGradient = false,
+    this.gradientColors,
+    this.showShimmer = false,
     super.key,
   });
 
   @override
+  State<GlassmorphicCupertinoListTile> createState() =>
+      _GlassmorphicCupertinoListTileState();
+}
+
+class _GlassmorphicCupertinoListTileState
+    extends State<GlassmorphicCupertinoListTile> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final themeNotifier = Provider.of<ThemeNotifier>(context);
+    final glassmorphicTheme = themeNotifier.glassmorphicTheme;
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+
     final effectivePadding =
-        padding ?? const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0);
+        widget.padding ??
+        const EdgeInsets.symmetric(vertical: 10.0, horizontal: 16.0);
+
+    final effectiveBackgroundColor =
+        widget.backgroundColor ??
+        (isDarkMode
+            ? CupertinoColors.darkBackgroundGray.withOpacity(0.4)
+            : CupertinoColors.white.withOpacity(0.4));
+
+    final effectiveGradientColors =
+        widget.gradientColors ?? glassmorphicTheme.gradientColors;
 
     Widget content = Row(
       children: [
-        if (leading != null) ...[
-          SizedBox(width: minLeadingWidth, child: leading),
+        if (widget.leading != null) ...[
+          SizedBox(width: widget.minLeadingWidth, child: widget.leading),
           const SizedBox(width: 12),
         ],
         Expanded(
@@ -109,9 +147,9 @@ class CupertinoListTile extends StatelessWidget {
             children: [
               DefaultTextStyle(
                 style: CupertinoTheme.of(context).textTheme.textStyle,
-                child: title,
+                child: widget.title,
               ),
-              if (subtitle != null) ...[
+              if (widget.subtitle != null) ...[
                 const SizedBox(height: 4),
                 DefaultTextStyle(
                   style: CupertinoTheme.of(
@@ -120,33 +158,45 @@ class CupertinoListTile extends StatelessWidget {
                     fontSize: 14,
                     color: CupertinoColors.systemGrey,
                   ),
-                  child: subtitle!,
+                  child: widget.subtitle!,
                 ),
               ],
             ],
           ),
         ),
-        if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+        if (widget.trailing != null) ...[
+          const SizedBox(width: 8),
+          widget.trailing!,
+        ],
       ],
     );
 
-    if (onTap != null) {
-      content = GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: content,
-      );
-    }
-
-    return Container(
-      padding: effectivePadding,
-      decoration: BoxDecoration(
-        color: backgroundColor ?? CupertinoColors.systemBackground,
-        border: Border(
-          bottom: BorderSide(color: CupertinoColors.separator, width: 0.0),
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        if (widget.onTap != null) {
+          widget.onTap!();
+        }
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
+        child: GlassmorphicContainer(
+          padding: effectivePadding,
+          blur: glassmorphicTheme.defaultBlur * 0.7,
+          opacity: _isPressed ? 0.3 : 0.2,
+          borderRadius: BorderRadius.circular(12),
+          borderWidth: 1.0,
+          borderColor: glassmorphicTheme.accentColor.withOpacity(0.2),
+          backgroundColor: effectiveBackgroundColor,
+          useGradient: widget.useGradient,
+          gradientColors: effectiveGradientColors,
+          showShimmer: widget.showShimmer,
+          child: content,
         ),
       ),
-      child: content,
     );
   }
 }
