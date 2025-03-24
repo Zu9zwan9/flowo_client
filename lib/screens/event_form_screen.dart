@@ -9,25 +9,24 @@ import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class AddEventPage extends StatefulWidget {
+class EventFormScreen extends StatefulWidget {
   final DateTime? selectedDate;
 
-  const AddEventPage({super.key, this.selectedDate});
+  const EventFormScreen({super.key, this.selectedDate});
 
   @override
-  AddEventPageState createState() => AddEventPageState();
+  EventFormScreenState createState() => EventFormScreenState();
 }
 
-class AddEventPageState extends State<AddEventPage>
+class EventFormScreenState extends State<EventFormScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
   final _locationController = TextEditingController();
 
-  late DateTime _selectedDate;
   late DateTime _startTime;
-  DateTime? _endTime;
+  late DateTime _endTime;
   File? _image;
   int? _selectedColor;
   int _travelingTime = 0;
@@ -47,8 +46,9 @@ class AddEventPageState extends State<AddEventPage>
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.selectedDate ?? DateTime.now();
-    _startTime = _selectedDate;
+    _startTime = widget.selectedDate ?? DateTime.now();
+    _endTime = widget.selectedDate ?? DateTime.now();
+    _endTime.add(const Duration(hours: 1));
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -173,7 +173,7 @@ class AddEventPageState extends State<AddEventPage>
                     CupertinoFormWidgets.selectionButton(
                       context: context,
                       label: 'Date',
-                      value: theme.formatDate(_selectedDate),
+                      value: theme.formatDate(_startTime),
                       onTap: () => _showDatePicker(context, isStart: true),
                       color: theme.primaryColor,
                       icon: CupertinoIcons.calendar,
@@ -197,7 +197,7 @@ class AddEventPageState extends State<AddEventPage>
                     CupertinoFormWidgets.selectionButton(
                       context: context,
                       label: 'Date',
-                      value: theme.formatDate(_endTime ?? _selectedDate),
+                      value: theme.formatDate(_endTime),
                       onTap: () => _showDatePicker(context, isStart: false),
                       color: theme.primaryColor,
                       icon: CupertinoIcons.calendar,
@@ -241,12 +241,11 @@ class AddEventPageState extends State<AddEventPage>
   }) async {
     final pickedDate = await CupertinoFormWidgets.showDatePicker(
       context: context,
-      initialDate: isStart ? _selectedDate : (_endTime ?? _startTime),
+      initialDate: isStart ? _startTime : _endTime,
     );
     if (pickedDate != null && mounted) {
       setState(() {
         if (isStart) {
-          _selectedDate = pickedDate;
           _startTime = DateTime(
             pickedDate.year,
             pickedDate.month,
@@ -255,22 +254,13 @@ class AddEventPageState extends State<AddEventPage>
             _startTime.minute,
           );
         } else {
-          _endTime =
-              _endTime != null
-                  ? DateTime(
-                    pickedDate.year,
-                    pickedDate.month,
-                    pickedDate.day,
-                    _endTime!.hour,
-                    _endTime!.minute,
-                  )
-                  : DateTime(
-                    pickedDate.year,
-                    pickedDate.month,
-                    pickedDate.day,
-                    _startTime.hour + 1,
-                    _startTime.minute,
-                  );
+          _endTime = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            _endTime.hour,
+            _endTime.minute,
+          );
         }
       });
     }
@@ -282,14 +272,27 @@ class AddEventPageState extends State<AddEventPage>
   }) async {
     final pickedTime = await CupertinoFormWidgets.showTimePicker(
       context: context,
-      initialTime: isStart ? _startTime : (_endTime ?? _startTime),
+      initialTime: isStart ? _startTime : _endTime,
     );
     if (pickedTime != null && mounted) {
       setState(() {
-        if (isStart)
-          _startTime = pickedTime;
-        else
-          _endTime = pickedTime;
+        if (isStart) {
+          _startTime = DateTime(
+            _startTime.year,
+            _startTime.month,
+            _startTime.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        } else {
+          _endTime = DateTime(
+            _endTime.year,
+            _endTime.month,
+            _endTime.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        }
       });
     }
   }
@@ -321,25 +324,8 @@ class AddEventPageState extends State<AddEventPage>
       return;
     }
 
-    final startTime = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
-      _startTime.hour,
-      _startTime.minute,
-    );
-    final endTime =
-        _endTime != null
-            ? DateTime(
-              _selectedDate.year,
-              _selectedDate.month,
-              _selectedDate.day,
-              _endTime!.hour,
-              _endTime!.minute,
-            )
-            : startTime.add(const Duration(minutes: 60));
 
-    if (endTime.isBefore(startTime)) {
+    if (_endTime.isBefore(_startTime)) {
       showCupertinoDialog(
         context: context,
         builder:
@@ -359,8 +345,8 @@ class AddEventPageState extends State<AddEventPage>
 
     context.read<TaskManagerCubit>().createEvent(
       title: _titleController.text,
-      start: startTime,
-      end: endTime,
+      start: _startTime,
+      end: _endTime,
       location:
           _locationController.text.isNotEmpty ? _locationController.text : null,
       notes: _notesController.text.isNotEmpty ? _notesController.text : null,
@@ -371,7 +357,7 @@ class AddEventPageState extends State<AddEventPage>
     Navigator.pushReplacement(
       context,
       CupertinoPageRoute(builder: (_) => const HomeScreen()),
-    ).then((_) => context.read<CalendarCubit>().selectDate(startTime));
+    ).then((_) => context.read<CalendarCubit>().selectDate(_startTime));
     logInfo('Saved Event: ${_titleController.text}');
   }
 }

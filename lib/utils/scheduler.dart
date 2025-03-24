@@ -180,6 +180,7 @@ class Scheduler {
       if (scheduledTask.startTime.isBefore(end) &&
           scheduledTask.endTime.isAfter(start)) {
         logDebug(
+          // TODO: Add modal dialog to resolve overlap
           'Event overlaps with existing task: ${scheduledTask.parentTaskId}',
         );
         return;

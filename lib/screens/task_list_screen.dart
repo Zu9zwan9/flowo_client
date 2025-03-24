@@ -1,3 +1,4 @@
+import 'package:flowo_client/screens/habit_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +8,7 @@ import '../blocs/tasks_controller/task_manager_state.dart';
 import '../models/task.dart';
 import '../utils/category_utils.dart';
 import '../utils/debouncer.dart';
+import 'event_screen.dart';
 import 'home_screen.dart';
 import 'task_page_screen.dart';
 import 'widgets/cupertino_divider.dart';
@@ -52,9 +54,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   TaskFilterType _getTaskType(Task task) {
-    final cat = task.category.name.toLowerCase();
-    if (cat.contains('event')) return TaskFilterType.event;
-    if (cat.contains('habit')) return TaskFilterType.habit;
+    if (task.category.name.toLowerCase().contains('event')) {
+      return TaskFilterType.event;
+    }
+    if (task.frequency != null) return TaskFilterType.habit;
     return TaskFilterType.task;
   }
 
@@ -396,7 +399,15 @@ class _TaskListScreenState extends State<TaskListScreen> {
     Navigator.push(
       context,
       CupertinoPageRoute(
-        builder: (context) => TaskPageScreen(task: task, isEditing: true),
+        builder: (context) {
+          if (task.category.name.toLowerCase().contains('event')) {
+            return EventScreen(event: task);
+          } else if (task.frequency != null) {
+            return HabitScreen(); // TODO: Add analytics data to habit screen
+          } else {
+            return TaskPageScreen(task: task, isEditing: true);
+          }
+        },
       ),
     );
   }

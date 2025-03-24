@@ -1,4 +1,5 @@
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
+import 'package:flowo_client/screens/event_form_screen.dart';
 import 'package:flowo_client/screens/widgets/calendar_widgets.dart';
 import 'package:flowo_client/utils/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,7 +10,6 @@ import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../blocs/tasks_controller/task_manager_state.dart';
 import '../models/scheduled_task.dart';
 import '../models/task.dart';
-import 'add_event_page.dart';
 import 'add_habit_page.dart';
 import 'add_task_page.dart';
 
@@ -365,7 +365,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     Navigator.push(
       context,
       CupertinoPageRoute(
-        builder: (context) => AddEventPage(selectedDate: _selectedDate),
+        builder: (context) => EventFormScreen(selectedDate: _selectedDate),
       ),
     ).then((_) => _refreshData());
   }
@@ -572,7 +572,8 @@ class CalendarScreenState extends State<CalendarScreen> {
             color: CupertinoColors.activeBlue.withOpacity(0.2),
           ),
           todayHighlightColor: CupertinoColors.activeBlue,
-          headerHeight: 0, // Hide the default header since we have our own
+          headerHeight: 0,
+          // Hide the default header since we have our own
           viewHeaderStyle: const ViewHeaderStyle(
             dayTextStyle: TextStyle(
               fontSize: 12,
@@ -580,7 +581,8 @@ class CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
           appointmentTextStyle: const TextStyle(fontSize: 14),
-          allowViewNavigation: true, // Enable view navigation
+          allowViewNavigation: true,
+          // Enable view navigation
           allowedViews: const [
             // Define allowed views
             CalendarView.day,

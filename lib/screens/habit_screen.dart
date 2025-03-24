@@ -1,15 +1,16 @@
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
+import 'package:flowo_client/models/repeat_rule_instance.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 
 class HabitScreen extends StatefulWidget {
-  final Task? habit; // Existing habit to edit, null for new habit
+  final Task? habit; // Существующая привычка для редактирования, null для новой
 
   const HabitScreen({super.key, this.habit});
 
@@ -29,16 +30,15 @@ class HabitScreenState extends State<HabitScreen> {
   late int _priority;
   int? _selectedColor;
 
-  // Repeat rule properties
+  // Свойства RepeatRule
   String _frequency = 'daily'; // daily, weekly, monthly, yearly
   int _interval = 1;
   List<int> _daysOfWeek = [];
   List<int> _daysOfMonth = [];
-  int? _weekOfMonth;
   List<int> _months = [];
+  int? _weekOfMonth;
 
   final List<String> _categoryOptions = ['Habit', 'Workout', 'Health', 'Add'];
-
   final List<Color> _colorOptions = [
     CupertinoColors.systemRed,
     CupertinoColors.systemOrange,
@@ -49,19 +49,12 @@ class HabitScreenState extends State<HabitScreen> {
     CupertinoColors.systemGrey,
   ];
 
-  final List<String> _frequencyOptions = [
-    'Daily',
-    'Weekly',
-    'Monthly',
-    'Yearly',
-  ];
-
   @override
   void initState() {
     super.initState();
 
     if (widget.habit != null) {
-      // Initialize controllers and variables with habit data
+      // Инициализация для редактирования существующей привычки
       _titleController.text = widget.habit!.title;
       _notesController.text = widget.habit!.notes ?? '';
       _estimatedTime = widget.habit!.estimatedTime;
@@ -70,27 +63,28 @@ class HabitScreenState extends State<HabitScreen> {
       _priority = widget.habit!.priority;
       _selectedColor = widget.habit!.color;
 
-      // Initialize repeat rule properties
+      // Инициализация свойств повторения
       if (widget.habit!.frequency != null) {
-        _frequency = widget.habit!.frequency!.type;
+        _frequency = widget.habit!.frequency!.type.toLowerCase();
         _interval = widget.habit!.frequency!.interval;
-        _daysOfWeek = widget.habit!.frequency!.byDay ?? [];
-        _daysOfMonth = widget.habit!.frequency!.byMonthDay ?? [];
+        _endDate = widget.habit!.frequency!.endRepeat;
         _weekOfMonth = widget.habit!.frequency!.bySetPos;
-        _months = widget.habit!.frequency!.byMonth ?? [];
-        _endDate = widget.habit!.frequency!.until;
+
+        // Обработка byDay, byMonthDay, byMonth как списков int
+        _daysOfWeek = widget.habit!.frequency!.byDay?.map((e) => int.parse(e.selectedDay)).toList() ?? [];
+        _daysOfMonth = widget.habit!.frequency!.byMonthDay?.map((e) => int.parse(e.selectedDay)).toList() ?? [];
+        _months = widget.habit!.frequency!.byMonth?.map((e) => int.parse(e.selectedDay)).toList() ?? [];
       }
     } else {
-      // Initialize with default values for new habit
-      _estimatedTime = 30 * 60 * 1000; // 30 minutes
+      // Инициализация для новой привычки
+      _estimatedTime = 30 * 60 * 1000; // 30 минут
       _startDate = DateTime.now();
       _selectedCategory = 'Habit';
       _priority = 5;
     }
 
-    // Add the habit's category to the options if it's not already there
-    if (!_categoryOptions.contains(_selectedCategory) &&
-        _selectedCategory != 'Add') {
+    // Добавление категории привычки в список, если её там нет
+    if (!_categoryOptions.contains(_selectedCategory) && _selectedCategory != 'Add') {
       _categoryOptions.insert(_categoryOptions.length - 1, _selectedCategory);
     }
   }
@@ -138,9 +132,7 @@ class HabitScreenState extends State<HabitScreen> {
                   setState(() => _startDate = date);
                 }),
                 const SizedBox(height: 12),
-                _buildDateButton(context, 'End Date (Optional)', _endDate, (
-                  date,
-                ) {
+                _buildDateButton(context, 'End Date (Optional)', _endDate, (date) {
                   setState(() => _endDate = date);
                 }, allowNull: true),
                 const SizedBox(height: 20),
@@ -171,10 +163,7 @@ class HabitScreenState extends State<HabitScreen> {
                     _buildSectionTitle('Priority '),
                     Text(
                       _priority.toString(),
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
@@ -223,12 +212,12 @@ class HabitScreenState extends State<HabitScreen> {
   );
 
   Widget _buildDateButton(
-    BuildContext context,
-    String label,
-    DateTime? date,
-    Function(DateTime) onDateSelected, {
-    bool allowNull = false,
-  }) => GestureDetector(
+      BuildContext context,
+      String label,
+      DateTime? date,
+      Function(DateTime) onDateSelected, {
+        bool allowNull = false,
+      }) => GestureDetector(
     onTap: () => _showDatePicker(context, date, onDateSelected, allowNull),
     child: Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -241,10 +230,7 @@ class HabitScreenState extends State<HabitScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 16,
-              color: CupertinoColors.systemBlue,
-            ),
+            style: const TextStyle(fontSize: 16, color: CupertinoColors.systemBlue),
           ),
           Text(
             date != null ? _formatDate(date) : 'Not set',
@@ -265,15 +251,22 @@ class HabitScreenState extends State<HabitScreen> {
       const SizedBox(height: 8),
       CupertinoSlidingSegmentedControl<String>(
         groupValue: _frequency,
-        children: {
-          'daily': const Text('Daily'),
-          'weekly': const Text('Weekly'),
-          'monthly': const Text('Monthly'),
-          'yearly': const Text('Yearly'),
+        children: const {
+          'daily': Text('Daily'),
+          'weekly': Text('Weekly'),
+          'monthly': Text('Monthly'),
+          'yearly': Text('Yearly'),
         },
         onValueChanged: (value) {
           if (value != null) {
-            setState(() => _frequency = value);
+            setState(() {
+              _frequency = value;
+              // Сброс зависимых полей при смене частоты
+              _daysOfWeek.clear();
+              _daysOfMonth.clear();
+              _months.clear();
+              _weekOfMonth = null;
+            });
           }
         },
       ),
@@ -365,16 +358,10 @@ class HabitScreenState extends State<HabitScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? CupertinoColors.activeBlue
-                  : CupertinoColors.systemGrey6,
+          color: isSelected ? CupertinoColors.activeBlue : CupertinoColors.systemGrey6,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color:
-                isSelected
-                    ? CupertinoColors.activeBlue
-                    : CupertinoColors.systemGrey4,
+            color: isSelected ? CupertinoColors.activeBlue : CupertinoColors.systemGrey4,
           ),
         ),
         child: Text(
@@ -421,28 +408,18 @@ class HabitScreenState extends State<HabitScreen> {
               },
               child: Container(
                 decoration: BoxDecoration(
-                  color:
-                      isSelected
-                          ? CupertinoColors.activeBlue
-                          : CupertinoColors.systemGrey6,
+                  color: isSelected ? CupertinoColors.activeBlue : CupertinoColors.systemGrey6,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color:
-                        isSelected
-                            ? CupertinoColors.activeBlue
-                            : CupertinoColors.systemGrey4,
+                    color: isSelected ? CupertinoColors.activeBlue : CupertinoColors.systemGrey4,
                   ),
                 ),
                 child: Center(
                   child: Text(
                     day.toString(),
                     style: TextStyle(
-                      color:
-                          isSelected
-                              ? CupertinoColors.white
-                              : CupertinoColors.label,
-                      fontWeight:
-                          isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? CupertinoColors.white : CupertinoColors.label,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                 ),
@@ -474,18 +451,8 @@ class HabitScreenState extends State<HabitScreen> {
 
   String _getMonthName(int month) {
     const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     return months[month];
   }
@@ -505,16 +472,10 @@ class HabitScreenState extends State<HabitScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color:
-              isSelected
-                  ? CupertinoColors.activeBlue
-                  : CupertinoColors.systemGrey6,
+          color: isSelected ? CupertinoColors.activeBlue : CupertinoColors.systemGrey6,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color:
-                isSelected
-                    ? CupertinoColors.activeBlue
-                    : CupertinoColors.systemGrey4,
+            color: isSelected ? CupertinoColors.activeBlue : CupertinoColors.systemGrey4,
           ),
         ),
         child: Text(
@@ -532,21 +493,19 @@ class HabitScreenState extends State<HabitScreen> {
     required List<String> options,
     required String value,
     required ValueChanged<String> onChanged,
-    Color selectedColor = CupertinoColors.activeBlue,
   }) => CupertinoSegmentedControl<String>(
     children: {
       for (var item in options)
         item: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Text(item.toString(), style: const TextStyle(fontSize: 14)),
+          child: Text(item, style: const TextStyle(fontSize: 14)),
         ),
     },
     groupValue: options.contains(value) ? value : null,
     onValueChanged: onChanged,
     borderColor: CupertinoColors.systemGrey4,
-    selectedColor: selectedColor,
+    selectedColor: CupertinoColors.activeBlue,
     unselectedColor: CupertinoColors.systemGrey6,
-    pressedColor: selectedColor.withOpacity(0.2),
   );
 
   Widget _buildSaveButton(BuildContext context) => Center(
@@ -605,18 +564,13 @@ class HabitScreenState extends State<HabitScreen> {
     height: 50,
     child: ListView.builder(
       scrollDirection: Axis.horizontal,
-      itemCount: _colorOptions.length + 1, // +1 for "No color" option
+      itemCount: _colorOptions.length + 1, // +1 для опции "No color"
       itemBuilder: (context, index) {
         if (index == 0) {
-          // "No color" option
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedColor = null;
-                });
-              },
+              onTap: () => setState(() => _selectedColor = null),
               child: Container(
                 width: 40,
                 height: 40,
@@ -624,37 +578,26 @@ class HabitScreenState extends State<HabitScreen> {
                   shape: BoxShape.circle,
                   color: CupertinoColors.white,
                   border: Border.all(
-                    color:
-                        _selectedColor == null
-                            ? CupertinoColors.activeBlue
-                            : CupertinoColors.systemGrey,
+                    color: _selectedColor == null
+                        ? CupertinoColors.activeBlue
+                        : CupertinoColors.systemGrey,
                     width: 2,
                   ),
                 ),
-                child:
-                    _selectedColor == null
-                        ? const Icon(
-                          CupertinoIcons.checkmark,
-                          color: CupertinoColors.activeBlue,
-                        )
-                        : null,
+                child: _selectedColor == null
+                    ? const Icon(CupertinoIcons.checkmark, color: CupertinoColors.activeBlue)
+                    : null,
               ),
             ),
           );
         }
-
         final color = _colorOptions[index - 1];
         final colorValue = color.value;
         final isSelected = _selectedColor == colorValue;
-
         return Padding(
           padding: const EdgeInsets.only(right: 8),
           child: GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedColor = colorValue;
-              });
-            },
+            onTap: () => setState(() => _selectedColor = colorValue),
             child: Container(
               width: 40,
               height: 40,
@@ -662,20 +605,13 @@ class HabitScreenState extends State<HabitScreen> {
                 shape: BoxShape.circle,
                 color: color,
                 border: Border.all(
-                  color:
-                      isSelected
-                          ? CupertinoColors.activeBlue
-                          : CupertinoColors.systemGrey,
+                  color: isSelected ? CupertinoColors.activeBlue : CupertinoColors.systemGrey,
                   width: 2,
                 ),
               ),
-              child:
-                  isSelected
-                      ? const Icon(
-                        CupertinoIcons.checkmark,
-                        color: CupertinoColors.white,
-                      )
-                      : null,
+              child: isSelected
+                  ? const Icon(CupertinoIcons.checkmark, color: CupertinoColors.white)
+                  : null,
             ),
           ),
         );
@@ -684,56 +620,56 @@ class HabitScreenState extends State<HabitScreen> {
   );
 
   Future<void> _showDatePicker(
-    BuildContext context,
-    DateTime? initialDate,
-    Function(DateTime) onDateSelected,
-    bool allowNull,
-  ) async {
+      BuildContext context,
+      DateTime? initialDate,
+      Function(DateTime) onDateSelected,
+      bool allowNull,
+      ) async {
     DateTime? pickedDate;
     await showCupertinoModalPopup(
       context: context,
-      builder:
-          (context) => Container(
-            height: 300,
-            color: CupertinoColors.systemBackground,
-            child: Column(
+      builder: (context) => Container(
+        height: 300,
+        color: CupertinoColors.systemBackground,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (allowNull)
-                      CupertinoButton(
-                        child: const Text('Clear'),
-                        onPressed: () {
-                          Navigator.pop(context);
-                          pickedDate = null;
-                        },
-                      ),
-                    CupertinoButton(
-                      child: const Text('Cancel'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    CupertinoButton(
-                      child: const Text('Done'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                SizedBox(
-                  height: 220,
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.date,
-                    initialDateTime: initialDate ?? DateTime.now(),
-                    onDateTimeChanged: (val) => pickedDate = val,
+                if (allowNull)
+                  CupertinoButton(
+                    child: const Text('Clear'),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      pickedDate = null;
+                    },
                   ),
+                CupertinoButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoButton(
+                  child: const Text('Done'),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
-          ),
+            SizedBox(
+              height: 220,
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.date,
+                initialDateTime: initialDate ?? DateTime.now(),
+                onDateTimeChanged: (val) => pickedDate = val,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
-
     if (pickedDate != null && mounted) {
       onDateSelected(pickedDate!);
+    } else if (allowNull && pickedDate == null) {
+      onDateSelected(null as DateTime);
     }
   }
 
@@ -742,57 +678,47 @@ class HabitScreenState extends State<HabitScreen> {
     int? pickedMinutes;
     await showCupertinoModalPopup(
       context: context,
-      builder:
-          (context) => Container(
-            height: 300,
-            color: CupertinoColors.systemBackground,
-            child: Column(
+      builder: (context) => Container(
+        height: 300,
+        color: CupertinoColors.systemBackground,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      child: const Text('Cancel'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    CupertinoButton(
-                      child: const Text('Done'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+                CupertinoButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.pop(context),
                 ),
-                Expanded(
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: CupertinoPicker(
-                          itemExtent: 32,
-                          onSelectedItemChanged: (index) {
-                            pickedHours = index;
-                          },
-                          children: [
-                            for (var i = 0; i <= 120; i++) Text('$i hours'),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: CupertinoPicker(
-                          itemExtent: 32,
-                          onSelectedItemChanged: (index) {
-                            pickedMinutes = index * 15;
-                          },
-                          children: [
-                            for (var i = 0; i < 4; i++)
-                              Text('${i * 15} minutes'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                CupertinoButton(
+                  child: const Text('Done'),
+                  onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
-          ),
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 32,
+                      onSelectedItemChanged: (index) => pickedHours = index,
+                      children: [for (var i = 0; i <= 120; i++) Text('$i hours')],
+                    ),
+                  ),
+                  Expanded(
+                    child: CupertinoPicker(
+                      itemExtent: 32,
+                      onSelectedItemChanged: (index) => pickedMinutes = index * 15,
+                      children: [for (var i = 0; i < 4; i++) Text('${i * 15} minutes')],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
     return (pickedHours ?? 0) * 3600000 + (pickedMinutes ?? 0) * 60000;
   }
@@ -809,70 +735,53 @@ class HabitScreenState extends State<HabitScreen> {
     final controller = TextEditingController();
     showCupertinoDialog(
       context: context,
-      builder:
-          (context) => CupertinoAlertDialog(
-            title: const Text('Add Custom Category'),
-            content: Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: CupertinoTextField(
-                controller: controller,
-                placeholder: 'Category Name',
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey6,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Add Custom Category'),
+        content: Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: CupertinoTextField(
+            controller: controller,
+            placeholder: 'Category Name',
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemGrey6,
+              borderRadius: BorderRadius.circular(8),
             ),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('Cancel'),
-                onPressed: () => Navigator.pop(context),
-              ),
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('Add'),
-                onPressed: () {
-                  final newCategory = controller.text.trim();
-                  if (newCategory.isNotEmpty && mounted) {
-                    setState(() {
-                      if (!_categoryOptions.contains(newCategory)) {
-                        _categoryOptions.insert(
-                          _categoryOptions.length - 1,
-                          newCategory,
-                        );
-                      }
-                      _selectedCategory = newCategory;
-                    });
-                    logInfo('Custom category added: $newCategory');
-                  }
-                  Navigator.pop(context);
-                },
-              ),
-            ],
           ),
+        ),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('Add'),
+            onPressed: () {
+              final newCategory = controller.text.trim();
+              if (newCategory.isNotEmpty && mounted) {
+                setState(() {
+                  if (!_categoryOptions.contains(newCategory)) {
+                    _categoryOptions.insert(_categoryOptions.length - 1, newCategory);
+                  }
+                  _selectedCategory = newCategory;
+                });
+                logInfo('Custom category added: $newCategory');
+              }
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
     );
   }
 
   Future<void> _saveHabit(BuildContext context) async {
     if (!_formKey.currentState!.validate()) {
-      showCupertinoDialog(
-        context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please fill in all required fields.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-      );
+      _showValidationError('Please fill in all required fields.');
       return;
     }
 
-    // Validate frequency-specific fields
+    // Валидация полей повторения
     if (_frequency == 'weekly' && _daysOfWeek.isEmpty) {
       _showValidationError('Please select at least one day of the week.');
       return;
@@ -886,21 +795,49 @@ class HabitScreenState extends State<HabitScreen> {
       return;
     }
 
-    // Create RepeatRule
+    // Создание RepeatRule с учетом структуры модели
     final repeatRule = RepeatRule(
-      type: _frequency,
+      type: _frequency.toUpperCase(),
       interval: _interval,
-      byDay: _frequency == 'weekly' ? _daysOfWeek : null,
-      byMonthDay: _frequency == 'monthly' ? _daysOfMonth : null,
-      byMonth: _frequency == 'yearly' ? _months : null,
+      startRepeat: _startDate,
+      endRepeat: _endDate,
+      byDay: _frequency == 'weekly'
+          ? _daysOfWeek
+          .map((day) => RepeatRuleInstance(
+        selectedDay: day.toString(),
+        name: 'Day $day',
+        start: const TimeOfDay(hour: 0, minute: 0),
+        end: const TimeOfDay(hour: 23, minute: 59),
+      ))
+          .toList()
+          : null,
+      byMonthDay: _frequency == 'monthly'
+          ? _daysOfMonth
+          .map((day) => RepeatRuleInstance(
+        selectedDay: day.toString(),
+        name: 'Day $day',
+        start: const TimeOfDay(hour: 0, minute: 0),
+        end: const TimeOfDay(hour: 23, minute: 59),
+      ))
+          .toList()
+          : null,
+      byMonth: _frequency == 'yearly'
+          ? _months
+          .map((month) => RepeatRuleInstance(
+        selectedDay: month.toString(),
+        name: _getMonthName(month),
+        start: const TimeOfDay(hour: 0, minute: 0),
+        end: const TimeOfDay(hour: 23, minute: 59),
+      ))
+          .toList()
+          : null,
       bySetPos: _weekOfMonth,
-      until: _endDate,
     );
 
     final tasksCubit = context.read<TaskManagerCubit>();
 
     if (widget.habit == null) {
-      // Create new habit
+      // Создание новой привычки
       tasksCubit.createTask(
         title: _titleController.text,
         priority: _priority,
@@ -912,7 +849,7 @@ class HabitScreenState extends State<HabitScreen> {
         frequency: repeatRule,
       );
     } else {
-      // Update existing habit
+      // Обновление существующей привычки
       tasksCubit.editTask(
         task: widget.habit!,
         title: _titleController.text,
@@ -935,17 +872,16 @@ class HabitScreenState extends State<HabitScreen> {
   void _showValidationError(String message) {
     showCupertinoDialog(
       context: context,
-      builder:
-          (context) => CupertinoAlertDialog(
-            title: const Text('Validation Error'),
-            content: Text(message),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Validation Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(context),
           ),
+        ],
+      ),
     );
   }
 }

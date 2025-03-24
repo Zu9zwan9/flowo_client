@@ -98,8 +98,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       'For date $dateKey, found ${scheduledTasks.length} scheduled tasks',
     );
 
-    // TODO: Find out why scheduledTasks is empty for habits
-
     final grouped = <Task, List<ScheduledTask>>{};
     for (var scheduledTask in scheduledTasks) {
       final task = taskManager.tasksDB.get(scheduledTask.parentTaskId);
