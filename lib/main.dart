@@ -16,10 +16,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
-import 'adapters/time_of_day_adapter.dart';
 import 'blocs/analytics/analytics_cubit.dart';
 import 'blocs/tasks_controller/task_manager_cubit.dart';
 import 'blocs/tasks_controller/tasks_controller_cubit.dart';
+import 'models/adapters/time_of_day_adapter.dart';
 import 'models/category.dart';
 import 'models/coordinates.dart';
 import 'models/day.dart';

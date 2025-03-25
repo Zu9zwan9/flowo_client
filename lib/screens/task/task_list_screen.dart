@@ -1,5 +1,7 @@
+import 'package:flowo_client/screens/habit/habit_details_screen.dart';
 import 'package:flowo_client/screens/habit/habit_screen.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -29,11 +31,17 @@ class _TaskListScreenState extends State<TaskListScreen> {
   final Map<String, bool> _expandedCategories = {};
   final Map<String, bool> _expandedTasks = {};
   String _searchQuery = '';
+  late final ScrollController _scrollController;
+
+  Map<String, List<Task>>? _filteredTasksCache;
+  String? _lastQuery;
+  TaskFilterType? _lastFilter;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _scrollController = ScrollController();
   }
 
   void _onSearchChanged() {
@@ -41,6 +49,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
       if (mounted) {
         setState(() {
           _searchQuery = _searchController.text;
+          _clearCache();
         });
       }
     });
@@ -50,6 +59,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
   void dispose() {
     _searchController.dispose();
     _searchDebouncer.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -60,10 +70,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
     if (task.frequency != null) return TaskFilterType.habit;
     return TaskFilterType.task;
   }
-
-  Map<String, List<Task>>? _filteredTasksCache;
-  String? _lastQuery;
-  TaskFilterType? _lastFilter;
 
   Map<String, List<Task>> _filterGroupedTasks(
     Map<String, List<Task>> groupedTasks,
@@ -100,6 +106,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
     return filtered;
   }
 
+  void _clearCache() {
+    _filteredTasksCache = null;
+    _lastQuery = null;
+    _lastFilter = null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -109,20 +121,17 @@ class _TaskListScreenState extends State<TaskListScreen> {
             children: [
               const SizedBox(height: 8),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
                 child: TaskSearchBar(controller: _searchController),
               ),
-              const SizedBox(height: 8),
-              TaskTypeFilter(
-                selectedFilter: _selectedFilter,
-                onFilterChanged: (filter) {
-                  HapticFeedback.selectionClick();
-                  setState(() {
-                    _selectedFilter = filter;
-                    _clearCache();
-                  });
-                },
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _buildFilterTabs(context),
               ),
+              const SizedBox(height: 12),
               Expanded(child: _buildTaskList(context)),
             ],
           ),
@@ -151,12 +160,6 @@ class _TaskListScreenState extends State<TaskListScreen> {
     );
   }
 
-  void _clearCache() {
-    _filteredTasksCache = null;
-    _lastQuery = null;
-    _lastFilter = null;
-  }
-
   void _showAddTaskDialog(BuildContext context) {
     HapticFeedback.mediumImpact();
     Navigator.push(
@@ -182,17 +185,17 @@ class _TaskListScreenState extends State<TaskListScreen> {
         builder: (context, state) {
           final groupedTasks = _groupTasksByCategory(state.tasks);
           final filteredTasks = _filterGroupedTasks(groupedTasks);
+
           if (filteredTasks.isEmpty) {
-            return const Center(
-              child: Text(
-                'No tasks match your filter',
-                style: TextStyle(color: CupertinoColors.systemGrey),
-              ),
-            );
+            return _buildEmptyState(context);
           }
 
           return CupertinoScrollbar(
+            controller: _scrollController,
             child: ListView.builder(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 100),
               itemCount: filteredTasks.length,
               itemBuilder: (context, index) {
                 final category = filteredTasks.keys.elementAt(index);
@@ -209,6 +212,30 @@ class _TaskListScreenState extends State<TaskListScreen> {
           );
         },
       );
+
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            CupertinoIcons.doc_text_search,
+            size: 48,
+            color: CupertinoTheme.of(context).primaryColor.withOpacity(0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No tasks match your filter',
+            style: TextStyle(
+              color: CupertinoColors.systemGrey,
+              fontSize: 17,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Map<String, List<Task>> _groupTasksByCategory(List<Task> tasks) {
     final grouped = <String, List<Task>>{};
@@ -227,162 +254,219 @@ class _TaskListScreenState extends State<TaskListScreen> {
     bool isExpanded,
   ) {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final backgroundColor =
+        isDarkMode
+            ? CupertinoColors.systemBackground
+            : CupertinoColors.systemBackground;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: CupertinoTheme.of(context).barBackgroundColor,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
             color:
                 isDarkMode
-                    ? CupertinoColors.black.withOpacity(0.2)
-                    : CupertinoColors.systemGrey5.withOpacity(0.5),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
+                    ? CupertinoColors.black.withOpacity(0.15)
+                    : CupertinoColors.systemGrey5.withOpacity(0.4),
+            blurRadius: 5,
+            spreadRadius: 0,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CupertinoButton(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              setState(() => _expandedCategories[category] = !isExpanded);
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      category,
-                      style: CupertinoTheme.of(context)
-                          .textTheme
-                          .navTitleTextStyle
-                          .copyWith(fontSize: 17, fontWeight: FontWeight.w600),
-                      semanticsLabel: '$category category',
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                setState(() => _expandedCategories[category] = !isExpanded);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      isDarkMode
+                          ? CupertinoColors.systemGrey6.darkColor
+                          : CupertinoColors.systemGrey6.withOpacity(0.6),
+                  border: Border(
+                    bottom: BorderSide(
+                      color:
+                          isDarkMode
+                              ? CupertinoColors.separator.darkColor
+                              : CupertinoColors.separator,
+                      width: 0.5,
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color:
-                            isDarkMode
-                                ? CupertinoColors.systemGrey6.darkColor
-                                : CupertinoColors.systemGrey6,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${tasks.length}',
-                        style: TextStyle(
-                          color:
-                              CupertinoTheme.of(
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(
+                            CategoryUtils.getCategoryIcon(category),
+                            size: 18,
+                            color: CategoryUtils.getCategoryColor(category),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              category,
+                              style: CupertinoTheme.of(
                                 context,
-                              ).textTheme.tabLabelTextStyle.color,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                              ).textTheme.navTitleTextStyle.copyWith(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w600,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              semanticsLabel: '$category category',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color:
+                                  isDarkMode
+                                      ? CupertinoTheme.of(
+                                        context,
+                                      ).primaryColor.withOpacity(0.2)
+                                      : CupertinoTheme.of(
+                                        context,
+                                      ).primaryColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${tasks.length}',
+                              style: TextStyle(
+                                color: CupertinoTheme.of(context).primaryColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    Icon(
+                      isExpanded
+                          ? CupertinoIcons.chevron_up
+                          : CupertinoIcons.chevron_down,
+                      size: 18,
+                      color: CupertinoTheme.of(context).primaryColor,
                     ),
                   ],
                 ),
-                Icon(
-                  isExpanded
-                      ? CupertinoIcons.chevron_down
-                      : CupertinoIcons.chevron_right,
-                  size: 20,
-                  color: CupertinoColors.systemGrey,
-                ),
-              ],
+              ),
             ),
-          ),
-          if (isExpanded) ...[
-            const CupertinoDivider(),
-            ...tasks.map((task) {
-              final hasSubtasks = task.subtasks.isNotEmpty;
-              final isExpanded = _expandedTasks[task.id] ?? false;
-              return Column(
-                children: [
-                  TaskListItem(
-                    task: task,
-                    onTap: () => _onTaskTap(context, task),
-                    onEdit: () => _editTask(context, task),
-                    onDelete: () => _deleteTask(context, task),
-                    categoryColor: CategoryUtils.getCategoryColor(
-                      task.category.name,
-                    ),
-                    hasSubtasks: hasSubtasks,
-                    isExpanded: isExpanded,
-                    onToggleExpand:
-                        hasSubtasks
-                            ? () {
-                              HapticFeedback.selectionClick();
-                              setState(() {
-                                _expandedTasks[task.id] = !isExpanded;
-                              });
-                            }
-                            : null,
-                    onToggleCompletion:
-                        () => _toggleTaskCompletion(context, task),
-                  ),
-                  if (hasSubtasks && isExpanded)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20),
-                      child: Column(
-                        children:
-                            task.subtasks.map((subtask) {
-                              return Column(
-                                children: [
-                                  const CupertinoDivider(),
-                                  TaskListItem(
-                                    task: subtask,
-                                    onTap: () => _onTaskTap(context, subtask),
-                                    onEdit: () => _editTask(context, subtask),
-                                    onDelete:
-                                        () => _deleteTask(context, subtask),
-                                    categoryColor:
-                                        CategoryUtils.getCategoryColor(
-                                          subtask.category.name,
-                                        ),
-                                    hasSubtasks: subtask.subtasks.isNotEmpty,
-                                    isExpanded:
-                                        _expandedTasks[subtask.id] ?? false,
-                                    onToggleExpand:
-                                        subtask.subtasks.isNotEmpty
-                                            ? () {
-                                              HapticFeedback.selectionClick();
-                                              setState(() {
-                                                _expandedTasks[subtask.id] =
-                                                    !(_expandedTasks[subtask
-                                                            .id] ??
-                                                        false);
-                                              });
-                                            }
-                                            : null,
-                                    onToggleCompletion:
-                                        () => _toggleTaskCompletion(
-                                          context,
-                                          subtask,
-                                        ),
-                                  ),
-                                ],
-                              );
-                            }).toList(),
+            if (isExpanded) ...[
+              const CupertinoDivider(),
+              ...tasks.map((task) {
+                final hasSubtasks = task.subtasks.isNotEmpty;
+                final isExpanded = _expandedTasks[task.id] ?? false;
+                return Column(
+                  children: [
+                    TaskListItem(
+                      task: task,
+                      onTap: () => _onTaskTap(context, task),
+                      onEdit: () => _editTask(context, task),
+                      onDelete: () => _deleteTask(context, task),
+                      categoryColor: CategoryUtils.getCategoryColor(
+                        task.category.name,
                       ),
+                      hasSubtasks: hasSubtasks,
+                      isExpanded: isExpanded,
+                      onToggleExpand:
+                          hasSubtasks
+                              ? () {
+                                HapticFeedback.selectionClick();
+                                setState(() {
+                                  _expandedTasks[task.id] = !isExpanded;
+                                });
+                              }
+                              : null,
+                      onToggleCompletion:
+                          () => _toggleTaskCompletion(context, task),
                     ),
-                  if (task != tasks.last) const CupertinoDivider(),
-                ],
-              );
-            }),
+                    if (hasSubtasks && isExpanded)
+                      Container(
+                        decoration: BoxDecoration(
+                          color:
+                              isDarkMode
+                                  ? CupertinoColors.systemGrey6.darkColor
+                                      .withOpacity(0.5)
+                                  : CupertinoColors.systemGrey6.withOpacity(
+                                    0.3,
+                                  ),
+                          borderRadius: const BorderRadius.only(
+                            bottomLeft: Radius.circular(12),
+                            bottomRight: Radius.circular(12),
+                          ),
+                        ),
+                        margin: const EdgeInsets.only(left: 20),
+                        child: Column(
+                          children:
+                              task.subtasks.map((subtask) {
+                                return Column(
+                                  children: [
+                                    const CupertinoDivider(),
+                                    TaskListItem(
+                                      task: subtask,
+                                      onTap: () => _onTaskTap(context, subtask),
+                                      onEdit: () => _editTask(context, subtask),
+                                      onDelete:
+                                          () => _deleteTask(context, subtask),
+                                      categoryColor:
+                                          CategoryUtils.getCategoryColor(
+                                            subtask.category.name,
+                                          ),
+                                      hasSubtasks: subtask.subtasks.isNotEmpty,
+                                      isExpanded:
+                                          _expandedTasks[subtask.id] ?? false,
+                                      onToggleExpand:
+                                          subtask.subtasks.isNotEmpty
+                                              ? () {
+                                                HapticFeedback.selectionClick();
+                                                setState(() {
+                                                  _expandedTasks[subtask.id] =
+                                                      !(_expandedTasks[subtask
+                                                              .id] ??
+                                                          false);
+                                                });
+                                              }
+                                              : null,
+                                      onToggleCompletion:
+                                          () => _toggleTaskCompletion(
+                                            context,
+                                            subtask,
+                                          ),
+                                    ),
+                                  ],
+                                );
+                              }).toList(),
+                        ),
+                      ),
+                    if (task != tasks.last) const CupertinoDivider(),
+                  ],
+                );
+              }),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -390,7 +474,14 @@ class _TaskListScreenState extends State<TaskListScreen> {
   void _onTaskTap(BuildContext context, Task task) {
     Navigator.push(
       context,
-      CupertinoPageRoute(builder: (context) => TaskPageScreen(task: task)),
+      CupertinoPageRoute(
+        builder: (context) {
+          if (task.frequency != null) {
+            return HabitDetailsScreen(habit: task);
+          }
+          return TaskPageScreen(task: task);
+        },
+      ),
     );
   }
 
@@ -403,7 +494,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
           if (task.category.name.toLowerCase().contains('event')) {
             return EventScreen(event: task);
           } else if (task.frequency != null) {
-            return HabitScreen(); // TODO: Add analytics data to habit screen
+            return HabitScreen(habit: task);
           } else {
             return TaskPageScreen(task: task, isEditing: true);
           }
@@ -450,7 +541,10 @@ class _TaskListScreenState extends State<TaskListScreen> {
     HapticFeedback.selectionClick();
     final tasksCubit = context.read<TaskManagerCubit>();
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final textColor = CupertinoTheme.of(context).textTheme.textStyle.color;
+
     tasksCubit.toggleTaskCompletion(task).then((isCompleted) {
+      if (!mounted) return;
       _clearCache();
       final message =
           isCompleted
@@ -472,9 +566,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   decoration: BoxDecoration(
                     color:
                         isDarkMode
-                            ? CupertinoColors.darkBackgroundGray.withOpacity(
-                              0.9,
-                            )
+                            ? CupertinoColors.systemGrey6.withOpacity(0.9)
                             : CupertinoColors.white.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
@@ -485,13 +577,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
                       ),
                     ],
                   ),
-                  child: Text(
-                    message,
-                    style: TextStyle(
-                      color:
-                          CupertinoTheme.of(context).textTheme.textStyle.color,
-                    ),
-                  ),
+                  child: Text(message, style: TextStyle(color: textColor)),
                 ),
               ),
             ),
@@ -499,8 +585,114 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
       Overlay.of(context).insert(overlay);
       Future.delayed(const Duration(seconds: 1), () {
-        overlay.remove();
+        if (mounted) {
+          overlay.remove();
+        }
       });
     });
   }
+
+  Widget _buildFilterTabs(BuildContext context) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final primaryColor = CupertinoTheme.of(context).primaryColor;
+
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color:
+            isDarkMode
+                ? CupertinoColors.systemGrey6.darkColor
+                : CupertinoColors.systemGrey6,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children:
+            TaskFilterType.values.map((filter) {
+              final isSelected = _selectedFilter == filter;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _selectedFilter = filter;
+                      _clearCache();
+                    });
+                  },
+                  child: Container(
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color:
+                          isSelected
+                              ? (isDarkMode
+                                  ? CupertinoColors.systemBackground
+                                  : CupertinoColors.white)
+                              : Colors.transparent,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    margin: const EdgeInsets.all(2),
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getFilterIcon(filter),
+                            size: 16,
+                            color:
+                                isSelected
+                                    ? primaryColor
+                                    : CupertinoColors.systemGrey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _getFilterName(filter),
+                            style: TextStyle(
+                              color:
+                                  isSelected
+                                      ? primaryColor
+                                      : CupertinoColors.systemGrey,
+                              fontSize: 14,
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+      ),
+    );
+  }
+
+  IconData _getFilterIcon(TaskFilterType filter) {
+    switch (filter) {
+      case TaskFilterType.all:
+        return CupertinoIcons.square_grid_2x2;
+      case TaskFilterType.task:
+        return CupertinoIcons.checkmark_circle;
+      case TaskFilterType.event:
+        return CupertinoIcons.calendar;
+      case TaskFilterType.habit:
+        return CupertinoIcons.repeat;
+    }
+  }
+
+  String _getFilterName(TaskFilterType filter) {
+    switch (filter) {
+      case TaskFilterType.all:
+        return 'All';
+      case TaskFilterType.task:
+        return 'Tasks';
+      case TaskFilterType.event:
+        return 'Events';
+      case TaskFilterType.habit:
+        return 'Habits';
+    }
+  }
 }
+
+enum TaskFilterType { all, task, event, habit }

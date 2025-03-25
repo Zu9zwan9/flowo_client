@@ -6,21 +6,33 @@ import 'package:flutter/cupertino.dart';
 /// Each category type has a specific color associated with it, and similar categories
 /// share the same color scheme.
 class CategoryUtils {
-  /// Returns the color associated with the given category.
-  ///
-  /// The method is case-insensitive and maps similar categories to the same color:
-  /// - Blue: work, brainstorm
-  /// - Green: personal, design
-  /// - Orange: shopping, habit
-  /// - Red: health, workout
-  /// - Purple: education, event
-  ///
-  /// Returns [CupertinoColors.systemGrey] for unknown categories.
-  ///
-  /// Example:
-  /// ```dart
-  /// final color = CategoryUtils.getCategoryColor('work'); // Returns systemBlue
-  /// ```
+  static Color getTypeTaskColor(String category) {
+    // Assuming this already exists
+    switch (category.toLowerCase()) {
+      case 'event':
+        return CupertinoColors.systemRed;
+      case 'habit':
+        return CupertinoColors.systemGreen;
+      case 'task':
+        return CupertinoColors.systemBlue;
+      default:
+        return CupertinoColors.systemGrey;
+    }
+  }
+
+  static IconData getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'event':
+        return CupertinoIcons.calendar;
+      case 'habit':
+        return CupertinoIcons.repeat;
+      case 'task':
+        return CupertinoIcons.checkmark_circle;
+      default:
+        return CupertinoIcons.list_bullet;
+    }
+  }
+
   static Color getCategoryColor(String category) {
     switch (category.toLowerCase()) {
       case 'work':
