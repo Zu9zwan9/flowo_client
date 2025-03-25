@@ -26,13 +26,14 @@ class TaskListScreen extends StatefulWidget {
 
 class _TaskListScreenState extends State<TaskListScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final Debouncer _searchDebouncer = Debouncer();
+  final Debouncer _searchDebouncer = Debouncer(Duration(milliseconds: 300));
   TaskFilterType _selectedFilter = TaskFilterType.all;
   final Map<String, bool> _expandedCategories = {};
   final Map<String, bool> _expandedTasks = {};
   String _searchQuery = '';
   late final ScrollController _scrollController;
 
+  // Caching to improve performance
   Map<String, List<Task>>? _filteredTasksCache;
   String? _lastQuery;
   TaskFilterType? _lastFilter;
@@ -48,7 +49,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     _searchDebouncer.call(() {
       if (mounted) {
         setState(() {
-          _searchQuery = _searchController.text;
+          _searchQuery = _searchController.text.trim();
           _clearCache();
         });
       }
@@ -64,10 +65,13 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   TaskFilterType _getTaskType(Task task) {
-    if (task.category.name.toLowerCase().contains('event')) {
+    final categoryName = task.category.name.toLowerCase();
+    if (categoryName.contains('event')) {
       return TaskFilterType.event;
     }
-    if (task.frequency != null) return TaskFilterType.habit;
+    if (task.frequency != null) {
+      return TaskFilterType.habit;
+    }
     return TaskFilterType.task;
   }
 
@@ -238,13 +242,18 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   Map<String, List<Task>> _groupTasksByCategory(List<Task> tasks) {
-    final grouped = <String, List<Task>>{};
-    for (var task in tasks) {
+    final Map<String, List<Task>> grouped = {};
+
+    for (final task in tasks) {
       if (task.parentTaskId == null) {
         grouped.putIfAbsent(task.category.name, () => []).add(task);
       }
     }
-    return grouped;
+
+    // Sort categories alphabetically for better UX
+    return Map.fromEntries(
+      grouped.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
+    );
   }
 
   Widget _buildCategorySection(
@@ -254,10 +263,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
     bool isExpanded,
   ) {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final backgroundColor =
-        isDarkMode
-            ? CupertinoColors.systemBackground
-            : CupertinoColors.systemBackground;
+    final backgroundColor = CupertinoColors.systemBackground.resolveFrom(
+      context,
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -266,10 +274,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color:
-                isDarkMode
-                    ? CupertinoColors.black.withOpacity(0.15)
-                    : CupertinoColors.systemGrey5.withOpacity(0.4),
+            color: CupertinoColors.systemGrey5
+                .resolveFrom(context)
+                .withOpacity(isDarkMode ? 0.15 : 0.4),
             blurRadius: 5,
             spreadRadius: 0,
             offset: const Offset(0, 2),
@@ -294,17 +301,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color:
-                      isDarkMode
-                          ? CupertinoColors.systemGrey6.darkColor
-                          : CupertinoColors.systemGrey6.withOpacity(0.6),
+                  color: CupertinoColors.systemGrey6
+                      .resolveFrom(context)
+                      .withOpacity(0.6),
                   border: Border(
                     bottom: BorderSide(
-                      color:
-                          isDarkMode
-                              ? CupertinoColors.separator.darkColor
-                              : CupertinoColors.separator,
-                      width: 0.5,
+                      color: CupertinoColors.separator.resolveFrom(context),
                     ),
                   ),
                 ),
@@ -340,14 +342,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color:
-                                  isDarkMode
-                                      ? CupertinoTheme.of(
-                                        context,
-                                      ).primaryColor.withOpacity(0.2)
-                                      : CupertinoTheme.of(
-                                        context,
-                                      ).primaryColor.withOpacity(0.1),
+                              color: CupertinoTheme.of(context).primaryColor
+                                  .withOpacity(isDarkMode ? 0.2 : 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -405,13 +401,9 @@ class _TaskListScreenState extends State<TaskListScreen> {
                     if (hasSubtasks && isExpanded)
                       Container(
                         decoration: BoxDecoration(
-                          color:
-                              isDarkMode
-                                  ? CupertinoColors.systemGrey6.darkColor
-                                      .withOpacity(0.5)
-                                  : CupertinoColors.systemGrey6.withOpacity(
-                                    0.3,
-                                  ),
+                          color: CupertinoColors.systemGrey6
+                              .resolveFrom(context)
+                              .withOpacity(isDarkMode ? 0.5 : 0.3),
                           borderRadius: const BorderRadius.only(
                             bottomLeft: Radius.circular(12),
                             bottomRight: Radius.circular(12),
@@ -478,6 +470,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
         builder: (context) {
           if (task.frequency != null) {
             return HabitDetailsScreen(habit: task);
+          } else if (task.category.name.toLowerCase().contains('event')) {
+            return EventScreen(event: task);
           }
           return TaskPageScreen(task: task);
         },
@@ -555,34 +549,56 @@ class _TaskListScreenState extends State<TaskListScreen> {
         builder:
             (context) => Positioned(
               bottom: 80,
-              left: 0,
-              right: 0,
-              child: Center(
+              left: 16,
+              right: 16,
+              child: SafeArea(
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
-                    vertical: 10,
+                    vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color:
-                        isDarkMode
-                            ? CupertinoColors.systemGrey6.withOpacity(0.9)
-                            : CupertinoColors.white.withOpacity(0.9),
+                    color: (isDarkMode
+                            ? CupertinoColors.systemGrey6.darkColor
+                            : CupertinoColors.white)
+                        .withOpacity(0.95),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: CupertinoColors.black.withOpacity(0.2),
+                        color:
+                            isDarkMode
+                                ? CupertinoColors.black.withOpacity(0.1)
+                                : CupertinoColors.systemGrey.withOpacity(0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                  child: Text(message, style: TextStyle(color: textColor)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isCompleted
+                            ? CupertinoIcons.check_mark_circled
+                            : CupertinoIcons.xmark_circle,
+                        color:
+                            isCompleted
+                                ? CupertinoColors.activeGreen
+                                : CupertinoColors.systemRed,
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          message,
+                          style: TextStyle(color: textColor),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
       );
-
       Overlay.of(context).insert(overlay);
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
@@ -595,14 +611,12 @@ class _TaskListScreenState extends State<TaskListScreen> {
   Widget _buildFilterTabs(BuildContext context) {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
     final primaryColor = CupertinoTheme.of(context).primaryColor;
+    final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
 
     return Container(
-      height: 36,
+      height: 44, // iOS Human Interface Guidelines minimum touch target size
       decoration: BoxDecoration(
-        color:
-            isDarkMode
-                ? CupertinoColors.systemGrey6.darkColor
-                : CupertinoColors.systemGrey6,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -618,14 +632,15 @@ class _TaskListScreenState extends State<TaskListScreen> {
                       _clearCache();
                     });
                   },
-                  child: Container(
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
                     height: double.infinity,
                     decoration: BoxDecoration(
                       color:
                           isSelected
-                              ? (isDarkMode
-                                  ? CupertinoColors.systemBackground
-                                  : CupertinoColors.white)
+                              ? CupertinoColors.systemBackground.resolveFrom(
+                                context,
+                              )
                               : Colors.transparent,
                       borderRadius: BorderRadius.circular(9),
                     ),
@@ -636,11 +651,14 @@ class _TaskListScreenState extends State<TaskListScreen> {
                         children: [
                           Icon(
                             _getFilterIcon(filter),
-                            size: 16,
+                            size: 18,
                             color:
                                 isSelected
                                     ? primaryColor
-                                    : CupertinoColors.systemGrey,
+                                    : CupertinoColors.systemGrey.resolveFrom(
+                                      context,
+                                    ),
+                            semanticLabel: _getFilterName(filter),
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -649,13 +667,16 @@ class _TaskListScreenState extends State<TaskListScreen> {
                               color:
                                   isSelected
                                       ? primaryColor
-                                      : CupertinoColors.systemGrey,
+                                      : CupertinoColors.systemGrey.resolveFrom(
+                                        context,
+                                      ),
                               fontSize: 14,
                               fontWeight:
                                   isSelected
                                       ? FontWeight.w600
                                       : FontWeight.normal,
                             ),
+                            semanticsLabel: '${_getFilterName(filter)} filter',
                           ),
                         ],
                       ),
@@ -673,11 +694,11 @@ class _TaskListScreenState extends State<TaskListScreen> {
       case TaskFilterType.all:
         return CupertinoIcons.square_grid_2x2;
       case TaskFilterType.task:
-        return CupertinoIcons.checkmark_circle;
+        return CupertinoIcons.check_mark_circled;
       case TaskFilterType.event:
         return CupertinoIcons.calendar;
       case TaskFilterType.habit:
-        return CupertinoIcons.repeat;
+        return CupertinoIcons.arrow_2_circlepath;
     }
   }
 
@@ -696,3 +717,34 @@ class _TaskListScreenState extends State<TaskListScreen> {
 }
 
 enum TaskFilterType { all, task, event, habit }
+
+extension TaskFilterTypeExtension on TaskFilterType {
+  String get displayName => _getFilterNameForType(this);
+  IconData get icon => _getIconForType(this);
+
+  static String _getFilterNameForType(TaskFilterType type) {
+    switch (type) {
+      case TaskFilterType.all:
+        return 'All';
+      case TaskFilterType.task:
+        return 'Tasks';
+      case TaskFilterType.event:
+        return 'Events';
+      case TaskFilterType.habit:
+        return 'Habits';
+    }
+  }
+
+  static IconData _getIconForType(TaskFilterType type) {
+    switch (type) {
+      case TaskFilterType.all:
+        return CupertinoIcons.square_grid_2x2;
+      case TaskFilterType.task:
+        return CupertinoIcons.check_mark_circled;
+      case TaskFilterType.event:
+        return CupertinoIcons.calendar;
+      case TaskFilterType.habit:
+        return CupertinoIcons.arrow_2_circlepath;
+    }
+  }
+}

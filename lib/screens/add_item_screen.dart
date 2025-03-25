@@ -72,13 +72,6 @@ class _AddItemScreenState extends State<AddItemScreen>
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: const Text('Add New Item'),
-        border: null,
-        backgroundColor: CupertinoTheme.of(
-          context,
-        ).barBackgroundColor.withOpacity(0.8),
-      ),
       child: SafeArea(
         child: Column(
           children: [

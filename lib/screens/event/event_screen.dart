@@ -8,19 +8,482 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 
-// Interface for form validation following Interface Segregation Principle
+import '../task/task_page_screen.dart';
+
+// Constants for styling adhering to HIG
+class EventScreenConstants {
+  static const double padding = 16.0;
+  static const double cornerRadius = 12.0;
+  static const double shadowBlurRadius = 4.0;
+  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(
+    horizontal: 12,
+    vertical: 8,
+  );
+}
+
+// Utility for formatting dates and times
+class EventDateTimeFormatter {
+  static String formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  static String formatTime(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  static String formatDuration(DateTime start, DateTime end) {
+    final duration = end.difference(start);
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes % 60;
+
+    if (hours > 0) {
+      return '$hours hr${hours > 1 ? 's' : ''} ${minutes > 0 ? '$minutes min' : ''}';
+    } else {
+      return '$minutes min';
+    }
+  }
+}
+
+// Main EventScreen for viewing event details
+class EventScreen extends StatefulWidget {
+  final Task event;
+
+  const EventScreen({super.key, required this.event});
+
+  @override
+  State<EventScreen> createState() => _EventScreenState();
+}
+
+class _EventScreenState extends State<EventScreen> {
+  late Task _event;
+  late final TextEditingController _notesController;
+
+  @override
+  void initState() {
+    super.initState();
+    _event = widget.event;
+    _notesController = TextEditingController(text: _event.notes ?? '');
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = CupertinoTheme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    return CupertinoPageScaffold(
+      navigationBar: CupertinoNavigationBar(
+        middle: Text(_event.title, style: theme.textTheme.navTitleTextStyle),
+        trailing: SizedBox(
+          width: 90,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => _navigateToEditScreen(context),
+                child: const Icon(CupertinoIcons.pencil),
+              ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => _confirmDelete(context),
+                child: const Icon(CupertinoIcons.trash),
+              ),
+            ],
+          ),
+        ),
+      ),
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(EventScreenConstants.padding),
+          children: [
+            EventHeader(event: _event),
+            const SizedBox(height: 24),
+            EventDetails(event: _event),
+            const SizedBox(height: 24),
+            if (_event.notes != null && _event.notes!.isNotEmpty)
+              EventNotes(controller: _notesController, event: _event),
+            const SizedBox(height: 24),
+            EventActions(
+              event: _event,
+              onEdit: () => _navigateToEditScreen(context),
+              onDelete: () => _confirmDelete(context),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToEditScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(builder: (context) => EventEditScreen(event: _event)),
+    ).then(
+      (_) => setState(() {
+        _event = widget.event;
+        _notesController.text = _event.notes ?? '';
+      }),
+    );
+  }
+
+  void _confirmDelete(BuildContext context) {
+    showCupertinoDialog(
+      context: context,
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Delete Event'),
+            content: Text('Delete "${_event.title}"?'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                onPressed: () {
+                  context.read<TaskManagerCubit>().deleteTask(_event);
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+    );
+  }
+}
+
+// Event Header Widget
+class EventHeader extends StatelessWidget {
+  final Task event;
+
+  const EventHeader({super.key, required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = CupertinoTheme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    // Get the scheduled task for this event (assuming it's the first one)
+    final scheduledTask =
+        event.scheduledTasks.isNotEmpty ? event.scheduledTasks.first : null;
+
+    final startTime =
+        scheduledTask?.startTime ??
+        DateTime.fromMillisecondsSinceEpoch(event.deadline);
+    final endTime =
+        scheduledTask?.endTime ?? startTime.add(const Duration(hours: 1));
+
+    final eventColor =
+        event.color != null ? Color(event.color!) : CupertinoColors.activeBlue;
+
+    return Container(
+      padding: const EdgeInsets.all(EventScreenConstants.padding),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(EventScreenConstants.cornerRadius),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.black.withOpacity(0.1),
+            blurRadius: EventScreenConstants.shadowBlurRadius,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: eventColor.withOpacity(0.3), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CategoryTag(categoryName: event.category.name),
+              const Spacer(),
+              Icon(CupertinoIcons.calendar, size: 18, color: eventColor),
+              const SizedBox(width: 4),
+              Text(
+                EventDateTimeFormatter.formatDate(startTime),
+                style: theme.textTheme.textStyle.copyWith(
+                  color:
+                      isDarkMode
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(CupertinoIcons.time, size: 18, color: eventColor),
+              const SizedBox(width: 4),
+              Text(
+                '${EventDateTimeFormatter.formatTime(startTime)} - ${EventDateTimeFormatter.formatTime(endTime)}',
+                style: theme.textTheme.textStyle.copyWith(
+                  color:
+                      isDarkMode
+                          ? CupertinoColors.white
+                          : CupertinoColors.black,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: eventColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  EventDateTimeFormatter.formatDuration(startTime, endTime),
+                  style: theme.textTheme.textStyle.copyWith(color: eventColor),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Event Details Widget
+class EventDetails extends StatelessWidget {
+  final Task event;
+
+  const EventDetails({super.key, required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = CupertinoTheme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(EventScreenConstants.padding),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(EventScreenConstants.cornerRadius),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.black.withOpacity(0.1),
+            blurRadius: EventScreenConstants.shadowBlurRadius,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Event Details',
+            style: theme.textTheme.navTitleTextStyle.copyWith(fontSize: 18),
+          ),
+          const SizedBox(height: 16),
+          if (event.location != null && event.location.toString().isNotEmpty)
+            DetailItem(
+              icon: CupertinoIcons.location,
+              label: 'Location',
+              value: event.location?.toString() ?? '',
+              color: CupertinoColors.activeOrange,
+            ),
+          if (event.color != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Row(
+                children: [
+                  Icon(
+                    CupertinoIcons.circle_fill,
+                    size: 18,
+                    color: Color(event.color!),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Color',
+                    style: theme.textTheme.textStyle.copyWith(
+                      color:
+                          isDarkMode
+                              ? CupertinoColors.white
+                              : CupertinoColors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// Detail Item Widget
+class DetailItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const DetailItem({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = CupertinoTheme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color:
+                    isDarkMode
+                        ? CupertinoColors.systemGrey
+                        : CupertinoColors.systemGrey2,
+                fontSize: 15,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                color:
+                    isDarkMode ? CupertinoColors.white : CupertinoColors.black,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// Event Notes Widget
+class EventNotes extends StatelessWidget {
+  final TextEditingController controller;
+  final Task event;
+
+  const EventNotes({super.key, required this.controller, required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = CupertinoTheme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(EventScreenConstants.padding),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(EventScreenConstants.cornerRadius),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.black.withOpacity(0.1),
+            blurRadius: EventScreenConstants.shadowBlurRadius,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Notes',
+            style: theme.textTheme.navTitleTextStyle.copyWith(fontSize: 18),
+          ),
+          const SizedBox(height: 8),
+          CupertinoTextField(
+            controller: controller,
+            placeholder: 'Add notes about this event...',
+            minLines: 3,
+            maxLines: 5,
+            padding: const EdgeInsets.all(10),
+            style: theme.textTheme.textStyle,
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.barBackgroundColor),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            onChanged: (value) {
+              event.notes = value.isEmpty ? null : value;
+              event.save();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Event Actions Widget
+class EventActions extends StatelessWidget implements EventFormValidator {
+  final Task event;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const EventActions({
+    super.key,
+    required this.event,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        CupertinoButton(
+          padding: EventScreenConstants.buttonPadding,
+          color: CupertinoColors.activeBlue,
+          onPressed: onEdit,
+          child: const Text('Edit'),
+        ),
+        CupertinoButton(
+          padding: EventScreenConstants.buttonPadding,
+          color: CupertinoColors.destructiveRed,
+          onPressed: onDelete,
+          child: const Text('Delete'),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool validateForm(GlobalKey<FormState> formKey) {
+    return formKey.currentState?.validate() ?? false;
+  }
+
+  @override
+  bool validateTimes(DateTime startTime, DateTime endTime) {
+    return endTime.isAfter(startTime);
+  }
+}
+
 abstract class EventFormValidator {
   bool validateForm(GlobalKey<FormState> formKey);
   bool validateTimes(DateTime startTime, DateTime endTime);
 }
 
-// Interface for form data operations (SOLID: Interface Segregation Principle)
 abstract class EventFormDataHandler {
   void saveEvent(BuildContext context, Task event);
   String formatDateKey(DateTime date);
 }
 
-// Combined interface implementation
 class EventFormController implements EventFormValidator, EventFormDataHandler {
   @override
   bool validateForm(GlobalKey<FormState> formKey) {
@@ -112,7 +575,7 @@ class EventEditScreenState extends State<EventEditScreen>
       _endTime = scheduledTask.endTime;
     } else {
       _startTime = _selectedDate;
-      _endTime = _selectedDate.add(const Duration(hours: 1));
+      _endTime = _startTime.add(const Duration(hours: 1));
     }
 
     _selectedColor = widget.event.color;
@@ -276,7 +739,6 @@ class EventEditScreenState extends State<EventEditScreen>
       daysBox.put(dateKey, day);
     }
 
-    // Assert - Log success and navigate
     logInfo('Event updated: ${_titleController.text}');
 
     Navigator.pushReplacement(
@@ -286,7 +748,6 @@ class EventEditScreenState extends State<EventEditScreen>
   }
 }
 
-// Separated content widget for better testability and SRP (SOLID)
 class EventEditContent extends StatelessWidget {
   final GlobalKey<FormState> formKey;
   final TextEditingController titleController;

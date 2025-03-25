@@ -4,22 +4,9 @@ import 'package:flowo_client/utils/logger.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/material.dart';
 
-/// An enhanced version of TaskManager that adds AI-based time estimation for subtasks.
-///
-/// This class extends the original TaskManager and overrides the breakdownAndScheduleTask
-/// method to use AI for estimating subtask times instead of simple proportional distribution.
 class EnhancedTaskManager extends TaskManager {
   /// The TaskTimeEstimator used for AI-based time estimation
   final TaskTimeEstimator _taskTimeEstimator;
-
-  /// Creates a new EnhancedTaskManager with the given parameters.
-  ///
-  /// In addition to the parameters required by TaskManager, this constructor
-  /// initializes a TaskTimeEstimator with an AITimeEstimationStrategy.
-  /// Creates a new EnhancedTaskManager with the given parameters.
-  ///
-  /// Uses super parameters for daysDB, tasksDB, and userSettings to pass them directly
-  /// to the TaskManager superclass.
   EnhancedTaskManager({
     required super.daysDB,
     required super.tasksDB,

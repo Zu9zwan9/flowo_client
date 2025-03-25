@@ -109,16 +109,16 @@ class _HomeScreenState extends State<HomeScreen>
       accentColor: CupertinoColors.systemOrange,
     ),
     (
-      page: SettingsScreen(),
-      icon: CupertinoIcons.settings,
-      label: 'Settings',
-      accentColor: CupertinoColors.systemGrey,
-    ),
-    (
       page: AnalyticsScreen(),
       icon: CupertinoIcons.chart_bar_alt_fill,
       label: 'Analytics',
       accentColor: CupertinoColors.systemPurple,
+    ),
+    (
+      page: SettingsScreen(),
+      icon: CupertinoIcons.settings,
+      label: 'Settings',
+      accentColor: CupertinoColors.systemGrey,
     ),
   ];
 

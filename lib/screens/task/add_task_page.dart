@@ -472,7 +472,6 @@ class _AddTaskPageState extends State<AddTaskPage>
   }
 
   // MARK: - Helper methods
-
   bool _isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
         date1.month == date2.month &&
@@ -480,7 +479,6 @@ class _AddTaskPageState extends State<AddTaskPage>
   }
 
   // MARK: - Modal Builders
-
   Widget _buildDatePickerModal({
     required BuildContext context,
     required DateTime initialDate,
