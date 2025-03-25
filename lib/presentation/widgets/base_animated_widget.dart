@@ -8,7 +8,7 @@ import '../haptics/haptic_service.dart';
 /// This widget provides common animation and haptic feedback functionality
 /// that can be reused across the app.
 abstract class BaseAnimatedWidget extends StatefulWidget {
-  const BaseAnimatedWidget({Key? key}) : super(key: key);
+  const BaseAnimatedWidget({super.key});
 }
 
 /// Base state for animated widgets with common animation and haptic functionality.

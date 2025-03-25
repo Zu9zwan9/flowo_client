@@ -282,10 +282,11 @@ class AddEventPageState extends State<AddEventPage>
     );
     if (pickedTime != null && mounted) {
       setState(() {
-        if (isStart)
+        if (isStart) {
           _startTime = pickedTime;
-        else
+        } else {
           _endTime = pickedTime;
+        }
       });
     }
   }

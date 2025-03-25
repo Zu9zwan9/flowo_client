@@ -244,8 +244,9 @@ class AddHabitPageState extends State<AddHabitPage>
                 placeholder: '1',
                 keyboardType: TextInputType.number,
                 onChanged: (value) {
-                  if (value.isNotEmpty)
+                  if (value.isNotEmpty) {
                     setState(() => _intervalValue = int.tryParse(value) ?? 1);
+                  }
                 },
               ),
             ),
@@ -520,8 +521,9 @@ class AddHabitPageState extends State<AddHabitPage>
       context: context,
       initialDate: _selectedDate,
     );
-    if (pickedDate != null && mounted)
+    if (pickedDate != null && mounted) {
       setState(() => _selectedDate = pickedDate);
+    }
   }
 
   Future<void> _showTimePicker(
@@ -532,8 +534,9 @@ class AddHabitPageState extends State<AddHabitPage>
       context: context,
       initialTime: isStart ? _startTime : _endTime ?? _startTime,
     );
-    if (pickedTime != null && mounted)
+    if (pickedTime != null && mounted) {
       setState(() => isStart ? _startTime = pickedTime : _endTime = pickedTime);
+    }
   }
 
   Future<void> _showWeeklyFrequencyDialog(BuildContext context) async {
@@ -810,10 +813,11 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   void _handleCategoryChange(String value) {
-    if (value == 'Add')
+    if (value == 'Add') {
       _showAddCategoryDialog(context);
-    else
+    } else {
       setState(() => _selectedCategory = value);
+    }
   }
 
   void _saveTask(BuildContext context) {

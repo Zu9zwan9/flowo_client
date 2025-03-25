@@ -14,7 +14,7 @@ class SettingsSection extends StatelessWidget {
   final VoidCallback? onTap;
 
   const SettingsSection({
-    Key? key,
+    super.key,
     required this.title,
     required this.children,
     this.padding = const EdgeInsets.only(top: 16.0, bottom: 8.0),
@@ -25,7 +25,7 @@ class SettingsSection extends StatelessWidget {
     this.cornerRadius = 10.0,
     this.backgroundColor,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -310,7 +310,7 @@ class SettingsToggleItem extends StatefulWidget {
   final EdgeInsetsGeometry padding;
 
   const SettingsToggleItem({
-    Key? key,
+    super.key,
     required this.label,
     required this.value,
     required this.onChanged,
@@ -324,7 +324,7 @@ class SettingsToggleItem extends StatefulWidget {
     this.subtitleStyle,
     this.semanticsLabel,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsToggleItem> createState() => _SettingsToggleItemState();
@@ -396,8 +396,8 @@ class _SettingsToggleItemState extends State<SettingsToggleItem>
         trailing: CupertinoSwitch(
           value: widget.value,
           onChanged: widget.enabled ? widget.onChanged : null,
-          activeColor: effectiveActiveColor,
-          trackColor: widget.trackColor,
+          activeTrackColor: effectiveActiveColor,
+          inactiveTrackColor: widget.trackColor,
         ),
         onTap: _handleTap,
       ),
@@ -425,7 +425,7 @@ class SettingsSegmentedItem extends StatefulWidget {
   final EdgeInsetsGeometry segmentPadding;
 
   const SettingsSegmentedItem({
-    Key? key,
+    super.key,
     required this.label,
     required this.children,
     required this.groupValue,
@@ -445,7 +445,7 @@ class SettingsSegmentedItem extends StatefulWidget {
       right: 16.0,
       bottom: 16.0,
     ),
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsSegmentedItem> createState() => _SettingsSegmentedItemState();
@@ -580,7 +580,7 @@ class SettingsSliderItem extends StatefulWidget {
   final Widget Function(double)? valueBuilder;
 
   const SettingsSliderItem({
-    Key? key,
+    super.key,
     required this.label,
     required this.value,
     required this.min,
@@ -604,7 +604,7 @@ class SettingsSliderItem extends StatefulWidget {
       bottom: 12.0,
     ),
     this.valueBuilder,
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsSliderItem> createState() => _SettingsSliderItemState();
@@ -768,7 +768,7 @@ class SettingsButton extends StatefulWidget {
   final MainAxisSize mainAxisSize;
 
   const SettingsButton({
-    Key? key,
+    super.key,
     required this.label,
     required this.onPressed,
     this.color,
@@ -786,7 +786,7 @@ class SettingsButton extends StatefulWidget {
     this.trailing,
     this.alignment = MainAxisAlignment.center,
     this.mainAxisSize = MainAxisSize.min,
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsButton> createState() => _SettingsButtonState();
@@ -936,7 +936,7 @@ class SettingsTimePickerItem extends StatefulWidget {
   final int minuteInterval;
 
   const SettingsTimePickerItem({
-    Key? key,
+    super.key,
     required this.label,
     required this.time,
     required this.onTimeSelected,
@@ -955,7 +955,7 @@ class SettingsTimePickerItem extends StatefulWidget {
     this.minimumDate,
     this.maximumDate,
     this.minuteInterval = 1,
-  }) : super(key: key);
+  });
 
   @override
   State<SettingsTimePickerItem> createState() => _SettingsTimePickerItemState();

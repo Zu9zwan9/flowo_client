@@ -512,7 +512,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     )
-                    .toList(),
+                    ,
                 SettingsItem(
                   label: 'Add Meal Time',
                   leading: const Icon(
@@ -550,7 +550,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ),
                       ),
                     )
-                    .toList(),
+                    ,
                 SettingsItem(
                   label: 'Add Free Time',
                   leading: const Icon(

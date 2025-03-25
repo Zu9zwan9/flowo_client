@@ -30,7 +30,7 @@ class GlassmorphicContainer extends BaseAnimatedWidget {
 
   /// Creates a container with glassmorphism effect.
   const GlassmorphicContainer({
-    Key? key,
+    super.key,
     required this.child,
     this.backgroundColor,
     this.borderRadius = 16.0,
@@ -38,7 +38,7 @@ class GlassmorphicContainer extends BaseAnimatedWidget {
     this.opacity = 0.1,
     this.padding = const EdgeInsets.all(16.0),
     this.animateOnAppear = true,
-  }) : super(key: key);
+  });
 
   @override
   State<GlassmorphicContainer> createState() => _GlassmorphicContainerState();

@@ -5,7 +5,7 @@ import '../models/task.dart';
 import 'pomodoro_screen.dart';
 
 class TaskSelectionScreen extends StatefulWidget {
-  const TaskSelectionScreen({Key? key}) : super(key: key);
+  const TaskSelectionScreen({super.key});
 
   @override
   State<TaskSelectionScreen> createState() => _TaskSelectionScreenState();

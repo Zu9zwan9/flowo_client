@@ -284,7 +284,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
               ),
             )
           else
-            ...tasks.map((task) => _buildTaskItem(task)).toList(),
+            ...tasks.map((task) => _buildTaskItem(task)),
         ],
       ),
     );

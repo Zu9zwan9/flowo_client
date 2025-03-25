@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 
 import '../haptics/haptic_service.dart';
 import 'base_animated_widget.dart';
@@ -31,7 +30,7 @@ class CupertinoAnimatedButton extends BaseAnimatedWidget {
 
   /// Creates a Cupertino-style animated button.
   const CupertinoAnimatedButton({
-    Key? key,
+    super.key,
     required this.child,
     required this.onPressed,
     this.backgroundColor,
@@ -39,7 +38,7 @@ class CupertinoAnimatedButton extends BaseAnimatedWidget {
     this.padding = const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
     this.isDisabled = false,
     this.hapticFeedbackType = HapticFeedbackType.medium,
-  }) : super(key: key);
+  });
 
   @override
   State<CupertinoAnimatedButton> createState() =>

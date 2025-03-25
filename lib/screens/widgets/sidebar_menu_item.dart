@@ -11,14 +11,14 @@ class SidebarMenuItem extends StatelessWidget {
   final Color textColor;
 
   const SidebarMenuItem({
-    Key? key,
+    super.key,
     required this.icon,
     required this.label,
     required this.accentColor,
     required this.isSelected,
     required this.onTap,
     this.textColor = CupertinoColors.black, // Default value
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

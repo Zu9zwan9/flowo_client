@@ -14,8 +14,7 @@ class PomodoroScreen extends StatefulWidget {
   final Task? task;
   final int? customDuration;
 
-  const PomodoroScreen({Key? key, this.task, this.customDuration})
-    : super(key: key);
+  const PomodoroScreen({super.key, this.task, this.customDuration});
 
   @override
   State<PomodoroScreen> createState() => _PomodoroScreenState();
@@ -431,7 +430,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
 
 // Placeholder for the AmbientModeScreen
 class AmbientModeScreen extends StatelessWidget {
-  const AmbientModeScreen({Key? key}) : super(key: key);
+  const AmbientModeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

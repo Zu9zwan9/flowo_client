@@ -10,7 +10,7 @@ import '../services/ambient_service.dart';
 /// A screen that displays ambient videos and plays ambient sounds
 /// to create a focused and relaxing environment for work or study.
 class AmbientScreen extends StatefulWidget {
-  const AmbientScreen({Key? key}) : super(key: key);
+  const AmbientScreen({super.key});
 
   @override
   State<AmbientScreen> createState() => _AmbientScreenState();
