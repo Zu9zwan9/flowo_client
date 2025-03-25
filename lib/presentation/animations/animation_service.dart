@@ -1,8 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-/// Animation service that provides reusable animations for the app
-/// following Clean Architecture principles.
 class AnimationService {
   // Private constructor for singleton pattern
   AnimationService._();

@@ -49,35 +49,6 @@ class HabitEditScreenState extends State<HabitEditScreen> {
     CupertinoColors.systemGrey,
   ];
 
-  // Utility function to map day names to integers
-  int _parseDayOfWeek(String day) {
-    const dayMap = {
-      'monday': 1,
-      'tuesday': 2,
-      'wednesday': 3,
-      'thursday': 4,
-      'friday': 5,
-      'saturday': 6,
-      'sunday': 0,
-      'mon': 1,
-      'tue': 2,
-      'wed': 3,
-      'thu': 4,
-      'fri': 5,
-      'sat': 6,
-      'sun': 0,
-    };
-
-    // First, try parsing as an integer directly
-    try {
-      return int.parse(day);
-    } catch (_) {
-      // If parsing fails, try mapping the day name
-      final dayLower = day.toLowerCase();
-      return dayMap[dayLower] ?? (throw FormatException('Invalid day: $day'));
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -101,7 +72,7 @@ class HabitEditScreenState extends State<HabitEditScreen> {
       // Process byDay, byMonthDay, byMonth as lists of int
       _daysOfWeek =
           widget.habit.frequency!.byDay
-              ?.map((e) => _parseDayOfWeek(e.selectedDay))
+              ?.map((e) => int.parse(e.selectedDay))
               .toList() ??
           [];
       _daysOfMonth =
@@ -755,8 +726,6 @@ class HabitEditScreenState extends State<HabitEditScreen> {
     );
     if (pickedDate != null && mounted) {
       onDateSelected(pickedDate!);
-    } else if (allowNull && pickedDate == null) {
-      onDateSelected(null as DateTime);
     }
   }
 
@@ -922,7 +891,7 @@ class HabitEditScreenState extends State<HabitEditScreen> {
                   .map(
                     (day) => RepeatRuleInstance(
                       selectedDay: day.toString(),
-                      name: _getDayName(day),
+                      name: 'Day $day',
                       start: const TimeOfDay(hour: 0, minute: 0),
                       end: const TimeOfDay(hour: 23, minute: 59),
                     ),
@@ -976,19 +945,5 @@ class HabitEditScreenState extends State<HabitEditScreen> {
     // Navigate back to home screen
     Navigator.pop(context);
     logInfo('Habit updated: ${_titleController.text}');
-  }
-
-  // Utility function to get day name from integer
-  String _getDayName(int day) {
-    const dayNames = {
-      0: 'Sunday',
-      1: 'Monday',
-      2: 'Tuesday',
-      3: 'Wednesday',
-      4: 'Thursday',
-      5: 'Friday',
-      6: 'Saturday',
-    };
-    return dayNames[day] ?? 'Day $day';
   }
 }
