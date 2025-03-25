@@ -492,7 +492,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
       CupertinoPageRoute(
         builder: (context) {
           if (task.category.name.toLowerCase().contains('event')) {
-            return EventScreen(event: task);
+            return EventEditScreen(event: task);
           } else if (task.frequency != null) {
             return HabitScreen(habit: task);
           } else {

@@ -11,7 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 
 class HabitScreen extends StatefulWidget {
-  final Task? habit; // Существующая привычка для редактирования, null для новой
+  final Task? habit; // Existing habit for editing, null for new
 
   const HabitScreen({super.key, this.habit});
 
@@ -31,7 +31,7 @@ class HabitScreenState extends State<HabitScreen> {
   late int _priority;
   int? _selectedColor;
 
-  // Свойства RepeatRule
+  // RepeatRule properties
   String _frequency = 'daily'; // daily, weekly, monthly, yearly
   int _interval = 1;
   List<int> _daysOfWeek = [];
@@ -50,12 +50,27 @@ class HabitScreenState extends State<HabitScreen> {
     CupertinoColors.systemGrey,
   ];
 
+  // Utility function to map day names to integer values (Sunday = 0, Monday = 1, ..., Saturday = 6)
+  int _dayNameToInt(String dayName) {
+    const dayMap = {
+      'sunday': 0,
+      'monday': 1,
+      'tuesday': 2,
+      'wednesday': 3,
+      'thursday': 4,
+      'friday': 5,
+      'saturday': 6,
+    };
+    return dayMap[dayName.toLowerCase()] ??
+        -1; // Return -1 for invalid day names
+  }
+
   @override
   void initState() {
     super.initState();
 
     if (widget.habit != null) {
-      // Инициализация для редактирования существующей привычки
+      // Initialize for editing an existing habit
       _titleController.text = widget.habit!.title;
       _notesController.text = widget.habit!.notes ?? '';
       _estimatedTime = widget.habit!.estimatedTime;
@@ -64,39 +79,70 @@ class HabitScreenState extends State<HabitScreen> {
       _priority = widget.habit!.priority;
       _selectedColor = widget.habit!.color;
 
-      // Инициализация свойств повторения
+      // Initialize repeat rule properties
       if (widget.habit!.frequency != null) {
         _frequency = widget.habit!.frequency!.type.toLowerCase();
         _interval = widget.habit!.frequency!.interval;
         _endDate = widget.habit!.frequency!.endRepeat;
         _weekOfMonth = widget.habit!.frequency!.bySetPos;
 
-        // Обработка byDay, byMonthDay, byMonth как списков int
+        // Process byDay: Map day names to integers
         _daysOfWeek =
             widget.habit!.frequency!.byDay
-                ?.map((e) => int.parse(e.selectedDay))
+                ?.map((e) {
+                  final dayInt = _dayNameToInt(e.selectedDay);
+                  if (dayInt == -1) {
+                    logError('Invalid day name in byDay: ${e.selectedDay}');
+                    return null; // Skip invalid day names
+                  }
+                  return dayInt;
+                })
+                .where((day) => day != null)
+                .cast<int>()
                 .toList() ??
             [];
+
+        // Process byMonthDay: Parse as integers
         _daysOfMonth =
             widget.habit!.frequency!.byMonthDay
-                ?.map((e) => int.parse(e.selectedDay))
+                ?.map((e) {
+                  try {
+                    return int.parse(e.selectedDay);
+                  } catch (error) {
+                    logError('Invalid day in byMonthDay: ${e.selectedDay}');
+                    return null;
+                  }
+                })
+                .where((day) => day != null)
+                .cast<int>()
                 .toList() ??
             [];
+
+        // Process byMonth: Parse as integers
         _months =
             widget.habit!.frequency!.byMonth
-                ?.map((e) => int.parse(e.selectedDay))
+                ?.map((e) {
+                  try {
+                    return int.parse(e.selectedDay);
+                  } catch (error) {
+                    logError('Invalid month in byMonth: ${e.selectedDay}');
+                    return null;
+                  }
+                })
+                .where((month) => month != null)
+                .cast<int>()
                 .toList() ??
             [];
       }
     } else {
-      // Инициализация для новой привычки
-      _estimatedTime = 30 * 60 * 1000; // 30 минут
+      // Initialize for a new habit
+      _estimatedTime = 30 * 60 * 1000; // 30 minutes
       _startDate = DateTime.now();
       _selectedCategory = 'Habit';
       _priority = 5;
     }
 
-    // Добавление категории привычки в список, если её там нет
+    // Add the habit's category to the options if it's not already there
     if (!_categoryOptions.contains(_selectedCategory) &&
         _selectedCategory != 'Add') {
       _categoryOptions.insert(_categoryOptions.length - 1, _selectedCategory);
@@ -283,7 +329,7 @@ class HabitScreenState extends State<HabitScreen> {
           if (value != null) {
             setState(() {
               _frequency = value;
-              // Сброс зависимых полей при смене частоты
+              // Reset dependent fields when frequency changes
               _daysOfWeek.clear();
               _daysOfMonth.clear();
               _months.clear();
@@ -618,7 +664,7 @@ class HabitScreenState extends State<HabitScreen> {
     height: 50,
     child: ListView.builder(
       scrollDirection: Axis.horizontal,
-      itemCount: _colorOptions.length + 1, // +1 для опции "No color"
+      itemCount: _colorOptions.length + 1, // +1 for "No color" option
       itemBuilder: (context, index) {
         if (index == 0) {
           return Padding(
@@ -859,7 +905,7 @@ class HabitScreenState extends State<HabitScreen> {
       return;
     }
 
-    // Валидация полей повторения
+    // Validate recurrence fields
     if (_frequency == 'weekly' && _daysOfWeek.isEmpty) {
       _showValidationError('Please select at least one day of the week.');
       return;
@@ -873,7 +919,7 @@ class HabitScreenState extends State<HabitScreen> {
       return;
     }
 
-    // Создание RepeatRule с учетом структуры модели
+    // Create RepeatRule with the model structure
     final repeatRule = RepeatRule(
       type: _frequency.toUpperCase(),
       interval: _interval,
@@ -884,7 +930,7 @@ class HabitScreenState extends State<HabitScreen> {
               ? _daysOfWeek
                   .map(
                     (day) => RepeatRuleInstance(
-                      selectedDay: day.toString(),
+                      selectedDay: _intToDayName(day),
                       name: 'Day $day',
                       start: const TimeOfDay(hour: 0, minute: 0),
                       end: const TimeOfDay(hour: 23, minute: 59),
@@ -924,7 +970,7 @@ class HabitScreenState extends State<HabitScreen> {
     final tasksCubit = context.read<TaskManagerCubit>();
 
     if (widget.habit == null) {
-      // Создание новой привычки
+      // Create a new habit
       tasksCubit.createTask(
         title: _titleController.text,
         priority: _priority,
@@ -936,7 +982,7 @@ class HabitScreenState extends State<HabitScreen> {
         frequency: repeatRule,
       );
     } else {
-      // Обновление существующей привычки
+      // Update an existing habit
       tasksCubit.editTask(
         task: widget.habit!,
         title: _titleController.text,
@@ -954,6 +1000,20 @@ class HabitScreenState extends State<HabitScreen> {
       context,
       CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),
     );
+  }
+
+  // Utility function to map integer values back to day names for saving
+  String _intToDayName(int day) {
+    const dayMap = {
+      0: 'sunday',
+      1: 'monday',
+      2: 'tuesday',
+      3: 'wednesday',
+      4: 'thursday',
+      5: 'friday',
+      6: 'saturday',
+    };
+    return dayMap[day] ?? 'monday'; // Default to 'monday' if invalid
   }
 
   void _showValidationError(String message) {
