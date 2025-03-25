@@ -1,4 +1,4 @@
-import 'package:flowo_client/utils/task_breakdown_api.dart';
+import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
 import 'package:flutter/foundation.dart';
 
 /// Example usage of the Pipeline class, similar to the Python example:

@@ -4,11 +4,11 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../blocs/tasks_controller/tasks_controller_cubit.dart';
-import '../models/scheduled_task.dart';
-import '../models/task.dart';
-import '../models/user_profile.dart';
-import '../utils/date_time_formatter.dart';
+import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
+import '../../models/scheduled_task.dart';
+import '../../models/task.dart';
+import '../../models/user_profile.dart';
+import '../../utils/formatter/date_time_formatter.dart';
 import 'calendar_screen.dart';
 
 class DailyOverviewScreen extends StatefulWidget {

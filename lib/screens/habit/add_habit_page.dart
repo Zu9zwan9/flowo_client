@@ -8,8 +8,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../design/cupertino_form_theme.dart';
-import '../design/cupertino_form_widgets.dart';
+import '../../design/cupertino_form_theme.dart';
+import '../../design/cupertino_form_widgets.dart';
 
 extension StringExtension on String {
   String capitalize() =>
@@ -317,9 +317,9 @@ class AddHabitPageState extends State<AddHabitPage>
 
   /// Builds widgets for weekly frequency with multiple instances.
   List<Widget> _buildWeeklyWidgets(
-      BuildContext context,
-      CupertinoFormTheme theme,
-      ) {
+    BuildContext context,
+    CupertinoFormTheme theme,
+  ) {
     List<Widget> widgets = [];
 
     if (_weeklyInstances.isEmpty) {
@@ -342,7 +342,7 @@ class AddHabitPageState extends State<AddHabitPage>
         _weeklyInstances.map((inst) {
           final day = inst['day'] as String;
           final capitalizedDay =
-          day.isEmpty ? day : "${day[0].toUpperCase()}${day.substring(1)}";
+              day.isEmpty ? day : "${day[0].toUpperCase()}${day.substring(1)}";
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -359,9 +359,12 @@ class AddHabitPageState extends State<AddHabitPage>
               CupertinoFormWidgets.selectionButton(
                 context: context,
                 label: 'Start Time',
-                value: inst['start'] != null
-                    ? (inst['start'] as TimeOfDay).format(context) // Используем TimeOfDay.format
-                    : 'Select',
+                value:
+                    inst['start'] != null
+                        ? (inst['start'] as TimeOfDay).format(
+                          context,
+                        ) // Используем TimeOfDay.format
+                        : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['start']);
                   if (time != null) setState(() => inst['start'] = time);
@@ -373,9 +376,12 @@ class AddHabitPageState extends State<AddHabitPage>
               CupertinoFormWidgets.selectionButton(
                 context: context,
                 label: 'End Time',
-                value: inst['end'] != null
-                    ? (inst['end'] as TimeOfDay).format(context) // Используем TimeOfDay.format
-                    : 'Select',
+                value:
+                    inst['end'] != null
+                        ? (inst['end'] as TimeOfDay).format(
+                          context,
+                        ) // Используем TimeOfDay.format
+                        : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['end']);
                   if (time != null) setState(() => inst['end'] = time);

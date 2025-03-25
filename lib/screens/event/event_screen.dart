@@ -1,9 +1,11 @@
 import 'dart:io';
+
 import 'package:flowo_client/models/scheduled_task.dart';
-import 'package:flowo_client/utils/date_time_formatter.dart';
+import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
-import '../models/task.dart';
-import '../design/cupertino_form_theme.dart';
+
+import '../../design/cupertino_form_theme.dart';
+import '../../models/task.dart';
 import 'event_form_screen.dart';
 
 class EventScreen extends StatelessWidget {
@@ -25,9 +27,7 @@ class EventScreen extends StatelessWidget {
             // Navigate to editing screen
             Navigator.push(
               context,
-              CupertinoPageRoute(
-                builder: (context) => EventFormScreen(),
-              ),
+              CupertinoPageRoute(builder: (context) => EventFormScreen()),
             );
           },
         ),
@@ -49,14 +49,12 @@ class EventScreen extends StatelessWidget {
               const SizedBox(height: 8),
               // Start Time
               Text(
-                'Start: ${DateTimeFormatter.formatDateTime(
-                    scheduledTask.startTime)}',
+                'Start: ${DateTimeFormatter.formatDateTime(scheduledTask.startTime)}',
               ),
               const SizedBox(height: 8),
               // End Time
               Text(
-                'End: ${DateTimeFormatter.formatDateTime(
-                    scheduledTask.endTime)}',
+                'End: ${DateTimeFormatter.formatDateTime(scheduledTask.endTime)}',
               ),
               const SizedBox(height: 8),
               // Location (if exists)
@@ -84,12 +82,9 @@ class EventScreen extends StatelessWidget {
               // Traveling Time (if set)
               if (scheduledTask.travelingTime > 0)
                 Text(
-                  'Traveling Time: ${scheduledTask.travelingTime ~/
-                      3600000}h ${(scheduledTask.travelingTime % 3600000) ~/
-                      60000}m',
+                  'Traveling Time: ${scheduledTask.travelingTime ~/ 3600000}h ${(scheduledTask.travelingTime % 3600000) ~/ 60000}m',
                 ),
-              if (scheduledTask.travelingTime > 0)
-                const SizedBox(height: 8),
+              if (scheduledTask.travelingTime > 0) const SizedBox(height: 8),
               // Image (if exists)
               if (event.image != null)
                 Image.file(event.image as File, height: 200, fit: BoxFit.cover),

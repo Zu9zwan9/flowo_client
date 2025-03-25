@@ -7,8 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 
-import '../models/pomodoro_session.dart';
-import '../models/task.dart';
+import '../../models/pomodoro_session.dart';
+import '../../models/task.dart';
 
 class PomodoroScreen extends StatefulWidget {
   final Task? task;

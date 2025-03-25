@@ -1,19 +1,19 @@
-import 'package:flowo_client/screens/habit_screen.dart';
+import 'package:flowo_client/screens/habit/habit_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../blocs/tasks_controller/task_manager_cubit.dart';
-import '../blocs/tasks_controller/task_manager_state.dart';
-import '../models/task.dart';
-import '../utils/category_utils.dart';
-import '../utils/debouncer.dart';
-import 'event_screen.dart';
-import 'home_screen.dart';
+import '../../blocs/tasks_controller/task_manager_cubit.dart';
+import '../../blocs/tasks_controller/task_manager_state.dart';
+import '../../models/task.dart';
+import '../../utils/category_utils.dart';
+import '../../utils/debouncer.dart';
+import '../event/event_screen.dart';
+import '../home_screen.dart';
+import '../widgets/cupertino_divider.dart';
+import '../widgets/task_list_components.dart';
+import '../widgets/task_list_item.dart';
 import 'task_page_screen.dart';
-import 'widgets/cupertino_divider.dart';
-import 'widgets/task_list_components.dart';
-import 'widgets/task_list_item.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});

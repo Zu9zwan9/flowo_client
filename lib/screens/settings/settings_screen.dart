@@ -7,7 +7,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../theme_notifier.dart';
+import '../../theme_notifier.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -492,27 +492,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               footerText:
                   'Set your regular meal times to help schedule your day.',
               children: [
-                ..._mealTimes
-                    .map(
-                      (meal) => SettingsItem(
-                        label:
-                            'Meal ${_formatTimeOfDay(meal.startTime)} - ${_formatTimeOfDay(meal.endTime)}',
-                        leading: const Icon(
-                          CupertinoIcons.clock,
-                          color: CupertinoColors.systemOrange,
-                        ),
-                        trailing: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          child: const Icon(
-                            CupertinoIcons.delete,
-                            color: CupertinoColors.systemRed,
-                          ),
-                          onPressed:
-                              () => setState(() => _mealTimes.remove(meal)),
-                        ),
+                ..._mealTimes.map(
+                  (meal) => SettingsItem(
+                    label:
+                        'Meal ${_formatTimeOfDay(meal.startTime)} - ${_formatTimeOfDay(meal.endTime)}',
+                    leading: const Icon(
+                      CupertinoIcons.clock,
+                      color: CupertinoColors.systemOrange,
+                    ),
+                    trailing: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: const Icon(
+                        CupertinoIcons.delete,
+                        color: CupertinoColors.systemRed,
                       ),
-                    )
-                    ,
+                      onPressed: () => setState(() => _mealTimes.remove(meal)),
+                    ),
+                  ),
+                ),
                 SettingsItem(
                   label: 'Add Meal Time',
                   leading: const Icon(
@@ -530,27 +527,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               footerText:
                   'Set your free time periods to avoid scheduling tasks during these times.',
               children: [
-                ..._freeTimes
-                    .map(
-                      (freeTime) => SettingsItem(
-                        label:
-                            'Free ${_formatTimeOfDay(freeTime.startTime)} - ${_formatTimeOfDay(freeTime.endTime)}',
-                        leading: const Icon(
-                          CupertinoIcons.clock,
-                          color: CupertinoColors.systemGreen,
-                        ),
-                        trailing: CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          child: const Icon(
-                            CupertinoIcons.delete,
-                            color: CupertinoColors.systemRed,
-                          ),
-                          onPressed:
-                              () => setState(() => _freeTimes.remove(freeTime)),
-                        ),
+                ..._freeTimes.map(
+                  (freeTime) => SettingsItem(
+                    label:
+                        'Free ${_formatTimeOfDay(freeTime.startTime)} - ${_formatTimeOfDay(freeTime.endTime)}',
+                    leading: const Icon(
+                      CupertinoIcons.clock,
+                      color: CupertinoColors.systemGreen,
+                    ),
+                    trailing: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: const Icon(
+                        CupertinoIcons.delete,
+                        color: CupertinoColors.systemRed,
                       ),
-                    )
-                    ,
+                      onPressed:
+                          () => setState(() => _freeTimes.remove(freeTime)),
+                    ),
+                  ),
+                ),
                 SettingsItem(
                   label: 'Add Free Time',
                   leading: const Icon(

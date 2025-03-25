@@ -1,17 +1,17 @@
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
-import 'package:flowo_client/screens/event_form_screen.dart';
+import 'package:flowo_client/screens/event/event_form_screen.dart';
 import 'package:flowo_client/screens/widgets/calendar_widgets.dart';
-import 'package:flowo_client/utils/date_time_formatter.dart';
+import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
-import '../blocs/tasks_controller/task_manager_cubit.dart';
-import '../blocs/tasks_controller/task_manager_state.dart';
-import '../models/scheduled_task.dart';
-import '../models/task.dart';
-import 'add_habit_page.dart';
-import 'add_task_page.dart';
+import '../../blocs/tasks_controller/task_manager_cubit.dart';
+import '../../blocs/tasks_controller/task_manager_state.dart';
+import '../../models/scheduled_task.dart';
+import '../../models/task.dart';
+import '../habit/add_habit_page.dart';
+import '../task/add_task_page.dart';
 
 /// An improved Calendar screen with enhanced UI/UX following iOS design guidelines
 /// and implementing best practices, SOLID principles, and proper error handling.

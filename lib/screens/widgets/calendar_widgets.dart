@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../../models/scheduled_task.dart';
-import '../../utils/date_time_formatter.dart';
+import '../../utils/formatter/date_time_formatter.dart';
 
 /// A collection of reusable widgets for the calendar screen
 /// following iOS design guidelines and best practices for Cupertino UI

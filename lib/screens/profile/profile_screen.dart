@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flowo_client/models/user_profile.dart';
-import 'package:flowo_client/screens/analytics_screen.dart';
+import 'package:flowo_client/screens/analytics/analytics_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';

@@ -1,4 +1,4 @@
-import 'package:flowo_client/utils/chat_pipeline.dart';
+import 'package:flowo_client/utils/ai_model/chat_pipeline.dart';
 import 'package:flutter/foundation.dart';
 
 /// Example usage of the ChatPipeline class, similar to the curl example:

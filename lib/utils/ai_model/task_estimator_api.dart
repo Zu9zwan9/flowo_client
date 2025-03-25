@@ -1,7 +1,7 @@
 import 'dart:async';
 
+import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
 import 'package:flowo_client/utils/logger.dart';
-import 'package:flowo_client/utils/task_breakdown_api.dart';
 
 /// A service that uses Hugging Face API to estimate time for tasks
 class TaskEstimatorAPI {

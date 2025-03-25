@@ -5,7 +5,7 @@ import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../blocs/tasks_controller/task_manager_cubit.dart';
+import '../../blocs/tasks_controller/task_manager_cubit.dart';
 
 class TaskEditScreen extends StatefulWidget {
   final Task task;

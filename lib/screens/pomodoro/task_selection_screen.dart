@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
-import '../models/task.dart';
+import '../../models/task.dart';
 import 'pomodoro_screen.dart';
 
 class TaskSelectionScreen extends StatefulWidget {

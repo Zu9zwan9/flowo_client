@@ -1,12 +1,12 @@
-import 'package:flowo_client/screens/event_form_screen.dart';
+import 'package:flowo_client/screens/event/event_form_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
 import '../design/cupertino_form_theme.dart';
-import 'add_habit_page.dart';
-import 'add_task_page.dart';
+import 'habit/add_habit_page.dart';
+import 'task/add_task_page.dart';
 
 class AddItemScreen extends StatefulWidget {
   final DateTime? selectedDate;

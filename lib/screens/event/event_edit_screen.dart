@@ -6,7 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 
-import '../blocs/tasks_controller/task_manager_cubit.dart';
+import '../../blocs/tasks_controller/task_manager_cubit.dart';
 
 class EventEditScreen extends StatefulWidget {
   final Task event;
