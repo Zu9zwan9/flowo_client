@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flowo_client/screens/ambient/ambient_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart'
     show CircularProgressIndicator, AlwaysStoppedAnimation;
@@ -414,68 +415,11 @@ class _PomodoroScreenState extends State<PomodoroScreen>
                   Navigator.push(
                     context,
                     CupertinoPageRoute(
-                      builder: (context) => const AmbientModeScreen(),
+                      builder: (context) => const AmbientScreen(),
                     ),
                   );
                 },
                 child: const Text('Ambient Mode'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// Placeholder for the AmbientModeScreen
-class AmbientModeScreen extends StatelessWidget {
-  const AmbientModeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(middle: Text('Ambient Mode')),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Icon(
-                      CupertinoIcons.music_note_2,
-                      size: 80,
-                      color: CupertinoColors.systemIndigo,
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Ambient Work Environment',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'Coming Soon',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: CupertinoColors.systemGrey,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Text(
-                      'Focus with ambient sounds and videos\nto enhance your productivity.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: CupertinoColors.systemGrey,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ],
