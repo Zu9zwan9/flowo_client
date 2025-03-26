@@ -324,7 +324,6 @@ class EventFormScreenState extends State<EventFormScreen>
       return;
     }
 
-
     if (_endTime.isBefore(_startTime)) {
       showCupertinoDialog(
         context: context,

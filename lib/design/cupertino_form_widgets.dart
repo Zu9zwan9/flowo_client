@@ -56,6 +56,7 @@ class CupertinoFormWidgets {
     required VoidCallback onTap,
     Color? color,
     IconData? icon,
+    double iconSize = 20.0,
   }) {
     final theme = CupertinoFormTheme(context);
     final effectiveColor = color ?? theme.primaryColor;

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
+import '../../design/cupertino_form_theme.dart';
 import '../../models/category.dart';
 import '../../models/task_form_data.dart';
 import '../../utils/formatter/date_formatter.dart';
@@ -185,21 +186,21 @@ class _AddTaskPageState extends State<AddTaskPage>
                 form.formGroup(
                   children: [
                     form.selectionButton(
-                      label: 'Optimistic Time (Best Case)',
+                      label: 'Optimistic Time',
                       value: _formatDuration(_formData.optimisticTime),
                       onTap: () => _showDurationPicker(context, 'optimistic'),
                       icon: CupertinoIcons.timer,
                     ),
                     form.divider(),
                     form.selectionButton(
-                      label: 'Realistic Time (Most Likely)',
+                      label: 'Realistic Time',
                       value: _formatDuration(_formData.realisticTime),
                       onTap: () => _showDurationPicker(context, 'realistic'),
                       icon: CupertinoIcons.timer,
                     ),
                     form.divider(),
                     form.selectionButton(
-                      label: 'Pessimistic Time (Worst Case)',
+                      label: 'Pessimistic Time',
                       value: _formatDuration(_formData.pessimisticTime),
                       onTap: () => _showDurationPicker(context, 'pessimistic'),
                       icon: CupertinoIcons.timer,
@@ -221,13 +222,12 @@ class _AddTaskPageState extends State<AddTaskPage>
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing),
 
                 // Category Section
-                // Category Section
                 form.sectionTitle('Category'),
                 Center(
                   child: Container(
                     margin: EdgeInsets.symmetric(
-                      horizontal: 0,
-                      vertical: CupertinoTaskForm.elementSpacing,
+                      horizontal: CupertinoFormTheme.smallSpacing,
+                      vertical: CupertinoFormTheme.smallSpacing / 2,
                     ),
                     decoration: BoxDecoration(
                       color:
@@ -404,17 +404,18 @@ class _AddTaskPageState extends State<AddTaskPage>
             : CupertinoColors.black;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: textColor),
-          const SizedBox(width: 4),
+          Icon(icon, size: 24, color: textColor),
+          const SizedBox(height: 4),
           Flexible(
             child: Text(
               text,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12,
                 color: textColor,
