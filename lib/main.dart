@@ -71,6 +71,7 @@ void main() async {
     pomodoroSessionsDB = await Hive.openBox<PomodoroSession>(
       'pomodoro_sessions',
     );
+    await Hive.openBox<List<dynamic>>('categories_box');
     ambientScenesDB = await Hive.openBox<AmbientScene>('ambient_scenes');
   } else {
     final dir = await getApplicationDocumentsDirectory();
@@ -82,6 +83,7 @@ void main() async {
     pomodoroSessionsDB = await Hive.openBox<PomodoroSession>(
       'pomodoro_sessions',
     );
+    await Hive.openBox<List<dynamic>>('categories_box');
     ambientScenesDB = await Hive.openBox<AmbientScene>('ambient_scenes');
   }
 

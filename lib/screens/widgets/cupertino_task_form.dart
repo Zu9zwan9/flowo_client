@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class CupertinoTaskForm {
   const CupertinoTaskForm(this.context);
@@ -316,7 +317,7 @@ class CupertinoTaskForm {
             value: value,
             onChanged: onChanged,
             activeColor: getPriorityColor(value.toInt()),
-            thumbColor: _backgroundColor,
+            thumbColor: Colors.white,
           ),
         ),
         const SizedBox(height: 4),

@@ -973,8 +973,8 @@ class TaskEditScreenState extends State<TaskEditScreen> {
                   child: const Text('OK'),
                   onPressed: () {
                     Navigator.pop(context);
-                    // Navigate back to home screen
-                    Navigator.pushReplacement(
+                    // Navigate back to calendar screen
+                    Navigator.pop(
                       context,
                       CupertinoPageRoute(
                         builder: (_) => const CalendarScreen(),

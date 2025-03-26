@@ -163,7 +163,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
 
   void _navigateToEditScreen(BuildContext context) {
     final isEvent = _task.priority == 0 && _task.category.name == 'Event';
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       CupertinoPageRoute(
         builder:
@@ -282,8 +282,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 child: const Text('View in Calendar'),
                 onPressed: () {
                   Navigator.pop(context);
-                  Navigator.pushReplacement(
-                    context,
+                  Navigator.of(context).pushReplacement(
                     CupertinoPageRoute(builder: (_) => const CalendarScreen()),
                   );
                 },
@@ -299,8 +298,15 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       barrierDismissible: true,
       builder: (_) => CupertinoAlertDialog(content: Text(message)),
     );
+
     Future.delayed(const Duration(seconds: 1), () {
-      if (Navigator.canPop(context)) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(builder: (_) => const CalendarScreen()),
+        );
+      }
     });
   }
 

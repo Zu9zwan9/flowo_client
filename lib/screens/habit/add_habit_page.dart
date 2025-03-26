@@ -1126,7 +1126,7 @@ class AddHabitPageState extends State<AddHabitPage>
     );
 
     // Assert: Navigate back to HomeScreen
-    Navigator.pushReplacement(
+    Navigator.pop(
       context,
       CupertinoPageRoute(builder: (_) => HomeScreen(initialIndex: 0)),
     );
