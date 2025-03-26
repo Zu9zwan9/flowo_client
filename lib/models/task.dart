@@ -27,6 +27,15 @@ class Task extends HiveObject {
   @HiveField(5)
   Category category;
 
+  @HiveField(17)
+  int? optimisticTime;
+
+  @HiveField(18)
+  int? realisticTime;
+
+  @HiveField(19)
+  int? pessimisticTime;
+
   @HiveField(6)
   String? notes;
 
@@ -77,6 +86,7 @@ class Task extends HiveObject {
   String toString() {
     return 'Task: {id: $id, title: $title, priority: $priority, '
         'deadline: $deadline, estimatedTime: $estimatedTime, category: $category, '
+        'optimisticTime: $optimisticTime, realisticTime: $realisticTime, pessimisticTime: $pessimisticTime, '
         'notes: $notes, location: $location, image: $image, frequency: ${frequency.toString()}, '
         'subtasks: $subtasks, parentTaskId: $parentTaskId, scheduledTasks: $scheduledTasks, '
         'isDone: $isDone, order: $order, overdue: $overdue, color: $color}';
@@ -100,6 +110,9 @@ class Task extends HiveObject {
     this.order,
     this.overdue = false,
     this.color,
+    this.optimisticTime,
+    this.realisticTime,
+    this.pessimisticTime,
   }) : parentTaskId = parentTask?.id,
        subtasks = subtasks ?? [],
        scheduledTasks = scheduledTasks ?? [];

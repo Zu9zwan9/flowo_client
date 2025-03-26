@@ -56,6 +56,9 @@ class TaskManager {
     String? notes,
     int? color,
     RepeatRule? frequency,
+    int? optimisticTime,
+    int? realisticTime,
+    int? pessimisticTime,
   }) {
     final task = Task(
       id: UniqueKey().toString(),
@@ -67,6 +70,9 @@ class TaskManager {
       notes: notes,
       color: color,
       frequency: frequency,
+      optimisticTime: optimisticTime,
+      realisticTime: realisticTime,
+      pessimisticTime: pessimisticTime,
     );
     tasksDB.put(task.id, task);
     if (parentTask != null) {
@@ -115,6 +121,9 @@ class TaskManager {
     String? notes,
     int? color,
     RepeatRule? frequency,
+    int? optimisticTime,
+    int? realisticTime,
+    int? pessimisticTime,
   }) {
     task.title = title;
     task.priority = priority;
@@ -130,6 +139,15 @@ class TaskManager {
     }
     if (frequency != null) {
       task.frequency = frequency;
+    }
+    if (optimisticTime != null) {
+      task.optimisticTime = optimisticTime;
+    }
+    if (realisticTime != null) {
+      task.realisticTime = realisticTime;
+    }
+    if (pessimisticTime != null) {
+      task.pessimisticTime = pessimisticTime;
     }
     tasksDB.put(task.id, task);
     logInfo('Edited task: ${task.title}');

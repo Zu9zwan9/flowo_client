@@ -148,14 +148,42 @@ class _AddTaskPageState extends State<AddTaskPage>
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing),
 
                 // Duration Section
-                form.sectionTitle('Estimated Time'),
+                form.sectionTitle('Estimated Time (PERT)'),
                 form.formGroup(
                   children: [
                     form.selectionButton(
-                      label: 'Duration',
-                      value: _formatDuration(_formData.estimatedTime),
-                      onTap: () => _showDurationPicker(context),
+                      label: 'Optimistic Time (Best Case)',
+                      value: _formatDuration(_formData.optimisticTime),
+                      onTap: () => _showDurationPicker(context, 'optimistic'),
                       icon: CupertinoIcons.timer,
+                    ),
+                    form.divider(),
+                    form.selectionButton(
+                      label: 'Realistic Time (Most Likely)',
+                      value: _formatDuration(_formData.realisticTime),
+                      onTap: () => _showDurationPicker(context, 'realistic'),
+                      icon: CupertinoIcons.timer,
+                    ),
+                    form.divider(),
+                    form.selectionButton(
+                      label: 'Pessimistic Time (Worst Case)',
+                      value: _formatDuration(_formData.pessimisticTime),
+                      onTap: () => _showDurationPicker(context, 'pessimistic'),
+                      icon: CupertinoIcons.timer,
+                    ),
+                    form.divider(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Expected Time (PERT):',
+                          style: form.labelTextStyle(),
+                        ),
+                        Text(
+                          _formatDuration(_formData.estimatedTime),
+                          style: form.valueTextStyle,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -343,21 +371,63 @@ class _AddTaskPageState extends State<AddTaskPage>
     }
   }
 
-  Future<void> _showDurationPicker(BuildContext context) async {
+  Future<void> _showDurationPicker(
+    BuildContext context,
+    String timeType,
+  ) async {
+    // Determine which time estimate to update
+    int initialHours = 0;
+    int initialMinutes = 0;
+
+    switch (timeType) {
+      case 'optimistic':
+        initialHours = _formData.optimisticTime ~/ 3600000;
+        initialMinutes = (_formData.optimisticTime % 3600000) ~/ 60000;
+        break;
+      case 'realistic':
+        initialHours = _formData.realisticTime ~/ 3600000;
+        initialMinutes = (_formData.realisticTime % 3600000) ~/ 60000;
+        break;
+      case 'pessimistic':
+        initialHours = _formData.pessimisticTime ~/ 3600000;
+        initialMinutes = (_formData.pessimisticTime % 3600000) ~/ 60000;
+        break;
+      default:
+        initialHours = _formData.estimatedTime ~/ 3600000;
+        initialMinutes = (_formData.estimatedTime % 3600000) ~/ 60000;
+    }
+
     // Show the duration picker
     final duration = await showCupertinoModalPopup<int>(
       context: context,
       builder:
           (context) => _buildDurationPickerModal(
             context: context,
-            initialHours: _formData.estimatedTime ~/ 3600000,
-            initialMinutes: (_formData.estimatedTime % 3600000) ~/ 60000,
+            initialHours: initialHours,
+            initialMinutes: initialMinutes,
           ),
     );
 
     // Update state if a duration was picked
     if (duration != null && mounted) {
-      setState(() => _formData.estimatedTime = duration);
+      setState(() {
+        switch (timeType) {
+          case 'optimistic':
+            _formData.optimisticTime = duration;
+            break;
+          case 'realistic':
+            _formData.realisticTime = duration;
+            break;
+          case 'pessimistic':
+            _formData.pessimisticTime = duration;
+            break;
+          default:
+            _formData.estimatedTime = duration;
+        }
+
+        // Calculate the estimated time using the PERT formula
+        _formData.calculateEstimatedTime();
+      });
     }
   }
 

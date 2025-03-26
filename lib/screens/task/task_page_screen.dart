@@ -6,6 +6,7 @@ import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../models/task.dart';
 import '../../utils/category_utils.dart';
 import '../../utils/logger.dart';
+import '../calendar/calendar_screen.dart';
 import '../event/event_edit_screen.dart';
 import 'task_edit_screen.dart';
 
@@ -281,7 +282,10 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 child: const Text('View in Calendar'),
                 onPressed: () {
                   Navigator.pop(context);
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.pushReplacement(
+                    context,
+                    CupertinoPageRoute(builder: (_) => const CalendarScreen()),
+                  );
                 },
               ),
             ],

@@ -27,6 +27,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     String? notes,
     int? color,
     RepeatRule? frequency,
+    int? optimisticTime,
+    int? realisticTime,
+    int? pessimisticTime,
   }) {
     taskManager.createTask(
       title,
@@ -38,6 +41,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       notes: notes,
       color: color,
       frequency: frequency,
+      optimisticTime: optimisticTime,
+      realisticTime: realisticTime,
+      pessimisticTime: pessimisticTime,
     );
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
@@ -135,6 +141,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     String? notes,
     int? color,
     RepeatRule? frequency,
+    int? optimisticTime,
+    int? realisticTime,
+    int? pessimisticTime,
   }) {
     // Update task properties
     taskManager.editTask(
@@ -148,6 +157,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       notes: notes,
       color: color,
       frequency: frequency,
+      optimisticTime: optimisticTime,
+      realisticTime: realisticTime,
+      pessimisticTime: pessimisticTime,
     );
 
     // No need to update notes, color, and frequency separately as they're now part of the TaskManager.editTask method

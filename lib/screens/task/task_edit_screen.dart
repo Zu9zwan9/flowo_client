@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
+import '../calendar/calendar_screen.dart';
 
 class TaskEditScreen extends StatefulWidget {
   final Task task;
@@ -22,6 +23,9 @@ class TaskEditScreenState extends State<TaskEditScreen> {
   final _notesController = TextEditingController();
 
   late int _estimatedTime;
+  late int _optimisticTime;
+  late int _realisticTime;
+  late int _pessimisticTime;
   late DateTime _selectedDate;
   late DateTime _selectedTime;
   late String _selectedCategory;
@@ -53,6 +57,9 @@ class TaskEditScreenState extends State<TaskEditScreen> {
     _titleController.text = widget.task.title;
     _notesController.text = widget.task.notes ?? '';
     _estimatedTime = widget.task.estimatedTime;
+    _optimisticTime = widget.task.optimisticTime ?? 0;
+    _realisticTime = widget.task.realisticTime ?? 0;
+    _pessimisticTime = widget.task.pessimisticTime ?? 0;
     _selectedDate = DateTime.fromMillisecondsSinceEpoch(widget.task.deadline);
     _selectedTime = _selectedDate;
     _selectedCategory = widget.task.category.name;
@@ -71,6 +78,14 @@ class TaskEditScreenState extends State<TaskEditScreen> {
     _titleController.dispose();
     _notesController.dispose();
     super.dispose();
+  }
+
+  void _calculateEstimatedTime() {
+    if (_optimisticTime > 0 && _realisticTime > 0 && _pessimisticTime > 0) {
+      _estimatedTime =
+          ((_optimisticTime + (4 * _realisticTime) + _pessimisticTime) / 6)
+              .round();
+    }
   }
 
   String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
@@ -262,11 +277,61 @@ class TaskEditScreenState extends State<TaskEditScreen> {
 
   Widget _buildEstimatedTimeButton(BuildContext context) => Column(
     children: [
+      // Optimistic Time Button
       GestureDetector(
         onTap: () async {
-          final estimatedTime = await _showEstimatedTimePicker(context);
+          final optimisticTime = await _showEstimatedTimePicker(
+            context,
+            'optimistic',
+          );
           if (mounted) {
-            setState(() => _estimatedTime = estimatedTime);
+            setState(() {
+              _optimisticTime = optimisticTime;
+              _calculateEstimatedTime();
+            });
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: CupertinoColors.systemGreen.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Optimistic Time (Best Case)',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: CupertinoColors.systemGreen,
+                ),
+              ),
+              Text(
+                '${(_optimisticTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_optimisticTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: CupertinoColors.label,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 8),
+
+      // Realistic Time Button
+      GestureDetector(
+        onTap: () async {
+          final realisticTime = await _showEstimatedTimePicker(
+            context,
+            'realistic',
+          );
+          if (mounted) {
+            setState(() {
+              _realisticTime = realisticTime;
+              _calculateEstimatedTime();
+            });
           }
         },
         child: Container(
@@ -279,14 +344,14 @@ class TaskEditScreenState extends State<TaskEditScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'Estimated Time',
+                'Realistic Time (Most Likely)',
                 style: TextStyle(
                   fontSize: 16,
                   color: CupertinoColors.systemBlue,
                 ),
               ),
               Text(
-                '${(_estimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_estimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+                '${(_realisticTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_realisticTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
                 style: const TextStyle(
                   fontSize: 16,
                   color: CupertinoColors.label,
@@ -294,6 +359,80 @@ class TaskEditScreenState extends State<TaskEditScreen> {
               ),
             ],
           ),
+        ),
+      ),
+      const SizedBox(height: 8),
+
+      // Pessimistic Time Button
+      GestureDetector(
+        onTap: () async {
+          final pessimisticTime = await _showEstimatedTimePicker(
+            context,
+            'pessimistic',
+          );
+          if (mounted) {
+            setState(() {
+              _pessimisticTime = pessimisticTime;
+              _calculateEstimatedTime();
+            });
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: CupertinoColors.systemOrange.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Pessimistic Time (Worst Case)',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: CupertinoColors.systemOrange,
+                ),
+              ),
+              Text(
+                '${(_pessimisticTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_pessimisticTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: CupertinoColors.label,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 8),
+
+      // Expected Time (PERT)
+      Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemPurple.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Expected Time (PERT)',
+              style: TextStyle(
+                fontSize: 16,
+                color: CupertinoColors.systemPurple,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              '${(_estimatedTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_estimatedTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+              style: const TextStyle(
+                fontSize: 16,
+                color: CupertinoColors.label,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
       ),
       const SizedBox(height: 8),
@@ -542,34 +681,81 @@ class TaskEditScreenState extends State<TaskEditScreen> {
     }
   }
 
-  Future<int> _showEstimatedTimePicker(BuildContext context) async {
+  Future<int> _showEstimatedTimePicker(
+    BuildContext context, [
+    String timeType = '',
+  ]) async {
     int? pickedHours;
     int? pickedMinutes;
+
+    // Determine initial values based on time type
+    int initialHours = 0;
+    int initialMinutes = 0;
+
+    switch (timeType) {
+      case 'optimistic':
+        initialHours = _optimisticTime ~/ 3600000;
+        initialMinutes = (_optimisticTime % 3600000) ~/ 60000;
+        break;
+      case 'realistic':
+        initialHours = _realisticTime ~/ 3600000;
+        initialMinutes = (_realisticTime % 3600000) ~/ 60000;
+        break;
+      case 'pessimistic':
+        initialHours = _pessimisticTime ~/ 3600000;
+        initialMinutes = (_pessimisticTime % 3600000) ~/ 60000;
+        break;
+      default:
+        initialHours = _estimatedTime ~/ 3600000;
+        initialMinutes = (_estimatedTime % 3600000) ~/ 60000;
+    }
+
+    // Initialize with current values
+    pickedHours = initialHours;
+    pickedMinutes =
+        initialMinutes - (initialMinutes % 15); // Round to nearest 15 minutes
+
     await showCupertinoModalPopup(
       context: context,
       builder:
           (context) => Container(
             height: 300,
             color: CupertinoColors.systemBackground,
-            child: Row(
+            child: Column(
               children: [
+                _buildPickerActions(context),
                 Expanded(
-                  child: CupertinoPicker(
-                    itemExtent: 32,
-                    onSelectedItemChanged: (index) {
-                      pickedHours = index;
-                    },
-                    children: [for (var i = 0; i <= 120; i++) Text('$i hours')],
-                  ),
-                ),
-                Expanded(
-                  child: CupertinoPicker(
-                    itemExtent: 32,
-                    onSelectedItemChanged: (index) {
-                      pickedMinutes = index * 15;
-                    },
+                  child: Row(
                     children: [
-                      for (var i = 0; i < 4; i++) Text('${i * 15} minutes'),
+                      Expanded(
+                        child: CupertinoPicker(
+                          itemExtent: 32,
+                          scrollController: FixedExtentScrollController(
+                            initialItem: initialHours,
+                          ),
+                          onSelectedItemChanged: (index) {
+                            pickedHours = index;
+                          },
+                          children: [
+                            for (var i = 0; i <= 120; i++) Text('$i hours'),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: CupertinoPicker(
+                          itemExtent: 32,
+                          scrollController: FixedExtentScrollController(
+                            initialItem: initialMinutes ~/ 15,
+                          ),
+                          onSelectedItemChanged: (index) {
+                            pickedMinutes = index * 15;
+                          },
+                          children: [
+                            for (var i = 0; i < 4; i++)
+                              Text('${i * 15} minutes'),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -577,6 +763,7 @@ class TaskEditScreenState extends State<TaskEditScreen> {
             ),
           ),
     );
+
     return (pickedHours ?? 0) * 3600000 + (pickedMinutes ?? 0) * 60000;
   }
 
@@ -790,7 +977,7 @@ class TaskEditScreenState extends State<TaskEditScreen> {
                     Navigator.pushReplacement(
                       context,
                       CupertinoPageRoute(
-                        builder: (_) => const HomeScreen(initialIndex: 1),
+                        builder: (_) => const CalendarScreen(),
                       ),
                     );
                   },
