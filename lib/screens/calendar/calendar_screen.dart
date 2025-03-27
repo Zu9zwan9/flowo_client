@@ -13,22 +13,6 @@ import '../../models/task.dart';
 import '../habit/add_habit_page.dart';
 import '../task/add_task_page.dart';
 
-/// An improved Calendar screen with enhanced UI/UX following iOS design guidelines
-/// and implementing best practices, SOLID principles, and proper error handling.
-///
-/// This screen displays a calendar with events and allows users to:
-/// - View events in different calendar views (month, week, day)
-/// - Navigate between dates
-/// - Search for events
-/// - View event details
-/// - Add new events
-///
-/// The implementation follows iOS design guidelines and best practices:
-/// - Uses Cupertino widgets for iOS look and feel
-/// - Implements proper error handling and loading states
-/// - Uses responsive design for different screen sizes
-/// - Follows SOLID principles for maintainable code
-/// - Optimizes performance by reducing unnecessary data fetching
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
