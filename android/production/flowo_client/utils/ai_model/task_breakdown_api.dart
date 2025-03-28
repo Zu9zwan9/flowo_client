@@ -4,12 +4,13 @@ import 'dart:convert';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:http/http.dart' as http;
 
+/// A factory function to create a pipeline for various NLP tasks
 Pipeline pipeline(
-  String task, {
-  required String model,
-  required String apiKey,
-  String? apiUrl,
-}) {
+    String task, {
+      required String model,
+      required String apiKey,
+      String? apiUrl,
+    }) {
   return Pipeline(task: task, model: model, apiKey: apiKey, apiUrl: apiUrl);
 }
 
@@ -31,7 +32,7 @@ class Pipeline {
     required this.apiKey,
     String? apiUrl,
   }) : apiUrl =
-           apiUrl ?? 'https://router.huggingface.co/hf-inference/models/$model';
+      apiUrl ?? 'https://router.huggingface.co/hf-inference/models/$model';
 
   /// Calls the pipeline with the given messages
   ///
@@ -69,7 +70,7 @@ class Pipeline {
         logWarning('Using fallback response due to API error');
         return {
           "generated_text":
-              "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
+          "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
         };
       }
     } catch (e) {
@@ -79,7 +80,7 @@ class Pipeline {
       logWarning('Using fallback response due to exception');
       return {
         "generated_text":
-            "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
+        "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
       };
     }
   }
@@ -97,27 +98,25 @@ class TaskBreakdownAPI {
   TaskBreakdownAPI({
     required this.apiKey,
     this.apiUrl =
-        'https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta',
+    'https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta',
   }) : _pipeline = pipeline(
-         "text-generation",
-         model: 'HuggingFaceH4/zephyr-7b-beta',
-         apiKey: apiKey,
-         apiUrl: apiUrl,
-       );
+    "text-generation",
+    model: 'HuggingFaceH4/zephyr-7b-beta',
+    apiKey: apiKey,
+    apiUrl: apiUrl,
+  );
 
   /// Makes a request to the Hugging Face API to break down a task into subtasks
   ///
   /// Returns the raw API response or null if the request failed
   /// The response can be either a Map<String, dynamic> or a List<dynamic>
-  Future<dynamic> makeRequest(String task, String totalTime) async {
+  Future<dynamic> makeRequest(String task) async {
     // If task is empty, return a mock response for testing
-
-    totalTime = (int.parse(totalTime.trim()) / 60000).toString();
     if (task.isEmpty) {
       logWarning('Empty task provided, returning mock response');
       return {
         "generated_text":
-            "1. First subtask\n2. Second subtask\n3. Third subtask",
+        "1. First subtask\n2. Second subtask\n3. Third subtask",
       };
     }
 
@@ -126,10 +125,7 @@ class TaskBreakdownAPI {
       {
         "role": "user",
         "content":
-            "You are a helpful assistant that breaks down tasks into clear, actionable subtasks and distributes the total estimated time among them. "
-            "The total estimated time for the task is $totalTime minutes. "
-            "Format your response as a numbered list, where each subtask is followed by its estimated time in minutes in parentheses, like this: '1. Subtask (X minutes)'. "
-            "Break down the task into specific subtasks and ensure the sum of the subtask times equals $totalTime minutes: $task",
+        "You are a helpful assistant that breaks down tasks into clear, actionable subtasks. Format your response as a numbered list. Break down the task into specific subtasks: $task",
       },
     ];
 
@@ -140,10 +136,17 @@ class TaskBreakdownAPI {
   /// Parses the response from the Hugging Face API into a list of subtasks
   ///
   /// Returns an empty list if the response is invalid or empty
-  List<Map<String, dynamic>> parseSubtasks(dynamic response) {
+  List<String> parseSubtasks(dynamic response) {
     if (response == null) {
       logWarning('Received null response from Hugging Face API');
-      return [];
+      // Return default subtasks instead of empty list
+      return [
+        "Research the topic",
+        "Create an outline",
+        "Draft the content",
+        "Review and revise",
+        "Finalize the work",
+      ];
     }
 
     try {
@@ -156,58 +159,124 @@ class TaskBreakdownAPI {
         logWarning(
           'Unexpected response format from Hugging Face API: $response',
         );
-        return [];
+        // Return default subtasks for unexpected format
+        return [
+          "Research the topic",
+          "Create an outline",
+          "Draft the content",
+          "Review and revise",
+          "Finalize the work",
+        ];
       }
 
-      text = text.trim();
-      if (text.isEmpty) {
-        logWarning('Empty text after cleanup');
-        return [];
+      /// Extension method to remove a suffix from a string
+      // Clean up the text
+      text = text.rstrip('"}]');
+
+      // If text is empty after cleanup, return default subtasks
+      if (text.trim().isEmpty) {
+        logWarning('Empty text after cleanup, using default subtasks');
+        return [
+          "Research the topic",
+          "Create an outline",
+          "Draft the content",
+          "Review and revise",
+          "Finalize the work",
+        ];
       }
 
-      final subtasks = <Map<String, dynamic>>[];
+      // Extract subtasks by looking for numbered or bulleted lines
+      final subtasks = <String>[];
       final lines = text.split('\n');
+
       for (var line in lines) {
         final trimmedLine = line.trim();
-        if (trimmedLine.isNotEmpty) {
-          final subtaskData = _parseSubtaskLine(trimmedLine);
-          if (subtaskData != null) {
-            subtasks.add(subtaskData);
+        if (trimmedLine.isEmpty) continue;
+
+        // Check if line starts with a number or bullet point
+        if (_isSubtaskLine(trimmedLine)) {
+          // Remove the number/bullet and any leading whitespace
+          final subtask = _cleanSubtaskLine(trimmedLine);
+          if (subtask.isNotEmpty) {
+            subtasks.add(subtask);
+          }
+        } else if (subtasks.isEmpty && trimmedLine.length > 5) {
+          // If no subtask format is detected but line is substantial,
+          // treat each non-empty line as a subtask
+          subtasks.add(trimmedLine);
+        }
+      }
+
+      // If no subtasks were found, try to split the text into sentences
+      if (subtasks.isEmpty) {
+        logWarning(
+          'No subtasks found in structured format, trying sentence splitting',
+        );
+        final sentences = text.split(RegExp(r'[.!?]\s+'));
+        for (var sentence in sentences) {
+          final trimmed = sentence.trim();
+          if (trimmed.length > 5) {
+            subtasks.add(trimmed);
           }
         }
       }
 
+      // If still no subtasks, return default ones
       if (subtasks.isEmpty) {
-        logWarning('No valid subtasks parsed');
-      } else {
-        logInfo('Parsed ${subtasks.length} subtasks');
+        logWarning('Failed to extract any subtasks, using default subtasks');
+        return [
+          "Research the topic",
+          "Create an outline",
+          "Draft the content",
+          "Review and revise",
+          "Finalize the work",
+        ];
+      }
+
+      logInfo(
+        'Parsed ${subtasks.length} subtasks from Hugging Face API response',
+      );
+
+      if (subtasks.isNotEmpty) {
+        subtasks.removeAt(0);
       }
       return subtasks;
     } catch (e) {
-      logError('Error parsing subtasks: $e');
-      return [];
+      logError('Error parsing subtasks from Hugging Face API response: $e');
+      // Return default subtasks on error
+      return [
+        "Research the topic",
+        "Create an outline",
+        "Draft the content",
+        "Review and revise",
+        "Finalize the work",
+      ];
     }
   }
 
   /// Breaks down a task into subtasks using the Hugging Face API
   ///
   /// Returns a list of subtasks or default subtasks if the request failed
-  Future<List<Map<String, dynamic>>> breakdownTask(
-    String task,
-    String totalTime,
-  ) async {
+  Future<List<String>> breakdownTask(String task) async {
     if (task.trim().isEmpty) {
-      logWarning('Empty task provided');
-      return [];
+      logWarning('Empty task provided to breakdownTask');
+      return [
+        "Define the task clearly",
+        "Break down into smaller steps",
+        "Prioritize the steps",
+        "Estimate time for each step",
+        "Execute the plan",
+      ];
     }
-    final response = await makeRequest(task, totalTime);
+
+    final response = await makeRequest(task);
     return parseSubtasks(response);
   }
 
   /// Checks if a line represents a subtask (starts with a number or bullet point)
   bool _isSubtaskLine(String line) {
     // Check for numbered items (e.g., "1. ", "2) ", etc.)
-    if (RegExp(r'^\d+[.)\-]?\s+').hasMatch(line)) {
+    if (RegExp(r'^\d+[\.\)\-]?\s+').hasMatch(line)) {
       return true;
     }
 
@@ -224,20 +293,9 @@ class TaskBreakdownAPI {
   /// Cleans a subtask line by removing the number/bullet and any leading whitespace
   String _cleanSubtaskLine(String line) {
     // Remove numbers, bullets, and any leading whitespace
-    return line.replaceFirst(RegExp(r'^\d+[.)\-]?\s+|^[•*\-]\s+'), '').trim();
-  }
-
-  Map<String, dynamic>? _parseSubtaskLine(String line) {
-    final regex = RegExp(r'^\d+\.\s*(.+?)\s*\((\d+)\s*minutes?\)$');
-    final match = regex.firstMatch(line);
-    if (match != null) {
-      final title = match.group(1)!.trim();
-      final minutes = int.parse(match.group(2)!);
-      final estimatedTime =
-          minutes * 60 * 1000; // Конвертация минут в миллисекунды
-      return {'title': title, 'estimatedTime': estimatedTime};
-    }
-    return null; // Если формат не соответствует, возвращаем null
+    return line
+        .replaceFirst(RegExp(r'^\d+[\.\)\-]?\s+|^[•\*\-]\s+'), '')
+        .trim();
   }
 }
 

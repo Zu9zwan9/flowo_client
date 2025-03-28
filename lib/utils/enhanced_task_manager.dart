@@ -28,68 +28,40 @@ class EnhancedTaskManager extends TaskManager {
   Future<List<Task>> breakdownAndScheduleTask(Task task) async {
     logInfo('Breaking down task with AI: ${task.title}');
 
-    // Use the API to break down the task into subtasks
-    final subtaskTitles = await taskBreakdownAPI.breakdownTask(task.title);
+    final subtaskDataList = await taskBreakdownAPI.breakdownTask(
+      task.title,
+      task.estimatedTime.toString(),
+    );
 
-    if (subtaskTitles.isEmpty) {
+    if (subtaskDataList.isEmpty) {
       logWarning('No subtasks generated for task: ${task.title}');
-
-      // If no subtasks were generated, schedule the parent task itself
       logInfo('Scheduling parent task: ${task.title}');
       scheduler.scheduleTask(task, userSettings.minSession, urgency: null);
-
       return [];
     }
 
-    logInfo('Generated ${subtaskTitles.length} subtasks for: ${task.title}');
+    logInfo('Generated ${subtaskDataList.length} subtasks for: ${task.title}');
 
-    // Use AI to estimate time for each subtask
-    logInfo('Estimating time for subtasks using AI...');
-    final estimates = await _taskTimeEstimator.estimateSubtaskTimes(
-      subtaskTitles,
-      task.estimatedTime,
-      task.deadline,
-    );
-
-    // Create subtask objects
     final subtasks = <Task>[];
     int order = 1;
 
-    for (var i = 0; i < subtaskTitles.length; i++) {
-      final subtaskTitle = subtaskTitles[i];
-
-      // Use AI-estimated time if available, otherwise use proportional distribution
-      final estimatedTime =
-          i < estimates.length
-              ? estimates[i]
-              : (task.estimatedTime / subtaskTitles.length).round();
-
+    for (var subtaskData in subtaskDataList) {
       final subtask = Task(
         id: UniqueKey().toString(),
-        title: subtaskTitle,
+        title: subtaskData['title'],
         priority: task.priority,
-        estimatedTime: estimatedTime,
+        estimatedTime: subtaskData['estimatedTime'],
         deadline: task.deadline,
         category: task.category,
         parentTask: task,
         order: order++,
       );
-
       tasksDB.put(subtask.id, subtask);
       subtasks.add(subtask);
-
-      // Add subtask to parent task's subtasks list
       task.subtasks.add(subtask);
-
-      logInfo(
-        'Created subtask "$subtaskTitle" with estimated time: $estimatedTime minutes',
-      );
     }
 
-    // Update the parent task in the database
     tasksDB.put(task.id, task);
-
-    // Schedule the subtasks
     scheduleSubtasks(subtasks);
 
     return subtasks;
@@ -111,6 +83,7 @@ class EnhancedTaskManager extends TaskManager {
       // Use the TaskBreakdownAPI to make a request with a custom prompt
       final response = await taskBreakdownAPI.makeRequest(
         "Estimate how long this task will take in minutes. Only respond with a number: $taskDescription",
+        "300",
       );
 
       // Parse the response

@@ -468,27 +468,35 @@ class TaskManager {
       'sunday': 7,
     };
     return dayMap[dayName.toLowerCase()] ?? 1; // Default to Monday if invalid
+    /// TODO fix potential error with monday
   }
 
   Future<List<Task>> breakdownAndScheduleTask(Task task) async {
-    logInfo('Breaking down task: ${task.title}');
+    logInfo('Breaking down task: ${task.title} ${task.estimatedTime}');
 
-    final subtaskTitles = await taskBreakdownAPI.breakdownTask(task.title);
+    // Изменяем тип с List<String> на List<Map<String, dynamic>>
+    final subtaskDataList = await taskBreakdownAPI.breakdownTask(
+      task.title,
+      task.estimatedTime.toString(),
+    );
 
-    if (subtaskTitles.isEmpty) {
+    if (subtaskDataList.isEmpty) {
       logWarning('No subtasks generated for task: ${task.title}');
       logInfo('Scheduling parent task: ${task.title}');
       scheduler.scheduleTask(task, userSettings.minSession, urgency: null);
       return [];
     }
 
-    logInfo('Generated ${subtaskTitles.length} subtasks for: ${task.title}');
+    logInfo('Generated ${subtaskDataList.length} subtasks for: ${task.title}');
 
     final subtasks = <Task>[];
     int order = 1;
 
-    for (var subtaskTitle in subtaskTitles) {
-      final estimatedTime = (task.estimatedTime / subtaskTitles.length).round();
+    for (var subtaskData in subtaskDataList) {
+      // Извлекаем title и estimatedTime из Map
+      final subtaskTitle = subtaskData['title'] as String;
+      final estimatedTime = subtaskData['estimatedTime'] as int;
+
       final subtask = Task(
         id: UniqueKey().toString(),
         title: subtaskTitle,
