@@ -597,10 +597,10 @@ class SettingsSliderItem extends StatefulWidget {
     this.valueStyle,
     this.subtitleStyle,
     this.semanticsLabel,
-    this.padding = const EdgeInsets.only(left: 16.0, right: 16.0, top: 12.0),
+    this.padding = const EdgeInsets.only(left: 0, right: 0, top: 12.0),
     this.sliderPadding = const EdgeInsets.only(
-      left: 12.0,
-      right: 12.0,
+      left: 0,
+      right: 0,
       bottom: 12.0,
     ),
     this.valueBuilder,
@@ -719,16 +719,19 @@ class _SettingsSliderItemState extends State<SettingsSliderItem>
           // Slider with animation
           Padding(
             padding: widget.sliderPadding,
-            child: Opacity(
-              opacity: widget.enabled ? 1.0 : 0.5,
-              child: CupertinoSlider(
-                value: widget.value,
-                min: widget.min,
-                max: widget.max,
-                divisions: widget.divisions,
-                onChanged: widget.enabled ? widget.onChanged : null,
-                activeColor: effectiveActiveColor,
-                thumbColor: widget.thumbColor ?? CupertinoColors.white,
+            child: SizedBox(
+              width: double.infinity,
+              child: Opacity(
+                opacity: widget.enabled ? 1.0 : 0.5,
+                child: CupertinoSlider(
+                  value: widget.value,
+                  min: widget.min,
+                  max: widget.max,
+                  divisions: widget.divisions,
+                  onChanged: widget.enabled ? widget.onChanged : null,
+                  activeColor: effectiveActiveColor,
+                  thumbColor: widget.thumbColor ?? CupertinoColors.white,
+                ),
               ),
             ),
           ),

@@ -120,11 +120,6 @@ class _AddTaskPageState extends State<AddTaskPage>
   Widget build(BuildContext context) {
     final form = CupertinoTaskForm(context);
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: const Text('Add Task'),
-        backgroundColor: form.backgroundColor,
-        border: null,
-      ),
       backgroundColor: form.backgroundColor,
       child: SafeArea(
         child: SingleChildScrollView(

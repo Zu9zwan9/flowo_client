@@ -17,7 +17,7 @@ class SidebarMenuItem extends StatelessWidget {
     required this.accentColor,
     required this.isSelected,
     required this.onTap,
-    this.textColor = CupertinoColors.black, // Default value
+    this.textColor = const Color(0xFF1C1C1E),
   });
 
   @override

@@ -245,7 +245,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     final Map<String, List<Task>> grouped = {};
 
     for (final task in tasks) {
-      if (task.parentTaskId == null) {
+      if (task.parentTaskId == null && task.category.name != 'Free Time Manager') {
         grouped.putIfAbsent(task.category.name, () => []).add(task);
       }
     }

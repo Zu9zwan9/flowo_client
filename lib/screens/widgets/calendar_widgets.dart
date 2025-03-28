@@ -453,13 +453,9 @@ class EmptyStateView extends StatelessWidget {
   Widget build(BuildContext context) {
     final brightness = CupertinoTheme.of(context).brightness;
     final textColor =
-        brightness == Brightness.dark
-            ? CupertinoColors.white
-            : CupertinoColors.black;
+    brightness == Brightness.dark ? CupertinoColors.white : CupertinoColors.black;
     final secondaryTextColor =
-        brightness == Brightness.dark
-            ? CupertinoColors.systemGrey
-            : CupertinoColors.systemGrey;
+    brightness == Brightness.dark ? CupertinoColors.systemGrey : CupertinoColors.systemGrey;
 
     return Padding(
       padding: padding,
@@ -501,7 +497,14 @@ class EmptyStateView extends StatelessWidget {
                   ),
                   color: CupertinoColors.systemBlue,
                   onPressed: onActionPressed,
-                  child: Text(actionLabel!),
+                  child: Text(
+                    actionLabel!,
+                    style: const TextStyle(
+                      color: CupertinoColors.white, // Белый текст для контраста
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ],
@@ -515,7 +518,12 @@ class EmptyStateView extends StatelessWidget {
 /// A custom calendar data source for the SfCalendar widget
 class CalendarTaskDataSource extends CalendarDataSource {
   CalendarTaskDataSource(List<ScheduledTask> scheduledTasks) {
-    appointments = scheduledTasks;
+    appointments =
+        scheduledTasks
+            .where(
+              (task) => task.parentTask?.category.name != 'Free Time Manager',
+            )
+            .toList();
   }
 
   @override
