@@ -133,6 +133,7 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
           state = PomodoroState.completed;
           endTime = DateTime.now();
         } else {
+          remainingBreakDuration = breakDuration; // Reset break duration when transitioning to break
           state = PomodoroState.breakTime;
         }
       }
@@ -164,6 +165,7 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
         state = PomodoroState.completed;
         endTime = DateTime.now();
       } else {
+        remainingBreakDuration = breakDuration; // Reset break duration when transitioning to break
         state = PomodoroState.breakTime;
       }
       notifyListeners();

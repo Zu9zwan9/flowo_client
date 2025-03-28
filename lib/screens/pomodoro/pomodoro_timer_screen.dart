@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show CircularProgressIndicator, AlwaysStoppedAnimation;
+import 'package:flutter/material.dart'
+    show CircularProgressIndicator, AlwaysStoppedAnimation;
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +24,8 @@ class PomodoroTimerScreen extends StatefulWidget {
   State<PomodoroTimerScreen> createState() => _PomodoroTimerScreenState();
 }
 
-class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsBindingObserver {
+class _PomodoroTimerScreenState extends State<PomodoroTimerScreen>
+    with WidgetsBindingObserver {
   late PomodoroSession _session;
   Timer? _timer;
   DateTime? _pausedAt;
@@ -34,9 +36,12 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
   DateTime? _sessionStartTime;
 
   // Settings
-  final int _defaultFocusDuration = 25 * 60 * 1000; // 25 minutes in milliseconds
-  final int _defaultShortBreakDuration = 5 * 60 * 1000; // 5 minutes in milliseconds
-  final int _defaultLongBreakDuration = 15 * 60 * 1000; // 15 minutes in milliseconds
+  final int _defaultFocusDuration =
+      25 * 60 * 1000; // 25 minutes in milliseconds
+  final int _defaultShortBreakDuration =
+      5 * 60 * 1000; // 5 minutes in milliseconds
+  final int _defaultLongBreakDuration =
+      15 * 60 * 1000; // 15 minutes in milliseconds
   final int _sessionsBeforeLongBreak = 4;
   final bool _notificationsEnabled = true;
 
@@ -81,8 +86,11 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
 
   void _initSession() {
     // Determine break duration based on completed sessions
-    final isLongBreakDue = _completedSessions % _sessionsBeforeLongBreak == 0 && _completedSessions > 0;
-    final breakDuration = isLongBreakDue ? _defaultLongBreakDuration : _defaultShortBreakDuration;
+    final isLongBreakDue =
+        _completedSessions % _sessionsBeforeLongBreak == 0 &&
+        _completedSessions > 0;
+    final breakDuration =
+        isLongBreakDue ? _defaultLongBreakDuration : _defaultShortBreakDuration;
 
     if (widget.task != null) {
       _session = PomodoroSession.fromTask(
@@ -103,7 +111,10 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
     }
 
     // Save the session to Hive
-    final pomodoroBox = Provider.of<Box<PomodoroSession>>(context, listen: false);
+    final pomodoroBox = Provider.of<Box<PomodoroSession>>(
+      context,
+      listen: false,
+    );
     pomodoroBox.put(_session.id, _session);
 
     // Listen for state changes
@@ -174,18 +185,19 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
     showCupertinoDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Break Time!'),
-        content: Text(
-          'You\'ve completed a pomodoro session. Take a $breakMinutes minute break.',
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Break Time!'),
+            content: Text(
+              'You\'ve completed a pomodoro session. Take a $breakMinutes minute break.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -194,58 +206,60 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
 
     showCupertinoDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Session Completed!'),
-        content: Text(
-          'You\'ve completed $_completedSessions pomodoro ${_completedSessions == 1 ? 'session' : 'sessions'} today.',
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Start New Session'),
-            onPressed: () {
-              Navigator.pop(context);
-              _resetTimer();
-            },
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Session Completed!'),
+            content: Text(
+              'You\'ve completed $_completedSessions pomodoro ${_completedSessions == 1 ? 'session' : 'sessions'} today.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Start New Session'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _resetTimer();
+                },
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Done'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
           ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('Done'),
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
     );
   }
 
   void _showResetConfirmation() {
     showCupertinoDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Reset Timer?'),
-        content: const Text(
-          'You were away for a while. Would you like to reset the timer?',
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('No, Continue'),
-            onPressed: () {
-              Navigator.pop(context);
-              _resumeTimer();
-            },
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Reset Timer?'),
+            content: const Text(
+              'You were away for a while. Would you like to reset the timer?',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('No, Continue'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _resumeTimer();
+                },
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Yes, Reset'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _resetTimer();
+                },
+              ),
+            ],
           ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('Yes, Reset'),
-            onPressed: () {
-              Navigator.pop(context);
-              _resetTimer();
-            },
-          ),
-        ],
-      ),
     );
   }
 
@@ -338,7 +352,10 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
                             width: 230,
                             height: 230,
                             child: CircularProgressIndicator(
-                              value: isBreak ? _session.breakProgress : _session.progress,
+                              value:
+                                  isBreak
+                                      ? _session.breakProgress
+                                      : _session.progress,
                               strokeWidth: 10,
                               backgroundColor: CupertinoColors.systemGrey5,
                               valueColor: AlwaysStoppedAnimation<Color>(
@@ -362,7 +379,9 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
                               const SizedBox(height: 8),
                               Text(
                                 isBreak
-                                    ? _formatTime(_session.remainingBreakDuration)
+                                    ? _formatTime(
+                                      _session.remainingBreakDuration,
+                                    )
                                     : _formatTime(_session.remainingDuration),
                                 style: TextStyle(
                                   fontSize: 48,
@@ -385,15 +404,22 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
                         // Start/Pause button
                         CupertinoButton(
                           padding: EdgeInsets.zero,
-                          onPressed: isInitial || isPaused ? _startTimer : _pauseTimer,
+                          onPressed:
+                              isInitial || isPaused ? _startTimer : _pauseTimer,
                           child: Container(
                             width: 64,
                             height: 64,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: (isInitial || isPaused ? focusColor : pauseColor).withOpacity(0.1),
+                              color: (isInitial || isPaused
+                                      ? focusColor
+                                      : pauseColor)
+                                  .withOpacity(0.1),
                               border: Border.all(
-                                color: isInitial || isPaused ? focusColor : pauseColor,
+                                color:
+                                    isInitial || isPaused
+                                        ? focusColor
+                                        : pauseColor,
                                 width: 2,
                               ),
                             ),
@@ -401,7 +427,10 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
                               isInitial || isPaused
                                   ? CupertinoIcons.play_fill
                                   : CupertinoIcons.pause_fill,
-                              color: isInitial || isPaused ? focusColor : pauseColor,
+                              color:
+                                  isInitial || isPaused
+                                      ? focusColor
+                                      : pauseColor,
                               size: 32,
                             ),
                           ),
@@ -419,10 +448,7 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: resetColor.withOpacity(0.1),
-                              border: Border.all(
-                                color: resetColor,
-                                width: 2,
-                              ),
+                              border: Border.all(color: resetColor, width: 2),
                             ),
                             child: const Icon(
                               CupertinoIcons.refresh,
@@ -431,6 +457,48 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
                             ),
                           ),
                         ),
+
+                        const SizedBox(width: 24),
+
+                        // Skip button (only shown during running or break)
+                        if (isRunning || isBreak)
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            onPressed: () {
+                              if (isRunning) {
+                                // Skip to break
+                                _session.skipToBreak();
+                                if (_session.state == PomodoroState.completed) {
+                                  _updateStatistics();
+                                  _showCompletionDialog();
+                                } else {
+                                  _showBreakStartDialog();
+                                }
+                              } else if (isBreak) {
+                                // Skip break
+                                _session.skipBreak();
+                              }
+                            },
+                            child: Container(
+                              width: 64,
+                              height: 64,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: CupertinoColors.systemIndigo.withOpacity(
+                                  0.1,
+                                ),
+                                border: Border.all(
+                                  color: CupertinoColors.systemIndigo,
+                                  width: 2,
+                                ),
+                              ),
+                              child: const Icon(
+                                CupertinoIcons.forward_fill,
+                                color: CupertinoColors.systemIndigo,
+                                size: 32,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ],
@@ -464,10 +532,7 @@ class _PomodoroTimerScreenState extends State<PomodoroTimerScreen> with WidgetsB
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'Ambient Mode',
-                      style: TextStyle(color: primaryColor),
-                    ),
+                    Text('Ambient Mode', style: TextStyle(color: primaryColor)),
                   ],
                 ),
               ),
