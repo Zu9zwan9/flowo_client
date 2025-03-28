@@ -2,12 +2,13 @@ import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/time_frame.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/screens/widgets/settings_widgets.dart';
-import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../models/app_theme.dart'; // Import the shared AppTheme enum
 import '../../theme_notifier.dart';
+import '../../utils/logger.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -29,10 +30,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _loadSettings();
-    _minSessionDuration = (_minSessionDuration).clamp(5, 120);
-    _breakDuration = (_breakDuration).clamp(5, 30);
+    _minSessionDuration = _minSessionDuration.clamp(5, 120);
+    _breakDuration = _breakDuration.clamp(5, 30);
   }
 
+  /// Loads user settings from TaskManagerCubit and initializes state variables.
   void _loadSettings() {
     final currentSettings =
         context.read<TaskManagerCubit>().taskManager.userSettings;
@@ -53,16 +55,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ? currentSettings.mealBreaks
             : [
               TimeFrame(
-                startTime: const TimeOfDay(hour: 8, minute: 0),
-                endTime: const TimeOfDay(hour: 8, minute: 30),
+                startTime: TimeOfDay(hour: 8, minute: 0),
+                endTime: TimeOfDay(hour: 8, minute: 30),
               ),
               TimeFrame(
-                startTime: const TimeOfDay(hour: 13, minute: 0),
-                endTime: const TimeOfDay(hour: 13, minute: 30),
+                startTime: TimeOfDay(hour: 13, minute: 0),
+                endTime: TimeOfDay(hour: 13, minute: 30),
               ),
               TimeFrame(
-                startTime: const TimeOfDay(hour: 19, minute: 0),
-                endTime: const TimeOfDay(hour: 19, minute: 30),
+                startTime: TimeOfDay(hour: 19, minute: 0),
+                endTime: TimeOfDay(hour: 19, minute: 30),
               ),
             ],
       );
@@ -71,8 +73,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ? currentSettings.freeTime
             : [
               TimeFrame(
-                startTime: const TimeOfDay(hour: 17, minute: 0),
-                endTime: const TimeOfDay(hour: 18, minute: 30),
+                startTime: TimeOfDay(hour: 17, minute: 0),
+                endTime: TimeOfDay(hour: 18, minute: 30),
               ),
             ],
       );
@@ -91,6 +93,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  /// Saves the current settings to TaskManagerCubit and shows a confirmation dialog.
   void _saveSettings() {
     final userSettings = UserSettings(
       name: 'Default',
@@ -108,84 +111,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showCupertinoDialog(
       context: context,
       builder:
-          (_) => CupertinoAlertDialog(
-            title: const Text('Settings Saved'),
-            content: const Text('Your schedule preferences have been updated.'),
+          (_) => const CupertinoAlertDialog(
+            title: Text('Settings Saved'),
+            content: Text('Your schedule preferences have been updated.'),
             actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(context),
-              ),
+              CupertinoDialogAction(isDefaultAction: true, child: Text('OK')),
             ],
           ),
     );
   }
 
+  /// Saves application logs to a file and shows a dialog with options to share or dismiss.
   Future<void> _saveLogs() async {
-    // Capture context before async gap
-    final BuildContext currentContext = context;
-
-    // Log this action itself
     appLogger.info('Save logs button pressed', 'Settings');
+    final filePath = await appLogger.saveToFile(context);
 
-    // Save logs to file
-    final filePath = await appLogger.saveToFile(currentContext);
+    if (!mounted || filePath == null) return;
 
-    // Check if widget is still mounted before proceeding
-    if (!mounted) return;
-
-    if (filePath != null) {
-      // Check if widget is still mounted before showing the dialog
-      if (!mounted) return;
-
-      // Show success dialog with options
-      showCupertinoDialog(
-        context: context, // Use the current context instead of captured context
-        builder:
-            (_) => CupertinoAlertDialog(
-              title: const Text('Logs Saved'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Logs have been saved successfully.'),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Location: $filePath',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: CupertinoColors.systemGrey,
-                    ),
+    showCupertinoDialog(
+      context: context,
+      builder:
+          (_) => CupertinoAlertDialog(
+            title: const Text('Logs Saved'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Logs have been saved successfully.'),
+                const SizedBox(height: 8),
+                Text(
+                  'Location: $filePath',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: CupertinoColors.systemGrey,
                   ),
-                ],
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('Share'),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _shareLogFile(filePath);
-                  },
-                ),
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
                 ),
               ],
             ),
-      );
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Share'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _shareLogFile(filePath);
+                },
+              ),
+              const CupertinoDialogAction(
+                isDefaultAction: true,
+                child: Text('OK'),
+              ),
+            ],
+          ),
+    );
 
-      // Log success
-      appLogger.info('Logs saved successfully', 'Settings', {'path': filePath});
-    }
+    appLogger.info('Logs saved successfully', 'Settings', {'path': filePath});
   }
 
+  /// Shows a dialog with the log file location (since direct sharing isn't implemented).
   Future<void> _shareLogFile(String filePath) async {
     try {
-      // Show a simple dialog with the file path since we can't directly share files
-      // without additional setup
       showCupertinoDialog(
         context: context,
         builder:
@@ -211,10 +195,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ),
               actions: [
-                CupertinoDialogAction(
+                const CupertinoDialogAction(
                   isDefaultAction: true,
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
+                  child: Text('OK'),
                 ),
               ],
             ),
@@ -225,16 +208,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appLogger.error('Error showing log file location', 'Settings', {
         'error': e.toString(),
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to show log file location: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to show log file location: $e')),
+        );
+      }
     }
   }
 
-  void _showTimePicker({
+  /// Shows a time picker dialog for selecting a time.
+  Future<void> _showTimePicker({
     required TimeOfDay initialTime,
     required Function(TimeOfDay) onTimeSelected,
-  }) {
+  }) async {
     showCupertinoModalPopup(
       context: context,
       builder:
@@ -243,18 +229,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
             color: CupertinoColors.systemBackground,
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      child: const Text('Cancel'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    CupertinoButton(
-                      child: const Text('Done'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        child: const Text('Cancel'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      CupertinoButton(
+                        child: const Text('Done'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
                 ),
                 Expanded(
                   child: CupertinoDatePicker(
@@ -281,6 +270,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Shows a dialog to add a time slot (meal or free time).
   void _showAddTimeSlotDialog({
     required String title,
     required Function(TimeOfDay, TimeOfDay) onAdd,
@@ -327,14 +317,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                   cancelButton: CupertinoActionSheetAction(
-                    child: const Text('Cancel'),
                     onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
                   ),
                 ),
           ),
     );
   }
 
+  /// Shows a dialog to add a meal time slot.
   void _showAddMealDialog() {
     _showAddTimeSlotDialog(
       title: 'Meal Time',
@@ -348,6 +339,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Shows a dialog to add a free time slot.
   void _showAddFreeTimeDialog() {
     _showAddTimeSlotDialog(
       title: 'Free Time',
@@ -361,8 +353,163 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  /// Formats a TimeOfDay object into a string (e.g., "08:30").
   String _formatTimeOfDay(TimeOfDay time) =>
       '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
+  /// Shows a color picker dialog for selecting a custom theme color.
+  void _showColorPicker(ThemeNotifier themeNotifier) {
+    final iosColors = [
+      const Color(0xFF007AFF), // iOS Blue
+      const Color(0xFF34C759), // iOS Green
+      const Color(0xFFFF9500), // iOS Orange
+      const Color(0xFFFF2D55), // iOS Red
+      const Color(0xFF5856D6), // iOS Purple
+      const Color(0xFFAF52DE), // iOS Pink
+      const Color(0xFF5AC8FA), // iOS Light Blue
+      const Color(0xFFFFCC00), // iOS Yellow
+      const Color(0xFF8E8E93), // iOS Gray
+    ];
+
+    Color selectedColor = themeNotifier.customColor;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setState) => Container(
+                  height: 400,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: CupertinoDynamicColor.resolve(
+                      CupertinoColors.systemBackground,
+                      context,
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            child: const Text('Cancel'),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          const Text(
+                            'Choose Color',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            child: const Text('Done'),
+                            onPressed: () {
+                              themeNotifier.setCustomColor(selectedColor);
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: selectedColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'iOS Colors',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children:
+                            iosColors.map((color) {
+                              final isSelected =
+                                  selectedColor.value == color.value;
+                              return GestureDetector(
+                                onTap:
+                                    () => setState(() => selectedColor = color),
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color:
+                                          isSelected
+                                              ? CupertinoColors.white
+                                              : Colors.transparent,
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: CupertinoColors.systemGrey
+                                            .withOpacity(0.3),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child:
+                                      isSelected
+                                          ? const Icon(
+                                            CupertinoIcons.checkmark,
+                                            color: CupertinoColors.white,
+                                            size: 20,
+                                          )
+                                          : null,
+                                ),
+                              );
+                            }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+                      CupertinoButton(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        color: CupertinoDynamicColor.resolve(
+                          CupertinoColors.systemGrey5,
+                          context,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        child: const Text('Choose Custom Color'),
+                        onPressed: () {
+                          final additionalColors = [
+                            const Color(0xFF964B00), // Brown
+                            const Color(0xFF50C878), // Emerald
+                            const Color(0xFFFFC0CB), // Pink
+                            const Color(0xFF40E0D0), // Turquoise
+                            const Color(0xFFDE3163), // Cerise
+                          ];
+                          final randomColor =
+                              additionalColors[DateTime.now()
+                                      .millisecondsSinceEpoch %
+                                  additionalColors.length];
+                          setState(() => selectedColor = randomColor);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+          ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -371,7 +518,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return CupertinoPageScaffold(
       navigationBar: const CupertinoNavigationBar(
         middle: Text('Settings'),
-        border: null, // Remove the bottom border for a cleaner look
+        border: null,
       ),
       child: SafeArea(
         child: ListView(
@@ -383,33 +530,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
               footerText:
                   'Choose a theme that suits your preferences and needs.',
               children: [
-                // dart
                 SettingsSegmentedItem(
                   label: 'Appearance',
                   subtitle: 'Select your preferred visual style',
                   groupValue:
-                      themeNotifier.themeMode == AppTheme.light
-                          ? 'light'
-                          : themeNotifier.themeMode == AppTheme.dark
-                          ? 'dark'
-                          : 'adhd',
-                  children: const {
-                    'light': Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('Light'),
-                    ),
-                    'dark': Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('Night'),
-                    ),
-                    'adhd': Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text('ADHD'),
+                      themeNotifier.themeMode.toString().split('.').last,
+                  children: {
+                    'system': const Text('System'),
+                    'light': const Text('Light'),
+                    'dark': const Text('Night'),
+                    'adhd': const Text('ADHD'),
+                    'custom': Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: themeNotifier.customColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: const Text(
+                            'Custom',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
                     ),
                   },
                   onValueChanged: (value) {
                     AppTheme themeValue;
                     switch (value) {
+                      case 'system':
+                        themeValue = AppTheme.system;
+                        break;
                       case 'light':
                         themeValue = AppTheme.light;
                         break;
@@ -419,12 +576,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       case 'adhd':
                         themeValue = AppTheme.adhd;
                         break;
+                      case 'custom':
+                        themeValue = AppTheme.custom;
+                        break;
                       default:
-                        themeValue = AppTheme.light;
+                        themeValue = AppTheme.system;
                     }
                     themeNotifier.setThemeMode(themeValue);
                   },
                 ),
+                const SizedBox(height: 16),
+                SettingsToggleItem(
+                  label: 'Dark Mode',
+                  value: themeNotifier.brightness == Brightness.dark,
+                  onChanged: (value) {
+                    themeNotifier.setBrightness(
+                      value ? Brightness.dark : Brightness.light,
+                    );
+                  },
+                  subtitle: 'Toggle between light and dark mode',
+                ),
+                if (themeNotifier.themeMode == AppTheme.custom) ...[
+                  const SizedBox(height: 16),
+                  SettingsItem(
+                    label: 'Theme Color',
+                    subtitle: 'Choose your custom theme color',
+                    leading: Container(
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: themeNotifier.customColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: CupertinoColors.systemGrey3,
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    onTap: () => _showColorPicker(themeNotifier),
+                  ),
+                  SettingsSliderItem(
+                    label: 'Color Intensity',
+                    value: themeNotifier.colorIntensity,
+                    min: 0.0,
+                    max: 1.0,
+                    divisions: 10,
+                    valueLabel:
+                        '${(themeNotifier.colorIntensity * 100).round()}%',
+                    onChanged:
+                        (value) => themeNotifier.setColorIntensity(value),
+                    subtitle: 'Adjust the intensity of your custom color',
+                  ),
+                  SettingsSliderItem(
+                    label: 'Noise Effect',
+                    value: themeNotifier.noiseLevel,
+                    min: 0.0,
+                    max: 1.0,
+                    divisions: 10,
+                    valueLabel: '${(themeNotifier.noiseLevel * 100).round()}%',
+                    onChanged: (value) => themeNotifier.setNoiseLevel(value),
+                    subtitle: 'Add subtle noise effect to the background',
+                  ),
+                ],
               ],
             ),
 
