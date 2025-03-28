@@ -191,7 +191,17 @@ class _PomodoroSettingsScreenState extends State<PomodoroSettingsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [Text(title, style: const TextStyle(fontSize: 16)), child],
+        children: [
+          Flexible(
+            child: Text(
+              title,
+              style: const TextStyle(fontSize: 16),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8.0),
+          child,
+        ],
       ),
     );
   }
