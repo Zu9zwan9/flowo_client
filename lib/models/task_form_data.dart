@@ -23,10 +23,11 @@ class TaskFormData {
     this.pessimisticTime = 0,
   });
 
-  /// Calculates the estimated time using the PERT formula: (O + 4R + P) / 6
   void calculateEstimatedTime() {
     if (optimisticTime > 0 && realisticTime > 0 && pessimisticTime > 0) {
-      estimatedTime = ((optimisticTime + (4 * realisticTime) + pessimisticTime) / 6).round();
+      estimatedTime =
+          ((optimisticTime + (4 * realisticTime) + pessimisticTime) / 6)
+              .round();
     }
   }
 }

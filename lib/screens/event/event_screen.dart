@@ -1234,6 +1234,7 @@ class EventEditContent extends StatelessWidget {
           ),
           CupertinoButton(
             padding: const EdgeInsets.symmetric(horizontal: 16),
+            onPressed: onDone,
             child: Text(
               'Done',
               style: TextStyle(
@@ -1242,7 +1243,6 @@ class EventEditContent extends StatelessWidget {
                 fontSize: 17,
               ),
             ),
-            onPressed: onDone,
           ),
         ],
       ),

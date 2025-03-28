@@ -123,16 +123,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _saveLogs() async {
+    // Capture context before async gap
+    final BuildContext currentContext = context;
+
     // Log this action itself
     appLogger.info('Save logs button pressed', 'Settings');
 
     // Save logs to file
-    final filePath = await appLogger.saveToFile(context);
+    final filePath = await appLogger.saveToFile(currentContext);
+
+    // Check if widget is still mounted before proceeding
+    if (!mounted) return;
 
     if (filePath != null) {
+      // Check if widget is still mounted before showing the dialog
+      if (!mounted) return;
+
       // Show success dialog with options
       showCupertinoDialog(
-        context: context,
+        context: context, // Use the current context instead of captured context
         builder:
             (_) => CupertinoAlertDialog(
               title: const Text('Logs Saved'),
