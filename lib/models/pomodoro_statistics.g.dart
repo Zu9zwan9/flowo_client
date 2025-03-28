@@ -16,15 +16,14 @@ class PomodoroStatisticsAdapter extends TypeAdapter<PomodoroStatistics> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return PomodoroStatistics(
-      totalSessions: fields[0] as int,
-      totalFocusTime: fields[1] as int,
-      dailySessions: (fields[2] as Map)?.cast<String, int>(),
-      dailyFocusTime: (fields[3] as Map)?.cast<String, int>(),
-      longestStreak: fields[4] as int,
-      currentStreak: fields[5] as int,
-      lastSessionDate: fields[6] as DateTime?,
-    );
+    return PomodoroStatistics()
+      .._totalSessions = fields[0] as int
+      .._totalFocusTime = fields[1] as int
+      .._dailySessions = (fields[2] as Map).cast<String, int>()
+      .._dailyFocusTime = (fields[3] as Map).cast<String, int>()
+      .._longestStreak = fields[4] as int
+      .._currentStreak = fields[5] as int
+      .._lastSessionDate = fields[6] as DateTime?;
   }
 
   @override

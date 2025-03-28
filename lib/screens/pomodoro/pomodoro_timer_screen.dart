@@ -11,9 +11,6 @@ import '../../models/pomodoro_session.dart';
 import '../../models/task.dart';
 import '../ambient/ambient_screen.dart';
 
-/// The main screen for the Pomodoro timer.
-/// This follows the Dependency Inversion Principle by depending on abstractions
-/// rather than concrete implementations.
 class PomodoroTimerScreen extends StatefulWidget {
   final Task? task;
   final int? customDuration;

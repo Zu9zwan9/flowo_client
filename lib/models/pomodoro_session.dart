@@ -79,11 +79,43 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
     int? customDuration,
     int breakDuration = 5 * 60 * 1000, // 5 minutes in milliseconds
     int targetPomodoros = 1,
+    int? focusDuration,
   }) {
+    // If customDuration is provided, use it for a single session
+    if (customDuration != null) {
+      return PomodoroSession(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        taskId: task.id,
+        totalDuration: customDuration,
+        breakDuration: breakDuration,
+        targetPomodoros: targetPomodoros,
+      );
+    }
+
+    // If focusDuration is provided, calculate the number of sessions needed
+    if (focusDuration != null && focusDuration > 0) {
+      // Calculate how many full focus sessions are needed
+      int sessionsNeeded = (task.estimatedTime / focusDuration).ceil();
+
+      // Use the calculated number of sessions or the provided targetPomodoros, whichever is larger
+      int calculatedTargetPomodoros = sessionsNeeded > 0 ? sessionsNeeded : 1;
+      int finalTargetPomodoros = calculatedTargetPomodoros > targetPomodoros ? 
+                                 calculatedTargetPomodoros : targetPomodoros;
+
+      return PomodoroSession(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        taskId: task.id,
+        totalDuration: focusDuration,
+        breakDuration: breakDuration,
+        targetPomodoros: finalTargetPomodoros,
+      );
+    }
+
+    // Default case: use task's estimated time for a single session
     return PomodoroSession(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       taskId: task.id,
-      totalDuration: customDuration ?? task.estimatedTime,
+      totalDuration: task.estimatedTime,
       breakDuration: breakDuration,
       targetPomodoros: targetPomodoros,
     );
@@ -133,7 +165,8 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
           state = PomodoroState.completed;
           endTime = DateTime.now();
         } else {
-          remainingBreakDuration = breakDuration; // Reset break duration when transitioning to break
+          remainingBreakDuration =
+              breakDuration; // Reset break duration when transitioning to break
           state = PomodoroState.breakTime;
         }
       }
@@ -165,7 +198,8 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
         state = PomodoroState.completed;
         endTime = DateTime.now();
       } else {
-        remainingBreakDuration = breakDuration; // Reset break duration when transitioning to break
+        remainingBreakDuration =
+            breakDuration; // Reset break duration when transitioning to break
         state = PomodoroState.breakTime;
       }
       notifyListeners();

@@ -64,6 +64,7 @@ class PomodoroTimerService extends ChangeNotifier {
             isLongBreakDue
                 ? _settings.longBreakDuration
                 : _settings.shortBreakDuration,
+        focusDuration: _settings.focusDuration,
       );
     } else if (customDuration != null) {
       _currentSession = PomodoroSession.custom(
@@ -104,11 +105,19 @@ class PomodoroTimerService extends ChangeNotifier {
     _sessionStartTime = DateTime.now();
 
     _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      PomodoroState previousState = _currentSession!.state;
       _currentSession!.tick(100);
+      PomodoroState currentState = _currentSession!.state;
 
-      if (_currentSession!.state == PomodoroState.completed) {
+      // Handle state transitions
+      if (currentState == PomodoroState.completed) {
         _timer?.cancel();
         _updateStatistics();
+      } else if (previousState == PomodoroState.running &&
+          currentState == PomodoroState.breakTime) {
+        // Ensure break duration is properly set when transitioning to break state
+        _currentSession!.remainingBreakDuration =
+            _currentSession!.breakDuration;
       }
     });
 
@@ -166,6 +175,9 @@ class PomodoroTimerService extends ChangeNotifier {
     // If the session is now completed, update statistics
     if (_currentSession!.state == PomodoroState.completed) {
       _updateStatistics();
+    } else if (_currentSession!.state == PomodoroState.breakTime) {
+      // Ensure break duration is properly set when transitioning to break state
+      _currentSession!.remainingBreakDuration = _currentSession!.breakDuration;
     }
 
     notifyListeners();
