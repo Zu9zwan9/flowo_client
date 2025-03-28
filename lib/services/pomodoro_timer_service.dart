@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 import '../models/pomodoro_session.dart';
+import '../models/pomodoro_settings.dart';
 import '../models/task.dart';
 
 /// A service class that manages the Pomodoro timer logic.
@@ -16,18 +17,21 @@ class PomodoroTimerService extends ChangeNotifier {
   DateTime? _pausedAt;
 
   // Settings
-  final int _defaultFocusDuration =
-      25 * 60 * 1000; // 25 minutes in milliseconds
-  final int _defaultShortBreakDuration =
-      5 * 60 * 1000; // 5 minutes in milliseconds
-  final int _defaultLongBreakDuration =
-      15 * 60 * 1000; // 15 minutes in milliseconds
-  final int _sessionsBeforeLongBreak = 4;
+  final PomodoroSettings _settings;
 
   // Statistics
   int _completedSessions = 0;
   int _totalFocusTime = 0;
   DateTime? _sessionStartTime;
+
+  // Constructor
+  PomodoroTimerService({required PomodoroSettings settings})
+    : _settings = settings {
+    // Listen for settings changes
+    _settings.addListener(() {
+      notifyListeners();
+    });
+  }
 
   // Getters
   PomodoroSession? get currentSession => _currentSession;
@@ -39,7 +43,7 @@ class PomodoroTimerService extends ChangeNotifier {
   int get completedSessions => _completedSessions;
   int get totalFocusTime => _totalFocusTime;
   bool get isLongBreakDue =>
-      _completedSessions % _sessionsBeforeLongBreak == 0 &&
+      _completedSessions % _settings.sessionsBeforeLongBreak == 0 &&
       _completedSessions > 0;
 
   // Initialize a new session
@@ -58,24 +62,24 @@ class PomodoroTimerService extends ChangeNotifier {
         customDuration: customDuration,
         breakDuration:
             isLongBreakDue
-                ? _defaultLongBreakDuration
-                : _defaultShortBreakDuration,
+                ? _settings.longBreakDuration
+                : _settings.shortBreakDuration,
       );
     } else if (customDuration != null) {
       _currentSession = PomodoroSession.custom(
         duration: customDuration,
         breakDuration:
             isLongBreakDue
-                ? _defaultLongBreakDuration
-                : _defaultShortBreakDuration,
+                ? _settings.longBreakDuration
+                : _settings.shortBreakDuration,
       );
     } else {
       _currentSession = PomodoroSession.custom(
-        duration: _defaultFocusDuration,
+        duration: _settings.focusDuration,
         breakDuration:
             isLongBreakDue
-                ? _defaultLongBreakDuration
-                : _defaultShortBreakDuration,
+                ? _settings.longBreakDuration
+                : _settings.shortBreakDuration,
       );
     }
 
@@ -150,6 +154,28 @@ class PomodoroTimerService extends ChangeNotifier {
     _currentSession!.completeEarly();
     _updateStatistics();
 
+    notifyListeners();
+  }
+
+  // Skip the current work session and move to break
+  void skipToBreak() {
+    if (_currentSession == null) return;
+
+    _currentSession!.skipToBreak();
+
+    // If the session is now completed, update statistics
+    if (_currentSession!.state == PomodoroState.completed) {
+      _updateStatistics();
+    }
+
+    notifyListeners();
+  }
+
+  // Skip the current break and start a new work session
+  void skipBreak() {
+    if (_currentSession == null) return;
+
+    _currentSession!.skipBreak();
     notifyListeners();
   }
 

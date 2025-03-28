@@ -154,6 +154,32 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
     notifyListeners();
   }
 
+  // Skip the current work session and move to break
+  void skipToBreak() {
+    if (state == PomodoroState.running) {
+      remainingDuration = 0;
+      completedPomodoros++;
+
+      if (completedPomodoros >= targetPomodoros) {
+        state = PomodoroState.completed;
+        endTime = DateTime.now();
+      } else {
+        state = PomodoroState.breakTime;
+      }
+      notifyListeners();
+    }
+  }
+
+  // Skip the current break and start a new work session
+  void skipBreak() {
+    if (state == PomodoroState.breakTime) {
+      remainingBreakDuration = 0;
+      remainingDuration = totalDuration;
+      state = PomodoroState.running;
+      notifyListeners();
+    }
+  }
+
   double get progress {
     return 1.0 - (remainingDuration / totalDuration);
   }

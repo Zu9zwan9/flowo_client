@@ -13,8 +13,8 @@ class TaskSelectionScreen extends StatefulWidget {
 
 class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
   Task? _selectedTask;
+  Task? _selectedSubtask;
   int _customDuration = 25 * 60 * 1000; // Default 25 minutes
-  bool _useCustomDuration = false;
 
   @override
   Widget build(BuildContext context) {
@@ -118,52 +118,71 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
 
               const SizedBox(height: 16),
 
-              // Duration selection
-              Row(
-                children: [
-                  CupertinoSwitch(
-                    value: _useCustomDuration,
-                    onChanged: (value) {
-                      setState(() {
-                        _useCustomDuration = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Use custom duration',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-
-              if (_useCustomDuration) ...[
+              // Subtasks selection (only shown when a task is selected)
+              if (_selectedTask != null &&
+                  _selectedTask!.subtasks.isNotEmpty) ...[
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Text('Duration: '),
-                    const SizedBox(width: 8),
-                    Text(
-                      _formatTime(_customDuration),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ],
+                const Text(
+                  'Select a subtask (optional):',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: CupertinoSlider(
-                    min: 5 * 60 * 1000, // 5 minutes
-                    max: 60 * 60 * 1000, // 60 minutes
-                    divisions: 55,
-                    value: _customDuration.toDouble(),
-                    onChanged: (value) {
-                      setState(() {
-                        _customDuration = value.toInt();
-                      });
+                Container(
+                  height: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: CupertinoColors.systemGrey4),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListView.builder(
+                    itemCount: _selectedTask!.subtasks.length,
+                    itemBuilder: (context, index) {
+                      final subtask = _selectedTask!.subtasks[index];
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedSubtask =
+                                _selectedSubtask?.id == subtask.id
+                                    ? null
+                                    : subtask;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                                _selectedSubtask?.id == subtask.id
+                                    ? CupertinoColors.activeBlue.withOpacity(
+                                      0.1,
+                                    )
+                                    : CupertinoColors.systemBackground,
+                            border: Border(
+                              bottom: BorderSide(
+                                color: CupertinoColors.systemGrey4,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _selectedSubtask?.id == subtask.id
+                                    ? CupertinoIcons.checkmark_circle_fill
+                                    : CupertinoIcons.circle,
+                                color:
+                                    _selectedSubtask?.id == subtask.id
+                                        ? CupertinoColors.activeBlue
+                                        : CupertinoColors.systemGrey,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  subtask.title,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -176,18 +195,18 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
                 width: double.infinity,
                 child: CupertinoButton.filled(
                   onPressed:
-                      _selectedTask != null || _useCustomDuration
+                      _selectedTask != null
                           ? () {
+                            // If a subtask is selected, use that instead of the main task
+                            final taskToUse = _selectedSubtask ?? _selectedTask;
                             Navigator.push(
                               context,
                               CupertinoPageRoute(
                                 builder:
                                     (context) => PomodoroScreen(
-                                      task: _selectedTask,
+                                      task: taskToUse,
                                       customDuration:
-                                          _useCustomDuration
-                                              ? _customDuration
-                                              : null,
+                                          null, // No more custom duration option
                                     ),
                               ),
                             );
