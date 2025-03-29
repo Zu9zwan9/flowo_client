@@ -6,13 +6,17 @@ import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient_service.dart';
 import 'package:flowo_client/services/analytics_service.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
+import 'package:flowo_client/services/server_api_client.dart';
 import 'package:flowo_client/services/web_theme_bridge.dart';
+import 'package:flowo_client/services/web_theme_bridgeder/path_provider.dart';
+import 'package:flowo_client/utils/ai_model/server_task_breakdown_api.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_localizations/flutter_localizationsations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -183,12 +187,21 @@ void main() async {
     );
   }
 
-  final taskManager = TaskManager(
+  // Create server API client
+  final serverApiClient = ServerApiClient(
+    baseUrl: 'http://localhost:8000', // Replace with your server URL
+    apiKey: 'your-api-key', // Replace with your API key
+  );
+
+  // Create server task breakdown API
+  final serverTaskBreakdownAPI = ServerTaskBreakdownAPI(serverApiClient);
+
+  // Create task manager with server implementations
+  final taskManager = ServerTaskManager(
     daysDB: daysDB,
     tasksDB: tasksDB,
     userSettings: selectedProfile,
-    huggingFaceApiKey:
-        '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', // Default API key
+    serverTaskBreakdownAPI: serverTaskBreakdownAPI,
   );
 
   appLogger.info('Hive initialized and task boxes opened', 'App');

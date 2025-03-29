@@ -3,8 +3,7 @@ import 'dart:developer';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/user_settings.dart';
-import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
-import 'package:flowo_client/utils/ai_model/task_estimator_api.dart';
+import 'package:flowo_client/utils/ai_model/server_task_breakdown_api.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flowo_client/utils/scheduler.dart';
 import 'package:flowo_client/utils/task_urgency_calculator.dart';
@@ -20,8 +19,7 @@ import '../models/task.dart';
 class TaskManager {
   final Scheduler scheduler;
   final TaskUrgencyCalculator taskUrgencyCalculator;
-  final TaskBreakdownAPI taskBreakdownAPI;
-  final TaskEstimatorAPI taskEstimatorAPI;
+  final ServerTaskBreakdownAPI taskBreakdownAPI;
   UserSettings userSettings;
   final Box<Day> daysDB;
   final Box<Task> tasksDB;
@@ -30,15 +28,9 @@ class TaskManager {
     required this.daysDB,
     required this.tasksDB,
     required this.userSettings,
-    String? huggingFaceApiKey,
+    required this.taskBreakdownAPI,
   }) : scheduler = Scheduler(daysDB, tasksDB, userSettings),
-       taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
-       taskBreakdownAPI = TaskBreakdownAPI(
-         apiKey: huggingFaceApiKey ?? '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',
-       ),
-       taskEstimatorAPI = TaskEstimatorAPI(
-         apiKey: huggingFaceApiKey ?? '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',
-       );
+       taskUrgencyCalculator = TaskUrgencyCalculator(daysDB);
 
   void updateUserSettings(UserSettings userSettings) {
     logInfo('Updating TaskManager user settings');
