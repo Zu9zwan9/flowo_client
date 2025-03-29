@@ -1,5 +1,7 @@
 import 'package:flowo_client/models/app_theme.dart'; // Import the shared AppTheme
+import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 class ThemeNotifier extends ChangeNotifier {
@@ -18,9 +20,23 @@ class ThemeNotifier extends ChangeNotifier {
   // Save reference to override brightness for system or custom theme modes
   Brightness? _brightnessOverride;
 
-  ThemeNotifier() {
+  // Web theme bridge for system theme detection on web
+  final WebThemeBridge? webThemeBridge;
+
+  ThemeNotifier({this.webThemeBridge}) {
     // Initialize with system theme by default
     setThemeMode(AppTheme.system);
+
+    // Listen for system theme changes on web
+    if (kIsWeb && webThemeBridge != null) {
+      webThemeBridge!.listenForThemeChanges((brightness) {
+        if (_currentThemeMode == AppTheme.system &&
+            _brightnessOverride == null) {
+          _applyTheme(brightness, isADHD: false, isCustom: false);
+          notifyListeners();
+        }
+      });
+    }
   }
 
   CupertinoThemeData get currentTheme => _cupertinoTheme;
@@ -119,21 +135,24 @@ class ThemeNotifier extends ChangeNotifier {
         final brightnessToUse = currentBrightness;
         _applyTheme(brightnessToUse, isADHD: false, isCustom: false);
 
-        // Listen for platform brightness changes
-        WidgetsBinding
-            .instance
-            .platformDispatcher
-            .onPlatformBrightnessChanged = () {
-          if (_currentThemeMode == AppTheme.system &&
-              _brightnessOverride == null) {
-            _applyTheme(
-              WidgetsBinding.instance.platformDispatcher.platformBrightness,
-              isADHD: false,
-              isCustom: false,
-            );
-            notifyListeners();
-          }
-        };
+        // For web, we already set up the listener in the constructor
+        // For non-web platforms, use the standard platform brightness listener
+        if (!kIsWeb || webThemeBridge == null) {
+          WidgetsBinding
+              .instance
+              .platformDispatcher
+              .onPlatformBrightnessChanged = () {
+            if (_currentThemeMode == AppTheme.system &&
+                _brightnessOverride == null) {
+              _applyTheme(
+                WidgetsBinding.instance.platformDispatcher.platformBrightness,
+                isADHD: false,
+                isCustom: false,
+              );
+              notifyListeners();
+            }
+          };
+        }
         break;
     }
 

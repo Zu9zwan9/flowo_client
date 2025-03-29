@@ -6,6 +6,7 @@ import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient_service.dart';
 import 'package:flowo_client/services/analytics_service.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
+import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -199,6 +200,9 @@ void main() async {
 
   appLogger.info('Hive initialized and task boxes opened', 'App');
 
+  // Create web theme bridge for system theme detection
+  final webThemeBridge = WebThemeBridge();
+
   runApp(
     MultiProvider(
       providers: [
@@ -207,8 +211,11 @@ void main() async {
         Provider<Box<UserProfile>>.value(value: userProfiles),
         Provider<Box<PomodoroSession>>.value(value: pomodoroSessionsDB),
         Provider<Box<AmbientScene>>.value(value: ambientScenesDB),
+        Provider<WebThemeBridge>.value(value: webThemeBridge),
         ChangeNotifierProvider<AmbientService>.value(value: ambientService),
-        ChangeNotifierProvider(create: (_) => ThemeNotifier()),
+        ChangeNotifierProvider(
+          create: (context) => ThemeNotifier(webThemeBridge: webThemeBridge),
+        ),
         BlocProvider<CalendarCubit>(
           create: (context) => CalendarCubit(tasksDB, daysDB, taskManager),
         ),
@@ -230,6 +237,21 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     appLogger.info('Building MyApp', 'App');
+
+    // Initialize web-specific features
+    if (kIsWeb) {
+      try {
+        final webThemeBridge = Provider.of<WebThemeBridge>(
+          context,
+          listen: false,
+        );
+        // Register web theme with JavaScript
+        webThemeBridge.callJavaScriptFunction('flutterThemeReady');
+        appLogger.info('Web theme bridge initialized', 'App');
+      } catch (e) {
+        appLogger.error('Failed to initialize web theme bridge: $e', 'App');
+      }
+    }
 
     // Create onboarding service
     final userProfileBox = Provider.of<Box<UserProfile>>(context);
