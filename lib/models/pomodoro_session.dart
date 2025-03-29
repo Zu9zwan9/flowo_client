@@ -99,8 +99,10 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
 
       // Use the calculated number of sessions or the provided targetPomodoros, whichever is larger
       int calculatedTargetPomodoros = sessionsNeeded > 0 ? sessionsNeeded : 1;
-      int finalTargetPomodoros = calculatedTargetPomodoros > targetPomodoros ? 
-                                 calculatedTargetPomodoros : targetPomodoros;
+      int finalTargetPomodoros =
+          calculatedTargetPomodoros > targetPomodoros
+              ? calculatedTargetPomodoros
+              : targetPomodoros;
 
       return PomodoroSession(
         id: DateTime.now().millisecondsSinceEpoch.toString(),

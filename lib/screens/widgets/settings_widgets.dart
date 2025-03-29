@@ -598,11 +598,7 @@ class SettingsSliderItem extends StatefulWidget {
     this.subtitleStyle,
     this.semanticsLabel,
     this.padding = const EdgeInsets.only(left: 0, right: 0, top: 12.0),
-    this.sliderPadding = const EdgeInsets.only(
-      left: 0,
-      right: 0,
-      bottom: 12.0,
-    ),
+    this.sliderPadding = const EdgeInsets.only(left: 0, right: 0, bottom: 12.0),
     this.valueBuilder,
   });
 

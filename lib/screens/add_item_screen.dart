@@ -5,7 +5,6 @@ import 'package:flutter/services.dart'; // Added for HapticFeedback
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
-import '../design/cupertino_form_theme.dart';
 import 'habit/add_habit_page.dart';
 import 'task/add_task_page.dart';
 
@@ -79,16 +78,17 @@ class _AddItemScreenState extends State<AddItemScreen>
                 duration: const Duration(milliseconds: 250),
                 switchInCurve: Curves.easeInOut,
                 switchOutCurve: Curves.easeInOut,
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.05, 0),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                ),
+                transitionBuilder:
+                    (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.05, 0),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    ),
                 child: _buildTabContent(_tabController.index),
               ),
             ),
@@ -157,9 +157,10 @@ class _AddItemScreenState extends State<AddItemScreen>
           duration: const Duration(milliseconds: 200),
           height: double.infinity,
           decoration: BoxDecoration(
-            color: isSelected
-                ? CupertinoColors.systemBackground.resolveFrom(context)
-                : Colors.transparent,
+            color:
+                isSelected
+                    ? CupertinoColors.systemBackground.resolveFrom(context)
+                    : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
           ),
           margin: const EdgeInsets.all(2),
@@ -170,20 +171,23 @@ class _AddItemScreenState extends State<AddItemScreen>
                 Icon(
                   icon,
                   size: 18,
-                  color: isSelected
-                      ? primaryColor
-                      : CupertinoColors.systemGrey.resolveFrom(context),
+                  color:
+                      isSelected
+                          ? primaryColor
+                          : CupertinoColors.systemGrey.resolveFrom(context),
                   semanticLabel: text,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   text,
                   style: TextStyle(
-                    color: isSelected
-                        ? primaryColor
-                        : CupertinoColors.systemGrey.resolveFrom(context),
+                    color:
+                        isSelected
+                            ? primaryColor
+                            : CupertinoColors.systemGrey.resolveFrom(context),
                     fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                   semanticsLabel: '$text tab',
                 ),

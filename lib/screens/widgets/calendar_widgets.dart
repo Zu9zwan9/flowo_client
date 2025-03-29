@@ -453,9 +453,13 @@ class EmptyStateView extends StatelessWidget {
   Widget build(BuildContext context) {
     final brightness = CupertinoTheme.of(context).brightness;
     final textColor =
-    brightness == Brightness.dark ? CupertinoColors.white : CupertinoColors.black;
+        brightness == Brightness.dark
+            ? CupertinoColors.white
+            : CupertinoColors.black;
     final secondaryTextColor =
-    brightness == Brightness.dark ? CupertinoColors.systemGrey : CupertinoColors.systemGrey;
+        brightness == Brightness.dark
+            ? CupertinoColors.systemGrey
+            : CupertinoColors.systemGrey;
 
     return Padding(
       padding: padding,
