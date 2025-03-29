@@ -24,7 +24,8 @@ class TaskListScreen extends StatefulWidget {
   State<TaskListScreen> createState() => _TaskListScreenState();
 }
 
-class _TaskListScreenState extends State<TaskListScreen> {
+class _TaskListScreenState extends State<TaskListScreen>
+    with WidgetsBindingObserver {
   final TextEditingController _searchController = TextEditingController();
   final Debouncer _searchDebouncer = Debouncer(Duration(milliseconds: 300));
   TaskFilterType _selectedFilter = TaskFilterType.all;
@@ -43,6 +44,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _scrollController = ScrollController();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   void _onSearchChanged() {
@@ -57,11 +59,27 @@ class _TaskListScreenState extends State<TaskListScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Clear cache when dependencies change (e.g., when screen becomes visible again)
+    _clearCache();
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     _searchDebouncer.dispose();
     _scrollController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Clear cache when app is resumed
+      _clearCache();
+    }
   }
 
   TaskFilterType _getTaskType(Task task) {
@@ -118,48 +136,58 @@ class _TaskListScreenState extends State<TaskListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Stack(
-        children: [
-          Column(
-            children: [
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0,
-                  vertical: 8.0,
-                ),
-                child: TaskSearchBar(controller: _searchController),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: _buildFilterTabs(context),
-              ),
-              const SizedBox(height: 12),
-              Expanded(child: _buildTaskList(context)),
-            ],
-          ),
-          Positioned(
-            bottom: 16,
-            right: 16,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    return BlocListener<TaskManagerCubit, TaskManagerState>(
+      listenWhen: (previous, current) {
+        // Listen only when the tasks list changes
+        return previous.tasks.length != current.tasks.length;
+      },
+      listener: (context, state) {
+        // Clear cache when tasks are added or removed
+        _clearCache();
+      },
+      child: SafeArea(
+        child: Stack(
+          children: [
+            Column(
               children: [
-                TaskActionButton(
-                  onPressed: () => _showAddTaskDialog(context),
-                  icon: CupertinoIcons.add,
-                  label: 'Add Task',
-                ),
                 const SizedBox(height: 8),
-                TaskActionButton(
-                  onPressed: () => _showScheduleDialog(context),
-                  icon: CupertinoIcons.calendar,
-                  label: 'Schedule',
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 8.0,
+                  ),
+                  child: TaskSearchBar(controller: _searchController),
                 ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: _buildFilterTabs(context),
+                ),
+                const SizedBox(height: 12),
+                Expanded(child: _buildTaskList(context)),
               ],
             ),
-          ),
-        ],
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TaskActionButton(
+                    onPressed: () => _showAddTaskDialog(context),
+                    icon: CupertinoIcons.add,
+                    label: 'Add Task',
+                  ),
+                  const SizedBox(height: 8),
+                  TaskActionButton(
+                    onPressed: () => _showScheduleDialog(context),
+                    icon: CupertinoIcons.calendar,
+                    label: 'Schedule',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -245,7 +273,8 @@ class _TaskListScreenState extends State<TaskListScreen> {
     final Map<String, List<Task>> grouped = {};
 
     for (final task in tasks) {
-      if (task.parentTaskId == null && task.category.name != 'Free Time Manager') {
+      if (task.parentTaskId == null &&
+          task.category.name != 'Free Time Manager') {
         grouped.putIfAbsent(task.category.name, () => []).add(task);
       }
     }

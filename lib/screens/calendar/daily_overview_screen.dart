@@ -323,7 +323,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     switch (type) {
       case ScheduledTaskType.sleep:
         return {
-          'icon': CupertinoIcons.moon_fill,
+          'icon': CupertinoIcons.moon_zzz_fill,
           'label': 'Sleep',
           'color': CupertinoColors.systemIndigo,
         };

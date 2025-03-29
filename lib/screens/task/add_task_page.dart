@@ -879,7 +879,7 @@ class _AddTaskPageState extends State<AddTaskPage>
 
     // Log and navigate
     logInfo('Saved Task: ${_titleController.text}');
-    Navigator.pop(
+    Navigator.pushReplacement(
       context,
       CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),
     );
