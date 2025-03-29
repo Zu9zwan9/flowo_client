@@ -13,6 +13,7 @@ void main() {
     test('makeRequest returns a valid response', () async {
       final response = await api.makeRequest(
         'Write a research paper on climate change',
+        totalTime: 2,
       );
 
       // Print the raw response for debugging

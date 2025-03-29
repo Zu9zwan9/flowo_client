@@ -61,10 +61,11 @@ void main() {
     test('breakdownTask returns subtasks', () async {
       // This test would normally make an API call, but we're just testing the structure
       final task = "Write a research paper";
+      final totalTime = "120"; // 2 hours in minutes
 
       // We're not actually calling the API in this test
       // Just verifying the method exists and returns a List<String>
-      expect(api.breakdownTask(task), isA<Future<List<String>>>());
+      expect(api.breakdownTask(task, totalTime), isA<Future<List<String>>>());
     });
   });
 }
