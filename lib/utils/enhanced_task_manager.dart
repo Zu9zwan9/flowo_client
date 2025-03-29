@@ -1,8 +1,11 @@
 import 'package:flowo_client/models/task.dart';
+import 'package:flowo_client/services/server_api_client.dart';
 import 'package:flowo_client/services/task_time_estimator.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/material.dart';
+
+import 'ai_model/server_task_breakdown_api.dart';
 
 class EnhancedTaskManager extends TaskManager {
   /// The TaskTimeEstimator used for AI-based time estimation
@@ -15,7 +18,11 @@ class EnhancedTaskManager extends TaskManager {
   }) : _taskTimeEstimator = TaskTimeEstimator(
          AITimeEstimationStrategy(apiKey: huggingFaceApiKey),
        ),
-       super(huggingFaceApiKey: huggingFaceApiKey);
+       super(
+         taskBreakdownAPI: ServerTaskBreakdownAPI(
+           huggingFaceApiKey as ServerApiClient,
+         ),
+       );
 
   /// Breaks down a task into subtasks using AI, estimates time for each subtask using AI,
   /// and schedules them.
