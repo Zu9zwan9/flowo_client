@@ -1,13 +1,14 @@
-import 'dart:io';
-
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/design/cupertino_form_theme.dart';
 import 'package:flowo_client/design/cupertino_form_widgets.dart';
 import 'package:flowo_client/screens/home_screen.dart';
+import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../models/user_settings.dart';
 
 class EventFormScreen extends StatefulWidget {
   final DateTime? selectedDate;
@@ -27,7 +28,7 @@ class EventFormScreenState extends State<EventFormScreen>
 
   late DateTime _startTime;
   late DateTime _endTime;
-  File? _image;
+  late UserSettings _userSettings;
   int? _selectedColor;
   int _travelingTime = 0;
   final List<Color> _colorOptions = [
@@ -49,6 +50,7 @@ class EventFormScreenState extends State<EventFormScreen>
     _startTime = widget.selectedDate ?? DateTime.now();
     _endTime = widget.selectedDate ?? DateTime.now();
     _endTime.add(const Duration(hours: 1));
+    _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -95,7 +97,7 @@ class EventFormScreenState extends State<EventFormScreen>
                       context: context,
                       controller: _notesController,
                       placeholder: 'Notes',
-                      maxLines: 3,
+                      maxLines: 5,
                     ),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
                     CupertinoFormWidgets.textField(
@@ -104,10 +106,32 @@ class EventFormScreenState extends State<EventFormScreen>
                       placeholder: 'Location',
                     ),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.imagePicker(
+                    CupertinoFormWidgets.selectionButton(
                       context: context,
-                      image: _image,
-                      onPickImage: _pickImage,
+                      label: 'Starts',
+                      value: DateTimeFormatter.formatDateTime(
+                        _startTime,
+                        dateFormat: _userSettings.dateFormat,
+                        monthFormat: _userSettings.monthFormat,
+                        is24HourFormat: _userSettings.is24HourFormat,
+                      ),
+                      onTap: () => _showDateTimePicker(context, isStart: true),
+                      color: theme.primaryColor,
+                      icon: CupertinoIcons.calendar,
+                    ),
+                    SizedBox(height: CupertinoFormTheme.elementSpacing),
+                    CupertinoFormWidgets.selectionButton(
+                      context: context,
+                      label: 'Ends',
+                      value: DateTimeFormatter.formatDateTime(
+                        _endTime,
+                        dateFormat: _userSettings.dateFormat,
+                        monthFormat: _userSettings.monthFormat,
+                        is24HourFormat: _userSettings.is24HourFormat,
+                      ),
+                      onTap: () => _showDateTimePicker(context, isStart: false),
+                      color: theme.accentColor,
+                      icon: CupertinoIcons.calendar,
                     ),
                   ],
                 ),
@@ -161,54 +185,6 @@ class EventFormScreenState extends State<EventFormScreen>
                     ),
                   ],
                 ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
-                  context: context,
-                  title: 'Start',
-                  children: [
-                    CupertinoFormWidgets.selectionButton(
-                      context: context,
-                      label: 'Date',
-                      value: theme.formatDate(_startTime),
-                      onTap: () => _showDatePicker(context, isStart: true),
-                      color: theme.primaryColor,
-                      icon: CupertinoIcons.calendar,
-                    ),
-                    SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.selectionButton(
-                      context: context,
-                      label: 'Time',
-                      value: theme.formatTime(_startTime),
-                      onTap: () => _showTimePicker(context, isStart: true),
-                      color: theme.secondaryColor,
-                      icon: CupertinoIcons.time,
-                    ),
-                  ],
-                ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
-                  context: context,
-                  title: 'End',
-                  children: [
-                    CupertinoFormWidgets.selectionButton(
-                      context: context,
-                      label: 'Date',
-                      value: theme.formatDate(_endTime),
-                      onTap: () => _showDatePicker(context, isStart: false),
-                      color: theme.primaryColor,
-                      icon: CupertinoIcons.calendar,
-                    ),
-                    SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.selectionButton(
-                      context: context,
-                      label: 'Time',
-                      value: theme.formatTime(_endTime),
-                      onTap: () => _showTimePicker(context, isStart: false),
-                      color: theme.accentColor,
-                      icon: CupertinoIcons.time_solid,
-                    ),
-                  ],
-                ),
                 SizedBox(height: CupertinoFormTheme.largeSpacing),
                 ScaleTransition(
                   scale: _buttonScaleAnimation,
@@ -231,73 +207,64 @@ class EventFormScreenState extends State<EventFormScreen>
     );
   }
 
-  Future<void> _showDatePicker(
+  Future<void> _showDateTimePicker(
     BuildContext context, {
     required bool isStart,
   }) async {
-    final pickedDate = await CupertinoFormWidgets.showDatePicker(
+    final now = DateTime.now();
+    DateTime initialDateTime = isStart ? _startTime : _endTime;
+    if (initialDateTime.isBefore(now)) {
+      initialDateTime = now;
+    }
+
+    DateTime? selectedDateTime = initialDateTime;
+
+    final pickedDateTime = await showCupertinoModalPopup<DateTime>(
       context: context,
-      initialDate: isStart ? _startTime : _endTime,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context, selectedDateTime),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.dateAndTime,
+                    initialDateTime: initialDateTime,
+                    minimumDate: now,
+                    maximumDate: DateTime.now().add(const Duration(days: 730)),
+                    use24hFormat: true,
+                    onDateTimeChanged: (dateTime) {
+                      selectedDateTime = dateTime;
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
     );
-    if (pickedDate != null && mounted) {
+
+    if (pickedDateTime != null && mounted) {
       setState(() {
         if (isStart) {
-          _startTime = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            _startTime.hour,
-            _startTime.minute,
-          );
+          _startTime = pickedDateTime;
         } else {
-          _endTime = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            _endTime.hour,
-            _endTime.minute,
-          );
+          _endTime = pickedDateTime;
         }
       });
-    }
-  }
-
-  Future<void> _showTimePicker(
-    BuildContext context, {
-    required bool isStart,
-  }) async {
-    final pickedTime = await CupertinoFormWidgets.showTimePicker(
-      context: context,
-      initialTime: isStart ? _startTime : _endTime,
-    );
-    if (pickedTime != null && mounted) {
-      setState(() {
-        if (isStart) {
-          _startTime = DateTime(
-            _startTime.year,
-            _startTime.month,
-            _startTime.day,
-            pickedTime.hour,
-            pickedTime.minute,
-          );
-        } else {
-          _endTime = DateTime(
-            _endTime.year,
-            _endTime.month,
-            _endTime.day,
-            pickedTime.hour,
-            pickedTime.minute,
-          );
-        }
-      });
-    }
-  }
-
-  Future<void> _pickImage() async {
-    final image = await CupertinoFormWidgets.pickImage(context);
-    if (image != null && mounted) {
-      setState(() => _image = image);
-      logInfo('Image picked: ${image.path}');
     }
   }
 

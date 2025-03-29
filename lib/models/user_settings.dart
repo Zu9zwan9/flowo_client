@@ -31,6 +31,15 @@ class UserSettings extends HiveObject {
   @HiveField(7)
   NotificationType defaultNotificationType;
 
+  @HiveField(8)
+  String dateFormat; // "DD-MM-YYYY" or "MM-DD-YYYY"
+
+  @HiveField(9)
+  String monthFormat; // "numeric", "short", "full"
+
+  @HiveField(10)
+  bool is24HourFormat;
+
   UserSettings({
     required this.name,
     required this.minSession,
@@ -40,6 +49,9 @@ class UserSettings extends HiveObject {
     this.freeTime = const [],
     this.activeDays,
     this.defaultNotificationType = NotificationType.sound,
+    this.dateFormat = "DD-MM-YYYY",
+    this.monthFormat = "numeric",
+    this.is24HourFormat = true,
   }) {
     activeDays ??= {
       'Monday': true,

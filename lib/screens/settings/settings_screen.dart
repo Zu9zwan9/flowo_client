@@ -26,6 +26,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late List<TimeFrame> _mealTimes;
   late List<TimeFrame> _freeTimes;
   late Map<String, bool> _activeDays;
+  late String _dateFormat;
+  late String _monthFormat;
+  late bool _is24HourFormat;
 
   @override
   void initState() {
@@ -37,47 +40,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// Loads user settings from TaskManagerCubit and initializes state variables.
   void _loadSettings() {
-    final currentSettings =
-        context.read<TaskManagerCubit>().taskManager.userSettings;
+    final currentSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
     setState(() {
-      _sleepTime =
-          currentSettings.sleepTime.isNotEmpty
-              ? currentSettings.sleepTime.first.startTime
-              : const TimeOfDay(hour: 22, minute: 0);
-      _wakeupTime =
-          currentSettings.sleepTime.isNotEmpty
-              ? currentSettings.sleepTime.first.endTime
-              : const TimeOfDay(hour: 7, minute: 0);
-      _breakDuration =
-          (currentSettings.breakTime ?? 15 * 60 * 1000) ~/ (60 * 1000);
+      _sleepTime = currentSettings.sleepTime.isNotEmpty
+          ? currentSettings.sleepTime.first.startTime
+          : const TimeOfDay(hour: 22, minute: 0);
+      _wakeupTime = currentSettings.sleepTime.isNotEmpty
+          ? currentSettings.sleepTime.first.endTime
+          : const TimeOfDay(hour: 7, minute: 0);
+      _breakDuration = (currentSettings.breakTime ?? 15 * 60 * 1000) ~/ (60 * 1000);
       _minSessionDuration = currentSettings.minSession ~/ (60 * 1000);
       _mealTimes = List.from(
         currentSettings.mealBreaks.isNotEmpty
             ? currentSettings.mealBreaks
             : [
-              TimeFrame(
-                startTime: TimeOfDay(hour: 8, minute: 0),
-                endTime: TimeOfDay(hour: 8, minute: 30),
-              ),
-              TimeFrame(
-                startTime: TimeOfDay(hour: 13, minute: 0),
-                endTime: TimeOfDay(hour: 13, minute: 30),
-              ),
-              TimeFrame(
-                startTime: TimeOfDay(hour: 19, minute: 0),
-                endTime: TimeOfDay(hour: 19, minute: 30),
-              ),
-            ],
+          TimeFrame(
+            startTime: TimeOfDay(hour: 8, minute: 0),
+            endTime: TimeOfDay(hour: 8, minute: 30),
+          ),
+          TimeFrame(
+            startTime: TimeOfDay(hour: 13, minute: 0),
+            endTime: TimeOfDay(hour: 13, minute: 30),
+          ),
+          TimeFrame(
+            startTime: TimeOfDay(hour: 19, minute: 0),
+            endTime: TimeOfDay(hour: 19, minute: 30),
+          ),
+        ],
       );
       _freeTimes = List.from(
         currentSettings.freeTime.isNotEmpty
             ? currentSettings.freeTime
             : [
-              TimeFrame(
-                startTime: TimeOfDay(hour: 17, minute: 0),
-                endTime: TimeOfDay(hour: 18, minute: 30),
-              ),
-            ],
+          TimeFrame(
+            startTime: TimeOfDay(hour: 17, minute: 0),
+            endTime: TimeOfDay(hour: 18, minute: 30),
+          ),
+        ],
       );
       _activeDays = Map.from(
         currentSettings.activeDays ??
@@ -91,6 +90,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               'Sunday': true,
             },
       );
+      _dateFormat = currentSettings.dateFormat;
+      _monthFormat = currentSettings.monthFormat;
+      _is24HourFormat = currentSettings.is24HourFormat;
     });
   }
 
@@ -104,6 +106,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       mealBreaks: List.from(_mealTimes),
       freeTime: List.from(_freeTimes),
       activeDays: Map.from(_activeDays),
+      dateFormat: _dateFormat,
+      monthFormat: _monthFormat,
+      is24HourFormat: _is24HourFormat,
     );
 
     context.read<TaskManagerCubit>().updateUserSettings(userSettings);
@@ -111,18 +116,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showCupertinoDialog(
       context: context,
-      builder:
-          (dialogContext) => CupertinoAlertDialog(
-            title: const Text('Settings Saved'),
-            content: const Text('Your schedule preferences have been updated.'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(dialogContext),
-              ),
-            ],
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: const Text('Settings Saved'),
+        content: const Text('Your schedule preferences have been updated.'),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(dialogContext),
           ),
+        ],
+      ),
     );
   }
 
@@ -516,6 +520,103 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showDateFormatPicker(BuildContext context) {
+    final options = [
+      'DD-MM-YYYY (e.g., 29-03-2025)',
+      'MM-DD-YYYY (e.g., 03-29-2025)',
+    ];
+    final values = ['DD-MM-YYYY', 'MM-DD-YYYY'];
+    int selectedIndex = values.indexOf(_dateFormat);
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => Container(
+        height: 280,
+        color: CupertinoFormTheme(context).backgroundColor,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  CupertinoButton(
+                    child: const Text('Done'),
+                    onPressed: () {
+                      setState(() => _dateFormat = values[selectedIndex]);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoPicker(
+                itemExtent: 32.0,
+                scrollController: FixedExtentScrollController(initialItem: selectedIndex),
+                onSelectedItemChanged: (index) => selectedIndex = index,
+                children: options.map((option) => Center(child: Text(option))).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMonthFormatPicker(BuildContext context) {
+    final options = [
+      'Numeric (e.g., 03)',
+      'Short (e.g., Mar)',
+      'Full (e.g., March)',
+    ];
+    final values = ['numeric', 'short', 'full'];
+    int selectedIndex = values.indexOf(_monthFormat);
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => Container(
+        height: 280,
+        color: CupertinoFormTheme(context).backgroundColor,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  CupertinoButton(
+                    child: const Text('Done'),
+                    onPressed: () {
+                      setState(() => _monthFormat = values[selectedIndex]);
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: CupertinoPicker(
+                itemExtent: 32.0,
+                scrollController: FixedExtentScrollController(initialItem: selectedIndex),
+                onSelectedItemChanged: (index) => selectedIndex = index,
+                children: options.map((option) => Center(child: Text(option))).toList(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
@@ -818,6 +919,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       (value) => setState(() => _breakDuration = value.round()),
                   subtitle:
                       'The time you want to take for breaks between tasks',
+                ),
+              ],
+            ),
+
+            // Date & Time Format Section
+            SettingsSection(
+              title: 'Date & Time Format',
+              footerText: 'Customize how dates and times are displayed in the app.',
+              children: [
+                SettingsItem(
+                  label: 'Date Format',
+                  subtitle: 'Choose your preferred date format',
+                  trailing: Text(
+                    _dateFormat == 'DD-MM-YYYY' ? 'DD-MM-YYYY (e.g., 29-03-2025)' : 'MM-DD-YYYY (e.g., 03-29-2025)',
+                    style: const TextStyle(color: CupertinoColors.systemGrey),
+                  ),
+                  onTap: () => _showDateFormatPicker(context),
+                ),
+                const SizedBox(height: 16),
+                SettingsItem(
+                  label: 'Month Format',
+                  subtitle: 'Choose how months are displayed',
+                  trailing: Text(
+                    _monthFormat == 'numeric'
+                        ? 'Numeric (e.g., 03)'
+                        : _monthFormat == 'short'
+                        ? 'Short (e.g., Mar)'
+                        : 'Full (e.g., March)',
+                    style: const TextStyle(color: CupertinoColors.systemGrey),
+                  ),
+                  onTap: () => _showMonthFormatPicker(context),
+                ),
+                const SizedBox(height: 16),
+                SettingsToggleItem(
+                  label: '24-Hour Format',
+                  value: _is24HourFormat,
+                  onChanged: (value) => setState(() => _is24HourFormat = value),
+                  subtitle: 'Use 24-hour (e.g., 14:30) or 12-hour (e.g., 2:30 PM) format',
                 ),
               ],
             ),

@@ -4,11 +4,13 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../../models/scheduled_task.dart';
 import '../../models/scheduled_task_type.dart';
 import '../../models/task.dart';
 import '../../models/user_profile.dart';
+import '../../models/user_settings.dart';
 import '../../utils/formatter/date_time_formatter.dart';
 import 'calendar_screen.dart';
 
@@ -21,12 +23,14 @@ class DailyOverviewScreen extends StatefulWidget {
 
 class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   late DateTime _today;
+  late UserSettings _userSettings;
   String _greeting = '';
   String _userName = '';
 
   @override
   void initState() {
     super.initState();
+    _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
     _today = DateTime.now();
     _updateGreeting();
     _loadUserProfile();
@@ -353,8 +357,14 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     final task = calendarCubit.tasksDB.get(scheduledTask.parentTaskId);
     if (task == null) return const SizedBox.shrink();
 
-    final startTime = DateTimeFormatter.formatTime(scheduledTask.startTime);
-    final endTime = DateTimeFormatter.formatTime(scheduledTask.endTime);
+    final startTime = DateTimeFormatter.formatTime(
+      scheduledTask.startTime,
+      is24HourFormat: _userSettings.is24HourFormat,
+    );
+    final endTime = DateTimeFormatter.formatTime(
+      scheduledTask.endTime,
+      is24HourFormat: _userSettings.is24HourFormat,
+    );
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     // Check if this is a freetime task
@@ -556,7 +566,8 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
               children: [
                 const SizedBox(height: 8),
                 Text(
-                  '${DateTimeFormatter.formatTime(scheduledTask.startTime)} - ${DateTimeFormatter.formatTime(scheduledTask.endTime)}',
+                  '${DateTimeFormatter.formatTime(scheduledTask.startTime, is24HourFormat: _userSettings.is24HourFormat)}'
+                      ' - ${DateTimeFormatter.formatTime(scheduledTask.endTime, is24HourFormat: _userSettings.is24HourFormat)}',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,

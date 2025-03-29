@@ -10,6 +10,7 @@ import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../blocs/tasks_controller/task_manager_state.dart';
 import '../../models/scheduled_task.dart';
 import '../../models/task.dart';
+import '../../models/user_settings.dart';
 import '../habit/add_habit_page.dart';
 import '../task/add_task_page.dart';
 
@@ -29,6 +30,7 @@ class CalendarScreenState extends State<CalendarScreen> {
   bool _isRefreshing = false;
   bool _isLoading = false;
   String? _errorMessage;
+  late UserSettings _userSettings;
 
   // Store the Future to avoid unnecessary data fetching
   // This improves performance by preventing redundant database queries
@@ -40,6 +42,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _loadInitialData();
+    _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
   }
 
   Future<void> _loadInitialData() async {
@@ -177,7 +180,7 @@ class CalendarScreenState extends State<CalendarScreen> {
               children: [
                 const SizedBox(height: 8),
                 Text(
-                  '${DateTimeFormatter.formatTime(scheduledTask.startTime)} - ${DateTimeFormatter.formatTime(scheduledTask.endTime)}',
+                  '${DateTimeFormatter.formatTime(scheduledTask.startTime, is24HourFormat: _userSettings.is24HourFormat)} - ${DateTimeFormatter.formatTime(scheduledTask.endTime, is24HourFormat: _userSettings.is24HourFormat)}', 
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,

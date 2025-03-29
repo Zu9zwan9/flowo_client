@@ -1,4 +1,5 @@
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
+import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,8 +8,8 @@ import 'package:hive/hive.dart';
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../models/category.dart';
 import '../../models/task_form_data.dart';
+import '../../models/user_settings.dart';
 import '../../services/category_service.dart';
-import '../../utils/formatter/date_formatter.dart';
 import '../../utils/logger.dart';
 import '../home_screen.dart';
 
@@ -38,6 +39,8 @@ class _AddTaskPageState extends State<AddTaskPage>
   late final AnimationController _animationController;
   late final Animation<double> _buttonScaleAnimation;
 
+  late UserSettings _userSettings;
+
   // Available task options
   String _selectedCategory = '';
   List<String> _categoryOptions = [];
@@ -56,6 +59,8 @@ class _AddTaskPageState extends State<AddTaskPage>
   @override
   void initState() {
     super.initState();
+
+    _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
 
     // Open Hive box for categories
     _categoriesBox = Hive.box<List<dynamic>>('categories_box');
@@ -144,8 +149,11 @@ class _AddTaskPageState extends State<AddTaskPage>
                   children: [
                     form.selectionButton(
                       label: 'Date & Time',
-                      value: DateFormatter.formatDateTime(
+                      value: DateTimeFormatter.formatDateTime(
                         _formData.selectedDateTime,
+                        dateFormat: _userSettings.dateFormat,
+                        monthFormat: _userSettings.monthFormat,
+                        is24HourFormat: _userSettings.is24HourFormat,
                       ),
                       onTap: () => _showDateTimePicker(context),
                       icon: CupertinoIcons.calendar,
