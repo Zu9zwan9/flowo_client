@@ -1,12 +1,13 @@
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
-import '../../design/cupertino_form_theme.dart';
 import '../../models/category.dart';
 import '../../models/task_form_data.dart';
+import '../../services/category_service.dart';
 import '../../utils/formatter/date_formatter.dart';
 import '../../utils/logger.dart';
 import '../home_screen.dart';
@@ -38,12 +39,9 @@ class _AddTaskPageState extends State<AddTaskPage>
   late final Animation<double> _buttonScaleAnimation;
 
   // Available task options
-  late final List<String> _categoryOptions = [
-    'Brainstorm',
-    'Design',
-    'Workout',
-    'Add',
-  ];
+  String _selectedCategory = '';
+  List<String> _categoryOptions = [];
+  final CategoryService _categoryService = CategoryService();
 
   final List<Color> _colorOptions = [
     CupertinoColors.systemRed,
@@ -62,26 +60,11 @@ class _AddTaskPageState extends State<AddTaskPage>
     // Open Hive box for categories
     _categoriesBox = Hive.box<List<dynamic>>('categories_box');
 
-    // Load saved categories or use defaults
-    final savedCategories = _categoriesBox.get('task_categories');
-    _categoryOptions.clear();
-    if (savedCategories != null) {
-      _categoryOptions.addAll(List<String>.from(savedCategories));
-    } else {
-      // Add default categories if none are saved
-      _categoryOptions.addAll(['Brainstorm', 'Design', 'Workout']);
-    }
-
-    // Ensure "Add" is always the last option
-    if (!_categoryOptions.contains('Add')) {
-      _categoryOptions.add('Add');
-    }
-
     // Initialize form data
     _formData = TaskFormData(
       selectedDate: widget.selectedDate ?? DateTime.now(),
       selectedTime: widget.selectedDate ?? DateTime.now(),
-      category: _categoryOptions.first,
+      category: '',
       priority: 1,
       estimatedTime: 0,
     );
@@ -95,6 +78,18 @@ class _AddTaskPageState extends State<AddTaskPage>
     _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
+
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    final categories = await _categoryService.getCategories();
+    setState(() {
+      _categoryOptions = categories;
+      if (_categoryOptions.isNotEmpty && _selectedCategory.isEmpty) {
+        _selectedCategory = _categoryOptions[0];
+      }
+    });
   }
 
   @override
@@ -103,17 +98,6 @@ class _AddTaskPageState extends State<AddTaskPage>
     _notesController.dispose();
     _animationController.dispose();
     super.dispose();
-  }
-
-  // Save categories to Hive
-  void _saveCategories() {
-    // Remove the "Add" option before saving
-    final categoriesToSave = List<String>.from(_categoryOptions);
-    if (categoriesToSave.contains('Add')) {
-      categoriesToSave.remove('Add');
-    }
-    _categoriesBox.put('task_categories', categoriesToSave);
-    logInfo('Categories saved to Hive: $categoriesToSave');
   }
 
   @override
@@ -219,49 +203,6 @@ class _AddTaskPageState extends State<AddTaskPage>
                 // Category Section
                 form.sectionTitle('Category'),
                 Center(
-                  child: Container(
-                    margin: EdgeInsets.symmetric(
-                      horizontal: CupertinoFormTheme.smallSpacing,
-                      vertical: CupertinoFormTheme.smallSpacing / 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                          CupertinoTheme.of(context).brightness ==
-                                  Brightness.dark
-                              ? CupertinoColors.systemGrey6.darkColor
-                              : CupertinoColors.systemGrey6,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: CupertinoSegmentedControl(
-                      children: {
-                        for (var category in _categoryOptions)
-                          category: _buildCategoryOption(
-                            text: category,
-                            icon: _getCategoryIcon(category),
-                            isDarkMode:
-                                CupertinoTheme.of(context).brightness ==
-                                Brightness.dark,
-                          ),
-                      },
-                      groupValue: _formData.category,
-                      onValueChanged: _handleCategoryChange,
-                      borderColor: CupertinoColors.transparent,
-                      selectedColor:
-                          CupertinoTheme.of(context).brightness ==
-                                  Brightness.dark
-                              ? CupertinoColors.systemBackground.darkColor
-                              : CupertinoColors.white,
-                      unselectedColor: CupertinoColors.transparent,
-                      pressedColor: CupertinoTheme.of(
-                        context,
-                      ).primaryColor.withOpacity(0.1),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: CupertinoTaskForm.elementSpacing),
-
-                // Category Management Button
-                Center(
                   child: CupertinoButton(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -285,6 +226,7 @@ class _AddTaskPageState extends State<AddTaskPage>
                     ),
                   ),
                 ),
+                const SizedBox(height: CupertinoTaskForm.elementSpacing),
 
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing),
 
@@ -384,62 +326,6 @@ class _AddTaskPageState extends State<AddTaskPage>
   }
 
   // MARK: - Action Methods
-  Widget _buildCategoryOption({
-    required String text,
-    required IconData icon,
-    required bool isDarkMode,
-  }) {
-    final textColor =
-        isDarkMode
-            ? _formData.category == text
-                ? CupertinoColors.activeBlue
-                : CupertinoColors.white
-            : _formData.category == text
-            ? CupertinoTheme.of(context).primaryColor
-            : CupertinoColors.black;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 24, color: textColor),
-          const SizedBox(height: 4),
-          Flexible(
-            child: Text(
-              text,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: textColor,
-                fontWeight:
-                    _formData.category == text
-                        ? FontWeight.w600
-                        : FontWeight.normal,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Brainstorm':
-        return CupertinoIcons.lightbulb;
-      case 'Design':
-        return CupertinoIcons.pencil_outline;
-      case 'Workout':
-        return CupertinoIcons.heart;
-      case 'Add':
-        return CupertinoIcons.add;
-      default:
-        return CupertinoIcons.tag;
-    }
-  }
 
   void _saveTaskWithAnimation(BuildContext context) {
     // Play button animation
@@ -562,48 +448,167 @@ class _AddTaskPageState extends State<AddTaskPage>
     }
   }
 
-  void _handleCategoryChange(String value) {
-    if (value == 'Add') {
-      _showAddCategoryDialog(context);
-    } else {
-      setState(() => _formData.category = value);
-    }
-  }
+  void _showCategoryManagerDialog(BuildContext context) {
+    String tempSelectedCategory = _selectedCategory;
 
-  void _showAddCategoryDialog(BuildContext context) {
-    final controller = TextEditingController();
-    final form = CupertinoTaskForm(context);
-
-    showCupertinoDialog(
+    showCupertinoModalPopup(
       context: context,
       builder:
-          (context) => CupertinoAlertDialog(
-            title: const Text('Add Custom Category'),
-            content: Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: CupertinoTextField(
-                controller: controller,
-                placeholder: 'Category Name',
-                padding: const EdgeInsets.all(10),
-                decoration: form.inputDecoration,
-                style: form.inputTextStyle,
-                autofocus: true,
-              ),
-            ),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('Cancel'),
-                onPressed: () => Navigator.pop(context),
-              ),
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('Add'),
-                onPressed: () {
-                  _addNewCategory(controller.text.trim());
-                  Navigator.pop(context);
-                },
-              ),
-            ],
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => CupertinoActionSheet(
+                  title: const Text('Manage Categories'),
+                  message: const Text(
+                    'Select, add, edit, or delete categories',
+                  ),
+                  actions: [
+                    ...List.generate(_categoryOptions.length, (index) {
+                      final category = _categoryOptions[index];
+                      final isSelected = tempSelectedCategory == category;
+                      return CupertinoActionSheetAction(
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          setDialogState(() {
+                            tempSelectedCategory = category;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          color:
+                              isSelected
+                                  ? CupertinoTheme.of(
+                                    context,
+                                  ).primaryColor.withOpacity(0.1)
+                                  : CupertinoColors.transparent,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    _getCategoryIcon(category),
+                                    size: 16.0,
+                                    color:
+                                        isSelected
+                                            ? CupertinoTheme.of(
+                                              context,
+                                            ).primaryColor
+                                            : CupertinoColors.systemGrey,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    category,
+                                    style: TextStyle(
+                                      fontSize: 14.0,
+                                      color:
+                                          isSelected
+                                              ? CupertinoTheme.of(
+                                                context,
+                                              ).primaryColor
+                                              : CupertinoTheme.of(
+                                                    context,
+                                                  ).brightness ==
+                                                  Brightness.dark
+                                              ? CupertinoColors.white
+                                              : CupertinoColors.black,
+                                      fontWeight:
+                                          isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  CupertinoButton(
+                                    padding: EdgeInsets.zero,
+                                    child: const Icon(
+                                      CupertinoIcons.pencil,
+                                      size: 16.0,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _showEditCategoryDialog(
+                                        context,
+                                        category,
+                                        index,
+                                      );
+                                    },
+                                  ),
+                                  CupertinoButton(
+                                    padding: EdgeInsets.zero,
+                                    child: const Icon(
+                                      CupertinoIcons.delete,
+                                      size: 16.0,
+                                      color: CupertinoColors.destructiveRed,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _showDeleteConfirmation(
+                                        context,
+                                        category,
+                                        index,
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    CupertinoActionSheetAction(
+                      isDefaultAction: true,
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showAddCategoryDialog(context);
+                      },
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(CupertinoIcons.add_circled, size: 16.0),
+                          SizedBox(width: 10),
+                          Text(
+                            'Add New Category',
+                            style: TextStyle(fontSize: 14.0),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  cancelButton: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      CupertinoActionSheetAction(
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(fontSize: 14.0),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      CupertinoActionSheetAction(
+                        isDefaultAction: true,
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: CupertinoColors.activeBlue,
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            if (_categoryOptions.isNotEmpty) {
+                              _selectedCategory = tempSelectedCategory;
+                            }
+                          });
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
           ),
     );
   }
@@ -614,207 +619,53 @@ class _AddTaskPageState extends State<AddTaskPage>
     int index,
   ) {
     final controller = TextEditingController(text: category);
-    final form = CupertinoTaskForm(context);
-
+    final theme = CupertinoTaskForm(context);
     showCupertinoDialog(
       context: context,
       builder:
           (context) => CupertinoAlertDialog(
-            title: const Text('Edit Category'),
+            title: Text('Edit "$category"'),
             content: Padding(
               padding: const EdgeInsets.only(top: 12),
               child: CupertinoTextField(
                 controller: controller,
-                placeholder: 'Category Name',
                 padding: const EdgeInsets.all(10),
-                decoration: form.inputDecoration,
-                style: form.inputTextStyle,
+                decoration: theme.inputDecoration,
+                style: const TextStyle(fontSize: 16.0),
                 autofocus: true,
               ),
             ),
             actions: [
               CupertinoDialogAction(
-                child: const Text('Cancel'),
+                child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
                 onPressed: () => Navigator.pop(context),
               ),
               CupertinoDialogAction(
                 isDefaultAction: true,
-                child: const Text('Save'),
-                onPressed: () {
-                  _editCategory(controller.text.trim(), index);
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _addNewCategory(String newCategory) {
-    if (newCategory.isNotEmpty &&
-        mounted &&
-        !_categoryOptions.contains(newCategory)) {
-      setState(() {
-        _categoryOptions.insert(_categoryOptions.length - 1, newCategory);
-        _formData.category = newCategory;
-      });
-
-      // Save to Hive
-      _saveCategories();
-
-      logInfo('Custom category added: $newCategory');
-    }
-  }
-
-  void _editCategory(String newName, int index) {
-    if (newName.isNotEmpty &&
-        mounted &&
-        !_categoryOptions.contains(newName) &&
-        index >= 0 &&
-        index < _categoryOptions.length - 1) {
-      // Don't edit "Add" option
-
-      final oldName = _categoryOptions[index];
-      setState(() {
-        _categoryOptions[index] = newName;
-
-        // Update selected category if it was the one edited
-        if (_formData.category == oldName) {
-          _formData.category = newName;
-        }
-      });
-
-      // Save to Hive
-      _saveCategories();
-
-      logInfo('Category edited: $oldName -> $newName');
-    }
-  }
-
-  void _deleteCategory(int index) {
-    if (mounted && index >= 0 && index < _categoryOptions.length - 1) {
-      // Don't delete "Add" option
-      final categoryToDelete = _categoryOptions[index];
-
-      setState(() {
-        _categoryOptions.removeAt(index);
-
-        // Reset to first category if the selected category was deleted
-        if (_formData.category == categoryToDelete) {
-          _formData.category = _categoryOptions.first;
-        }
-      });
-
-      // Save to Hive
-      _saveCategories();
-
-      logInfo('Category deleted: $categoryToDelete');
-    }
-  }
-
-  void _showCategoryManagerDialog(BuildContext context) {
-    showCupertinoModalPopup(
-      context: context,
-      builder:
-          (context) => CupertinoActionSheet(
-            title: const Text('Manage Categories'),
-            message: const Text('Add, edit or delete task categories'),
-            actions: [
-              ...List.generate(
-                _categoryOptions.length - 1, // Exclude "Add" option
-                (index) => CupertinoActionSheetAction(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _showCategoryActionSheet(
-                      context,
-                      _categoryOptions[index],
-                      index,
+                child: const Text('Save', style: TextStyle(fontSize: 14.0)),
+                onPressed: () async {
+                  final newCategoryName = controller.text.trim();
+                  if (newCategoryName.isNotEmpty &&
+                      mounted &&
+                      !_categoryOptions.contains(newCategoryName)) {
+                    await _categoryService.updateCategory(
+                      category,
+                      newCategoryName,
                     );
-                  },
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(_getCategoryIcon(_categoryOptions[index])),
-                          const SizedBox(width: 10),
-                          Text(_categoryOptions[index]),
-                        ],
-                      ),
-                      const Icon(CupertinoIcons.ellipsis),
-                    ],
-                  ),
-                ),
-              ),
-              CupertinoActionSheetAction(
-                isDefaultAction: true,
-                onPressed: () {
+                    setState(() {
+                      _categoryOptions[index] = newCategoryName;
+                      if (_selectedCategory == category) {
+                        _selectedCategory = newCategoryName;
+                      }
+                      logInfo(
+                        'Category renamed: $category -> $newCategoryName',
+                      );
+                    });
+                  }
                   Navigator.pop(context);
-                  _showAddCategoryDialog(context);
                 },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(CupertinoIcons.add_circled),
-                    SizedBox(width: 10),
-                    Text('Add New Category'),
-                  ],
-                ),
               ),
             ],
-            cancelButton: CupertinoActionSheetAction(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-    );
-  }
-
-  void _showCategoryActionSheet(
-    BuildContext context,
-    String category,
-    int index,
-  ) {
-    showCupertinoModalPopup(
-      context: context,
-      builder:
-          (context) => CupertinoActionSheet(
-            title: Text(category),
-            actions: [
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showEditCategoryDialog(context, category, index);
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(CupertinoIcons.pencil),
-                    SizedBox(width: 10),
-                    Text('Edit Category'),
-                  ],
-                ),
-              ),
-              CupertinoActionSheetAction(
-                isDestructiveAction: true,
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showDeleteConfirmation(context, category, index);
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(CupertinoIcons.delete),
-                    SizedBox(width: 10),
-                    Text('Delete Category'),
-                  ],
-                ),
-              ),
-            ],
-            cancelButton: CupertinoActionSheetAction(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(context),
-            ),
           ),
     );
   }
@@ -834,12 +685,12 @@ class _AddTaskPageState extends State<AddTaskPage>
             ),
             actions: [
               CupertinoDialogAction(
-                child: const Text('Cancel'),
+                child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
                 onPressed: () => Navigator.pop(context),
               ),
               CupertinoDialogAction(
                 isDestructiveAction: true,
-                child: const Text('Delete'),
+                child: const Text('Delete', style: TextStyle(fontSize: 14.0)),
                 onPressed: () {
                   _deleteCategory(index);
                   Navigator.pop(context);
@@ -850,10 +701,140 @@ class _AddTaskPageState extends State<AddTaskPage>
     );
   }
 
+  void _deleteCategory(int index) async {
+    final deletedCategory = _categoryOptions[index];
+    await _categoryService.deleteCategory(deletedCategory);
+    setState(() {
+      _categoryOptions.removeAt(index);
+      if (_selectedCategory == deletedCategory) {
+        _selectedCategory =
+            _categoryOptions.isNotEmpty ? _categoryOptions[0] : '';
+      }
+      logInfo('Category deleted: $deletedCategory');
+    });
+  }
+
+  void _showAddCategoryDialog(BuildContext context) {
+    final controller = TextEditingController();
+    final theme = CupertinoTaskForm(context);
+    showCupertinoDialog(
+      context: context,
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Add Custom Category'),
+            content: Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: CupertinoTextField(
+                controller: controller,
+                placeholder: 'Category Name',
+                padding: const EdgeInsets.all(10),
+                decoration: theme.inputDecoration,
+                style: const TextStyle(fontSize: 16.0),
+                autofocus: true,
+              ),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Add', style: TextStyle(fontSize: 14.0)),
+                onPressed: () async {
+                  final newCategory = controller.text.trim();
+                  if (newCategory.isNotEmpty &&
+                      mounted &&
+                      !_categoryOptions.contains(newCategory)) {
+                    await _categoryService.addCategory(newCategory);
+                    setState(() {
+                      _categoryOptions.add(newCategory);
+                      _selectedCategory = newCategory;
+                    });
+                    logInfo('Custom category added: $newCategory');
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+    );
+  }
+
+  IconData _getCategoryIcon(String category) {
+    final Map<String, IconData> icons = {
+      'Brainstorm': CupertinoIcons.lightbulb,
+      'Design': CupertinoIcons.pencil_outline,
+      'Workout': CupertinoIcons.heart,
+    };
+    return icons[category] ?? CupertinoIcons.tag;
+  }
+
   void _saveTask(BuildContext context) {
-    // Validate the form
     if (!_formKey.currentState!.validate()) {
-      _showValidationError(context);
+      showCupertinoDialog(
+        context: context,
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('Validation Error'),
+              content: const Text('Please fill in all required fields.'),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+      );
+      return;
+    }
+
+    if (_categoryOptions.isEmpty) {
+      showCupertinoDialog(
+        context: context,
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('No Categories'),
+              content: const Text(
+                'Please add a category before saving the task.',
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text(
+                    'Add Category',
+                    style: TextStyle(fontSize: 14.0),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showAddCategoryDialog(context);
+                  },
+                ),
+              ],
+            ),
+      );
+      return;
+    }
+
+    if (_selectedCategory.isEmpty) {
+      showCupertinoDialog(
+        context: context,
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('Validation Error'),
+              content: const Text('Please select a category.'),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+      );
       return;
     }
 
@@ -872,7 +853,7 @@ class _AddTaskPageState extends State<AddTaskPage>
       priority: _formData.priority,
       estimatedTime: _formData.estimatedTime,
       deadline: selectedDateTime.millisecondsSinceEpoch,
-      category: Category(name: _formData.category),
+      category: Category(name: _selectedCategory),
       notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       color: _formData.color,
     );
@@ -882,23 +863,6 @@ class _AddTaskPageState extends State<AddTaskPage>
     Navigator.pushReplacement(
       context,
       CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),
-    );
-  }
-
-  void _showValidationError(BuildContext context) {
-    showCupertinoDialog(
-      context: context,
-      builder:
-          (context) => CupertinoAlertDialog(
-            title: const Text('Validation Error'),
-            content: const Text('Please fill in all required fields.'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
     );
   }
 
