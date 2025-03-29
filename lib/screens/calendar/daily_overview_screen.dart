@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../../models/scheduled_task.dart';
+import '../../models/scheduled_task_type.dart';
 import '../../models/task.dart';
 import '../../models/user_profile.dart';
 import '../../utils/formatter/date_time_formatter.dart';
@@ -111,12 +112,15 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                '$_greeting, $_userName',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: CupertinoTheme.of(context).textTheme.textStyle.color,
+              Expanded(
+                child: Text(
+                  '$_greeting, $_userName',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               CupertinoButton(
@@ -314,6 +318,36 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     );
   }
 
+  // Helper method to get icon and label for freetime task types
+  Map<String, dynamic> _getFreeTimeTaskInfo(ScheduledTaskType type) {
+    switch (type) {
+      case ScheduledTaskType.sleep:
+        return {
+          'icon': CupertinoIcons.moon_fill,
+          'label': 'Sleep',
+          'color': CupertinoColors.systemIndigo,
+        };
+      case ScheduledTaskType.mealBreak:
+        return {
+          'icon': CupertinoIcons.cart_fill,
+          'label': 'Meal Break',
+          'color': CupertinoColors.systemOrange,
+        };
+      case ScheduledTaskType.rest:
+        return {
+          'icon': CupertinoIcons.game_controller_solid,
+          'label': 'Rest',
+          'color': CupertinoColors.systemTeal,
+        };
+      default:
+        return {
+          'icon': CupertinoIcons.clock_fill,
+          'label': 'Free Time',
+          'color': CupertinoColors.systemBlue,
+        };
+    }
+  }
+
   Widget _buildTaskItem(ScheduledTask scheduledTask) {
     final calendarCubit = context.read<CalendarCubit>();
     final task = calendarCubit.tasksDB.get(scheduledTask.parentTaskId);
@@ -322,6 +356,18 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     final startTime = DateTimeFormatter.formatTime(scheduledTask.startTime);
     final endTime = DateTimeFormatter.formatTime(scheduledTask.endTime);
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+
+    // Check if this is a freetime task
+    final isFreeTimeTask = [
+      ScheduledTaskType.sleep,
+      ScheduledTaskType.mealBreak,
+      ScheduledTaskType.rest,
+      ScheduledTaskType.freeTime,
+    ].contains(scheduledTask.type);
+
+    // Get freetime task info if applicable
+    final freeTimeInfo =
+        isFreeTimeTask ? _getFreeTimeTaskInfo(scheduledTask.type) : null;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -357,7 +403,12 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                 width: 4,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _getCategoryColor(task.category.name),
+                  color:
+                      isFreeTimeTask
+                          ? (isDarkMode
+                              ? freeTimeInfo!['color'].darkColor
+                              : freeTimeInfo!['color'])
+                          : _getCategoryColor(task.category.name),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -366,16 +417,35 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      task.title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color:
-                            CupertinoTheme.of(
-                              context,
-                            ).textTheme.textStyle.color,
-                      ),
+                    Row(
+                      children: [
+                        if (isFreeTimeTask) ...[
+                          Icon(
+                            freeTimeInfo!['icon'],
+                            color:
+                                isDarkMode
+                                    ? freeTimeInfo['color'].darkColor
+                                    : freeTimeInfo['color'],
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Expanded(
+                          child: Text(
+                            isFreeTimeTask
+                                ? freeTimeInfo!['label']
+                                : task.title,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  CupertinoTheme.of(
+                                    context,
+                                  ).textTheme.textStyle.color,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -391,18 +461,19 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                   ],
                 ),
               ),
-              Icon(
-                task.isDone
-                    ? CupertinoIcons.checkmark_circle_fill
-                    : CupertinoIcons.circle,
-                color:
-                    task.isDone
-                        ? CupertinoColors.activeGreen
-                        : CupertinoTheme.of(
-                          context,
-                        ).textTheme.tabLabelTextStyle.color,
-                size: 22,
-              ),
+              if (!isFreeTimeTask)
+                Icon(
+                  task.isDone
+                      ? CupertinoIcons.checkmark_circle_fill
+                      : CupertinoIcons.circle,
+                  color:
+                      task.isDone
+                          ? CupertinoColors.activeGreen
+                          : CupertinoTheme.of(
+                            context,
+                          ).textTheme.tabLabelTextStyle.color,
+                  size: 22,
+                ),
             ],
           ),
         ),
@@ -445,11 +516,40 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   void _showTaskDetails(Task task, ScheduledTask scheduledTask) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
 
+    // Check if this is a freetime task
+    final isFreeTimeTask = [
+      ScheduledTaskType.sleep,
+      ScheduledTaskType.mealBreak,
+      ScheduledTaskType.rest,
+      ScheduledTaskType.freeTime,
+    ].contains(scheduledTask.type);
+
+    // Get freetime task info if applicable
+    final freeTimeInfo =
+        isFreeTimeTask ? _getFreeTimeTaskInfo(scheduledTask.type) : null;
+
     showCupertinoModalPopup(
       context: context,
       builder:
           (context) => CupertinoActionSheet(
-            title: Text(task.title),
+            title:
+                isFreeTimeTask
+                    ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          freeTimeInfo!['icon'],
+                          color:
+                              isDark
+                                  ? freeTimeInfo['color'].darkColor
+                                  : freeTimeInfo['color'],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(freeTimeInfo['label']),
+                      ],
+                    )
+                    : Text(task.title),
             message: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -463,7 +563,9 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                     color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
-                if (task.notes != null && task.notes!.isNotEmpty) ...[
+                if (!isFreeTimeTask &&
+                    task.notes != null &&
+                    task.notes!.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Text(
                     task.notes!,
@@ -481,13 +583,20 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                       width: 12,
                       height: 12,
                       decoration: BoxDecoration(
-                        color: _getCategoryColor(task.category.name),
+                        color:
+                            isFreeTimeTask
+                                ? (isDark
+                                    ? freeTimeInfo!['color'].darkColor
+                                    : freeTimeInfo!['color'])
+                                : _getCategoryColor(task.category.name),
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Category: ${task.category.name}',
+                      isFreeTimeTask
+                          ? 'Type: ${freeTimeInfo!['label']}'
+                          : 'Category: ${task.category.name}',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -499,22 +608,37 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                     ),
                   ],
                 ),
+                if (isFreeTimeTask) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'This is scheduled free time from your settings.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color:
+                          CupertinoTheme.of(
+                            context,
+                          ).textTheme.tabLabelTextStyle.color,
+                    ),
+                  ),
+                ],
               ],
             ),
             actions: [
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.pop(context);
-                  task.isDone = !task.isDone;
-                  context.read<CalendarCubit>().updateTask(task);
-                },
-                child: Text(
-                  task.isDone ? 'Mark as Undone' : 'Mark as Done',
-                  style: TextStyle(
-                    color: CupertinoTheme.of(context).primaryColor,
+              if (!isFreeTimeTask)
+                CupertinoActionSheetAction(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    task.isDone = !task.isDone;
+                    context.read<CalendarCubit>().updateTask(task);
+                  },
+                  child: Text(
+                    task.isDone ? 'Mark as Undone' : 'Mark as Done',
+                    style: TextStyle(
+                      color: CupertinoTheme.of(context).primaryColor,
+                    ),
                   ),
                 ),
-              ),
             ],
             cancelButton: CupertinoActionSheetAction(
               onPressed: () => Navigator.pop(context),

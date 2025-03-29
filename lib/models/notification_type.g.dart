@@ -27,6 +27,8 @@ class NotificationTypeAdapter extends TypeAdapter<NotificationType> {
         return NotificationType.email;
       case 6:
         return NotificationType.pushAndEmail;
+      case 7:
+        return NotificationType.disabled;
       default:
         return NotificationType.none;
     }
@@ -55,6 +57,9 @@ class NotificationTypeAdapter extends TypeAdapter<NotificationType> {
         break;
       case NotificationType.pushAndEmail:
         writer.writeByte(6);
+        break;
+      case NotificationType.disabled:
+        writer.writeByte(7);
         break;
     }
   }

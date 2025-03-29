@@ -101,7 +101,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper>
         opacity: _fadeAnimation,
         child:
             _isOnboardingCompleted
-                ? const HomeScreen()
+                ? const HomeScreen(initialExpanded: false)
                 : const NameInputScreen(),
       ),
     );

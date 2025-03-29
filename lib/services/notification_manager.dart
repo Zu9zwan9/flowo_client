@@ -111,6 +111,9 @@ class NotificationManager {
             false, // Not a reminder
           );
           break;
+        case NotificationType.disabled:
+          // TODO: Handle this case.
+          throw UnimplementedError();
       }
     } catch (e) {
       logError('Failed to schedule task start notification: $e');
@@ -171,6 +174,9 @@ class NotificationManager {
             timeBeforeStart: timeBeforeStart,
           );
           break;
+        case NotificationType.disabled:
+          // TODO: Handle this case.
+          throw UnimplementedError();
       }
     } catch (e) {
       logError('Failed to schedule task reminder notification: $e');
@@ -205,6 +211,9 @@ class NotificationManager {
           await _pushNotificationService.notifyTaskStart(task, scheduledTask);
           await _emailNotificationService.notifyTaskStart(task, scheduledTask);
           break;
+        case NotificationType.disabled:
+          // TODO: Handle this case.
+          throw UnimplementedError();
       }
     } catch (e) {
       logError('Failed to send task start notification: $e');
@@ -263,6 +272,9 @@ class NotificationManager {
             timeBeforeStart,
           );
           break;
+        case NotificationType.disabled:
+          // TODO: Handle this case.
+          throw UnimplementedError();
       }
     } catch (e) {
       logError('Failed to send task reminder notification: $e');

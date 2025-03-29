@@ -18,4 +18,6 @@ enum NotificationType {
   email,
   @HiveField(6)
   pushAndEmail,
+  @HiveField(7)
+  disabled,
 }

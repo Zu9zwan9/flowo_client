@@ -58,7 +58,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       if (mounted) {
         // Navigate to the home screen and remove all previous screens from the stack
         Navigator.of(context).pushAndRemoveUntil(
-          CupertinoPageRoute(builder: (context) => const HomeScreen()),
+          CupertinoPageRoute(
+            builder: (context) => const HomeScreen(initialExpanded: false),
+          ),
           (route) => false,
         );
       }

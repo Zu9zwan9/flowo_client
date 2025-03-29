@@ -189,7 +189,7 @@ class AddHabitPageState extends State<AddHabitPage>
                     text: 'Save Habit',
                     onPressed: () {
                       _animationController.forward().then(
-                            (_) => _animationController.reverse(),
+                        (_) => _animationController.reverse(),
                       );
                       _saveTask(context);
                     },
@@ -203,7 +203,10 @@ class AddHabitPageState extends State<AddHabitPage>
     );
   }
 
-  Widget _buildFrequencySection(BuildContext context, CupertinoFormTheme theme) {
+  Widget _buildFrequencySection(
+    BuildContext context,
+    CupertinoFormTheme theme,
+  ) {
     final frequencyTypes = ['daily', 'weekly', 'monthly', 'yearly'];
     final primaryColor = CupertinoTheme.of(context).primaryColor;
     final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
@@ -218,13 +221,14 @@ class AddHabitPageState extends State<AddHabitPage>
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
-          children: frequencyTypes.map((type) {
-            return _buildFrequencyTab(
-              type: type,
-              icon: _getFrequencyIcon(type),
-              primaryColor: primaryColor,
-            );
-          }).toList(),
+          children:
+              frequencyTypes.map((type) {
+                return _buildFrequencyTab(
+                  type: type,
+                  icon: _getFrequencyIcon(type),
+                  primaryColor: primaryColor,
+                );
+              }).toList(),
         ),
       ),
       const SizedBox(height: 12.0),
@@ -232,9 +236,10 @@ class AddHabitPageState extends State<AddHabitPage>
       const SizedBox(height: 8.0),
       Container(
         decoration: BoxDecoration(
-          color: CupertinoTheme.of(context).brightness == Brightness.dark
-              ? CupertinoColors.systemGrey6.darkColor
-              : CupertinoColors.systemGrey6.color,
+          color:
+              CupertinoTheme.of(context).brightness == Brightness.dark
+                  ? CupertinoColors.systemGrey6.darkColor
+                  : CupertinoColors.systemGrey6.color,
           borderRadius: BorderRadius.circular(10.0),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -270,7 +275,8 @@ class AddHabitPageState extends State<AddHabitPage>
       ),
     ];
 
-    if (_selectedFrequencyType == 'daily' || _selectedFrequencyType == 'yearly') {
+    if (_selectedFrequencyType == 'daily' ||
+        _selectedFrequencyType == 'yearly') {
       frequencyWidgets.addAll(_buildSingleInstanceWidgets(context, theme));
     } else if (_selectedFrequencyType == 'weekly') {
       frequencyWidgets.addAll(_buildWeeklyWidgets(context, theme));
@@ -304,9 +310,10 @@ class AddHabitPageState extends State<AddHabitPage>
           duration: const Duration(milliseconds: 200),
           height: double.infinity,
           decoration: BoxDecoration(
-            color: isSelected
-                ? CupertinoColors.systemBackground.resolveFrom(context)
-                : Colors.transparent,
+            color:
+                isSelected
+                    ? CupertinoColors.systemBackground.resolveFrom(context)
+                    : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
           ),
           margin: const EdgeInsets.all(2),
@@ -317,20 +324,23 @@ class AddHabitPageState extends State<AddHabitPage>
                 Icon(
                   icon,
                   size: 18,
-                  color: isSelected
-                      ? primaryColor
-                      : CupertinoColors.systemGrey.resolveFrom(context),
+                  color:
+                      isSelected
+                          ? primaryColor
+                          : CupertinoColors.systemGrey.resolveFrom(context),
                   semanticLabel: type.capitalize(),
                 ),
                 const SizedBox(width: 4),
                 Text(
                   type.capitalize(),
                   style: TextStyle(
-                    color: isSelected
-                        ? primaryColor
-                        : CupertinoColors.systemGrey.resolveFrom(context),
+                    color:
+                        isSelected
+                            ? primaryColor
+                            : CupertinoColors.systemGrey.resolveFrom(context),
                     fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                   semanticsLabel: '${type.capitalize()} frequency',
                 ),
@@ -358,7 +368,9 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   List<Widget> _buildSingleInstanceWidgets(
-      BuildContext context, CupertinoFormTheme theme) {
+    BuildContext context,
+    CupertinoFormTheme theme,
+  ) {
     return [
       const SizedBox(height: 12.0),
       Text('Habit Details', style: theme.labelTextStyle),
@@ -398,7 +410,10 @@ class AddHabitPageState extends State<AddHabitPage>
     ];
   }
 
-  List<Widget> _buildWeeklyWidgets(BuildContext context, CupertinoFormTheme theme) {
+  List<Widget> _buildWeeklyWidgets(
+    BuildContext context,
+    CupertinoFormTheme theme,
+  ) {
     List<Widget> widgets = [];
 
     if (_weeklyInstances.isEmpty) {
@@ -437,9 +452,10 @@ class AddHabitPageState extends State<AddHabitPage>
               CupertinoFormWidgets.selectionButton(
                 context: context,
                 label: 'Start Time',
-                value: inst['start'] != null
-                    ? (inst['start'] as TimeOfDay).format(context)
-                    : 'Select',
+                value:
+                    inst['start'] != null
+                        ? (inst['start'] as TimeOfDay).format(context)
+                        : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['start']);
                   if (time != null) setState(() => inst['start'] = time);
@@ -452,9 +468,10 @@ class AddHabitPageState extends State<AddHabitPage>
               CupertinoFormWidgets.selectionButton(
                 context: context,
                 label: 'End Time',
-                value: inst['end'] != null
-                    ? (inst['end'] as TimeOfDay).format(context)
-                    : 'Select',
+                value:
+                    inst['end'] != null
+                        ? (inst['end'] as TimeOfDay).format(context)
+                        : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['end']);
                   if (time != null) setState(() => inst['end'] = time);
@@ -465,7 +482,10 @@ class AddHabitPageState extends State<AddHabitPage>
               ),
               const SizedBox(height: 12.0),
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: const Text('Remove', style: TextStyle(fontSize: 14.0)),
                 onPressed: () => setState(() => _weeklyInstances.remove(inst)),
               ),
@@ -494,37 +514,49 @@ class AddHabitPageState extends State<AddHabitPage>
       Container(
         margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
         decoration: BoxDecoration(
-          color: CupertinoTheme.of(context).brightness == Brightness.dark
-              ? CupertinoColors.systemGrey6.darkColor
-              : CupertinoColors.systemGrey6.color,
+          color:
+              CupertinoTheme.of(context).brightness == Brightness.dark
+                  ? CupertinoColors.systemGrey6.darkColor
+                  : CupertinoColors.systemGrey6.color,
           borderRadius: BorderRadius.circular(10.0),
         ),
         padding: const EdgeInsets.all(4.0),
         child: CupertinoSlidingSegmentedControl<String>(
-          thumbColor: CupertinoTheme.of(context).brightness == Brightness.dark
-              ? CupertinoColors.systemGrey4.darkColor
-              : CupertinoColors.white,
+          thumbColor:
+              CupertinoTheme.of(context).brightness == Brightness.dark
+                  ? CupertinoColors.systemGrey4.darkColor
+                  : CupertinoColors.white,
           backgroundColor: CupertinoColors.transparent,
           children: {
             'specific': Container(
-              padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
+              padding: const EdgeInsets.symmetric(
+                vertical: 6.0,
+                horizontal: 8.0,
+              ),
               child: Text(
                 'Specific Days',
                 style: TextStyle(
                   fontSize: 12.0,
                   fontWeight:
-                  _monthlyType == 'specific' ? FontWeight.w600 : FontWeight.normal,
+                      _monthlyType == 'specific'
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                 ),
               ),
             ),
             'pattern': Container(
-              padding: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 8.0),
+              padding: const EdgeInsets.symmetric(
+                vertical: 6.0,
+                horizontal: 8.0,
+              ),
               child: Text(
                 'Pattern',
                 style: TextStyle(
                   fontSize: 12.0,
                   fontWeight:
-                  _monthlyType == 'pattern' ? FontWeight.w600 : FontWeight.normal,
+                      _monthlyType == 'pattern'
+                          ? FontWeight.w600
+                          : FontWeight.normal,
                 ),
               ),
             ),
@@ -549,7 +581,9 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   List<Widget> _buildMonthlySpecificWidgets(
-      BuildContext context, CupertinoFormTheme theme) {
+    BuildContext context,
+    CupertinoFormTheme theme,
+  ) {
     List<Widget> widgets = [];
 
     if (_monthlySpecificInstances.isEmpty) {
@@ -586,9 +620,10 @@ class AddHabitPageState extends State<AddHabitPage>
               CupertinoFormWidgets.selectionButton(
                 context: context,
                 label: 'Start Time',
-                value: inst['start'] != null
-                    ? inst['start'].format(context)
-                    : 'Select',
+                value:
+                    inst['start'] != null
+                        ? inst['start'].format(context)
+                        : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['start']);
                   if (time != null) setState(() => inst['start'] = time);
@@ -601,7 +636,10 @@ class AddHabitPageState extends State<AddHabitPage>
               CupertinoFormWidgets.selectionButton(
                 context: context,
                 label: 'End Time',
-                value: inst['end'] != null ? inst['end'].format(context) : 'Select',
+                value:
+                    inst['end'] != null
+                        ? inst['end'].format(context)
+                        : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['end']);
                   if (time != null) setState(() => inst['end'] = time);
@@ -612,10 +650,14 @@ class AddHabitPageState extends State<AddHabitPage>
               ),
               const SizedBox(height: 12.0),
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: const Text('Remove', style: TextStyle(fontSize: 14.0)),
-                onPressed: () =>
-                    setState(() => _monthlySpecificInstances.remove(inst)),
+                onPressed:
+                    () =>
+                        setState(() => _monthlySpecificInstances.remove(inst)),
               ),
             ],
           );
@@ -635,7 +677,9 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   List<Widget> _buildMonthlyPatternWidgets(
-      BuildContext context, CupertinoFormTheme theme) {
+    BuildContext context,
+    CupertinoFormTheme theme,
+  ) {
     return [
       Text('Select Week', style: theme.labelTextStyle),
       const SizedBox(height: 8.0),
@@ -673,7 +717,8 @@ class AddHabitPageState extends State<AddHabitPage>
         CupertinoFormWidgets.selectionButton(
           context: context,
           label: 'Category',
-          value: _categoryOptions.isEmpty ? 'Add a category' : _selectedCategory,
+          value:
+              _categoryOptions.isEmpty ? 'Add a category' : _selectedCategory,
           onTap: () => _showCategoryManagerDialog(context),
           color: theme.primaryColor,
           icon: CupertinoIcons.tag,
@@ -689,28 +734,36 @@ class AddHabitPageState extends State<AddHabitPage>
       initialDate: isStart ? _selectedStartDate : _selectedEndDate,
     );
     if (pickedDate != null && mounted) {
-      setState(() =>
-      isStart ? _selectedStartDate = pickedDate : _selectedEndDate = pickedDate);
+      setState(
+        () =>
+            isStart
+                ? _selectedStartDate = pickedDate
+                : _selectedEndDate = pickedDate,
+      );
     }
   }
 
-  Future<TimeOfDay?> _pickTime(BuildContext context, TimeOfDay? initialTime) async {
+  Future<TimeOfDay?> _pickTime(
+    BuildContext context,
+    TimeOfDay? initialTime,
+  ) async {
     final now = DateTime.now();
-    final initialDateTime = initialTime != null
-        ? DateTime(
-      _selectedStartDate.year,
-      _selectedStartDate.month,
-      _selectedStartDate.day,
-      initialTime.hour,
-      initialTime.minute,
-    )
-        : DateTime(
-      _selectedStartDate.year,
-      _selectedStartDate.month,
-      _selectedStartDate.day,
-      now.hour,
-      now.minute,
-    );
+    final initialDateTime =
+        initialTime != null
+            ? DateTime(
+              _selectedStartDate.year,
+              _selectedStartDate.month,
+              _selectedStartDate.day,
+              initialTime.hour,
+              initialTime.minute,
+            )
+            : DateTime(
+              _selectedStartDate.year,
+              _selectedStartDate.month,
+              _selectedStartDate.day,
+              now.hour,
+              now.minute,
+            );
 
     final pickedTime = await CupertinoFormWidgets.showTimePicker(
       context: context,
@@ -737,7 +790,9 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   Future<void> _showDayOfWeekPicker(
-      BuildContext context, Function(String?) onSelected) async {
+    BuildContext context,
+    Function(String?) onSelected,
+  ) async {
     final days = [
       'monday',
       'tuesday',
@@ -750,41 +805,49 @@ class AddHabitPageState extends State<AddHabitPage>
     String? selectedDay;
     await showCupertinoModalPopup(
       context: context,
-      builder: (context) => Container(
-        height: 300,
-        color: CupertinoColors.systemBackground,
-        child: Column(
-          children: [
-            SizedBox(
-              height: 220,
-              child: CupertinoPicker(
-                itemExtent: 32,
-                onSelectedItemChanged: (index) => selectedDay = days[index],
-                children: days.map((day) => Text(day.capitalize())).toList(),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoColors.systemBackground,
+            child: Column(
               children: [
-                CupertinoButton(
-                  child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () {
-                    onSelected(null);
-                    Navigator.pop(context);
-                  },
+                SizedBox(
+                  height: 220,
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    onSelectedItemChanged: (index) => selectedDay = days[index],
+                    children:
+                        days.map((day) => Text(day.capitalize())).toList(),
+                  ),
                 ),
-                CupertinoButton(
-                  child: const Text('Select', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () {
-                    onSelected(selectedDay);
-                    Navigator.pop(context);
-                  },
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    CupertinoButton(
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(fontSize: 14.0),
+                      ),
+                      onPressed: () {
+                        onSelected(null);
+                        Navigator.pop(context);
+                      },
+                    ),
+                    CupertinoButton(
+                      child: const Text(
+                        'Select',
+                        style: TextStyle(fontSize: 14.0),
+                      ),
+                      onPressed: () {
+                        onSelected(selectedDay);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -792,49 +855,60 @@ class AddHabitPageState extends State<AddHabitPage>
     int? selectedDay;
     await showCupertinoModalPopup(
       context: context,
-      builder: (context) => Container(
-        height: 300,
-        color: CupertinoColors.systemBackground,
-        child: Column(
-          children: [
-            SizedBox(
-              height: 220,
-              child: CupertinoPicker(
-                itemExtent: 32,
-                onSelectedItemChanged: (index) => selectedDay = index + 1,
-                children: List.generate(31, (index) => Text('${index + 1}')),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoColors.systemBackground,
+            child: Column(
               children: [
-                CupertinoButton(
-                  child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
+                SizedBox(
+                  height: 220,
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    onSelectedItemChanged: (index) => selectedDay = index + 1,
+                    children: List.generate(
+                      31,
+                      (index) => Text('${index + 1}'),
+                    ),
+                  ),
                 ),
-                CupertinoButton(
-                  child: const Text('Add', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () {
-                    if (selectedDay != null &&
-                        !_monthlySpecificInstances
-                            .any((inst) => inst['day'] == selectedDay)) {
-                      setState(() {
-                        _monthlySpecificInstances.add({
-                          'day': selectedDay,
-                          'nameController': TextEditingController(),
-                          'start': null,
-                          'end': null,
-                        });
-                      });
-                    }
-                    Navigator.pop(context);
-                  },
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    CupertinoButton(
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(fontSize: 14.0),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoButton(
+                      child: const Text(
+                        'Add',
+                        style: TextStyle(fontSize: 14.0),
+                      ),
+                      onPressed: () {
+                        if (selectedDay != null &&
+                            !_monthlySpecificInstances.any(
+                              (inst) => inst['day'] == selectedDay,
+                            )) {
+                          setState(() {
+                            _monthlySpecificInstances.add({
+                              'day': selectedDay,
+                              'nameController': TextEditingController(),
+                              'start': null,
+                              'end': null,
+                            });
+                          });
+                        }
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -843,38 +917,47 @@ class AddHabitPageState extends State<AddHabitPage>
     String? selectedWeek;
     await showCupertinoModalPopup(
       context: context,
-      builder: (context) => Container(
-        height: 300,
-        color: CupertinoColors.systemBackground,
-        child: Column(
-          children: [
-            SizedBox(
-              height: 220,
-              child: CupertinoPicker(
-                itemExtent: 32,
-                onSelectedItemChanged: (index) => selectedWeek = weeks[index],
-                children: weeks.map((week) => Text(week.capitalize())).toList(),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoColors.systemBackground,
+            child: Column(
               children: [
-                CupertinoButton(
-                  child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
+                SizedBox(
+                  height: 220,
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    onSelectedItemChanged:
+                        (index) => selectedWeek = weeks[index],
+                    children:
+                        weeks.map((week) => Text(week.capitalize())).toList(),
+                  ),
                 ),
-                CupertinoButton(
-                  child: const Text('Select', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () {
-                    setState(() => _monthlyWeek = selectedWeek);
-                    Navigator.pop(context);
-                  },
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    CupertinoButton(
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(fontSize: 14.0),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoButton(
+                      child: const Text(
+                        'Select',
+                        style: TextStyle(fontSize: 14.0),
+                      ),
+                      onPressed: () {
+                        setState(() => _monthlyWeek = selectedWeek);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -891,38 +974,46 @@ class AddHabitPageState extends State<AddHabitPage>
     String? selectedDay;
     await showCupertinoModalPopup(
       context: context,
-      builder: (context) => Container(
-        height: 300,
-        color: CupertinoColors.systemBackground,
-        child: Column(
-          children: [
-            SizedBox(
-              height: 220,
-              child: CupertinoPicker(
-                itemExtent: 32,
-                onSelectedItemChanged: (index) => selectedDay = days[index],
-                children: days.map((day) => Text(day.capitalize())).toList(),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoColors.systemBackground,
+            child: Column(
               children: [
-                CupertinoButton(
-                  child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
+                SizedBox(
+                  height: 220,
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    onSelectedItemChanged: (index) => selectedDay = days[index],
+                    children:
+                        days.map((day) => Text(day.capitalize())).toList(),
+                  ),
                 ),
-                CupertinoButton(
-                  child: const Text('Select', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () {
-                    setState(() => _monthlyDayOfWeek = selectedDay);
-                    Navigator.pop(context);
-                  },
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    CupertinoButton(
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(fontSize: 14.0),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoButton(
+                      child: const Text(
+                        'Select',
+                        style: TextStyle(fontSize: 14.0),
+                      ),
+                      onPressed: () {
+                        setState(() => _monthlyDayOfWeek = selectedDay);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -931,44 +1022,45 @@ class AddHabitPageState extends State<AddHabitPage>
     final theme = CupertinoFormTheme(context);
     showCupertinoDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Add Custom Category'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: CupertinoTextField(
-            controller: controller,
-            placeholder: 'Category Name',
-            padding: const EdgeInsets.all(10),
-            decoration: theme.inputDecoration,
-            style: const TextStyle(fontSize: 16.0),
-            autofocus: true,
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Add Custom Category'),
+            content: Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: CupertinoTextField(
+                controller: controller,
+                placeholder: 'Category Name',
+                padding: const EdgeInsets.all(10),
+                decoration: theme.inputDecoration,
+                style: const TextStyle(fontSize: 16.0),
+                autofocus: true,
+              ),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Add', style: TextStyle(fontSize: 14.0)),
+                onPressed: () async {
+                  final newCategory = controller.text.trim();
+                  if (newCategory.isNotEmpty &&
+                      mounted &&
+                      !_categoryOptions.contains(newCategory)) {
+                    await _categoryService.addCategory(newCategory);
+                    setState(() {
+                      _categoryOptions.add(newCategory);
+                      _selectedCategory = newCategory;
+                    });
+                    logInfo('Custom category added: $newCategory');
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+            ],
           ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-            onPressed: () => Navigator.pop(context),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('Add', style: TextStyle(fontSize: 14.0)),
-            onPressed: () async {
-              final newCategory = controller.text.trim();
-              if (newCategory.isNotEmpty &&
-                  mounted &&
-                  !_categoryOptions.contains(newCategory)) {
-                await _categoryService.addCategory(newCategory);
-                setState(() {
-                  _categoryOptions.add(newCategory);
-                  _selectedCategory = newCategory;
-                });
-                logInfo('Custom category added: $newCategory');
-              }
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
     );
   }
 
@@ -977,159 +1069,196 @@ class AddHabitPageState extends State<AddHabitPage>
 
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => CupertinoActionSheet(
-          title: const Text('Manage Categories'),
-          message: const Text('Select, add, edit, or delete categories'),
-          actions: [
-            ...List.generate(
-              _categoryOptions.length,
-                  (index) {
-                final category = _categoryOptions[index];
-                final isSelected = tempSelectedCategory == category;
-                return CupertinoActionSheetAction(
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    setDialogState(() {
-                      tempSelectedCategory = category;
-                    });
-                  }, // TODO: remove space between button and edges in category selector
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    color: isSelected
-                        ? CupertinoTheme.of(context)
-                        .primaryColor
-                        .withOpacity(0.1) // Subtle background highlight
-                        : Colors.transparent,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              _getCategoryIcon(category),
-                              size: 16.0,
-                              color: isSelected
-                                  ? CupertinoTheme.of(context).primaryColor
-                                  : CupertinoColors.systemGrey,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              category,
-                              style: TextStyle(
-                                fontSize: 14.0,
-                                color: isSelected
-                                    ? CupertinoTheme.of(context).primaryColor
-                                    : CupertinoTheme.of(context).brightness == Brightness.dark
-                                        ? CupertinoColors.white
-                                        : CupertinoColors.black,
-                                fontWeight:
-                                isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              child: const Icon(CupertinoIcons.pencil, size: 16.0),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _showEditCategoryDialog(context, category, index);
-                              },
-                            ),
-                            CupertinoButton(
-                              padding: EdgeInsets.zero,
-                              child: const Icon(
-                                CupertinoIcons.delete,
-                                size: 16.0,
-                                color: CupertinoColors.destructiveRed,
-                              ),
-                              onPressed: () {
-                                Navigator.pop(context);
-                                _showDeleteConfirmation(context, category, index);
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => CupertinoActionSheet(
+                  title: const Text('Manage Categories'),
+                  message: const Text(
+                    'Select, add, edit, or delete categories',
                   ),
-                );
-              },
+                  actions: [
+                    ...List.generate(_categoryOptions.length, (index) {
+                      final category = _categoryOptions[index];
+                      final isSelected = tempSelectedCategory == category;
+                      return CupertinoActionSheetAction(
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          setDialogState(() {
+                            tempSelectedCategory = category;
+                          });
+                        }, // TODO: remove space between button and edges in category selector
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 8.0),
+                          color:
+                              isSelected
+                                  ? CupertinoTheme.of(
+                                    context,
+                                  ).primaryColor.withOpacity(
+                                    0.1,
+                                  ) // Subtle background highlight
+                                  : Colors.transparent,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    _getCategoryIcon(category),
+                                    size: 16.0,
+                                    color:
+                                        isSelected
+                                            ? CupertinoTheme.of(
+                                              context,
+                                            ).primaryColor
+                                            : CupertinoColors.systemGrey,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    category,
+                                    style: TextStyle(
+                                      fontSize: 14.0,
+                                      color:
+                                          isSelected
+                                              ? CupertinoTheme.of(
+                                                context,
+                                              ).primaryColor
+                                              : CupertinoTheme.of(
+                                                    context,
+                                                  ).brightness ==
+                                                  Brightness.dark
+                                              ? CupertinoColors.white
+                                              : CupertinoColors.black,
+                                      fontWeight:
+                                          isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  CupertinoButton(
+                                    padding: EdgeInsets.zero,
+                                    child: const Icon(
+                                      CupertinoIcons.pencil,
+                                      size: 16.0,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _showEditCategoryDialog(
+                                        context,
+                                        category,
+                                        index,
+                                      );
+                                    },
+                                  ),
+                                  CupertinoButton(
+                                    padding: EdgeInsets.zero,
+                                    child: const Icon(
+                                      CupertinoIcons.delete,
+                                      size: 16.0,
+                                      color: CupertinoColors.destructiveRed,
+                                    ),
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      _showDeleteConfirmation(
+                                        context,
+                                        category,
+                                        index,
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    CupertinoActionSheetAction(
+                      isDefaultAction: true,
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _showAddCategoryDialog(context);
+                      },
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(CupertinoIcons.add_circled, size: 16.0),
+                          SizedBox(width: 10),
+                          Text(
+                            'Add New Category',
+                            style: TextStyle(fontSize: 14.0),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  cancelButton: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      CupertinoActionSheetAction(
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(fontSize: 14.0),
+                        ),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      CupertinoActionSheetAction(
+                        isDefaultAction: true,
+                        child: const Text(
+                          'Done',
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: CupertinoColors.activeBlue,
+                          ),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            if (_categoryOptions.isNotEmpty) {
+                              _selectedCategory = tempSelectedCategory;
+                            }
+                          });
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+          ),
+    );
+  }
+
+  void _showDeleteConfirmation(
+    BuildContext context,
+    String category,
+    int index,
+  ) {
+    showCupertinoDialog(
+      context: context,
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: Text('Delete "$category"?'),
+            content: const Text(
+              'This will remove the category from your list. Tasks with this category will not be affected.',
             ),
-            CupertinoActionSheetAction(
-              isDefaultAction: true,
-              onPressed: () {
-                Navigator.pop(context);
-                _showAddCategoryDialog(context);
-              },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(CupertinoIcons.add_circled, size: 16.0),
-                  SizedBox(width: 10),
-                  Text('Add New Category', style: TextStyle(fontSize: 14.0)),
-                ],
-              ),
-            ),
-          ],
-          cancelButton: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              CupertinoActionSheetAction(
+            actions: [
+              CupertinoDialogAction(
                 child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
                 onPressed: () => Navigator.pop(context),
               ),
-              CupertinoActionSheetAction(
-                isDefaultAction: true,
-                child: const Text(
-                  'Done',
-                  style: TextStyle(
-                    fontSize: 14.0,
-                    color: CupertinoColors.activeBlue,
-                  ),
-                ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                child: const Text('Delete', style: TextStyle(fontSize: 14.0)),
                 onPressed: () {
-                  setState(() {
-                    if (_categoryOptions.isNotEmpty) {
-                      _selectedCategory = tempSelectedCategory;
-                    }
-                  });
+                  _deleteCategory(index);
                   Navigator.pop(context);
                 },
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context, String category, int index) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text('Delete "$category"?'),
-        content: const Text(
-          'This will remove the category from your list. Tasks with this category will not be affected.',
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-            onPressed: () => Navigator.pop(context),
-          ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            child: const Text('Delete', style: TextStyle(fontSize: 14.0)),
-            onPressed: () {
-              _deleteCategory(index);
-              Navigator.pop(context);
-            },
-          ),
-        ],
-      ),
     );
   }
 
@@ -1139,56 +1268,67 @@ class AddHabitPageState extends State<AddHabitPage>
     setState(() {
       _categoryOptions.removeAt(index);
       if (_selectedCategory == deletedCategory) {
-        _selectedCategory = _categoryOptions.isNotEmpty ? _categoryOptions[0] : '';
+        _selectedCategory =
+            _categoryOptions.isNotEmpty ? _categoryOptions[0] : '';
       }
       logInfo('Category deleted: $deletedCategory');
     });
   }
 
-  void _showEditCategoryDialog(BuildContext context, String category, int index) {
+  void _showEditCategoryDialog(
+    BuildContext context,
+    String category,
+    int index,
+  ) {
     final controller = TextEditingController(text: category);
     final theme = CupertinoFormTheme(context);
     showCupertinoDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text('Edit "$category"'),
-        content: Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: CupertinoTextField(
-            controller: controller,
-            padding: const EdgeInsets.all(10),
-            decoration: theme.inputDecoration,
-            style: const TextStyle(fontSize: 16.0),
-            autofocus: true,
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-            onPressed: () => Navigator.pop(context),
-          ),
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('Save', style: TextStyle(fontSize: 14.0)),
-            onPressed: () async {
-              final newCategoryName = controller.text.trim();
-              if (newCategoryName.isNotEmpty &&
-                  mounted &&
-                  !_categoryOptions.contains(newCategoryName)) {
-                await _categoryService.updateCategory(category, newCategoryName);
-                setState(() {
-                  _categoryOptions[index] = newCategoryName;
-                  if (_selectedCategory == category) {
-                    _selectedCategory = newCategoryName;
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: Text('Edit "$category"'),
+            content: Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: CupertinoTextField(
+                controller: controller,
+                padding: const EdgeInsets.all(10),
+                decoration: theme.inputDecoration,
+                style: const TextStyle(fontSize: 16.0),
+                autofocus: true,
+              ),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Save', style: TextStyle(fontSize: 14.0)),
+                onPressed: () async {
+                  final newCategoryName = controller.text.trim();
+                  if (newCategoryName.isNotEmpty &&
+                      mounted &&
+                      !_categoryOptions.contains(newCategoryName)) {
+                    await _categoryService.updateCategory(
+                      category,
+                      newCategoryName,
+                    );
+                    setState(() {
+                      _categoryOptions[index] = newCategoryName;
+                      if (_selectedCategory == category) {
+                        _selectedCategory = newCategoryName;
+                      }
+                      logInfo(
+                        'Category renamed: $category -> $newCategoryName',
+                      );
+                    });
                   }
-                  logInfo('Category renamed: $category -> $newCategoryName');
-                });
-              }
-              Navigator.pop(context);
-            },
+                  Navigator.pop(context);
+                },
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -1205,16 +1345,17 @@ class AddHabitPageState extends State<AddHabitPage>
     if (!_formKey.currentState!.validate()) {
       showCupertinoDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Validation Error'),
-          content: const Text('Please fill in all required fields.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-              onPressed: () => Navigator.pop(context),
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('Validation Error'),
+              content: const Text('Please fill in all required fields.'),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-          ],
-        ),
       );
       return;
     }
@@ -1222,24 +1363,30 @@ class AddHabitPageState extends State<AddHabitPage>
     if (_categoryOptions.isEmpty) {
       showCupertinoDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('No Categories'),
-          content: const Text('Please add a category before saving the habit.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-              onPressed: () => Navigator.pop(context),
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('No Categories'),
+              content: const Text(
+                'Please add a category before saving the habit.',
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text(
+                    'Add Category',
+                    style: TextStyle(fontSize: 14.0),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showAddCategoryDialog(context);
+                  },
+                ),
+              ],
             ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('Add Category', style: TextStyle(fontSize: 14.0)),
-              onPressed: () {
-                Navigator.pop(context);
-                _showAddCategoryDialog(context);
-              },
-            ),
-          ],
-        ),
       );
       return;
     }
@@ -1247,38 +1394,42 @@ class AddHabitPageState extends State<AddHabitPage>
     if (_selectedCategory.isEmpty) {
       showCupertinoDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Validation Error'),
-          content: const Text('Please select a category.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-              onPressed: () => Navigator.pop(context),
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('Validation Error'),
+              content: const Text('Please select a category.'),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-          ],
-        ),
       );
       return;
     }
 
     RepeatRule? repeatRule;
-    if (_selectedFrequencyType == 'daily' || _selectedFrequencyType == 'yearly') {
+    if (_selectedFrequencyType == 'daily' ||
+        _selectedFrequencyType == 'yearly') {
       if (_nameController.text.isEmpty ||
           _startTime == null ||
           _endTime == null) {
         showCupertinoDialog(
           context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('Validation Error'),
-            content: const Text(
-                'Please provide habit name, start time, and end time.'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                onPressed: () => Navigator.pop(context),
+          builder:
+              (context) => CupertinoAlertDialog(
+                title: const Text('Validation Error'),
+                content: const Text(
+                  'Please provide habit name, start time, and end time.',
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
         return;
       }
@@ -1298,22 +1449,27 @@ class AddHabitPageState extends State<AddHabitPage>
       );
     } else if (_selectedFrequencyType == 'weekly') {
       if (_weeklyInstances.isEmpty ||
-          _weeklyInstances.any((inst) =>
-          inst['nameController'].text.isEmpty ||
-              inst['start'] == null ||
-              inst['end'] == null)) {
+          _weeklyInstances.any(
+            (inst) =>
+                inst['nameController'].text.isEmpty ||
+                inst['start'] == null ||
+                inst['end'] == null,
+          )) {
         showCupertinoDialog(
           context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('Validation Error'),
-            content: const Text('Please provide details for all weekly habits.'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                onPressed: () => Navigator.pop(context),
+          builder:
+              (context) => CupertinoAlertDialog(
+                title: const Text('Validation Error'),
+                content: const Text(
+                  'Please provide details for all weekly habits.',
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
         return;
       }
@@ -1322,35 +1478,42 @@ class AddHabitPageState extends State<AddHabitPage>
         interval: _intervalValue,
         startRepeat: _selectedStartDate,
         endRepeat: _selectedEndDate,
-        byDay: _weeklyInstances
-            .map((inst) => RepeatRuleInstance(
-          selectedDay: inst['day'],
-          name: inst['nameController'].text,
-          start: inst['start'],
-          end: inst['end'],
-        ))
-            .toList(),
+        byDay:
+            _weeklyInstances
+                .map(
+                  (inst) => RepeatRuleInstance(
+                    selectedDay: inst['day'],
+                    name: inst['nameController'].text,
+                    start: inst['start'],
+                    end: inst['end'],
+                  ),
+                )
+                .toList(),
       );
     } else if (_selectedFrequencyType == 'monthly') {
       if (_monthlyType == 'specific') {
         if (_monthlySpecificInstances.isEmpty ||
-            _monthlySpecificInstances.any((inst) =>
-            inst['nameController'].text.isEmpty ||
-                inst['start'] == null ||
-                inst['end'] == null)) {
+            _monthlySpecificInstances.any(
+              (inst) =>
+                  inst['nameController'].text.isEmpty ||
+                  inst['start'] == null ||
+                  inst['end'] == null,
+            )) {
           showCupertinoDialog(
             context: context,
-            builder: (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content:
-              const Text('Please provide details for all monthly specific days.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
+            builder:
+                (context) => CupertinoAlertDialog(
+                  title: const Text('Validation Error'),
+                  content: const Text(
+                    'Please provide details for all monthly specific days.',
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           );
           return;
         }
@@ -1359,14 +1522,17 @@ class AddHabitPageState extends State<AddHabitPage>
           interval: _intervalValue,
           startRepeat: _selectedStartDate,
           endRepeat: _selectedEndDate,
-          byMonthDay: _monthlySpecificInstances
-              .map((inst) => RepeatRuleInstance(
-            selectedDay: inst['day'].toString(),
-            name: inst['nameController'].text,
-            start: inst['start'],
-            end: inst['end'],
-          ))
-              .toList(),
+          byMonthDay:
+              _monthlySpecificInstances
+                  .map(
+                    (inst) => RepeatRuleInstance(
+                      selectedDay: inst['day'].toString(),
+                      name: inst['nameController'].text,
+                      start: inst['start'],
+                      end: inst['end'],
+                    ),
+                  )
+                  .toList(),
         );
       } else {
         if (_monthlyWeek == null ||
@@ -1376,17 +1542,19 @@ class AddHabitPageState extends State<AddHabitPage>
             _endTime == null) {
           showCupertinoDialog(
             context: context,
-            builder: (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content:
-              const Text('Please provide all details for the monthly pattern.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
+            builder:
+                (context) => CupertinoAlertDialog(
+                  title: const Text('Validation Error'),
+                  content: const Text(
+                    'Please provide all details for the monthly pattern.',
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           );
           return;
         }

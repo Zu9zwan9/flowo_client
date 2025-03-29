@@ -111,11 +111,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showCupertinoDialog(
       context: context,
       builder:
-          (_) => const CupertinoAlertDialog(
-            title: Text('Settings Saved'),
-            content: Text('Your schedule preferences have been updated.'),
+          (dialogContext) => CupertinoAlertDialog(
+            title: const Text('Settings Saved'),
+            content: const Text('Your schedule preferences have been updated.'),
             actions: [
-              CupertinoDialogAction(isDefaultAction: true, child: Text('OK')),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(dialogContext),
+              ),
             ],
           ),
     );

@@ -248,7 +248,7 @@ class MyApp extends StatelessWidget {
             supportedLocales: const [Locale('en', 'US')],
             home:
                 isOnboardingCompleted
-                    ? const HomeScreen()
+                    ? const HomeScreen(initialExpanded: false)
                     : const NameInputScreen(),
           ),
         );
