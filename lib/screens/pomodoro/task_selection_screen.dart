@@ -14,7 +14,7 @@ class TaskSelectionScreen extends StatefulWidget {
 class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
   Task? _selectedTask;
   Task? _selectedSubtask;
-  int _customDuration = 25 * 60 * 1000; // Default 25 minutes
+  int customDuration = 25 * 60 * 1000; // Default 25 minutes
 
   @override
   Widget build(BuildContext context) {
@@ -22,9 +22,6 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
     final tasks = tasksBox.values.where((task) => !task.isDone).toList();
 
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Select Task for Pomodoro'),
-      ),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),

@@ -1,8 +1,7 @@
 import 'package:flowo_client/utils/logger.dart';
 
 class TaskFormData {
-  DateTime selectedDate;
-  DateTime selectedTime;
+  DateTime selectedDateTime;
   String category;
   int priority;
   int estimatedTime;
@@ -14,8 +13,7 @@ class TaskFormData {
   int pessimisticTime;
 
   TaskFormData({
-    required this.selectedDate,
-    required this.selectedTime,
+    required this.selectedDateTime,
     required this.category,
     required this.priority,
     required this.estimatedTime,

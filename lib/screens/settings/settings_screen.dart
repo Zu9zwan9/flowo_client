@@ -6,6 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../design/cupertino_form_theme.dart';
 import '../../models/app_theme.dart'; // Import the shared AppTheme enum
 import '../../theme_notifier.dart';
 import '../../utils/logger.dart';
@@ -230,7 +231,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder:
           (_) => Container(
             height: 280,
-            color: CupertinoColors.systemBackground,
+            color: CupertinoFormTheme(context).backgroundColor,
             child: Column(
               children: [
                 Container(
@@ -520,13 +521,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
 
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Settings'),
-        border: null,
-      ),
       child: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
           children: [
             // Theme Section
             SettingsSection(

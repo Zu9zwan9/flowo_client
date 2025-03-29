@@ -62,8 +62,8 @@ class _AddTaskPageState extends State<AddTaskPage>
 
     // Initialize form data
     _formData = TaskFormData(
-      selectedDate: widget.selectedDate ?? DateTime.now(),
-      selectedTime: widget.selectedDate ?? DateTime.now(),
+      selectedDateTime:
+          widget.selectedDate ?? _roundToNearestFiveMinutes(DateTime.now()),
       category: '',
       priority: 1,
       estimatedTime: 0,
@@ -143,17 +143,12 @@ class _AddTaskPageState extends State<AddTaskPage>
                 form.formGroup(
                   children: [
                     form.selectionButton(
-                      label: 'Date',
-                      value: DateFormatter.formatDate(_formData.selectedDate),
-                      onTap: () => _showDatePicker(context),
+                      label: 'Date & Time',
+                      value: DateFormatter.formatDateTime(
+                        _formData.selectedDateTime,
+                      ),
+                      onTap: () => _showDateTimePicker(context),
                       icon: CupertinoIcons.calendar,
-                    ),
-                    form.divider(),
-                    form.selectionButton(
-                      label: 'Time',
-                      value: DateFormatter.formatTime(_formData.selectedTime),
-                      onTap: () => _showTimePicker(context),
-                      icon: CupertinoIcons.time,
                     ),
                   ],
                 ),
@@ -335,56 +330,60 @@ class _AddTaskPageState extends State<AddTaskPage>
     _saveTask(context);
   }
 
-  Future<void> _showDatePicker(BuildContext context) async {
-    final now = DateTime.now();
+  Future<void> _showDateTimePicker(BuildContext context) async {
+    final now = _roundToNearestFiveMinutes(DateTime.now());
+    final initialDateTime =
+        _formData.selectedDateTime.isBefore(now)
+            ? now
+            : _formData.selectedDateTime;
 
-    // Show the date picker
-    final pickedDate = await showCupertinoModalPopup<DateTime>(
+    final pickedDateTime = await showCupertinoModalPopup<DateTime>(
       context: context,
       builder:
-          (context) => _buildDatePickerModal(
-            context: context,
-            initialDate:
-                _formData.selectedDate.isBefore(now)
-                    ? now
-                    : _formData.selectedDate,
-            minimumDate: now,
+          (context) => Container(
+            height: 300,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.pop(context, initialDateTime),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.dateAndTime,
+                    initialDateTime: initialDateTime,
+                    minimumDate: now,
+                    maximumDate: DateTime.now().add(const Duration(days: 365)),
+                    minuteInterval: 5,
+                    use24hFormat: true,
+                    onDateTimeChanged: (dateTime) {
+                      if (mounted) {
+                        setState(() {
+                          _formData.selectedDateTime = dateTime;
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
     );
 
-    // Update state if a date was picked
-    if (pickedDate != null && mounted) {
-      setState(() => _formData.selectedDate = pickedDate);
-    }
-  }
-
-  Future<void> _showTimePicker(BuildContext context) async {
-    final now = DateTime.now();
-
-    // Determine the initial time to show
-    DateTime initialTime;
-    bool isSameDay = _isSameDay(_formData.selectedDate, now);
-
-    if (isSameDay && _formData.selectedTime.isBefore(now)) {
-      initialTime = now;
-    } else {
-      initialTime = _formData.selectedTime;
-    }
-
-    // Show the time picker
-    final pickedTime = await showCupertinoModalPopup<DateTime>(
-      context: context,
-      builder:
-          (context) => _buildTimePickerModal(
-            context: context,
-            initialTime: initialTime,
-            minimumTime: isSameDay ? now : null,
-          ),
-    );
-
-    // Update state if a time was picked
-    if (pickedTime != null && mounted) {
-      setState(() => _formData.selectedTime = pickedTime);
+    if (pickedDateTime != null && mounted) {
+      setState(() {
+        _formData.selectedDateTime = pickedDateTime;
+      });
     }
   }
 
@@ -838,21 +837,13 @@ class _AddTaskPageState extends State<AddTaskPage>
       return;
     }
 
-    // Combine date and time
-    final selectedDateTime = DateTime(
-      _formData.selectedDate.year,
-      _formData.selectedDate.month,
-      _formData.selectedDate.day,
-      _formData.selectedTime.hour,
-      _formData.selectedTime.minute,
-    );
 
     // Create the task via BLoC
     context.read<TaskManagerCubit>().createTask(
       title: _titleController.text,
       priority: _formData.priority,
       estimatedTime: _formData.estimatedTime,
-      deadline: selectedDateTime.millisecondsSinceEpoch,
+      deadline: _formData.selectedDateTime.millisecondsSinceEpoch,
       category: Category(name: _selectedCategory),
       notes: _notesController.text.isNotEmpty ? _notesController.text : null,
       color: _formData.color,
@@ -941,7 +932,7 @@ class _AddTaskPageState extends State<AddTaskPage>
           Expanded(
             child: CupertinoDatePicker(
               mode: CupertinoDatePickerMode.time,
-              initialDateTime: initialTime,
+              initialDateTime: _roundToNearestFiveMinutes(initialTime),
               minimumDate: minimumTime,
               use24hFormat: true,
               minuteInterval: 5,
@@ -950,6 +941,20 @@ class _AddTaskPageState extends State<AddTaskPage>
           ),
         ],
       ),
+    );
+  }
+
+  DateTime _roundToNearestFiveMinutes(DateTime dateTime) {
+    final int minute = dateTime.minute;
+    final int remainder = minute % 5;
+    final int roundedMinute =
+        remainder == 0 ? minute : minute + (5 - remainder);
+    return DateTime(
+      dateTime.year,
+      dateTime.month,
+      dateTime.day,
+      dateTime.hour,
+      roundedMinute,
     );
   }
 

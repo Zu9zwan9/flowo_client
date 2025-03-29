@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
@@ -808,7 +810,7 @@ class AddHabitPageState extends State<AddHabitPage>
       builder:
           (context) => Container(
             height: 300,
-            color: CupertinoColors.systemBackground,
+            color: CupertinoFormTheme(context).backgroundColor,
             child: Column(
               children: [
                 SizedBox(
@@ -858,7 +860,7 @@ class AddHabitPageState extends State<AddHabitPage>
       builder:
           (context) => Container(
             height: 300,
-            color: CupertinoColors.systemBackground,
+            color: CupertinoFormTheme(context).backgroundColor,
             child: Column(
               children: [
                 SizedBox(
@@ -920,7 +922,7 @@ class AddHabitPageState extends State<AddHabitPage>
       builder:
           (context) => Container(
             height: 300,
-            color: CupertinoColors.systemBackground,
+            color: CupertinoFormTheme(context).backgroundColor,
             child: Column(
               children: [
                 SizedBox(
@@ -977,7 +979,7 @@ class AddHabitPageState extends State<AddHabitPage>
       builder:
           (context) => Container(
             height: 300,
-            color: CupertinoColors.systemBackground,
+            color: CupertinoFormTheme(context).backgroundColor,
             child: Column(
               children: [
                 SizedBox(

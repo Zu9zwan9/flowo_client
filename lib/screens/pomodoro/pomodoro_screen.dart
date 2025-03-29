@@ -158,7 +158,7 @@ class _PomodoroScreenState extends State<PomodoroScreen>
 
           return CupertinoPageScaffold(
             navigationBar: CupertinoNavigationBar(
-              middle: Text(widget.task?.title ?? 'Pomodoro Timer'),
+              middle: Text('Working on: ${widget.task?.title ?? 'Pomodoro Timer'}'),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -189,19 +189,6 @@ class _PomodoroScreenState extends State<PomodoroScreen>
             child: SafeArea(
               child: Column(
                 children: [
-                  if (widget.task != null)
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        'Working on: ${widget.task!.title}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-
                   // Session counter
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
