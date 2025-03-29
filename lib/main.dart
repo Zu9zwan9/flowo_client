@@ -9,7 +9,7 @@ import 'package:flowo_client/services/onboarding_service.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart' show TimeOfDay, FontWeight, Brightness;
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -87,12 +87,18 @@ void main() async {
     ambientScenesDB = await Hive.openBox<AmbientScene>('ambient_scenes');
   }
 
+  // Check if it's the first app launch by checking if the UserSettings box is empty
+  var isFirstLaunch = profiles.isEmpty;
+  appLogger.info('Is first app launch: $isFirstLaunch', 'App');
+
+  // Create and save default UserSettings if it's the first launch
   var selectedProfile =
       profiles.values.isNotEmpty
           ? profiles.values.first
           : UserSettings(
             name: 'Default',
-            minSession: 15,
+            minSession: 15 * 60 * 1000, // Convert to milliseconds
+            breakTime: 15 * 60 * 1000, // Default break time (15 minutes)
             sleepTime: [
               TimeFrame(
                 startTime: const TimeOfDay(hour: 22, minute: 0),
@@ -119,7 +125,34 @@ void main() async {
                 endTime: const TimeOfDay(hour: 22, minute: 0),
               ),
             ],
+            activeDays: {
+              'Monday': true,
+              'Tuesday': true,
+              'Wednesday': true,
+              'Thursday': true,
+              'Friday': true,
+              'Saturday': true,
+              'Sunday': true,
+            },
+            defaultNotificationType: NotificationType.sound,
           );
+
+  // Save the default settings to the Hive box if it's the first launch
+  if (isFirstLaunch) {
+    appLogger.info('Saving default user settings', 'App');
+    profiles.put('current', selectedProfile);
+
+    // Verify the settings were saved
+    final savedSettings = profiles.get('current');
+    if (savedSettings == null) {
+      appLogger.error('Failed to save default user settings', 'App');
+    } else {
+      appLogger.info(
+        'Default user settings saved successfully: name=${savedSettings.name}, minSession=${savedSettings.minSession}',
+        'App',
+      );
+    }
+  }
 
   // Create default user profile if none exists
   if (userProfiles.isEmpty) {
