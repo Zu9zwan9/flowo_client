@@ -188,7 +188,7 @@ void main() async {
     tasksDB: tasksDB,
     userSettings: selectedProfile,
     huggingFaceApiKey:
-        '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', // Default API key
+        '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', // Default API key
   );
 
   appLogger.info('Hive initialized and task boxes opened', 'App');

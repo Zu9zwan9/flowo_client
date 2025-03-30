@@ -34,10 +34,10 @@ class TaskManager {
   }) : scheduler = Scheduler(daysDB, tasksDB, userSettings),
        taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
        taskBreakdownAPI = TaskBreakdownAPI(
-         apiKey: huggingFaceApiKey ?? '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',
+         apiKey: huggingFaceApiKey ?? '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',
        ),
        taskEstimatorAPI = TaskEstimatorAPI(
-         apiKey: huggingFaceApiKey ?? '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',
+         apiKey: huggingFaceApiKey ?? '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',
        );
 
   void updateUserSettings(UserSettings userSettings) {
