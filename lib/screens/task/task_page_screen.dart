@@ -69,22 +69,24 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
 
   void _toggleTaskCompletion(TaskManagerCubit cubit) {
     cubit.toggleTaskCompletion(_task).then((isCompleted) {
-      setState(() {
-        _task.isDone = isCompleted;
-        _arrangeSubtasks();
-      });
-      _showAutoDismissDialog(
-        context,
-        message:
-            _task.isDone
-                ? 'Task "${_task.title}" completed'
-                : 'Task "${_task.title}" incomplete',
-      );
-      if (isCompleted) {
-        cubit.scheduleCompletionCheckReminder(
-          _task,
-          DateTime.now().add(const Duration(days: 1)),
+      if (mounted) {
+        setState(() {
+          _task.isDone = isCompleted;
+          _arrangeSubtasks();
+        });
+        _showAutoDismissDialog(
+          context,
+          message:
+              _task.isDone
+                  ? 'Task "${_task.title}" completed'
+                  : 'Task "${_task.title}" incomplete',
         );
+        if (isCompleted) {
+          cubit.scheduleCompletionCheckReminder(
+            _task,
+            DateTime.now().add(const Duration(days: 1)),
+          );
+        }
       }
     });
   }
@@ -172,13 +174,15 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                     ? EventEditScreen(event: _task)
                     : TaskEditScreen(task: _task),
       ),
-    ).then(
-      (_) => setState(() {
-        _task = widget.task;
-        _notesController.text = _task.notes ?? '';
-        _arrangeSubtasks();
-      }),
-    );
+    ).then((_) {
+      if (mounted) {
+        setState(() {
+          _task = widget.task;
+          _notesController.text = _task.notes ?? '';
+          _arrangeSubtasks();
+        });
+      }
+    });
   }
 
   void _confirmDelete(BuildContext context) {
@@ -231,14 +235,17 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   }
 
   void _scheduleSubtasks() {
+    if (!mounted) return;
     if (_subtasks.isEmpty) {
       setState(() => _isLoading = true);
       try {
         context.read<TaskManagerCubit>().scheduleTask(_task);
+        if (!mounted) return;
         setState(() => _isLoading = false);
         _showScheduledDialog(context, hasSubtasks: false);
       } catch (e) {
         logError('Error scheduling task: $e');
+        if (!mounted) return;
         setState(() => _isLoading = false);
         _showErrorDialog('Failed to schedule task');
       }
@@ -293,6 +300,8 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   }
 
   void _showAutoDismissDialog(BuildContext context, {required String message}) {
+    if (!mounted) return;
+
     showCupertinoDialog(
       context: context,
       barrierDismissible: true,
@@ -341,6 +350,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   }
 
   Future<void> _estimateSubtaskTimes() async {
+    if (!mounted) return;
     if (_subtasks.isEmpty) return _showErrorDialog('No subtasks to estimate');
     setState(() => _isLoading = true);
     try {
@@ -348,9 +358,11 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
         final time = await context.read<TaskManagerCubit>().estimateTaskTime(
           subtask,
         );
+        if (!mounted) return;
         subtask.estimatedTime = time;
         subtask.save();
       }
+      if (!mounted) return;
       setState(() => _isLoading = false);
       showCupertinoDialog(
         context: context,
@@ -375,21 +387,26 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
             ),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       _showErrorDialog('Failed to estimate times: $e');
     }
   }
 
   Future<void> _rescheduleSubtasks() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       context.read<TaskManagerCubit>().removeScheduledTasks();
       for (final subtask in _subtasks) {
         context.read<TaskManagerCubit>().scheduleTask(subtask);
+        if (!mounted) return;
       }
+      if (!mounted) return;
       setState(() => _isLoading = false);
       _showScheduledDialog(context, hasSubtasks: true);
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       _showErrorDialog('Failed to reschedule: $e');
     }

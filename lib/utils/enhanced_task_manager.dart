@@ -15,12 +15,13 @@ class EnhancedTaskManager extends TaskManager {
     required super.tasksDB,
     required super.userSettings,
     required String huggingFaceApiKey,
+    String serverUrl = 'http://localhost:8000',
   }) : _taskTimeEstimator = TaskTimeEstimator(
          AITimeEstimationStrategy(apiKey: huggingFaceApiKey),
        ),
        super(
          taskBreakdownAPI: ServerTaskBreakdownAPI(
-           huggingFaceApiKey as ServerApiClient,
+           ServerApiClient(baseUrl: serverUrl, apiKey: huggingFaceApiKey),
          ),
        );
 

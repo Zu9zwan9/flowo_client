@@ -8,17 +8,13 @@ import 'package:flowo_client/services/analytics_service.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
 import 'package:flowo_client/services/server_api_client.dart';
 import 'package:flowo_client/services/web_theme_bridge.dart';
-import 'package:flowo_client/services/web_theme_bridge.dart';
-import 'package:flowo_client/utils/ai_model/server_task_breakdown_api.dart';
 import 'package:flowo_client/utils/ai_model/server_task_breakdown_api.dart';
 import 'package:flowo_client/utils/server_task_manager.dart';
-import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
@@ -192,8 +188,14 @@ void main() async {
 
   // Create server API client
   final serverApiClient = ServerApiClient(
-    baseUrl: 'http://localhost:8000', // Replace with your server URL
-    apiKey: 'your-api-key', // Replace with your API key
+    baseUrl: const String.fromEnvironment(
+      'SERVER_URL',
+      defaultValue: 'http://localhost:8000',
+    ),
+    apiKey: const String.fromEnvironment(
+      'API_KEY',
+      defaultValue: 'your-api-key-here',
+    ),
   );
 
   // Create server task breakdown API
