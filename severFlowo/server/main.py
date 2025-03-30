@@ -1,8 +1,7 @@
 import os
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-
 from server.api.router import api_router
 from server.core.auth import get_api_key
 
@@ -16,10 +15,10 @@ app = FastAPI(
     version="1.0.0",
 )
 
-# Add CORS middleware
+# Add CORS middleware (allow all origins for development)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your Flutter app's origin
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,9 +38,5 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    
-    # Get port from environment variable or use default
     port = int(os.getenv("PORT", 8000))
-    
-    # Run the server
     uvicorn.run("server.main:app", host="0.0.0.0", port=port, reload=True)

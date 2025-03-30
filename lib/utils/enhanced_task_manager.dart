@@ -14,14 +14,14 @@ class EnhancedTaskManager extends TaskManager {
     required super.daysDB,
     required super.tasksDB,
     required super.userSettings,
-    required String huggingFaceApiKey,
+    required String serverApiKey,
     String serverUrl = 'http://localhost:8000',
   }) : _taskTimeEstimator = TaskTimeEstimator(
-         AITimeEstimationStrategy(apiKey: huggingFaceApiKey),
+         AITimeEstimationStrategy(apiKey: serverApiKey),
        ),
        super(
          taskBreakdownAPI: ServerTaskBreakdownAPI(
-           ServerApiClient(baseUrl: serverUrl, apiKey: huggingFaceApiKey),
+           ServerApiClient(baseUrl: serverUrl, apiKey: serverApiKey),
          ),
        );
 

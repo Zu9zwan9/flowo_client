@@ -193,7 +193,7 @@ void main() async {
       defaultValue: 'http://localhost:8000',
     ),
     apiKey: const String.fromEnvironment(
-      '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',
+      'SERVER_API_KEY',
       defaultValue: 'your-api-key-here',
     ),
   );

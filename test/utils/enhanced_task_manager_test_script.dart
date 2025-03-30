@@ -42,7 +42,10 @@ Future<void> main() async {
     daysDB: mockDaysBox,
     tasksDB: mockTasksBox,
     userSettings: userSettings,
-    huggingFaceApiKey: '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',
+    serverApiKey: const String.fromEnvironment(
+      'SERVER_API_KEY',
+      defaultValue: 'test-api-key',
+    ),
   );
 
   // Create a test task
@@ -161,13 +164,13 @@ class EnhancedTaskManager {
   final Box<Day> daysDB;
   final Box<Task> tasksDB;
   final UserSettings userSettings;
-  final String huggingFaceApiKey;
+  final String serverApiKey;
 
   EnhancedTaskManager({
     required this.daysDB,
     required this.tasksDB,
     required this.userSettings,
-    required this.huggingFaceApiKey,
+    required this.serverApiKey,
   });
 
   Future<List<Task>> breakdownAndScheduleTask(Task task) async {

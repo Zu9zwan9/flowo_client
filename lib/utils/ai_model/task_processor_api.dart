@@ -34,26 +34,31 @@ class Pipeline {
       "inputs": jsonEncode(messages),
       "parameters": {"max_new_tokens": 500, "return_full_text": false},
     };
-    final headers = {
-      "Authorization": "Bearer $apiKey",
-      "Content-Type": "application/json",
-    };
+    final headers = {"X-API-Key": apiKey, "Content-Type": "application/json"};
+
+    // Use the server API instead of making direct calls to Hugging Face
+    final serverUrl = Uri.parse(
+      apiUrl.replaceFirst(
+        RegExp(r'https://.*huggingface\.co/.*'),
+        'http://localhost:8000/api/generate',
+      ),
+    );
 
     try {
-      logInfo('Making request to Hugging Face API for model: $model');
+      logInfo('Making request to server API for model: $model');
       final client = http.Client();
       final response = await client.post(
-        Uri.parse(apiUrl),
+        serverUrl,
         headers: headers,
         body: jsonEncode(data),
       );
 
       if (response.statusCode == 200) {
-        logInfo('Received successful response from Hugging Face API');
+        logInfo('Received successful response from server API');
         return jsonDecode(response.body);
       } else {
         logError(
-          'Error from Hugging Face API: ${response.statusCode} - ${response.body}',
+          'Error from server API: ${response.statusCode} - ${response.body}',
         );
         logWarning('Using fallback response due to API error');
         return {
@@ -61,7 +66,7 @@ class Pipeline {
         };
       }
     } catch (e) {
-      logError('Exception making request to Hugging Face API: $e');
+      logError('Exception making request to server API: $e');
       logWarning('Using fallback response due to exception');
       return {
         "generated_text": "1 hour", // Fallback for time estimation
