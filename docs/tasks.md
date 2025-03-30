@@ -5,8 +5,8 @@ This document contains a detailed list of actionable improvement tasks for the F
 ## AI Model Implementation
 
 ### Self-hosted AI Model for Smartphones
-[ ] 1. Research lightweight LLM models suitable for mobile devices (e.g., GGML, GGUF formats)
-[ ] 2. Evaluate models like Llama 2 7B, Phi-2, Gemma 2B for mobile compatibility
+[x] 1. Research lightweight LLM models suitable for mobile devices (e.g., GGML, GGUF formats)
+[x] 2. Evaluate models like Llama 2 7B, Phi-2, Gemma 2B for mobile compatibility
 [ ] 3. Create a native module for model inference on Android using TFLite or PyTorch Mobile
 [ ] 4. Create a native module for model inference on iOS using Core ML or Metal
 [ ] 5. Implement model quantization to reduce size and improve performance
