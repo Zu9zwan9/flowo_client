@@ -42,7 +42,7 @@ Future<void> main() async {
     daysDB: mockDaysBox,
     tasksDB: mockTasksBox,
     userSettings: userSettings,
-    huggingFaceApiKey: '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',
+    huggingFaceApiKey: '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',
   );
 
   // Create a test task
