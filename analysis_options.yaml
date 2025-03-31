@@ -21,8 +21,49 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-  # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-  # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # Style rules
+    prefer_single_quotes: true
+    prefer_trailing_comma: true
+    lines_longer_than_80_chars: true
+    camel_case_types: true
+    camel_case_extensions: true
+    library_names: true
+    file_names: true
+    library_prefixes: true
+    non_constant_identifier_names: true
+    constant_identifier_names: true
+    directives_ordering: true
+
+    # Documentation rules
+    slash_for_doc_comments: true
+    package_api_docs: true
+    public_member_api_docs: true
+
+    # Error prevention rules
+    avoid_empty_else: true
+    avoid_relative_lib_imports: true
+    avoid_types_as_parameter_names: true
+    control_flow_in_finally: true
+    empty_statements: true
+
+    # Performance rules
+    avoid_slow_async_io: true
+    avoid_unnecessary_containers: true
+    avoid_function_literals_in_foreach_calls: true
+
+    # Best practices
+    avoid_print: true
+    avoid_web_libraries_in_flutter: true
+    await_only_futures: true
+    cancel_subscriptions: true
+    close_sinks: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_locals: true
+    prefer_final_fields: true
+    use_key_in_widget_constructors: true
+    hash_and_equals: true
+    use_build_context_synchronously: true
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options
