@@ -373,7 +373,7 @@ class _AddTaskPageState extends State<AddTaskPage>
                     minimumDate: now,
                     maximumDate: DateTime.now().add(const Duration(days: 365)),
                     minuteInterval: 5,
-                    use24hFormat: true,
+                    use24hFormat: _userSettings.is24HourFormat,
                     onDateTimeChanged: (dateTime) {
                       if (mounted) {
                         setState(() {

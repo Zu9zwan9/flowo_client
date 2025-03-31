@@ -180,7 +180,7 @@ class CalendarScreenState extends State<CalendarScreen> {
               children: [
                 const SizedBox(height: 8),
                 Text(
-                  '${DateTimeFormatter.formatTime(scheduledTask.startTime, is24HourFormat: _userSettings.is24HourFormat)} - ${DateTimeFormatter.formatTime(scheduledTask.endTime, is24HourFormat: _userSettings.is24HourFormat)}', 
+                  '${DateTimeFormatter.formatTime(scheduledTask.startTime, is24HourFormat: _userSettings.is24HourFormat)} - ${DateTimeFormatter.formatTime(scheduledTask.endTime, is24HourFormat: _userSettings.is24HourFormat)}',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,

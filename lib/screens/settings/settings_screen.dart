@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../../design/cupertino_form_theme.dart';
 import '../../models/app_theme.dart'; // Import the shared AppTheme enum
 import '../../theme_notifier.dart';
+import '../../utils/formatter/date_time_formatter.dart';
 import '../../utils/logger.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -40,43 +41,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   /// Loads user settings from TaskManagerCubit and initializes state variables.
   void _loadSettings() {
-    final currentSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
+    final currentSettings =
+        context.read<TaskManagerCubit>().taskManager.userSettings;
     setState(() {
-      _sleepTime = currentSettings.sleepTime.isNotEmpty
-          ? currentSettings.sleepTime.first.startTime
-          : const TimeOfDay(hour: 22, minute: 0);
-      _wakeupTime = currentSettings.sleepTime.isNotEmpty
-          ? currentSettings.sleepTime.first.endTime
-          : const TimeOfDay(hour: 7, minute: 0);
-      _breakDuration = (currentSettings.breakTime ?? 15 * 60 * 1000) ~/ (60 * 1000);
+      _sleepTime =
+          currentSettings.sleepTime.isNotEmpty
+              ? currentSettings.sleepTime.first.startTime
+              : const TimeOfDay(hour: 22, minute: 0);
+      _wakeupTime =
+          currentSettings.sleepTime.isNotEmpty
+              ? currentSettings.sleepTime.first.endTime
+              : const TimeOfDay(hour: 7, minute: 0);
+      _breakDuration =
+          (currentSettings.breakTime ?? 15 * 60 * 1000) ~/ (60 * 1000);
       _minSessionDuration = currentSettings.minSession ~/ (60 * 1000);
       _mealTimes = List.from(
         currentSettings.mealBreaks.isNotEmpty
             ? currentSettings.mealBreaks
             : [
-          TimeFrame(
-            startTime: TimeOfDay(hour: 8, minute: 0),
-            endTime: TimeOfDay(hour: 8, minute: 30),
-          ),
-          TimeFrame(
-            startTime: TimeOfDay(hour: 13, minute: 0),
-            endTime: TimeOfDay(hour: 13, minute: 30),
-          ),
-          TimeFrame(
-            startTime: TimeOfDay(hour: 19, minute: 0),
-            endTime: TimeOfDay(hour: 19, minute: 30),
-          ),
-        ],
+              TimeFrame(
+                startTime: TimeOfDay(hour: 8, minute: 0),
+                endTime: TimeOfDay(hour: 8, minute: 30),
+              ),
+              TimeFrame(
+                startTime: TimeOfDay(hour: 13, minute: 0),
+                endTime: TimeOfDay(hour: 13, minute: 30),
+              ),
+              TimeFrame(
+                startTime: TimeOfDay(hour: 19, minute: 0),
+                endTime: TimeOfDay(hour: 19, minute: 30),
+              ),
+            ],
       );
       _freeTimes = List.from(
         currentSettings.freeTime.isNotEmpty
             ? currentSettings.freeTime
             : [
-          TimeFrame(
-            startTime: TimeOfDay(hour: 17, minute: 0),
-            endTime: TimeOfDay(hour: 18, minute: 30),
-          ),
-        ],
+              TimeFrame(
+                startTime: TimeOfDay(hour: 17, minute: 0),
+                endTime: TimeOfDay(hour: 18, minute: 30),
+              ),
+            ],
       );
       _activeDays = Map.from(
         currentSettings.activeDays ??
@@ -116,17 +121,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showCupertinoDialog(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: const Text('Settings Saved'),
-        content: const Text('Your schedule preferences have been updated.'),
-        actions: [
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(dialogContext),
+      builder:
+          (dialogContext) => CupertinoAlertDialog(
+            title: const Text('Settings Saved'),
+            content: const Text('Your schedule preferences have been updated.'),
+            actions: [
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(dialogContext),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -230,7 +236,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required TimeOfDay initialTime,
     required Function(TimeOfDay) onTimeSelected,
   }) async {
-    showCupertinoModalPopup(
+    TimeOfDay? selectedTime = initialTime;
+
+    await showCupertinoModalPopup(
       context: context,
       builder:
           (_) => Container(
@@ -249,7 +257,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       CupertinoButton(
                         child: const Text('Done'),
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          onTimeSelected(selectedTime!);
+                          Navigator.pop(context);
+                        },
                       ),
                     ],
                   ),
@@ -264,13 +275,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       initialTime.hour,
                       initialTime.minute,
                     ),
-                    onDateTimeChanged:
-                        (dateTime) => onTimeSelected(
-                          TimeOfDay(
-                            hour: dateTime.hour,
-                            minute: dateTime.minute,
-                          ),
-                        ),
+                    use24hFormat: _is24HourFormat,
+                    onDateTimeChanged: (dateTime) {
+                      selectedTime = TimeOfDay(
+                        hour: dateTime.hour,
+                        minute: dateTime.minute,
+                      );
+                    },
                   ),
                 ),
               ],
@@ -362,9 +373,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Formats a TimeOfDay object into a string (e.g., "08:30").
-  String _formatTimeOfDay(TimeOfDay time) =>
-      '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  /// Formats a TimeOfDay object into a string based on user settings.
+  String _formatTimeOfDay(TimeOfDay time) {
+    final dateTime = DateTime(2022, 1, 1, time.hour, time.minute);
+    return DateTimeFormatter.formatTime(
+      dateTime,
+      is24HourFormat: _is24HourFormat,
+    );
+  }
 
   /// Shows a color picker dialog for selecting a custom theme color.
   void _showColorPicker(ThemeNotifier themeNotifier) {
@@ -530,41 +546,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showCupertinoModalPopup(
       context: context,
-      builder: (_) => Container(
-        height: 280,
-        color: CupertinoFormTheme(context).backgroundColor,
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(
-                    child: const Text('Cancel'),
-                    onPressed: () => Navigator.pop(context),
+      builder:
+          (_) => Container(
+            height: 280,
+            color: CupertinoFormTheme(context).backgroundColor,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        child: const Text('Cancel'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      CupertinoButton(
+                        child: const Text('Done'),
+                        onPressed: () {
+                          setState(() => _dateFormat = values[selectedIndex]);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
                   ),
-                  CupertinoButton(
-                    child: const Text('Done'),
-                    onPressed: () {
-                      setState(() => _dateFormat = values[selectedIndex]);
-                      Navigator.pop(context);
-                    },
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32.0,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: selectedIndex,
+                    ),
+                    onSelectedItemChanged: (index) => selectedIndex = index,
+                    children:
+                        options
+                            .map((option) => Center(child: Text(option)))
+                            .toList(),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Expanded(
-              child: CupertinoPicker(
-                itemExtent: 32.0,
-                scrollController: FixedExtentScrollController(initialItem: selectedIndex),
-                onSelectedItemChanged: (index) => selectedIndex = index,
-                children: options.map((option) => Center(child: Text(option))).toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -579,41 +601,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     showCupertinoModalPopup(
       context: context,
-      builder: (_) => Container(
-        height: 280,
-        color: CupertinoFormTheme(context).backgroundColor,
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(
-                    child: const Text('Cancel'),
-                    onPressed: () => Navigator.pop(context),
+      builder:
+          (_) => Container(
+            height: 280,
+            color: CupertinoFormTheme(context).backgroundColor,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        child: const Text('Cancel'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      CupertinoButton(
+                        child: const Text('Done'),
+                        onPressed: () {
+                          setState(() => _monthFormat = values[selectedIndex]);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
                   ),
-                  CupertinoButton(
-                    child: const Text('Done'),
-                    onPressed: () {
-                      setState(() => _monthFormat = values[selectedIndex]);
-                      Navigator.pop(context);
-                    },
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32.0,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: selectedIndex,
+                    ),
+                    onSelectedItemChanged: (index) => selectedIndex = index,
+                    children:
+                        options
+                            .map((option) => Center(child: Text(option)))
+                            .toList(),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Expanded(
-              child: CupertinoPicker(
-                itemExtent: 32.0,
-                scrollController: FixedExtentScrollController(initialItem: selectedIndex),
-                onSelectedItemChanged: (index) => selectedIndex = index,
-                children: options.map((option) => Center(child: Text(option))).toList(),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -757,7 +785,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     CupertinoIcons.moon_fill,
                     color: CupertinoColors.systemIndigo,
                   ),
-                  use24HourFormat: false,
+                  use24HourFormat: _is24HourFormat,
                 ),
                 SettingsTimePickerItem(
                   label: 'Wake Up Time',
@@ -767,7 +795,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     CupertinoIcons.sunrise_fill,
                     color: CupertinoColors.systemOrange,
                   ),
-                  use24HourFormat: false,
+                  use24HourFormat: _is24HourFormat,
                 ),
               ],
             ),
@@ -926,13 +954,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // Date & Time Format Section
             SettingsSection(
               title: 'Date & Time Format',
-              footerText: 'Customize how dates and times are displayed in the app.',
+              footerText:
+                  'Customize how dates and times are displayed in the app.',
+              showDivider: false,
+              customFooter: null,
               children: [
                 SettingsItem(
                   label: 'Date Format',
-                  subtitle: 'Choose your preferred date format',
+                  showDivider: false,
                   trailing: Text(
-                    _dateFormat == 'DD-MM-YYYY' ? 'DD-MM-YYYY (e.g., 29-03-2025)' : 'MM-DD-YYYY (e.g., 03-29-2025)',
+                    _dateFormat == 'DD-MM-YYYY' ? 'DD-MM-YYYY' : 'MM-DD-YYYY',
                     style: const TextStyle(color: CupertinoColors.systemGrey),
                   ),
                   onTap: () => _showDateFormatPicker(context),
@@ -940,13 +971,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 16),
                 SettingsItem(
                   label: 'Month Format',
-                  subtitle: 'Choose how months are displayed',
+                  showDivider: false,
                   trailing: Text(
                     _monthFormat == 'numeric'
-                        ? 'Numeric (e.g., 03)'
+                        ? 'Numeric'
                         : _monthFormat == 'short'
-                        ? 'Short (e.g., Mar)'
-                        : 'Full (e.g., March)',
+                        ? 'Short'
+                        : 'Full',
                     style: const TextStyle(color: CupertinoColors.systemGrey),
                   ),
                   onTap: () => _showMonthFormatPicker(context),
@@ -956,7 +987,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   label: '24-Hour Format',
                   value: _is24HourFormat,
                   onChanged: (value) => setState(() => _is24HourFormat = value),
-                  subtitle: 'Use 24-hour (e.g., 14:30) or 12-hour (e.g., 2:30 PM) format',
                 ),
               ],
             ),

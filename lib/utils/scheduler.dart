@@ -511,15 +511,60 @@ class Scheduler {
     final date = DateTime.parse('${day.day} 00:00:00');
 
     for (var timeFrame in userSettings.mealBreaks) {
-      _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
+      if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+          timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+        _addTimeBlock(
+          day,
+          TimeFrame(
+            startTime: timeFrame.startTime,
+            endTime: const TimeOfDay(hour: 23, minute: 59),
+          ),
+          ScheduledTaskType.mealBreak,
+          date,
+        );
+        _addTimeBlock(
+          day,
+          TimeFrame(
+            startTime: const TimeOfDay(hour: 0, minute: 0),
+            endTime: timeFrame.endTime,
+          ),
+          ScheduledTaskType.mealBreak,
+          date,
+        );
+      } else {
+        _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
+      }
     }
+
     for (var timeFrame in userSettings.freeTime) {
-      _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
+      if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+          timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+        _addTimeBlock(
+          day,
+          TimeFrame(
+            startTime: timeFrame.startTime,
+            endTime: const TimeOfDay(hour: 23, minute: 59),
+          ),
+          ScheduledTaskType.rest,
+          date,
+        );
+        _addTimeBlock(
+          day,
+          TimeFrame(
+            startTime: const TimeOfDay(hour: 0, minute: 0),
+            endTime: timeFrame.endTime,
+          ),
+          ScheduledTaskType.rest,
+          date,
+        );
+      } else {
+        _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
+      }
     }
+
     for (var timeFrame in userSettings.sleepTime) {
       if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
           timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-        // Split overnight sleep
         _addTimeBlock(
           day,
           TimeFrame(

@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
@@ -13,7 +11,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../design/cupertino_form_theme.dart';
 import '../../design/cupertino_form_widgets.dart';
+import '../../models/user_settings.dart';
 import '../../services/category_service.dart';
+import '../../utils/formatter/date_time_formatter.dart';
 
 extension StringExtension on String {
   String capitalize() =>
@@ -54,6 +54,7 @@ class AddHabitPageState extends State<AddHabitPage>
   late Animation<double> _buttonScaleAnimation;
 
   late TextEditingController _nameController;
+  late UserSettings _userSettings;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   final List<Map<String, dynamic>> _weeklyInstances = [];
@@ -67,6 +68,7 @@ class AddHabitPageState extends State<AddHabitPage>
         widget.selectedDate ?? DateTime.now().add(const Duration(days: 7));
 
     _nameController = TextEditingController();
+    _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
@@ -155,7 +157,11 @@ class AddHabitPageState extends State<AddHabitPage>
                     CupertinoFormWidgets.selectionButton(
                       context: context,
                       label: 'Date',
-                      value: theme.formatDate(_selectedStartDate),
+                      value: DateTimeFormatter.formatDate(
+                        _selectedStartDate,
+                        dateFormat: _userSettings.dateFormat,
+                        monthFormat: _userSettings.monthFormat,
+                      ),
                       onTap: () => _showDatePicker(context, true),
                       color: theme.primaryColor,
                       icon: CupertinoIcons.calendar,
@@ -171,7 +177,11 @@ class AddHabitPageState extends State<AddHabitPage>
                     CupertinoFormWidgets.selectionButton(
                       context: context,
                       label: 'Date',
-                      value: theme.formatDate(_selectedEndDate),
+                      value: DateTimeFormatter.formatDate(
+                        _selectedEndDate,
+                        dateFormat: _userSettings.dateFormat,
+                        monthFormat: _userSettings.monthFormat,
+                      ),
                       onTap: () => _showDatePicker(context, false),
                       color: theme.primaryColor,
                       icon: CupertinoIcons.calendar,
@@ -370,9 +380,9 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   List<Widget> _buildSingleInstanceWidgets(
-    BuildContext context,
-    CupertinoFormTheme theme,
-  ) {
+      BuildContext context,
+      CupertinoFormTheme theme,
+      ) {
     return [
       const SizedBox(height: 12.0),
       Text('Habit Details', style: theme.labelTextStyle),
@@ -387,7 +397,12 @@ class AddHabitPageState extends State<AddHabitPage>
       CupertinoFormWidgets.selectionButton(
         context: context,
         label: 'Start Time',
-        value: _startTime != null ? _startTime!.format(context) : 'Select',
+        value: _startTime != null
+            ? DateTimeFormatter.formatTime(
+          DateTime(2023, 1, 1, _startTime!.hour, _startTime!.minute),
+          is24HourFormat: _userSettings.is24HourFormat,
+        )
+            : 'Select',
         onTap: () async {
           final time = await _pickTime(context, _startTime);
           if (time != null) setState(() => _startTime = time);
@@ -400,7 +415,12 @@ class AddHabitPageState extends State<AddHabitPage>
       CupertinoFormWidgets.selectionButton(
         context: context,
         label: 'End Time',
-        value: _endTime != null ? _endTime!.format(context) : 'Select',
+        value: _endTime != null
+            ? DateTimeFormatter.formatTime(
+          DateTime(2023, 1, 1, _endTime!.hour, _endTime!.minute),
+          is24HourFormat: _userSettings.is24HourFormat,
+        )
+            : 'Select',
         onTap: () async {
           final time = await _pickTime(context, _endTime);
           if (time != null) setState(() => _endTime = time);
@@ -413,9 +433,9 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   List<Widget> _buildWeeklyWidgets(
-    BuildContext context,
-    CupertinoFormTheme theme,
-  ) {
+      BuildContext context,
+      CupertinoFormTheme theme,
+      ) {
     List<Widget> widgets = [];
 
     if (_weeklyInstances.isEmpty) {
@@ -454,10 +474,12 @@ class AddHabitPageState extends State<AddHabitPage>
               CupertinoFormWidgets.selectionButton(
                 context: context,
                 label: 'Start Time',
-                value:
-                    inst['start'] != null
-                        ? (inst['start'] as TimeOfDay).format(context)
-                        : 'Select',
+                value: inst['start'] != null
+                    ? DateTimeFormatter.formatTime(
+                  DateTime(2023, 1, 1, (inst['start'] as TimeOfDay).hour, (inst['start'] as TimeOfDay).minute),
+                  is24HourFormat: _userSettings.is24HourFormat,
+                )
+                    : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['start']);
                   if (time != null) setState(() => inst['start'] = time);
@@ -470,10 +492,12 @@ class AddHabitPageState extends State<AddHabitPage>
               CupertinoFormWidgets.selectionButton(
                 context: context,
                 label: 'End Time',
-                value:
-                    inst['end'] != null
-                        ? (inst['end'] as TimeOfDay).format(context)
-                        : 'Select',
+                value: inst['end'] != null
+                    ? DateTimeFormatter.formatTime(
+                  DateTime(2023, 1, 1, (inst['end'] as TimeOfDay).hour, (inst['end'] as TimeOfDay).minute),
+                  is24HourFormat: _userSettings.is24HourFormat,
+                )
+                    : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['end']);
                   if (time != null) setState(() => inst['end'] = time);
@@ -583,9 +607,9 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   List<Widget> _buildMonthlySpecificWidgets(
-    BuildContext context,
-    CupertinoFormTheme theme,
-  ) {
+      BuildContext context,
+      CupertinoFormTheme theme,
+      ) {
     List<Widget> widgets = [];
 
     if (_monthlySpecificInstances.isEmpty) {
@@ -622,10 +646,12 @@ class AddHabitPageState extends State<AddHabitPage>
               CupertinoFormWidgets.selectionButton(
                 context: context,
                 label: 'Start Time',
-                value:
-                    inst['start'] != null
-                        ? inst['start'].format(context)
-                        : 'Select',
+                value: inst['start'] != null
+                    ? DateTimeFormatter.formatTime(
+                  DateTime(2023, 1, 1, (inst['start'] as TimeOfDay).hour, (inst['start'] as TimeOfDay).minute),
+                  is24HourFormat: _userSettings.is24HourFormat,
+                )
+                    : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['start']);
                   if (time != null) setState(() => inst['start'] = time);
@@ -638,10 +664,12 @@ class AddHabitPageState extends State<AddHabitPage>
               CupertinoFormWidgets.selectionButton(
                 context: context,
                 label: 'End Time',
-                value:
-                    inst['end'] != null
-                        ? inst['end'].format(context)
-                        : 'Select',
+                value: inst['end'] != null
+                    ? DateTimeFormatter.formatTime(
+                  DateTime(2023, 1, 1, (inst['end'] as TimeOfDay).hour, (inst['end'] as TimeOfDay).minute),
+                  is24HourFormat: _userSettings.is24HourFormat,
+                )
+                    : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['end']);
                   if (time != null) setState(() => inst['end'] = time);
@@ -657,9 +685,7 @@ class AddHabitPageState extends State<AddHabitPage>
                   vertical: 8,
                 ),
                 child: const Text('Remove', style: TextStyle(fontSize: 14.0)),
-                onPressed:
-                    () =>
-                        setState(() => _monthlySpecificInstances.remove(inst)),
+                onPressed: () => setState(() => _monthlySpecificInstances.remove(inst)),
               ),
             ],
           );
@@ -679,9 +705,9 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   List<Widget> _buildMonthlyPatternWidgets(
-    BuildContext context,
-    CupertinoFormTheme theme,
-  ) {
+      BuildContext context,
+      CupertinoFormTheme theme,
+      ) {
     return [
       Text('Select Week', style: theme.labelTextStyle),
       const SizedBox(height: 8.0),
@@ -731,46 +757,122 @@ class AddHabitPageState extends State<AddHabitPage>
   }
 
   Future<void> _showDatePicker(BuildContext context, bool isStart) async {
-    final pickedDate = await CupertinoFormWidgets.showDatePicker(
+    final now = DateTime.now();
+    DateTime initialDate = isStart ? _selectedStartDate : _selectedEndDate;
+    initialDate = DateTime(initialDate.year, initialDate.month, initialDate.day);
+    final minimumDate = DateTime(now.year, now.month, now.day);
+
+    if (initialDate.isBefore(minimumDate)) {
+      initialDate = minimumDate;
+    }
+
+    DateTime? selectedDate = initialDate;
+
+    final pickedDate = await showCupertinoModalPopup<DateTime>(
       context: context,
-      initialDate: isStart ? _selectedStartDate : _selectedEndDate,
+      builder: (context) => Container(
+        height: 300,
+        color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoButton(
+                  child: const Text('Done'),
+                  onPressed: () => Navigator.pop(context, selectedDate),
+                ),
+              ],
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.date,
+                initialDateTime: initialDate,
+                minimumDate: minimumDate,
+                maximumDate: DateTime.now().add(const Duration(days: 730)),
+                onDateTimeChanged: (dateTime) {
+                  selectedDate = dateTime;
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
+
     if (pickedDate != null && mounted) {
-      setState(
-        () =>
-            isStart
-                ? _selectedStartDate = pickedDate
-                : _selectedEndDate = pickedDate,
-      );
+      setState(() {
+        if (isStart) {
+          _selectedStartDate = pickedDate;
+        } else {
+          _selectedEndDate = pickedDate;
+        }
+      });
     }
   }
 
   Future<TimeOfDay?> _pickTime(
-    BuildContext context,
-    TimeOfDay? initialTime,
-  ) async {
+      BuildContext context,
+      TimeOfDay? initialTime,
+      ) async {
     final now = DateTime.now();
-    final initialDateTime =
-        initialTime != null
-            ? DateTime(
-              _selectedStartDate.year,
-              _selectedStartDate.month,
-              _selectedStartDate.day,
-              initialTime.hour,
-              initialTime.minute,
-            )
-            : DateTime(
-              _selectedStartDate.year,
-              _selectedStartDate.month,
-              _selectedStartDate.day,
-              now.hour,
-              now.minute,
-            );
-
-    final pickedTime = await CupertinoFormWidgets.showTimePicker(
-      context: context,
-      initialTime: initialDateTime,
+    final initialDateTime = initialTime != null
+        ? DateTime(
+      now.year,
+      now.month,
+      now.day,
+      initialTime.hour,
+      initialTime.minute,
+    )
+        : DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute,
     );
+
+    DateTime? selectedTime;
+
+    final pickedTime = await showCupertinoModalPopup<DateTime>(
+      context: context,
+      builder: (context) => Container(
+        height: 300,
+        color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                CupertinoButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoButton(
+                  child: const Text('Done'),
+                  onPressed: () => Navigator.pop(context, selectedTime),
+                ),
+              ],
+            ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                initialDateTime: initialDateTime,
+                use24hFormat: _userSettings.is24HourFormat,
+                onDateTimeChanged: (dateTime) {
+                  selectedTime = dateTime;
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
     return pickedTime != null
         ? TimeOfDay(hour: pickedTime.hour, minute: pickedTime.minute)
         : null;
@@ -1347,17 +1449,16 @@ class AddHabitPageState extends State<AddHabitPage>
     if (!_formKey.currentState!.validate()) {
       showCupertinoDialog(
         context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please fill in all required fields.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Validation Error'),
+          content: const Text('Please fill in all required fields.'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+              onPressed: () => Navigator.pop(context),
             ),
+          ],
+        ),
       );
       return;
     }
@@ -1365,30 +1466,29 @@ class AddHabitPageState extends State<AddHabitPage>
     if (_categoryOptions.isEmpty) {
       showCupertinoDialog(
         context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('No Categories'),
-              content: const Text(
-                'Please add a category before saving the habit.',
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text(
-                    'Add Category',
-                    style: TextStyle(fontSize: 14.0),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _showAddCategoryDialog(context);
-                  },
-                ),
-              ],
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('No Categories'),
+          content: const Text(
+            'Please add a category before saving the habit.',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
+              onPressed: () => Navigator.pop(context),
             ),
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text(
+                'Add Category',
+                style: TextStyle(fontSize: 14.0),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                _showAddCategoryDialog(context);
+              },
+            ),
+          ],
+        ),
       );
       return;
     }
@@ -1396,42 +1496,54 @@ class AddHabitPageState extends State<AddHabitPage>
     if (_selectedCategory.isEmpty) {
       showCupertinoDialog(
         context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please select a category.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Validation Error'),
+          content: const Text('Please select a category.'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+              onPressed: () => Navigator.pop(context),
             ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (_selectedEndDate.isBefore(_selectedStartDate)) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('Invalid Date'),
+          content: const Text('End date must be after start date.'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
       );
       return;
     }
 
     RepeatRule? repeatRule;
-    if (_selectedFrequencyType == 'daily' ||
-        _selectedFrequencyType == 'yearly') {
-      if (_nameController.text.isEmpty ||
-          _startTime == null ||
-          _endTime == null) {
+    if (_selectedFrequencyType == 'daily' || _selectedFrequencyType == 'yearly') {
+      if (_nameController.text.isEmpty || _startTime == null || _endTime == null) {
         showCupertinoDialog(
           context: context,
-          builder:
-              (context) => CupertinoAlertDialog(
-                title: const Text('Validation Error'),
-                content: const Text(
-                  'Please provide habit name, start time, and end time.',
-                ),
-                actions: [
-                  CupertinoDialogAction(
-                    child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Validation Error'),
+            content: const Text(
+              'Please provide habit name, start time, and end time.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                onPressed: () => Navigator.pop(context),
               ),
+            ],
+          ),
         );
         return;
       }
@@ -1452,26 +1564,25 @@ class AddHabitPageState extends State<AddHabitPage>
     } else if (_selectedFrequencyType == 'weekly') {
       if (_weeklyInstances.isEmpty ||
           _weeklyInstances.any(
-            (inst) =>
-                inst['nameController'].text.isEmpty ||
+                (inst) =>
+            inst['nameController'].text.isEmpty ||
                 inst['start'] == null ||
                 inst['end'] == null,
           )) {
         showCupertinoDialog(
           context: context,
-          builder:
-              (context) => CupertinoAlertDialog(
-                title: const Text('Validation Error'),
-                content: const Text(
-                  'Please provide details for all weekly habits.',
-                ),
-                actions: [
-                  CupertinoDialogAction(
-                    child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Validation Error'),
+            content: const Text(
+              'Please provide details for all weekly habits.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                onPressed: () => Navigator.pop(context),
               ),
+            ],
+          ),
         );
         return;
       }
@@ -1480,42 +1591,40 @@ class AddHabitPageState extends State<AddHabitPage>
         interval: _intervalValue,
         startRepeat: _selectedStartDate,
         endRepeat: _selectedEndDate,
-        byDay:
-            _weeklyInstances
-                .map(
-                  (inst) => RepeatRuleInstance(
-                    selectedDay: inst['day'],
-                    name: inst['nameController'].text,
-                    start: inst['start'],
-                    end: inst['end'],
-                  ),
-                )
-                .toList(),
+        byDay: _weeklyInstances
+            .map(
+              (inst) => RepeatRuleInstance(
+            selectedDay: inst['day'],
+            name: inst['nameController'].text,
+            start: inst['start'],
+            end: inst['end'],
+          ),
+        )
+            .toList(),
       );
     } else if (_selectedFrequencyType == 'monthly') {
       if (_monthlyType == 'specific') {
         if (_monthlySpecificInstances.isEmpty ||
             _monthlySpecificInstances.any(
-              (inst) =>
-                  inst['nameController'].text.isEmpty ||
+                  (inst) =>
+              inst['nameController'].text.isEmpty ||
                   inst['start'] == null ||
                   inst['end'] == null,
             )) {
           showCupertinoDialog(
             context: context,
-            builder:
-                (context) => CupertinoAlertDialog(
-                  title: const Text('Validation Error'),
-                  content: const Text(
-                    'Please provide details for all monthly specific days.',
-                  ),
-                  actions: [
-                    CupertinoDialogAction(
-                      child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Validation Error'),
+              content: const Text(
+                'Please provide details for all monthly specific days.',
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
                 ),
+              ],
+            ),
           );
           return;
         }
@@ -1524,17 +1633,16 @@ class AddHabitPageState extends State<AddHabitPage>
           interval: _intervalValue,
           startRepeat: _selectedStartDate,
           endRepeat: _selectedEndDate,
-          byMonthDay:
-              _monthlySpecificInstances
-                  .map(
-                    (inst) => RepeatRuleInstance(
-                      selectedDay: inst['day'].toString(),
-                      name: inst['nameController'].text,
-                      start: inst['start'],
-                      end: inst['end'],
-                    ),
-                  )
-                  .toList(),
+          byMonthDay: _monthlySpecificInstances
+              .map(
+                (inst) => RepeatRuleInstance(
+              selectedDay: inst['day'].toString(),
+              name: inst['nameController'].text,
+              start: inst['start'],
+              end: inst['end'],
+            ),
+          )
+              .toList(),
         );
       } else {
         if (_monthlyWeek == null ||
@@ -1544,19 +1652,18 @@ class AddHabitPageState extends State<AddHabitPage>
             _endTime == null) {
           showCupertinoDialog(
             context: context,
-            builder:
-                (context) => CupertinoAlertDialog(
-                  title: const Text('Validation Error'),
-                  content: const Text(
-                    'Please provide all details for the monthly pattern.',
-                  ),
-                  actions: [
-                    CupertinoDialogAction(
-                      child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+            builder: (context) => CupertinoAlertDialog(
+              title: const Text('Validation Error'),
+              content: const Text(
+                'Please provide all details for the monthly pattern.',
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
                 ),
+              ],
+            ),
           );
           return;
         }

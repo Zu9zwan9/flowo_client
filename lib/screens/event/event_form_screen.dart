@@ -246,7 +246,7 @@ class EventFormScreenState extends State<EventFormScreen>
                     initialDateTime: initialDateTime,
                     minimumDate: now,
                     maximumDate: DateTime.now().add(const Duration(days: 730)),
-                    use24hFormat: true,
+                    use24hFormat: _userSettings.is24HourFormat,
                     onDateTimeChanged: (dateTime) {
                       selectedDateTime = dateTime;
                     },
