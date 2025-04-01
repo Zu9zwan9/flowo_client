@@ -207,8 +207,8 @@ class _TaskListScreenState extends State<TaskListScreen>
   void _showScheduleDialog(BuildContext context) {
     HapticFeedback.mediumImpact();
     final tasksCubit = context.read<TaskManagerCubit>();
-    tasksCubit.scheduleTasks();
     tasksCubit.scheduleHabits();
+    tasksCubit.scheduleTasks();
     _clearCache();
   }
 

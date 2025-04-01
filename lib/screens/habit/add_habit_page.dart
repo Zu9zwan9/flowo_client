@@ -2,6 +2,7 @@ import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/repeat_rule_instance.dart';
+import 'package:flowo_client/screens/calendar/calendar_screen.dart';
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
@@ -1224,7 +1225,8 @@ class AddHabitPageState extends State<AddHabitPage>
                           setDialogState(() {
                             tempSelectedCategory = category;
                           });
-                        }, // TODO: remove space between button and edges in category selector
+                        },
+                        // TODO: remove space between button and edges in category selector
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           color:
@@ -1741,10 +1743,15 @@ class AddHabitPageState extends State<AddHabitPage>
       frequency: repeatRule,
     );
 
-    Navigator.pop(
-      context,
-      CupertinoPageRoute(builder: (_) => HomeScreen(initialIndex: 0)),
-    );
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacement(
+        context,
+        CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),
+      );
+    }
+
     logInfo('Saved Habit: ${_titleController.text}');
   }
 }
