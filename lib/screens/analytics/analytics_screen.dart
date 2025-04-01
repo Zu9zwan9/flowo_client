@@ -200,9 +200,10 @@ class AnalyticsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: isDarkMode
-                ? CupertinoColors.black.withOpacity(0.1)
-                : CupertinoColors.systemGrey.withOpacity(0.1),
+            color:
+                isDarkMode
+                    ? CupertinoColors.black.withOpacity(0.1)
+                    : CupertinoColors.systemGrey.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

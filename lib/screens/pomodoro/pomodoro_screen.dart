@@ -158,7 +158,9 @@ class _PomodoroScreenState extends State<PomodoroScreen>
 
           return CupertinoPageScaffold(
             navigationBar: CupertinoNavigationBar(
-              middle: Text('Working on: ${widget.task?.title ?? 'Pomodoro Timer'}'),
+              middle: Text(
+                'Working on: ${widget.task?.title ?? 'Pomodoro Timer'}',
+              ),
               trailing: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [

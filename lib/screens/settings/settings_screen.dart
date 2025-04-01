@@ -7,13 +7,183 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../design/cupertino_form_theme.dart';
-import '../../models/app_theme.dart'; // Import the shared AppTheme enum
+import '../../models/app_theme.dart';
 import '../../theme_notifier.dart';
 import '../../utils/formatter/date_time_formatter.dart';
 import '../../utils/logger.dart';
 
+abstract class ThemeSelectionStrategy {
+  Widget buildThemeSelector(
+    BuildContext context,
+    ThemeNotifier themeNotifier,
+    ValueChanged<AppTheme> onThemeChanged,
+  );
+}
+
+class ThemeTabsStrategy implements ThemeSelectionStrategy {
+  const ThemeTabsStrategy();
+
+  @override
+  Widget buildThemeSelector(
+    BuildContext context,
+    ThemeNotifier themeNotifier,
+    ValueChanged<AppTheme> onThemeChanged,
+  ) {
+    return _ThemeTabs(
+      themeNotifier: themeNotifier,
+      onThemeChanged: onThemeChanged,
+    );
+  }
+}
+
+class _ThemeTabs extends StatelessWidget {
+  final ThemeNotifier themeNotifier;
+  final ValueChanged<AppTheme> onThemeChanged;
+
+  const _ThemeTabs({required this.themeNotifier, required this.onThemeChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final currentTheme = themeNotifier.themeMode.toString().split('.').last;
+    const themes = {'light': 'Light', 'dark': 'Dark', 'adhd': 'ADHD'};
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Appearance',
+            style: CupertinoTheme.of(context).textTheme.navTitleTextStyle,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Select your preferred visual style',
+            style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+              color: CupertinoDynamicColor.resolve(
+                CupertinoColors.systemGrey,
+                context,
+              ),
+              fontSize: 13,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 40,
+            decoration: BoxDecoration(
+              color: CupertinoDynamicColor.resolve(
+                CupertinoColors.systemGrey6,
+                context,
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children:
+                  themes.entries
+                      .map(
+                        (entry) => _buildTab(
+                          context,
+                          entry.value,
+                          entry.key,
+                          currentTheme,
+                        ),
+                      )
+                      .toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTab(
+    BuildContext context,
+    String label,
+    String value,
+    String currentTheme,
+  ) {
+    final isSelected = value == currentTheme;
+    final isCustom = value == 'custom';
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          final themeValue = AppTheme.values.firstWhere(
+            (e) => e.toString().split('.').last == value,
+            orElse: () => AppTheme.system,
+          );
+          onThemeChanged(themeValue);
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          height: double.infinity,
+          decoration: BoxDecoration(
+            color:
+                isSelected
+                    ? CupertinoDynamicColor.resolve(
+                      CupertinoColors.systemBackground,
+                      context,
+                    )
+                    : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow:
+                isSelected
+                    ? [
+                      BoxShadow(
+                        color: CupertinoColors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                    : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (isCustom) ...[
+                Container(
+                  width: 10,
+                  height: 10,
+                  margin: const EdgeInsets.only(right: 4),
+                  decoration: BoxDecoration(
+                    color: themeNotifier.customColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+              Text(
+                label,
+                style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                  color:
+                      isSelected
+                          ? CupertinoDynamicColor.resolve(
+                            CupertinoColors.label,
+                            context,
+                          )
+                          : CupertinoDynamicColor.resolve(
+                            CupertinoColors.secondaryLabel,
+                            context,
+                          ),
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final ThemeSelectionStrategy themeSelectionStrategy;
+
+  const SettingsScreen({
+    super.key,
+    this.themeSelectionStrategy = const ThemeTabsStrategy(),
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -39,7 +209,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _breakDuration = _breakDuration.clamp(5, 30);
   }
 
-  /// Loads user settings from TaskManagerCubit and initializes state variables.
   void _loadSettings() {
     final currentSettings =
         context.read<TaskManagerCubit>().taskManager.userSettings;
@@ -101,7 +270,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  /// Saves the current settings to TaskManagerCubit and shows a confirmation dialog.
   void _saveSettings() {
     final userSettings = UserSettings(
       name: 'Default',
@@ -136,7 +304,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Saves application logs to a file and shows a dialog with options to share or dismiss.
   Future<void> _saveLogs() async {
     appLogger.info('Save logs button pressed', 'Settings');
     final filePath = await appLogger.saveToFile(context);
@@ -182,7 +349,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     appLogger.info('Logs saved successfully', 'Settings', {'path': filePath});
   }
 
-  /// Shows a dialog with the log file location (since direct sharing isn't implemented).
   Future<void> _shareLogFile(String filePath) async {
     try {
       showCupertinoDialog(
@@ -231,7 +397,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  /// Shows a time picker dialog for selecting a time.
   Future<void> _showTimePicker({
     required TimeOfDay initialTime,
     required Function(TimeOfDay) onTimeSelected,
@@ -290,7 +455,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Shows a dialog to add a time slot (meal or free time).
   void _showAddTimeSlotDialog({
     required String title,
     required Function(TimeOfDay, TimeOfDay) onAdd,
@@ -345,7 +509,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Shows a dialog to add a meal time slot.
   void _showAddMealDialog() {
     _showAddTimeSlotDialog(
       title: 'Meal Time',
@@ -359,7 +522,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Shows a dialog to add a free time slot.
   void _showAddFreeTimeDialog() {
     _showAddTimeSlotDialog(
       title: 'Free Time',
@@ -373,7 +535,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Formats a TimeOfDay object into a string based on user settings.
   String _formatTimeOfDay(TimeOfDay time) {
     final dateTime = DateTime(2022, 1, 1, time.hour, time.minute);
     return DateTimeFormatter.formatTime(
@@ -382,18 +543,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  /// Shows a color picker dialog for selecting a custom theme color.
   void _showColorPicker(ThemeNotifier themeNotifier) {
     final iosColors = [
-      const Color(0xFF007AFF), // iOS Blue
-      const Color(0xFF34C759), // iOS Green
-      const Color(0xFFFF9500), // iOS Orange
-      const Color(0xFFFF2D55), // iOS Red
-      const Color(0xFF5856D6), // iOS Purple
-      const Color(0xFFAF52DE), // iOS Pink
-      const Color(0xFF5AC8FA), // iOS Light Blue
-      const Color(0xFFFFCC00), // iOS Yellow
-      const Color(0xFF8E8E93), // iOS Gray
+      const Color(0xFF007AFF),
+      const Color(0xFF34C759),
+      const Color(0xFFFF9500),
+      const Color(0xFFFF2D55),
+      const Color(0xFF5856D6),
+      const Color(0xFFAF52DE),
+      const Color(0xFF5AC8FA),
+      const Color(0xFFFFCC00),
+      const Color(0xFF8E8E93),
     ];
 
     Color selectedColor = themeNotifier.customColor;
@@ -516,11 +676,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: const Text('Choose Custom Color'),
                         onPressed: () {
                           final additionalColors = [
-                            const Color(0xFF964B00), // Brown
-                            const Color(0xFF50C878), // Emerald
-                            const Color(0xFFFFC0CB), // Pink
-                            const Color(0xFF40E0D0), // Turquoise
-                            const Color(0xFFDE3163), // Cerise
+                            const Color(0xFF964B00),
+                            const Color(0xFF50C878),
+                            const Color(0xFFFFC0CB),
+                            const Color(0xFF40E0D0),
+                            const Color(0xFFDE3163),
                           ];
                           final randomColor =
                               additionalColors[DateTime.now()
@@ -654,77 +814,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           children: [
-            // Theme Section
             SettingsSection(
               title: 'Theme',
               footerText:
                   'Choose a theme that suits your preferences and needs.',
               children: [
-                SettingsSegmentedItem(
-                  label: 'Appearance',
-                  subtitle: 'Select your preferred visual style',
-                  groupValue:
-                      themeNotifier.themeMode.toString().split('.').last,
-                  children: {
-                    'system': const Text('System'),
-                    'light': const Text('Light'),
-                    'dark': const Text('Night'),
-                    'adhd': const Text('ADHD'),
-                    'custom': Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: themeNotifier.customColor,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: const Text(
-                            'Custom',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                  },
-                  onValueChanged: (value) {
-                    AppTheme themeValue;
-                    switch (value) {
-                      case 'system':
-                        themeValue = AppTheme.system;
-                        break;
-                      case 'light':
-                        themeValue = AppTheme.light;
-                        break;
-                      case 'dark':
-                        themeValue = AppTheme.dark;
-                        break;
-                      case 'adhd':
-                        themeValue = AppTheme.adhd;
-                        break;
-                      case 'custom':
-                        themeValue = AppTheme.custom;
-                        break;
-                      default:
-                        themeValue = AppTheme.system;
-                    }
-                    themeNotifier.setThemeMode(themeValue);
-                  },
-                ),
-                const SizedBox(height: 16),
-                SettingsToggleItem(
-                  label: 'Dark Mode',
-                  value: themeNotifier.brightness == Brightness.dark,
-                  onChanged: (value) {
-                    themeNotifier.setBrightness(
-                      value ? Brightness.dark : Brightness.light,
-                    );
-                  },
-                  subtitle: 'Toggle between light and dark mode',
+                widget.themeSelectionStrategy.buildThemeSelector(
+                  context,
+                  themeNotifier,
+                  (themeValue) => themeNotifier.setThemeMode(themeValue),
                 ),
                 if (themeNotifier.themeMode == AppTheme.custom) ...[
                   const SizedBox(height: 16),
@@ -770,8 +868,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               ],
             ),
-
-            // Sleep Schedule Section
             SettingsSection(
               title: 'Sleep Schedule',
               footerText:
@@ -799,8 +895,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-
-            // Active Days Section
             SettingsSection(
               title: 'Active Days',
               footerText: 'Select the days when you want to be active.',
@@ -837,8 +931,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-
-            // Meal Times Section
             SettingsSection(
               title: 'Meal Times',
               footerText:
@@ -872,8 +964,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-
-            // Free Times Section
             SettingsSection(
               title: 'Free Times',
               footerText:
@@ -908,8 +998,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-
-            // Session Duration Section
             SettingsSection(
               title: 'Session Duration',
               footerText:
@@ -929,8 +1017,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-
-            // Break Duration Section
             SettingsSection(
               title: 'Break Duration',
               footerText:
@@ -950,8 +1036,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-
-            // Date & Time Format Section
             SettingsSection(
               title: 'Date & Time Format',
               footerText:
@@ -990,8 +1074,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-
-            // Logs Section
             SettingsSection(
               title: 'Logs',
               footerText:
@@ -1008,8 +1090,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ],
             ),
-
-            // Save Button
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: SettingsButton(

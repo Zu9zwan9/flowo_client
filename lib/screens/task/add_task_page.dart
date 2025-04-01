@@ -845,7 +845,6 @@ class _AddTaskPageState extends State<AddTaskPage>
       return;
     }
 
-
     // Create the task via BLoC
     context.read<TaskManagerCubit>().createTask(
       title: _titleController.text,

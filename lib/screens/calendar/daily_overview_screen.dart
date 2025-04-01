@@ -567,7 +567,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                 const SizedBox(height: 8),
                 Text(
                   '${DateTimeFormatter.formatTime(scheduledTask.startTime, is24HourFormat: _userSettings.is24HourFormat)}'
-                      ' - ${DateTimeFormatter.formatTime(scheduledTask.endTime, is24HourFormat: _userSettings.is24HourFormat)}',
+                  ' - ${DateTimeFormatter.formatTime(scheduledTask.endTime, is24HourFormat: _userSettings.is24HourFormat)}',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
