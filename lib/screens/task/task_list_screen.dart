@@ -15,6 +15,7 @@ import '../home_screen.dart';
 import '../widgets/cupertino_divider.dart';
 import '../widgets/task_list_components.dart';
 import '../widgets/task_list_item.dart';
+import 'add_task_page.dart';
 import 'task_page_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
@@ -519,7 +520,7 @@ class _TaskListScreenState extends State<TaskListScreen>
           } else if (task.frequency != null) {
             return HabitScreen(habit: task);
           } else {
-            return TaskPageScreen(task: task, isEditing: true);
+            return AddTaskPage(task: task);
           }
         },
       ),

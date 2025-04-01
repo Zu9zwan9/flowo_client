@@ -7,6 +7,7 @@ import 'package:hive/hive.dart';
 
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../models/category.dart';
+import '../../models/task.dart';
 import '../../models/task_form_data.dart';
 import '../../models/user_settings.dart';
 import '../../services/category_service.dart';
@@ -15,8 +16,9 @@ import '../home_screen.dart';
 
 class AddTaskPage extends StatefulWidget {
   final DateTime? selectedDate;
+  final Task? task;
 
-  const AddTaskPage({super.key, this.selectedDate});
+  const AddTaskPage({super.key, this.selectedDate, this.task});
 
   @override
   State<AddTaskPage> createState() => _AddTaskPageState();
@@ -61,25 +63,30 @@ class _AddTaskPageState extends State<AddTaskPage>
     super.initState();
 
     _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
-
-    // Open Hive box for categories
     _categoriesBox = Hive.box<List<dynamic>>('categories_box');
 
-    // Initialize form data
-    _formData = TaskFormData(
-      selectedDateTime:
-          widget.selectedDate ?? _roundToNearestFiveMinutes(DateTime.now()),
-      category: '',
-      priority: 1,
-      estimatedTime: 0,
-    );
+    if (widget.task != null) {
+      _formData = TaskFormData.fromTask(widget.task!);
+      _titleController.text = widget.task!.title;
+      _notesController.text = widget.task!.notes ?? '';
+      _selectedCategory = widget.task!.category.name;
+    } else {
+      _formData = TaskFormData(
+        selectedDateTime:
+            widget.selectedDate ?? _roundToNearestFiveMinutes(DateTime.now()),
+        category: '',
+        priority: 1,
+        estimatedTime: 0,
+        optimisticTime: 0,
+        realisticTime: 0,
+        pessimisticTime: 0,
+      );
+    }
 
-    // Setup button animation
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-
     _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
@@ -109,6 +116,12 @@ class _AddTaskPageState extends State<AddTaskPage>
   Widget build(BuildContext context) {
     final form = CupertinoTaskForm(context);
     return CupertinoPageScaffold(
+      navigationBar:
+          widget.task == null
+              ? null
+              : CupertinoNavigationBar(
+                middle: Text('Edit Task')
+              ),
       backgroundColor: form.backgroundColor,
       child: SafeArea(
         child: SingleChildScrollView(
@@ -787,7 +800,7 @@ class _AddTaskPageState extends State<AddTaskPage>
               content: const Text('Please fill in all required fields.'),
               actions: [
                 CupertinoDialogAction(
-                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  child: const Text('OK'),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -796,47 +809,16 @@ class _AddTaskPageState extends State<AddTaskPage>
       return;
     }
 
-    if (_categoryOptions.isEmpty) {
-      showCupertinoDialog(
-        context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('No Categories'),
-              content: const Text(
-                'Please add a category before saving the task.',
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text(
-                    'Add Category',
-                    style: TextStyle(fontSize: 14.0),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _showAddCategoryDialog(context);
-                  },
-                ),
-              ],
-            ),
-      );
-      return;
-    }
-
-    if (_selectedCategory.isEmpty) {
+    if (_categoryOptions.isEmpty || _selectedCategory.isEmpty) {
       showCupertinoDialog(
         context: context,
         builder:
             (context) => CupertinoAlertDialog(
               title: const Text('Validation Error'),
-              content: const Text('Please select a category.'),
+              content: const Text('Please select or add a category.'),
               actions: [
                 CupertinoDialogAction(
-                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  child: const Text('OK'),
                   onPressed: () => Navigator.pop(context),
                 ),
               ],
@@ -845,19 +827,42 @@ class _AddTaskPageState extends State<AddTaskPage>
       return;
     }
 
-    // Create the task via BLoC
-    context.read<TaskManagerCubit>().createTask(
-      title: _titleController.text,
-      priority: _formData.priority,
-      estimatedTime: _formData.estimatedTime,
-      deadline: _formData.selectedDateTime.millisecondsSinceEpoch,
-      category: Category(name: _selectedCategory),
-      notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-      color: _formData.color,
-    );
+    final taskManagerCubit = context.read<TaskManagerCubit>();
 
-    // Log and navigate
-    logInfo('Saved Task: ${_titleController.text}');
+    if (widget.task == null) {
+      // Створення нового завдання
+      taskManagerCubit.createTask(
+        title: _titleController.text,
+        priority: _formData.priority,
+        estimatedTime: _formData.estimatedTime,
+        deadline: _formData.selectedDateTime.millisecondsSinceEpoch,
+        category: Category(name: _selectedCategory),
+        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+        color: _formData.color,
+        optimisticTime: _formData.optimisticTime,
+        realisticTime: _formData.realisticTime,
+        pessimisticTime: _formData.pessimisticTime,
+      );
+    } else {
+      // Редагування існуючого завдання
+      taskManagerCubit.editTask(
+        task: widget.task!,
+        title: _titleController.text,
+        priority: _formData.priority,
+        estimatedTime: _formData.estimatedTime,
+        deadline: _formData.selectedDateTime.millisecondsSinceEpoch,
+        category: Category(name: _selectedCategory),
+        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+        color: _formData.color,
+        optimisticTime: _formData.optimisticTime,
+        realisticTime: _formData.realisticTime,
+        pessimisticTime: _formData.pessimisticTime,
+      );
+    }
+
+    logInfo(
+      'Task ${widget.task == null ? "Created" : "Updated"}: ${_titleController.text}',
+    );
     Navigator.pushReplacement(
       context,
       CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),

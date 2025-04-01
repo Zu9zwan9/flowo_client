@@ -1,3 +1,4 @@
+import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/utils/logger.dart';
 
 class TaskFormData {
@@ -6,8 +7,6 @@ class TaskFormData {
   int priority;
   int estimatedTime;
   int? color;
-
-  // PERT time estimates
   int optimisticTime;
   int realisticTime;
   int pessimisticTime;
@@ -23,13 +22,22 @@ class TaskFormData {
     this.pessimisticTime = 0,
   });
 
-  /// Calculates the estimated time using the PERT formula: (O + 4R + P) / 6
+  factory TaskFormData.fromTask(Task task) {
+    return TaskFormData(
+      selectedDateTime: DateTime.fromMillisecondsSinceEpoch(task.deadline),
+      category: task.category.name,
+      priority: task.priority,
+      estimatedTime: task.estimatedTime,
+      color: task.color,
+      optimisticTime: task.optimisticTime ?? 0,
+      realisticTime: task.realisticTime ?? 0,
+      pessimisticTime: task.pessimisticTime ?? 0,
+    );
+  }
+
   void calculateEstimatedTime() {
     if (optimisticTime > 0 && realisticTime > 0 && pessimisticTime > 0) {
-      estimatedTime =
-          ((optimisticTime + (4 * realisticTime) + pessimisticTime) / 6)
-              .round();
+      estimatedTime = ((optimisticTime + 4 * realisticTime + pessimisticTime) ~/ 6);
     }
-    logDebug('Calculated estimated time: $estimatedTime');
   }
 }
