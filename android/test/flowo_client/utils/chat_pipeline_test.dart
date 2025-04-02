@@ -1,4 +1,4 @@
-import 'package:flowo_client/utils/chat_pipeline.dart';
+import 'package:flowo_client/utils/ai_model/chat_pipeline.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

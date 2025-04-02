@@ -16,17 +16,16 @@ class PomodoroSettingsAdapter extends TypeAdapter<PomodoroSettings> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return PomodoroSettings(
-      focusDuration: fields[0] as int,
-      shortBreakDuration: fields[1] as int,
-      longBreakDuration: fields[2] as int,
-      sessionsBeforeLongBreak: fields[3] as int,
-      autoStartBreaks: fields[4] as bool,
-      autoStartNextSession: fields[5] as bool,
-      soundEnabled: fields[6] as bool,
-      vibrationEnabled: fields[7] as bool,
-      notificationsEnabled: fields[8] as bool,
-    );
+    return PomodoroSettings()
+      .._focusDuration = fields[0] as int
+      .._shortBreakDuration = fields[1] as int
+      .._longBreakDuration = fields[2] as int
+      .._sessionsBeforeLongBreak = fields[3] as int
+      .._autoStartBreaks = fields[4] as bool
+      .._autoStartNextSession = fields[5] as bool
+      .._soundEnabled = fields[6] as bool
+      .._vibrationEnabled = fields[7] as bool
+      .._notificationsEnabled = fields[8] as bool;
   }
 
   @override

@@ -237,8 +237,7 @@ class LocalNotificationService implements INotificationService {
       tz.TZDateTime.from(scheduledTime, tz.local),
       platformChannelSpecifics,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.dateAndTime,
       payload: task.id,
     );
 
@@ -326,8 +325,7 @@ class LocalNotificationService implements INotificationService {
       tz.TZDateTime.from(scheduledTime, tz.local),
       platformChannelSpecifics,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.dateAndTime,
       payload: '${task.id}|completion_check',
     );
 

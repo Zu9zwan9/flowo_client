@@ -8,7 +8,7 @@ part of 'time_frame.dart';
 
 class TimeFrameAdapter extends TypeAdapter<TimeFrame> {
   @override
-  final int typeId = 12;
+  final int typeId = 8;
 
   @override
   TimeFrame read(BinaryReader reader) {

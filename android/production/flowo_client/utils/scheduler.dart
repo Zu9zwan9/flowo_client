@@ -180,6 +180,7 @@ class Scheduler {
       if (scheduledTask.startTime.isBefore(end) &&
           scheduledTask.endTime.isAfter(start)) {
         logDebug(
+          // TODO: Add modal dialog to resolve overlap
           'Event overlaps with existing task: ${scheduledTask.parentTaskId}',
         );
         return;
@@ -193,6 +194,41 @@ class Scheduler {
       dateKey: dateKey,
       type: ScheduledTaskType.timeSensitive,
     );
+  }
+
+  void scheduleHabit(
+    Task task,
+    List<DateTime> dates,
+    TimeOfDay start,
+    TimeOfDay end,
+  ) {
+    _dayCache.clear();
+
+    for (DateTime date in dates) {
+      final dateKey = _formatDateKey(date);
+      final day = _getOrCreateDay(dateKey);
+      final startTime = _combineDateKeyAndTimeOfDay(dateKey, start);
+      final endTime = _combineDateKeyAndTimeOfDay(dateKey, end);
+
+      final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
+      for (ScheduledTask scheduledTask in sortedTasks) {
+        if (scheduledTask.startTime.isBefore(endTime) &&
+            scheduledTask.endTime.isAfter(startTime)) {
+          logDebug(
+            'Habit overlaps with existing task: ${scheduledTask.parentTaskId}',
+          );
+          return;
+        }
+      }
+
+      _createScheduledTask(
+        task: task,
+        start: startTime,
+        end: endTime,
+        dateKey: dateKey,
+        type: ScheduledTaskType.timeSensitive,
+      );
+    }
   }
 
   bool _isActiveDay(String dateKey) {
@@ -475,15 +511,60 @@ class Scheduler {
     final date = DateTime.parse('${day.day} 00:00:00');
 
     for (var timeFrame in userSettings.mealBreaks) {
-      _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
+      if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+          timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+        _addTimeBlock(
+          day,
+          TimeFrame(
+            startTime: timeFrame.startTime,
+            endTime: const TimeOfDay(hour: 23, minute: 59),
+          ),
+          ScheduledTaskType.mealBreak,
+          date,
+        );
+        _addTimeBlock(
+          day,
+          TimeFrame(
+            startTime: const TimeOfDay(hour: 0, minute: 0),
+            endTime: timeFrame.endTime,
+          ),
+          ScheduledTaskType.mealBreak,
+          date,
+        );
+      } else {
+        _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
+      }
     }
+
     for (var timeFrame in userSettings.freeTime) {
-      _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
+      if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+          timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+        _addTimeBlock(
+          day,
+          TimeFrame(
+            startTime: timeFrame.startTime,
+            endTime: const TimeOfDay(hour: 23, minute: 59),
+          ),
+          ScheduledTaskType.rest,
+          date,
+        );
+        _addTimeBlock(
+          day,
+          TimeFrame(
+            startTime: const TimeOfDay(hour: 0, minute: 0),
+            endTime: timeFrame.endTime,
+          ),
+          ScheduledTaskType.rest,
+          date,
+        );
+      } else {
+        _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
+      }
     }
+
     for (var timeFrame in userSettings.sleepTime) {
       if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
           timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-        // Split overnight sleep
         _addTimeBlock(
           day,
           TimeFrame(

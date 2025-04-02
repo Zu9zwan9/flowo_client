@@ -56,6 +56,7 @@ class CupertinoFormWidgets {
     required VoidCallback onTap,
     Color? color,
     IconData? icon,
+    double iconSize = 20.0,
   }) {
     final theme = CupertinoFormTheme(context);
     final effectiveColor = color ?? theme.primaryColor;
@@ -382,7 +383,9 @@ class CupertinoFormWidgets {
                 colorValue != null ? Color(colorValue) : theme.backgroundColor,
             border: Border.all(
               color:
-                  isSelected ? theme.primaryColor : CupertinoColors.systemGrey4,
+                  isSelected
+                      ? theme.primaryColor
+                      : CupertinoColors.systemBackground,
               width: 2,
             ),
           ),

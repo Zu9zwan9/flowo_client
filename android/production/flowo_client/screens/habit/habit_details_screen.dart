@@ -140,8 +140,8 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
         middle: Text(_habit.title, style: theme.textTheme.navTitleTextStyle),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          onPressed: _editHabit,
           child: const Icon(CupertinoIcons.pencil),
+          onPressed: _editHabit,
         ),
       ),
       child: SafeArea(
@@ -395,19 +395,21 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
           Row(
             children: [
               const SizedBox(width: 24), // Space for week labels
-              ...['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(
-                (day) => Expanded(
-                  child: Center(
-                    child: Text(
-                      day,
-                      style: theme.textTheme.textStyle.copyWith(
-                        color: CupertinoColors.systemGrey,
-                        fontSize: 12,
+              ...['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                  .map(
+                    (day) => Expanded(
+                      child: Center(
+                        child: Text(
+                          day,
+                          style: theme.textTheme.textStyle.copyWith(
+                            color: CupertinoColors.systemGrey,
+                            fontSize: 12,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ),
+                  )
+                  .toList(),
             ],
           ),
           const SizedBox(height: 8),
@@ -452,7 +454,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                             ),
                           ),
                         );
-                      }),
+                      }).toList(),
                       // Fill empty days for incomplete weeks
                       ...List.generate(
                         7 - week.length,

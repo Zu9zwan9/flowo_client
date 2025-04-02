@@ -15,7 +15,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 // Formatter interface for dependency inversion (SOLID)
 abstract class AnalyticsFormatter {
   String formatNumber(num value);
+
   String formatPercent(double value);
+
   String getEfficiencyMessage(double score);
 }
 
@@ -67,9 +69,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Analytics & Insights'),
-      ),
       child: SafeArea(
         child: BlocBuilder<AnalyticsCubit, AnalyticsState>(
           builder: (context, state) {
@@ -210,12 +209,12 @@ class AnalyticsCard extends StatelessWidget {
           ),
         ],
       ),
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Text(
               title,
               style: CupertinoTheme.of(
@@ -224,7 +223,7 @@ class AnalyticsCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: child,
           ),
         ],

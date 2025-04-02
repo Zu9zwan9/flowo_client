@@ -8,7 +8,7 @@ part of 'pomodoro_statistics.dart';
 
 class PomodoroStatisticsAdapter extends TypeAdapter<PomodoroStatistics> {
   @override
-  final int typeId = 17;
+  final int typeId = 18;
 
   @override
   PomodoroStatistics read(BinaryReader reader) {

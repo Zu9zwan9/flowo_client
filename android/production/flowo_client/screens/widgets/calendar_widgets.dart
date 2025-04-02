@@ -1,8 +1,11 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
+import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../models/scheduled_task.dart';
-import '../../utils/date_time_formatter.dart';
+import '../../models/user_settings.dart';
+import '../../utils/formatter/date_time_formatter.dart';
 
 /// A collection of reusable widgets for the calendar screen
 /// following iOS design guidelines and best practices for Cupertino UI
@@ -251,12 +254,14 @@ class AgendaItem extends StatefulWidget {
 class _AgendaItemState extends State<AgendaItem>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
+  late UserSettings _userSettings;
   late Animation<double> _scaleAnimation;
   bool _isTapped = false;
 
   @override
   void initState() {
     super.initState();
+    _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 100),
@@ -333,7 +338,10 @@ class _AgendaItemState extends State<AgendaItem>
                   children: [
                     const SizedBox(height: 6),
                     Text(
-                      DateTimeFormatter.formatTime(widget.startTime),
+                      DateTimeFormatter.formatTime(
+                        widget.startTime,
+                        is24HourFormat: _userSettings.is24HourFormat,
+                      ),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -342,7 +350,10 @@ class _AgendaItemState extends State<AgendaItem>
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      DateTimeFormatter.formatTime(widget.endTime),
+                      DateTimeFormatter.formatTime(
+                        widget.endTime,
+                        is24HourFormat: _userSettings.is24HourFormat,
+                      ),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -501,7 +512,14 @@ class EmptyStateView extends StatelessWidget {
                   ),
                   color: CupertinoColors.systemBlue,
                   onPressed: onActionPressed,
-                  child: Text(actionLabel!),
+                  child: Text(
+                    actionLabel!,
+                    style: const TextStyle(
+                      color: CupertinoColors.white, // Белый текст для контраста
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               ],
             ],
@@ -515,7 +533,12 @@ class EmptyStateView extends StatelessWidget {
 /// A custom calendar data source for the SfCalendar widget
 class CalendarTaskDataSource extends CalendarDataSource {
   CalendarTaskDataSource(List<ScheduledTask> scheduledTasks) {
-    appointments = scheduledTasks;
+    appointments =
+        scheduledTasks
+            .where(
+              (task) => task.parentTask?.category.name != 'Free Time Manager',
+            )
+            .toList();
   }
 
   @override

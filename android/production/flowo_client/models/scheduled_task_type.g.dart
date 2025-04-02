@@ -23,6 +23,10 @@ class ScheduledTaskTypeAdapter extends TypeAdapter<ScheduledTaskType> {
         return ScheduledTaskType.mealBreak;
       case 4:
         return ScheduledTaskType.sleep;
+      case 6:
+        return ScheduledTaskType.freeTime;
+      case 5:
+        return ScheduledTaskType.work;
       default:
         return ScheduledTaskType.defaultType;
     }
@@ -45,6 +49,12 @@ class ScheduledTaskTypeAdapter extends TypeAdapter<ScheduledTaskType> {
         break;
       case ScheduledTaskType.sleep:
         writer.writeByte(4);
+        break;
+      case ScheduledTaskType.freeTime:
+        writer.writeByte(6);
+        break;
+      case ScheduledTaskType.work:
+        writer.writeByte(5);
         break;
     }
   }

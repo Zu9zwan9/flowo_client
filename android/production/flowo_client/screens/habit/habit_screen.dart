@@ -998,7 +998,10 @@ class HabitScreenState extends State<HabitScreen> {
 
     Navigator.pushReplacement(
       context,
-      CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),
+      CupertinoPageRoute(
+        builder:
+            (_) => const HomeScreen(initialIndex: 1, initialExpanded: false),
+      ),
     );
   }
 

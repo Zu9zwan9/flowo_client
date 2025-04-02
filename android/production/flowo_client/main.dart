@@ -1,24 +1,26 @@
 import 'package:flowo_client/models/ambient_scene.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
+import 'package:flowo_client/models/repeat_rule_instance.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient_service.dart';
 import 'package:flowo_client/services/analytics_service.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
+import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart' show TimeOfDay, FontWeight, Brightness;
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
-import 'adapters/time_of_day_adapter.dart';
 import 'blocs/analytics/analytics_cubit.dart';
 import 'blocs/tasks_controller/task_manager_cubit.dart';
 import 'blocs/tasks_controller/tasks_controller_cubit.dart';
+import 'models/adapters/time_of_day_adapter.dart';
 import 'models/category.dart';
 import 'models/coordinates.dart';
 import 'models/day.dart';
@@ -52,6 +54,7 @@ void main() async {
   Hive.registerAdapter(PomodoroSessionAdapter());
   Hive.registerAdapter(PomodoroStateAdapter());
   Hive.registerAdapter(AmbientSceneAdapter());
+  Hive.registerAdapter(RepeatRuleInstanceAdapter());
   await Hive.initFlutter();
 
   Box<Task> tasksDB;
@@ -69,6 +72,7 @@ void main() async {
     pomodoroSessionsDB = await Hive.openBox<PomodoroSession>(
       'pomodoro_sessions',
     );
+    await Hive.openBox<List<dynamic>>('categories_box');
     ambientScenesDB = await Hive.openBox<AmbientScene>('ambient_scenes');
   } else {
     final dir = await getApplicationDocumentsDirectory();
@@ -80,15 +84,22 @@ void main() async {
     pomodoroSessionsDB = await Hive.openBox<PomodoroSession>(
       'pomodoro_sessions',
     );
+    await Hive.openBox<List<dynamic>>('categories_box');
     ambientScenesDB = await Hive.openBox<AmbientScene>('ambient_scenes');
   }
 
+  // Check if it's the first app launch by checking if the UserSettings box is empty
+  var isFirstLaunch = profiles.isEmpty;
+  appLogger.info('Is first app launch: $isFirstLaunch', 'App');
+
+  // Create and save default UserSettings if it's the first launch
   var selectedProfile =
       profiles.values.isNotEmpty
           ? profiles.values.first
           : UserSettings(
             name: 'Default',
-            minSession: 15,
+            minSession: 15 * 60 * 1000, // Convert to milliseconds
+            breakTime: 15 * 60 * 1000, // Default break time (15 minutes)
             sleepTime: [
               TimeFrame(
                 startTime: const TimeOfDay(hour: 22, minute: 0),
@@ -115,7 +126,34 @@ void main() async {
                 endTime: const TimeOfDay(hour: 22, minute: 0),
               ),
             ],
+            activeDays: {
+              'Monday': true,
+              'Tuesday': true,
+              'Wednesday': true,
+              'Thursday': true,
+              'Friday': true,
+              'Saturday': true,
+              'Sunday': true,
+            },
+            defaultNotificationType: NotificationType.sound,
           );
+
+  // Save the default settings to the Hive box if it's the first launch
+  if (isFirstLaunch) {
+    appLogger.info('Saving default user settings', 'App');
+    profiles.put('current', selectedProfile);
+
+    // Verify the settings were saved
+    final savedSettings = profiles.get('current');
+    if (savedSettings == null) {
+      appLogger.error('Failed to save default user settings', 'App');
+    } else {
+      appLogger.info(
+        'Default user settings saved successfully: name=${savedSettings.name}, minSession=${savedSettings.minSession}',
+        'App',
+      );
+    }
+  }
 
   // Create default user profile if none exists
   if (userProfiles.isEmpty) {
@@ -150,7 +188,7 @@ void main() async {
     tasksDB: tasksDB,
     userSettings: selectedProfile,
     huggingFaceApiKey:
-        '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', // Default API key
+        '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', // Default API key
   );
 
   appLogger.info('Hive initialized and task boxes opened', 'App');
@@ -162,6 +200,9 @@ void main() async {
 
   appLogger.info('Hive initialized and task boxes opened', 'App');
 
+  // Create web theme bridge for system theme detection
+  final webThemeBridge = WebThemeBridge();
+
   runApp(
     MultiProvider(
       providers: [
@@ -170,8 +211,11 @@ void main() async {
         Provider<Box<UserProfile>>.value(value: userProfiles),
         Provider<Box<PomodoroSession>>.value(value: pomodoroSessionsDB),
         Provider<Box<AmbientScene>>.value(value: ambientScenesDB),
+        Provider<WebThemeBridge>.value(value: webThemeBridge),
         ChangeNotifierProvider<AmbientService>.value(value: ambientService),
-        ChangeNotifierProvider(create: (_) => ThemeNotifier()),
+        ChangeNotifierProvider(
+          create: (context) => ThemeNotifier(webThemeBridge: webThemeBridge),
+        ),
         BlocProvider<CalendarCubit>(
           create: (context) => CalendarCubit(tasksDB, daysDB, taskManager),
         ),
@@ -193,6 +237,21 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     appLogger.info('Building MyApp', 'App');
+
+    // Initialize web-specific features
+    if (kIsWeb) {
+      try {
+        final webThemeBridge = Provider.of<WebThemeBridge>(
+          context,
+          listen: false,
+        );
+        // Register web theme with JavaScript
+        webThemeBridge.callJavaScriptFunction('flutterThemeReady');
+        appLogger.info('Web theme bridge initialized', 'App');
+      } catch (e) {
+        appLogger.error('Failed to initialize web theme bridge: $e', 'App');
+      }
+    }
 
     // Create onboarding service
     final userProfileBox = Provider.of<Box<UserProfile>>(context);
@@ -244,7 +303,7 @@ class MyApp extends StatelessWidget {
             supportedLocales: const [Locale('en', 'US')],
             home:
                 isOnboardingCompleted
-                    ? const HomeScreen()
+                    ? const HomeScreen(initialExpanded: false)
                     : const NameInputScreen(),
           ),
         );

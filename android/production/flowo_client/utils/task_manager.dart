@@ -3,16 +3,17 @@ import 'dart:developer';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/user_settings.dart';
+import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
+import 'package:flowo_client/utils/ai_model/task_estimator_api.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flowo_client/utils/scheduler.dart';
-import 'package:flowo_client/utils/task_breakdown_api.dart';
-import 'package:flowo_client/utils/task_estimator_api.dart';
 import 'package:flowo_client/utils/task_urgency_calculator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
 import '../models/day.dart';
 import '../models/repeat_rule.dart';
+import '../models/repeat_rule_instance.dart';
 import '../models/scheduled_task_type.dart';
 import '../models/task.dart';
 
@@ -33,10 +34,10 @@ class TaskManager {
   }) : scheduler = Scheduler(daysDB, tasksDB, userSettings),
        taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
        taskBreakdownAPI = TaskBreakdownAPI(
-         apiKey: huggingFaceApiKey ?? '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',
+         apiKey: huggingFaceApiKey ?? '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',
        ),
        taskEstimatorAPI = TaskEstimatorAPI(
-         apiKey: huggingFaceApiKey ?? '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',
+         apiKey: huggingFaceApiKey ?? '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',
        );
 
   void updateUserSettings(UserSettings userSettings) {
@@ -55,6 +56,9 @@ class TaskManager {
     String? notes,
     int? color,
     RepeatRule? frequency,
+    int? optimisticTime,
+    int? realisticTime,
+    int? pessimisticTime,
   }) {
     final task = Task(
       id: UniqueKey().toString(),
@@ -66,6 +70,9 @@ class TaskManager {
       notes: notes,
       color: color,
       frequency: frequency,
+      optimisticTime: optimisticTime,
+      realisticTime: realisticTime,
+      pessimisticTime: pessimisticTime,
     );
     tasksDB.put(task.id, task);
     if (parentTask != null) {
@@ -74,11 +81,14 @@ class TaskManager {
       tasksDB.put(parentTask.id, parentTask);
     }
     logInfo('Created task: ${task.title}');
+
+    if (task.frequency != null) {
+      logInfo('Created habit: ${task.toString()}');
+    }
+
     return task;
   }
 
-  // Fixed issue where task.key could be null causing "type 'Null' is not a subtype of type 'String'" error
-  // We use task.id instead of task.key because tasks are stored with their id as the key
   void deleteTask(Task task) {
     tasksDB.delete(task.id);
     final parentTask = task.parentTask;
@@ -111,6 +121,9 @@ class TaskManager {
     String? notes,
     int? color,
     RepeatRule? frequency,
+    int? optimisticTime,
+    int? realisticTime,
+    int? pessimisticTime,
   }) {
     task.title = title;
     task.priority = priority;
@@ -127,6 +140,15 @@ class TaskManager {
     if (frequency != null) {
       task.frequency = frequency;
     }
+    if (optimisticTime != null) {
+      task.optimisticTime = optimisticTime;
+    }
+    if (realisticTime != null) {
+      task.realisticTime = realisticTime;
+    }
+    if (pessimisticTime != null) {
+      task.pessimisticTime = pessimisticTime;
+    }
     tasksDB.put(task.id, task);
     logInfo('Edited task: ${task.title}');
   }
@@ -134,10 +156,13 @@ class TaskManager {
   void scheduleTasks() {
     final tasks =
         tasksDB.values
-            .where((task) => (task.frequency == null) && task.subtasks.isEmpty)
+            .where((task) => task.frequency == null && task.subtasks.isEmpty)
+            .where((task) => task.id != 'free_time_manager')
+            .where(
+              (task) => !task.category.name.toLowerCase().contains('event'),
+            )
             .toList();
 
-    tasks.removeWhere((task) => task.id == 'free_time_manager');
     final justScheduledTasks = <ScheduledTask>[];
 
     while (tasks.isNotEmpty) {
@@ -166,10 +191,6 @@ class TaskManager {
       final mostUrgentTask = mostUrgentEntry.key;
 
       List<String>? availableDates;
-      if (mostUrgentTask.frequency != null) {
-        availableDates =
-            _calculateHabitDates(mostUrgentTask).map(_formatDateKey).toList();
-      }
 
       final scheduledTask = scheduler.scheduleTask(
         mostUrgentTask,
@@ -192,13 +213,211 @@ class TaskManager {
         tasksDB.values.where((task) => task.frequency != null).toList();
 
     for (Task habit in habits) {
-      List<DateTime> scheduledDates = _calculateHabitDates(habit);
-      List<String> daysKeys = scheduledDates.map(_formatDateKey).toList();
-      scheduler.scheduleTask(
-        habit,
-        userSettings.minSession,
-        availableDates: daysKeys,
-      );
+      switch (habit.frequency!.type) {
+        case 'weekly':
+          RepeatRule repeatRule = habit.frequency!;
+          List<RepeatRuleInstance> byDay = repeatRule.byDay!;
+
+          for (var dayInstance in byDay) {
+            final selectedWeekday = _dayNameToInt(dayInstance.selectedDay);
+            final startDate = repeatRule.startRepeat;
+            final daysUntilNextSelectedDay =
+                (selectedWeekday - startDate.weekday + 7) % 7;
+
+            var nextSelectedDate = startDate.add(
+              Duration(days: daysUntilNextSelectedDay),
+            );
+
+            List<DateTime> habitDates = [];
+
+            while (nextSelectedDate.isBefore(repeatRule.endRepeat!)) {
+              habitDates.add(nextSelectedDate);
+              nextSelectedDate = nextSelectedDate.add(
+                Duration(days: 7 * habit.frequency!.interval),
+              );
+            }
+
+            scheduler.scheduleHabit(
+              habit,
+              habitDates,
+              dayInstance.start,
+              dayInstance.end,
+            );
+          }
+          break;
+
+        case 'monthly':
+          RepeatRule repeatRule = habit.frequency!;
+
+          // Проверяем, есть ли byMonthDay (specific days) или bySetPos (pattern)
+          if (repeatRule.byMonthDay != null) {
+            // Обработка для "specific days"
+            List<RepeatRuleInstance> byMonthDay = repeatRule.byMonthDay!;
+
+            for (var monthDayInstance in byMonthDay) {
+              final selectedMonthDay = int.parse(monthDayInstance.selectedDay);
+              final startDate = repeatRule.startRepeat;
+              final daysUntilNextSelectedDay =
+                  (selectedMonthDay -
+                      startDate.day +
+                      DateTime(startDate.year, startDate.month + 1, 0).day) %
+                  DateTime(startDate.year, startDate.month + 1, 0).day;
+              var nextSelectedDate = startDate.add(
+                Duration(days: daysUntilNextSelectedDay),
+              );
+
+              List<DateTime> habitDates = [];
+
+              while (nextSelectedDate.isBefore(repeatRule.endRepeat!)) {
+                habitDates.add(nextSelectedDate);
+                nextSelectedDate = DateTime(
+                  nextSelectedDate.year,
+                  nextSelectedDate.month + habit.frequency!.interval,
+                  selectedMonthDay,
+                );
+              }
+
+              scheduler.scheduleHabit(
+                habit,
+                habitDates,
+                monthDayInstance.start,
+                monthDayInstance.end,
+              );
+            }
+          } else if (repeatRule.bySetPos != null) {
+            // Обработка для "pattern"
+            final bySetPos = repeatRule.bySetPos!;
+            final byDay = repeatRule.byDay!;
+            final interval = repeatRule.interval;
+            final startDate = repeatRule.startRepeat;
+            final endDate = repeatRule.endRepeat!;
+
+            for (var dayInstance in byDay) {
+              final selectedWeekday = _dayNameToInt(dayInstance.selectedDay);
+              List<DateTime> habitDates = [];
+
+              var currentDate = DateTime(startDate.year, startDate.month, 1);
+
+              while (currentDate.isBefore(endDate)) {
+                DateTime? patternDate = _findPatternDateInMonth(
+                  currentDate.year,
+                  currentDate.month,
+                  selectedWeekday,
+                  bySetPos,
+                );
+
+                if (patternDate != null &&
+                    !patternDate.isBefore(startDate) &&
+                    patternDate.isBefore(endDate)) {
+                  habitDates.add(patternDate);
+                }
+
+                currentDate = DateTime(
+                  currentDate.year,
+                  currentDate.month + interval,
+                  1,
+                );
+              }
+
+              scheduler.scheduleHabit(
+                habit,
+                habitDates,
+                dayInstance.start,
+                dayInstance.end,
+              );
+            }
+          }
+          break;
+
+        case 'daily':
+          List<DateTime> habitDates = [];
+          DateTime startDate = habit.frequency!.startRepeat;
+
+          while (startDate.isBefore(habit.frequency!.endRepeat!)) {
+            habitDates.add(startDate);
+            startDate = startDate.add(
+              Duration(days: habit.frequency!.interval),
+            );
+          }
+
+          scheduler.scheduleHabit(
+            habit,
+            habitDates,
+            habit.frequency!.byDay!.first.start,
+            habit.frequency!.byDay!.first.end,
+          );
+          break;
+
+        case 'yearly':
+          List<DateTime> habitDates = [];
+          DateTime startDate = habit.frequency!.startRepeat;
+
+          while (startDate.isBefore(habit.frequency!.endRepeat!)) {
+            habitDates.add(startDate);
+            startDate = DateTime(
+              startDate.year + habit.frequency!.interval,
+              startDate.month,
+              startDate.day,
+            );
+          }
+
+          scheduler.scheduleHabit(
+            habit,
+            habitDates,
+            habit.frequency!.byDay!.first.start,
+            habit.frequency!.byDay!.first.end,
+          );
+          break;
+
+        default:
+          logWarning('Invalid habit frequency type: ${habit.frequency!.type}');
+          break;
+      }
+    }
+  }
+
+  DateTime? _findPatternDateInMonth(
+    int year,
+    int month,
+    int targetWeekday,
+    // Числовое представление дня недели (1 = понедельник, ..., 7 = воскресенье)
+    int bySetPos,
+    // Позиция недели (1 = первая, 2 = вторая, ..., -1 = последняя)
+  ) {
+    // Создаём дату для первого дня месяца
+    DateTime firstDayOfMonth = DateTime(year, month, 1);
+    DateTime lastDayOfMonth = DateTime(
+      year,
+      month + 1,
+      0,
+    ); // Последний день месяца
+
+    // Находим первый день, соответствующий targetWeekday
+    int daysUntilFirstTargetDay =
+        (targetWeekday - firstDayOfMonth.weekday + 7) % 7;
+    DateTime firstTargetDay = firstDayOfMonth.add(
+      Duration(days: daysUntilFirstTargetDay),
+    );
+
+    if (bySetPos == -1) {
+      // Для "последнего" дня недели в месяце
+      DateTime lastTargetDay = firstTargetDay;
+      while (lastTargetDay.month == month) {
+        DateTime nextTargetDay = lastTargetDay.add(Duration(days: 7));
+        if (nextTargetDay.month != month) break;
+        lastTargetDay = nextTargetDay;
+      }
+      return lastTargetDay;
+    } else {
+      // Для "первой", "второй", "третьей" или "четвёртой" недели
+      int targetWeek = bySetPos - 1; // bySetPos начинается с 1, а нам нужно с 0
+      DateTime targetDate = firstTargetDay.add(Duration(days: 7 * targetWeek));
+
+      // Проверяем, что дата всё ещё в пределах месяца
+      if (targetDate.month == month && targetDate.day <= lastDayOfMonth.day) {
+        return targetDate;
+      }
+      return null; // Если паттерн не применим (например, "пятая пятница" в месяце, где только 4 пятницы)
     }
   }
 
@@ -237,125 +456,46 @@ class TaskManager {
     logInfo('Removed scheduled tasks after ${now.toIso8601String()}');
   }
 
-  List<DateTime> _calculateHabitDates(Task habit) {
-    final dates = <DateTime>[];
-    var currentDate = habit.startDate;
-    final repeatRule = habit.frequency;
-
-    if (repeatRule == null) {
-      dates.add(currentDate);
-      return dates;
-    }
-
-    final maxDate = DateTime.now().add(const Duration(days: 365 * 3));
-    while ((repeatRule.until != null &&
-            currentDate.isBefore(repeatRule.until!)) ||
-        (repeatRule.count != null && dates.length < repeatRule.count!) ||
-        (repeatRule.until == null &&
-            repeatRule.count == null &&
-            currentDate.isBefore(maxDate))) {
-      switch (repeatRule.frequency) {
-        case 'daily':
-          dates.add(currentDate);
-          currentDate = currentDate.add(Duration(days: repeatRule.interval));
-          break;
-        case 'weekly':
-          if (repeatRule.byDay != null &&
-              repeatRule.byDay!.contains(currentDate.weekday % 7)) {
-            dates.add(currentDate);
-          }
-          currentDate = currentDate.add(const Duration(days: 1));
-          break;
-        case 'monthly':
-          if (repeatRule.byMonthDay != null) {
-            if (repeatRule.byMonthDay!.contains(currentDate.day)) {
-              dates.add(currentDate);
-            } else if (repeatRule.byMonthDay!.any((d) => d < 0)) {
-              final lastDay = DateTime(
-                currentDate.year,
-                currentDate.month + 1,
-                0,
-              );
-              final dayFromEnd =
-                  lastDay.day +
-                  (repeatRule.byMonthDay!.firstWhere((d) => d < 0) + 1);
-              if (currentDate.day == dayFromEnd) {
-                dates.add(currentDate);
-              }
-            }
-          }
-          if (repeatRule.bySetPos != null &&
-              (currentDate.day - 1) ~/ 7 + 1 == repeatRule.bySetPos) {
-            dates.add(currentDate);
-          }
-          currentDate = DateTime(
-            currentDate.year,
-            currentDate.month + repeatRule.interval,
-            currentDate.day,
-          );
-          break;
-        case 'yearly':
-          dates.add(currentDate);
-          if (repeatRule.byMonth != null && repeatRule.byMonth!.isNotEmpty) {
-            for (var month in repeatRule.byMonth!) {
-              var day = currentDate.day;
-              if (day > DateTime(currentDate.year, month + 1, 0).day) {
-                day = DateTime(currentDate.year, month + 1, 0).day;
-              }
-              final newDate = DateTime(
-                currentDate.year + repeatRule.interval,
-                month,
-                day,
-              );
-              if (newDate.isAfter(currentDate)) dates.add(newDate);
-            }
-          } else {
-            currentDate = DateTime(
-              currentDate.year + repeatRule.interval,
-              currentDate.month,
-              currentDate.day,
-            );
-          }
-          break;
-        default:
-          throw ArgumentError('Invalid frequency: ${repeatRule.frequency}');
-      }
-    }
-    return dates;
+  /// Converts day names to weekday integers (1 = Monday, ..., 7 = Sunday).
+  int _dayNameToInt(String dayName) {
+    const dayMap = {
+      'monday': 1,
+      'tuesday': 2,
+      'wednesday': 3,
+      'thursday': 4,
+      'friday': 5,
+      'saturday': 6,
+      'sunday': 7,
+    };
+    return dayMap[dayName.toLowerCase()] ?? 1; // Default to Monday if invalid
+    /// TODO fix potential error with monday
   }
 
-  String _formatDateKey(DateTime date) =>
-      '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
-
-  /// Breaks down a task into subtasks using AI and schedules them
-  ///
-  /// Returns a list of the created subtasks
   Future<List<Task>> breakdownAndScheduleTask(Task task) async {
-    logInfo('Breaking down task: ${task.title}');
+    logInfo('Breaking down task: ${task.title} ${task.estimatedTime}');
 
-    // Use the API to break down the task into subtasks
-    final subtaskTitles = await taskBreakdownAPI.breakdownTask(task.title);
+    // Изменяем тип с List<String> на List<Map<String, dynamic>>
+    final subtaskDataList = await taskBreakdownAPI.breakdownTask(
+      task.title,
+      task.estimatedTime.toString(),
+    );
 
-    if (subtaskTitles.isEmpty) {
+    if (subtaskDataList.isEmpty) {
       logWarning('No subtasks generated for task: ${task.title}');
-
-      // If no subtasks were generated, schedule the parent task itself
       logInfo('Scheduling parent task: ${task.title}');
       scheduler.scheduleTask(task, userSettings.minSession, urgency: null);
-
       return [];
     }
 
-    logInfo('Generated ${subtaskTitles.length} subtasks for: ${task.title}');
+    logInfo('Generated ${subtaskDataList.length} subtasks for: ${task.title}');
 
-    // Create subtask objects
     final subtasks = <Task>[];
     int order = 1;
 
-    for (var subtaskTitle in subtaskTitles) {
-      // Calculate estimated time based on parent task's estimated time
-      // Distribute time proportionally among subtasks
-      final estimatedTime = (task.estimatedTime / subtaskTitles.length).round();
+    for (var subtaskData in subtaskDataList) {
+      // Извлекаем title и estimatedTime из Map
+      final subtaskTitle = subtaskData['title'] as String;
+      final estimatedTime = subtaskData['estimatedTime'] as int;
 
       final subtask = Task(
         id: UniqueKey().toString(),
@@ -367,40 +507,22 @@ class TaskManager {
         parentTask: task,
         order: order++,
       );
-
       tasksDB.put(subtask.id, subtask);
       subtasks.add(subtask);
-
-      // Add subtask to parent task's subtasks list
       task.subtasks.add(subtask);
     }
 
-    // Update the parent task in the database
     tasksDB.put(task.id, task);
-
-    // Schedule the subtasks
     scheduleSubtasks(subtasks);
 
     return subtasks;
   }
 
-  /// Schedules a list of subtasks in order
-  ///
-  /// This method is protected (not private) to allow subclasses to access it.
   void scheduleSubtasks(List<Task> subtasks) {
     logInfo('Scheduling ${subtasks.length} subtasks');
-
-    // Sort subtasks by order
     subtasks.sort((a, b) => (a.order ?? 0).compareTo(b.order ?? 0));
-
-    // Schedule each subtask
     for (var subtask in subtasks) {
-      scheduler.scheduleTask(
-        subtask,
-        userSettings.minSession,
-        urgency:
-            null, // Let the scheduler determine urgency based on task properties
-      );
+      scheduler.scheduleTask(subtask, userSettings.minSession, urgency: null);
       logInfo('Scheduled subtask: ${subtask.title}');
     }
   }

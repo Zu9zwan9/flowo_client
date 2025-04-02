@@ -33,13 +33,16 @@ class TaskAdapter extends TypeAdapter<Task> {
       order: fields[14] as int?,
       overdue: fields[15] as bool,
       color: fields[16] as int?,
+      optimisticTime: fields[17] as int?,
+      realisticTime: fields[18] as int?,
+      pessimisticTime: fields[19] as int?,
     )..parentTaskId = fields[11] as String?;
   }
 
   @override
   void write(BinaryWriter writer, Task obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(20)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -52,6 +55,12 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..write(obj.estimatedTime)
       ..writeByte(5)
       ..write(obj.category)
+      ..writeByte(17)
+      ..write(obj.optimisticTime)
+      ..writeByte(18)
+      ..write(obj.realisticTime)
+      ..writeByte(19)
+      ..write(obj.pessimisticTime)
       ..writeByte(6)
       ..write(obj.notes)
       ..writeByte(7)

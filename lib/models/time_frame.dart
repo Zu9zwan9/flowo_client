@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 
 part 'time_frame.g.dart';
 
-@HiveType(typeId: 12)
+@HiveType(typeId: 8)
 class TimeFrame {
   @HiveField(0)
   TimeOfDay startTime;

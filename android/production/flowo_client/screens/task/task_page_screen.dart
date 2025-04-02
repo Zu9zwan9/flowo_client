@@ -8,6 +8,7 @@ import '../../utils/category_utils.dart';
 import '../../utils/logger.dart';
 import '../calendar/calendar_screen.dart';
 import '../event/event_edit_screen.dart';
+import 'add_task_page.dart';
 import 'task_edit_screen.dart';
 
 // Constants for styling adhering to HIG
@@ -163,22 +164,20 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
 
   void _navigateToEditScreen(BuildContext context) {
     final isEvent = _task.priority == 0 && _task.category.name == 'Event';
-    Navigator.pushReplacement(
+    Navigator.push(
       context,
       CupertinoPageRoute(
-        builder:
-            (context) =>
-                isEvent
-                    ? EventEditScreen(event: _task)
-                    : TaskEditScreen(task: _task),
+        builder: (context) => isEvent
+            ? EventEditScreen(event: _task)
+            : AddTaskPage(task: _task), // Переходимо на AddTaskPage
       ),
-    ).then(
-      (_) => setState(() {
+    ).then((_) {
+      setState(() {
         _task = widget.task;
         _notesController.text = _task.notes ?? '';
         _arrangeSubtasks();
-      }),
-    );
+      });
+    });
   }
 
   void _confirmDelete(BuildContext context) {

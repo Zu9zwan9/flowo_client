@@ -1,4 +1,5 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
+import 'package:flowo_client/models/notification_type.dart';
 import 'package:flowo_client/models/time_frame.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/screens/widgets/settings_widgets.dart';
@@ -201,6 +202,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late String _monthFormat;
   late bool _is24HourFormat;
 
+  // Notification settings
+  late bool _enableTaskStartNotifications;
+  late bool _enableTaskReminderNotifications;
+  late bool _enableTaskCompletionNotifications;
+  late int _reminderTimeMinutes;
+  late String _vibrationPattern;
+  late String? _notificationSound;
+  late bool _useSystemColor;
+  late NotificationType _defaultNotificationType;
+
   @override
   void initState() {
     super.initState();
@@ -267,10 +278,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _dateFormat = currentSettings.dateFormat;
       _monthFormat = currentSettings.monthFormat;
       _is24HourFormat = currentSettings.is24HourFormat;
+
+      // Load notification settings
+      final notificationPrefs = currentSettings.notificationPreferences;
+      _defaultNotificationType = currentSettings.defaultNotificationType;
+      _enableTaskStartNotifications =
+          notificationPrefs?.enableTaskStartNotifications ?? true;
+      _enableTaskReminderNotifications =
+          notificationPrefs?.enableTaskReminderNotifications ?? true;
+      _enableTaskCompletionNotifications =
+          notificationPrefs?.enableTaskCompletionNotifications ?? true;
+      _reminderTimeMinutes = notificationPrefs?.reminderTimeMinutes ?? 5;
+      _vibrationPattern = notificationPrefs?.vibrationPattern ?? 'default';
+      _notificationSound = notificationPrefs?.notificationSound;
+      _useSystemColor = notificationPrefs?.useSystemColor ?? true;
     });
   }
 
   void _saveSettings() {
+    final notificationPrefs = NotificationPreferences(
+      enableTaskStartNotifications: _enableTaskStartNotifications,
+      enableTaskReminderNotifications: _enableTaskReminderNotifications,
+      enableTaskCompletionNotifications: _enableTaskCompletionNotifications,
+      reminderTimeMinutes: _reminderTimeMinutes,
+      notificationSound: _notificationSound,
+      vibrationPattern: _vibrationPattern,
+      useSystemColor: _useSystemColor,
+    );
+
     final userSettings = UserSettings(
       name: 'Default',
       minSession: _minSessionDuration * 60 * 1000,
@@ -282,6 +317,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       dateFormat: _dateFormat,
       monthFormat: _monthFormat,
       is24HourFormat: _is24HourFormat,
+      defaultNotificationType: _defaultNotificationType,
+      notificationPreferences: notificationPrefs,
     );
 
     context.read<TaskManagerCubit>().updateUserSettings(userSettings);
@@ -805,6 +842,131 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showNotificationTypePicker() {
+    final notificationTypes = [
+      NotificationType.none,
+      NotificationType.vibration,
+      NotificationType.sound,
+      NotificationType.both,
+      NotificationType.push,
+      NotificationType.email,
+      NotificationType.pushAndEmail,
+    ];
+
+    final options =
+        notificationTypes.map((type) {
+          final name = type.toString().split('.').last;
+          return name.substring(0, 1).toUpperCase() + name.substring(1);
+        }).toList();
+
+    int selectedIndex = notificationTypes.indexOf(_defaultNotificationType);
+    if (selectedIndex < 0) selectedIndex = 0;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder:
+          (_) => Container(
+            height: 280,
+            color: CupertinoFormTheme(context).backgroundColor,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        child: const Text('Cancel'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      CupertinoButton(
+                        child: const Text('Done'),
+                        onPressed: () {
+                          setState(
+                            () =>
+                                _defaultNotificationType =
+                                    notificationTypes[selectedIndex],
+                          );
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32.0,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: selectedIndex,
+                    ),
+                    onSelectedItemChanged: (index) => selectedIndex = index,
+                    children:
+                        options
+                            .map((option) => Center(child: Text(option)))
+                            .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  void _showVibrationPatternPicker() {
+    final patterns = ['default', 'short', 'long', 'none'];
+    final options = ['Default', 'Short', 'Long', 'None'];
+
+    int selectedIndex = patterns.indexOf(_vibrationPattern);
+    if (selectedIndex < 0) selectedIndex = 0;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder:
+          (_) => Container(
+            height: 280,
+            color: CupertinoFormTheme(context).backgroundColor,
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      CupertinoButton(
+                        child: const Text('Cancel'),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                      CupertinoButton(
+                        child: const Text('Done'),
+                        onPressed: () {
+                          setState(
+                            () => _vibrationPattern = patterns[selectedIndex],
+                          );
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32.0,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: selectedIndex,
+                    ),
+                    onSelectedItemChanged: (index) => selectedIndex = index,
+                    children:
+                        options
+                            .map((option) => Center(child: Text(option)))
+                            .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
@@ -1071,6 +1233,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   label: '24-Hour Format',
                   value: _is24HourFormat,
                   onChanged: (value) => setState(() => _is24HourFormat = value),
+                ),
+              ],
+            ),
+            SettingsSection(
+              title: 'Notifications',
+              footerText:
+                  'Configure how and when you receive notifications for tasks and events.',
+              children: [
+                SettingsToggleItem(
+                  label: 'Task Start Notifications',
+                  value: _enableTaskStartNotifications,
+                  onChanged:
+                      (value) =>
+                          setState(() => _enableTaskStartNotifications = value),
+                  subtitle: 'Receive notifications when tasks start',
+                ),
+                SettingsToggleItem(
+                  label: 'Task Reminder Notifications',
+                  value: _enableTaskReminderNotifications,
+                  onChanged:
+                      (value) => setState(
+                        () => _enableTaskReminderNotifications = value,
+                      ),
+                  subtitle: 'Receive reminders before tasks start',
+                ),
+                SettingsToggleItem(
+                  label: 'Task Completion Notifications',
+                  value: _enableTaskCompletionNotifications,
+                  onChanged:
+                      (value) => setState(
+                        () => _enableTaskCompletionNotifications = value,
+                      ),
+                  subtitle:
+                      'Receive notifications to check if tasks are completed',
+                ),
+                SettingsSliderItem(
+                  label: 'Reminder Time',
+                  value: _reminderTimeMinutes.toDouble(),
+                  min: 1,
+                  max: 30,
+                  divisions: 29,
+                  valueLabel: '${_reminderTimeMinutes.round()} min',
+                  onChanged:
+                      (value) =>
+                          setState(() => _reminderTimeMinutes = value.round()),
+                  subtitle: 'How many minutes before a task to show a reminder',
+                ),
+                SettingsItem(
+                  label: 'Notification Type',
+                  subtitle: 'Choose how you want to be notified',
+                  trailing: Text(
+                    _defaultNotificationType.toString().split('.').last,
+                    style: const TextStyle(color: CupertinoColors.systemGrey),
+                  ),
+                  onTap: _showNotificationTypePicker,
+                ),
+                SettingsItem(
+                  label: 'Vibration Pattern',
+                  subtitle: 'Choose the vibration pattern for notifications',
+                  trailing: Text(
+                    _vibrationPattern,
+                    style: const TextStyle(color: CupertinoColors.systemGrey),
+                  ),
+                  onTap: _showVibrationPatternPicker,
+                ),
+                SettingsToggleItem(
+                  label: 'Use System Color',
+                  value: _useSystemColor,
+                  onChanged: (value) => setState(() => _useSystemColor = value),
+                  subtitle: 'Use system accent color for notifications',
                 ),
               ],
             ),

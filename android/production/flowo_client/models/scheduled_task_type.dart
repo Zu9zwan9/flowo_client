@@ -14,4 +14,8 @@ enum ScheduledTaskType {
   mealBreak,
   @HiveField(4)
   sleep,
+  @HiveField(5)
+  work,
+  @HiveField(6)
+  freeTime,
 }

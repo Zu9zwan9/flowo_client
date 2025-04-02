@@ -522,7 +522,10 @@ class EventEditScreenState extends State<EventEditScreen> {
 
     Navigator.pushReplacement(
       context,
-      CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)),
+      CupertinoPageRoute(
+        builder:
+            (_) => const HomeScreen(initialIndex: 0, initialExpanded: false),
+      ),
     );
   }
 

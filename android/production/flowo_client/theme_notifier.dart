@@ -1,7 +1,8 @@
+import 'package:flowo_client/models/app_theme.dart'; // Import the shared AppTheme
+import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-
-enum AppTheme { system, light, dark, adhd }
 
 class ThemeNotifier extends ChangeNotifier {
   // Use CupertinoThemeData for Cupertino styling
@@ -9,20 +10,44 @@ class ThemeNotifier extends ChangeNotifier {
   // Keep Material ThemeData for backward compatibility
   late ThemeData _currentTheme;
   AppTheme _currentThemeMode = AppTheme.system;
-  String _currentFont = 'SF Pro';
+  String _currentFont = 'SF Pro Display';
 
-  // Save reference to override brightness for system theme mode
+  // Custom theme properties
+  Color _customColor = const Color(0xFF0A84FF); // Default to iOS blue
+  double _colorIntensity = 1.0; // 0.0 to 1.0
+  double _noiseLevel = 0.0; // 0.0 to 1.0
+
+  // Save reference to override brightness for system or custom theme modes
   Brightness? _brightnessOverride;
 
-  ThemeNotifier() {
+  // Web theme bridge for system theme detection on web
+  final WebThemeBridge? webThemeBridge;
+
+  ThemeNotifier({this.webThemeBridge}) {
     // Initialize with system theme by default
     setThemeMode(AppTheme.system);
+
+    // Listen for system theme changes on web
+    if (kIsWeb && webThemeBridge != null) {
+      webThemeBridge!.listenForThemeChanges((brightness) {
+        if (_currentThemeMode == AppTheme.system &&
+            _brightnessOverride == null) {
+          _applyTheme(brightness, isADHD: false, isCustom: false);
+          notifyListeners();
+        }
+      });
+    }
   }
 
   CupertinoThemeData get currentTheme => _cupertinoTheme;
   ThemeData get materialTheme => _currentTheme; // For Material components
   AppTheme get themeMode => _currentThemeMode;
   String get currentFont => _currentFont;
+
+  // Custom theme getters
+  Color get customColor => _customColor;
+  double get colorIntensity => _colorIntensity;
+  double get noiseLevel => _noiseLevel;
 
   // Theme color getters - all adaptive based on brightness
   Color get primaryColor => _cupertinoTheme.primaryColor;
@@ -36,14 +61,14 @@ class ThemeNotifier extends ChangeNotifier {
   // Helper to determine if we're using dark mode
   bool get _isDarkMode => _cupertinoTheme.brightness == Brightness.dark;
 
-  // Get current brightness considering system and overrides
+  // Get current brightness considering system, overrides, and theme mode
   Brightness get brightness {
-    if (_currentThemeMode == AppTheme.system && _brightnessOverride == null) {
-      // Get the platform brightness if in system mode with no override
-      return WidgetsBinding.instance.window.platformBrightness;
-    } else if (_brightnessOverride != null) {
+    if (_brightnessOverride != null) {
       // Use the override if present
       return _brightnessOverride!;
+    } else if (_currentThemeMode == AppTheme.system) {
+      // Get the platform brightness if in system mode with no override
+      return WidgetsBinding.instance.platformDispatcher.platformBrightness;
     } else {
       // Otherwise use theme-specific brightness
       return _currentThemeMode == AppTheme.dark
@@ -52,36 +77,82 @@ class ThemeNotifier extends ChangeNotifier {
     }
   }
 
+  /// Set the global brightness explicitly
+  void setBrightness(Brightness brightness) {
+    _brightnessOverride = brightness;
+
+    // Apply the theme with the new brightness
+    if (_currentThemeMode == AppTheme.system ||
+        _currentThemeMode == AppTheme.custom) {
+      _applyTheme(
+        brightness,
+        isADHD: _currentThemeMode == AppTheme.adhd,
+        isCustom: _currentThemeMode == AppTheme.custom,
+      );
+    } else {
+      // If we're in light, dark, or ADHD mode, switch to the corresponding theme
+      setThemeMode(
+        brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+      );
+    }
+
+    notifyListeners();
+  }
+
   /// Set theme mode and apply appropriate theme
   void setThemeMode(AppTheme themeMode) {
+    // Store the current brightness override to preserve it across theme changes
+    final currentBrightness = _brightnessOverride ?? brightness;
+
     _currentThemeMode = themeMode;
-    _brightnessOverride = null;
+
+    // Clear the platform brightness listener if we're not in system mode
+    if (themeMode != AppTheme.system) {
+      WidgetsBinding.instance.platformDispatcher.onPlatformBrightnessChanged =
+          null;
+    }
 
     switch (themeMode) {
       case AppTheme.light:
-        _applyTheme(Brightness.light, isADHD: false);
+        _brightnessOverride = null; // Clear override for fixed themes
+        _applyTheme(Brightness.light, isADHD: false, isCustom: false);
         break;
       case AppTheme.dark:
-        _applyTheme(Brightness.dark, isADHD: false);
+        _brightnessOverride = null; // Clear override for fixed themes
+        _applyTheme(Brightness.dark, isADHD: false, isCustom: false);
         break;
       case AppTheme.adhd:
-        _applyTheme(Brightness.light, isADHD: true);
+        _brightnessOverride = null; // Clear override for fixed themes
+        _applyTheme(Brightness.light, isADHD: true, isCustom: false);
+        break;
+      case AppTheme.custom:
+        // Use the current brightness override if available, otherwise fall back to platform brightness
+        final brightnessToUse = currentBrightness;
+        _applyTheme(brightnessToUse, isADHD: false, isCustom: true);
         break;
       case AppTheme.system:
-        // Use platform brightness
-        final platformBrightness =
-            WidgetsBinding.instance.window.platformBrightness;
-        _applyTheme(platformBrightness, isADHD: false);
+        // Use the current brightness override if available, otherwise use platform brightness
+        final brightnessToUse = currentBrightness;
+        _applyTheme(brightnessToUse, isADHD: false, isCustom: false);
 
-        // Listen for platform brightness changes
-        WidgetsBinding.instance.window.onPlatformBrightnessChanged = () {
-          if (_currentThemeMode == AppTheme.system) {
-            _applyTheme(
-              WidgetsBinding.instance.window.platformBrightness,
-              isADHD: false,
-            );
-          }
-        };
+        // For web, we already set up the listener in the constructor
+        // For non-web platforms, use the standard platform brightness listener
+        if (!kIsWeb || webThemeBridge == null) {
+          WidgetsBinding
+              .instance
+              .platformDispatcher
+              .onPlatformBrightnessChanged = () {
+            if (_currentThemeMode == AppTheme.system &&
+                _brightnessOverride == null) {
+              _applyTheme(
+                WidgetsBinding.instance.platformDispatcher.platformBrightness,
+                isADHD: false,
+                isCustom: false,
+              );
+              notifyListeners();
+            }
+          };
+        }
         break;
     }
 
@@ -90,24 +161,42 @@ class ThemeNotifier extends ChangeNotifier {
 
   /// Toggle between light and dark mode
   void toggleDarkMode() {
-    if (_currentThemeMode == AppTheme.system) {
-      // If we're in system mode, just override the brightness
-      _brightnessOverride = _isDarkMode ? Brightness.light : Brightness.dark;
-      _applyTheme(_brightnessOverride!, isADHD: false);
-    } else {
-      // Otherwise toggle between light and dark modes
-      setThemeMode(_isDarkMode ? AppTheme.light : AppTheme.dark);
-    }
+    setBrightness(_isDarkMode ? Brightness.light : Brightness.dark);
   }
 
   /// Core method to apply a theme with the given brightness
-  void _applyTheme(Brightness brightness, {required bool isADHD}) {
+  void _applyTheme(
+    Brightness brightness, {
+    required bool isADHD,
+    bool isCustom = false,
+  }) {
     final isDark = brightness == Brightness.dark;
 
-    // Configure colors based on theme type
-    final primaryColor =
-        isADHD ? CupertinoColors.systemOrange : CupertinoColors.systemBlue;
+    // Configure colors based on theme type with Apple-style colors
+    Color primaryColor;
 
+    if (isCustom) {
+      // Apply intensity to custom color
+      final hslColor = HSLColor.fromColor(_customColor);
+      final adjustedColor =
+          hslColor
+              .withSaturation(
+                (hslColor.saturation * _colorIntensity).clamp(0.0, 1.0),
+              )
+              .withLightness(
+                isDark
+                    ? (hslColor.lightness * 1.2).clamp(0.0, 1.0)
+                    : (hslColor.lightness * _colorIntensity).clamp(0.0, 1.0),
+              )
+              .toColor();
+      primaryColor = adjustedColor;
+    } else {
+      // Default theme colors
+      primaryColor =
+          isADHD ? CupertinoColors.systemOrange : const Color(0xFF0A84FF);
+    }
+
+    // Text color: black for light mode, white for dark mode
     final textColor =
         isADHD
             ? CupertinoColors.black
@@ -115,8 +204,26 @@ class ThemeNotifier extends ChangeNotifier {
             ? CupertinoColors.white
             : CupertinoColors.black;
 
-    final backgroundColor =
-        isDark ? CupertinoColors.black : CupertinoColors.systemBackground;
+    // Background color: Apple-style white (#F2F2F7) for light mode, dark mode black (#1C1C1E) for dark mode
+    Color backgroundColor;
+
+    if (isCustom && _noiseLevel > 0) {
+      // Apply subtle noise effect to background by slightly adjusting the color
+      final baseColor =
+          isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
+      final noiseAmount = (_noiseLevel * 8).toInt(); // Convert to 0-8 range
+
+      // Create a subtle variation of the base color
+      backgroundColor = Color.fromARGB(
+        baseColor.alpha,
+        (baseColor.red + (noiseAmount - 4)).clamp(0, 255),
+        (baseColor.green + (noiseAmount - 2)).clamp(0, 255),
+        (baseColor.blue + noiseAmount).clamp(0, 255),
+      );
+    } else {
+      backgroundColor =
+          isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
+    }
 
     // Configure text style with appropriate weight for ADHD mode
     final textStyle = TextStyle(
@@ -169,9 +276,53 @@ class ThemeNotifier extends ChangeNotifier {
 
     // Re-apply current theme with the new font
     _applyTheme(
-      _cupertinoTheme.brightness ?? Brightness.light, // Provide default if null
+      brightness,
       isADHD: _currentThemeMode == AppTheme.adhd,
+      isCustom: _currentThemeMode == AppTheme.custom,
     );
+
+    notifyListeners();
+  }
+
+  /// Set custom color for the theme
+  void setCustomColor(Color color) {
+    _customColor = color;
+
+    if (_currentThemeMode == AppTheme.custom) {
+      // Re-apply theme if already in custom mode
+      _applyTheme(brightness, isADHD: false, isCustom: true);
+      notifyListeners();
+    }
+  }
+
+  /// Set color intensity (0.0 to 1.0)
+  void setColorIntensity(double intensity) {
+    _colorIntensity = intensity.clamp(0.0, 1.0);
+
+    if (_currentThemeMode == AppTheme.custom) {
+      // Re-apply theme if already in custom mode
+      _applyTheme(brightness, isADHD: false, isCustom: true);
+      notifyListeners();
+    }
+  }
+
+  /// Set noise level (0.0 to 1.0)
+  void setNoiseLevel(double noise) {
+    _noiseLevel = noise.clamp(0.0, 1.0);
+
+    if (_currentThemeMode == AppTheme.custom) {
+      // Re-apply theme if already in custom mode
+      _applyTheme(brightness, isADHD: false, isCustom: true);
+      notifyListeners();
+    }
+  }
+
+  /// Apply custom theme with current settings
+  void applyCustomTheme(Brightness brightness) {
+    _currentThemeMode = AppTheme.custom;
+    _brightnessOverride = brightness;
+
+    _applyTheme(brightness, isADHD: false, isCustom: true);
 
     notifyListeners();
   }
