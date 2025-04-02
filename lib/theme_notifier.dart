@@ -4,6 +4,7 @@ import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 
 class ThemeNotifier extends ChangeNotifier {
   // Use CupertinoThemeData for Cupertino styling
@@ -461,8 +462,21 @@ class ThemeNotifier extends ChangeNotifier {
       _userSettings!.useGradient = _useGradient;
       _userSettings!.secondaryColorValue = _secondaryColor.value;
 
-      // Save the updated UserSettings
-      _userSettings!.save();
+      try {
+        // Try to save the updated UserSettings
+        _userSettings!.save();
+      } catch (e) {
+        // If the object is not in a box, we need to update it in the box
+        if (e.toString().contains('not in a box')) {
+          // Get the Hive box for UserSettings
+          final box = Hive.box<UserSettings>('user_settings');
+          // Update the UserSettings in the box
+          box.put('current', _userSettings!);
+        } else {
+          // Rethrow other errors
+          rethrow;
+        }
+      }
     }
   }
 }
