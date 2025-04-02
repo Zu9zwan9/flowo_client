@@ -5,7 +5,7 @@ import 'package:flowo_client/utils/category_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'habit_screen.dart';
+import 'add_habit_page.dart';
 
 class HabitDetailsScreen extends StatefulWidget {
   final Task habit;
@@ -92,9 +92,8 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
   void _editHabit() {
     Navigator.push(
       context,
-      CupertinoPageRoute(builder: (context) => HabitScreen(habit: _habit)),
+      CupertinoPageRoute(builder: (context) => AddHabitPage(habit: _habit)),
     ).then((_) {
-      // Refresh data when returning from edit screen
       setState(() {
         _habit = widget.habit;
         _loadCompletionData();
@@ -140,8 +139,8 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
         middle: Text(_habit.title, style: theme.textTheme.navTitleTextStyle),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          child: const Icon(CupertinoIcons.pencil),
           onPressed: _editHabit,
+          child: const Icon(CupertinoIcons.pencil),
         ),
       ),
       child: SafeArea(

@@ -9,7 +9,6 @@ import '../../utils/logger.dart';
 import '../calendar/calendar_screen.dart';
 import '../event/event_edit_screen.dart';
 import 'add_task_page.dart';
-import 'task_edit_screen.dart';
 
 // Constants for styling adhering to HIG
 class TaskPageConstants {

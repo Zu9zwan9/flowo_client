@@ -1,5 +1,4 @@
 import 'package:flowo_client/screens/habit/habit_details_screen.dart';
-import 'package:flowo_client/screens/habit/habit_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +10,7 @@ import '../../models/task.dart';
 import '../../utils/category_utils.dart';
 import '../../utils/debouncer.dart';
 import '../event/event_screen.dart';
+import '../habit/add_habit_page.dart';
 import '../home_screen.dart';
 import '../widgets/cupertino_divider.dart';
 import '../widgets/task_list_components.dart';
@@ -518,7 +518,7 @@ class _TaskListScreenState extends State<TaskListScreen>
           if (task.category.name.toLowerCase().contains('event')) {
             return EventEditScreen(event: task);
           } else if (task.frequency != null) {
-            return HabitScreen(habit: task);
+            return AddHabitPage(habit: task);
           } else {
             return AddTaskPage(task: task);
           }
