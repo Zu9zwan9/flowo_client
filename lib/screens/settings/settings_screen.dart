@@ -45,7 +45,7 @@ class _ThemeTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currentTheme = themeNotifier.themeMode.toString().split('.').last;
-    const themes = {'light': 'Light', 'dark': 'Dark', 'adhd': 'ADHD'};
+    const themes = {'light': 'Light', 'dark': 'Dark', 'custom': 'Custom'};
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -271,6 +271,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _saveSettings() {
+    // Get the current theme settings from ThemeNotifier
+    final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
+
     final userSettings = UserSettings(
       name: 'Default',
       minSession: _minSessionDuration * 60 * 1000,
@@ -282,10 +285,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       dateFormat: _dateFormat,
       monthFormat: _monthFormat,
       is24HourFormat: _is24HourFormat,
+      // Include theme-related settings
+      themeMode: themeNotifier.themeMode,
+      customColorValue: themeNotifier.customColor.value,
+      colorIntensity: themeNotifier.colorIntensity,
+      noiseLevel: themeNotifier.noiseLevel,
     );
 
     context.read<TaskManagerCubit>().updateUserSettings(userSettings);
-    logInfo('Settings saved');
+    logInfo('Settings saved with theme preferences');
 
     showCupertinoDialog(
       context: context,
@@ -564,7 +572,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           (context) => StatefulBuilder(
             builder:
                 (context, setState) => Container(
-                  height: 400,
+                  height: MediaQuery.of(context).size.height * 0.7,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: CupertinoDynamicColor.resolve(
@@ -576,120 +584,437 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       topRight: Radius.circular(20),
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            child: const Text('Cancel'),
-                            onPressed: () => Navigator.pop(context),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              child: const Text('Cancel'),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            const Text(
+                              'Choose Color',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              child: const Text('Done'),
+                              onPressed: () {
+                                themeNotifier.setCustomColor(selectedColor);
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: selectedColor,
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          const Text(
-                            'Choose Color',
-                            style: TextStyle(
-                              fontSize: 17,
-                              fontWeight: FontWeight.bold,
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'iOS Colors',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children:
+                              iosColors.map((color) {
+                                final isSelected =
+                                    selectedColor.value == color.value;
+                                return GestureDetector(
+                                  onTap:
+                                      () =>
+                                          setState(() => selectedColor = color),
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: color,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color:
+                                            isSelected
+                                                ? CupertinoColors.white
+                                                : Colors.transparent,
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: CupertinoColors.systemGrey
+                                              .withOpacity(0.3),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child:
+                                        isSelected
+                                            ? const Icon(
+                                              CupertinoIcons.checkmark,
+                                              color: CupertinoColors.white,
+                                              size: 20,
+                                            )
+                                            : null,
+                                  ),
+                                );
+                              }).toList(),
+                        ),
+                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Custom Color',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Hue slider
+                        Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            const Text('Hue', style: TextStyle(fontSize: 14)),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: CupertinoSlider(
+                                value:
+                                    HSVColor.fromColor(selectedColor).hue / 360,
+                                onChanged: (value) {
+                                  final hsvColor = HSVColor.fromColor(
+                                    selectedColor,
+                                  );
+                                  setState(() {
+                                    selectedColor =
+                                        hsvColor.withHue(value * 360).toColor();
+                                  });
+                                },
+                                activeColor: CupertinoColors.systemBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Saturation slider
+                        Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Saturation',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: CupertinoSlider(
+                                value:
+                                    HSVColor.fromColor(
+                                      selectedColor,
+                                    ).saturation,
+                                onChanged: (value) {
+                                  final hsvColor = HSVColor.fromColor(
+                                    selectedColor,
+                                  );
+                                  setState(() {
+                                    selectedColor =
+                                        hsvColor
+                                            .withSaturation(value)
+                                            .toColor();
+                                  });
+                                },
+                                activeColor: CupertinoColors.systemBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Value slider
+                        Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Brightness',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: CupertinoSlider(
+                                value: HSVColor.fromColor(selectedColor).value,
+                                onChanged: (value) {
+                                  final hsvColor = HSVColor.fromColor(
+                                    selectedColor,
+                                  );
+                                  setState(() {
+                                    selectedColor =
+                                        hsvColor.withValue(value).toColor();
+                                  });
+                                },
+                                activeColor: CupertinoColors.systemBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+          ),
+    );
+  }
+
+  void _showSecondaryColorPicker(ThemeNotifier themeNotifier) {
+    final iosColors = [
+      const Color(0xFF34C759), // Green
+      const Color(0xFFFF9500), // Orange
+      const Color(0xFFFF2D55), // Red
+      const Color(0xFF5856D6), // Purple
+      const Color(0xFFAF52DE), // Magenta
+      const Color(0xFF5AC8FA), // Teal
+      const Color(0xFFFFCC00), // Yellow
+      const Color(0xFF8E8E93), // Gray
+      const Color(0xFF007AFF), // Blue
+    ];
+
+    Color selectedColor = themeNotifier.secondaryColor;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setState) => Container(
+                  height: MediaQuery.of(context).size.height * 0.7,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: CupertinoDynamicColor.resolve(
+                      CupertinoColors.systemBackground,
+                      context,
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              child: const Text('Cancel'),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            const Text(
+                              'Choose Secondary Color',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              child: const Text('Done'),
+                              onPressed: () {
+                                themeNotifier.setSecondaryColor(selectedColor);
+                                Navigator.pop(context);
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          height: 60,
+                          decoration: BoxDecoration(
+                            color: selectedColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        // Show a preview of the gradient
+                        Container(
+                          height: 60,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                themeNotifier.customColor,
+                                selectedColor,
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Gradient Preview',
+                              style: TextStyle(
+                                color: CupertinoColors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                          CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            child: const Text('Done'),
-                            onPressed: () {
-                              themeNotifier.setCustomColor(selectedColor);
-                              Navigator.pop(context);
-                            },
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'iOS Colors',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Container(
-                        height: 60,
-                        decoration: BoxDecoration(
-                          color: selectedColor,
-                          borderRadius: BorderRadius.circular(10),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'iOS Colors',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children:
-                            iosColors.map((color) {
-                              final isSelected =
-                                  selectedColor.value == color.value;
-                              return GestureDetector(
-                                onTap:
-                                    () => setState(() => selectedColor = color),
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color:
-                                          isSelected
-                                              ? CupertinoColors.white
-                                              : Colors.transparent,
-                                      width: 2,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: CupertinoColors.systemGrey
-                                            .withOpacity(0.3),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children:
+                              iosColors.map((color) {
+                                final isSelected =
+                                    selectedColor.value == color.value;
+                                return GestureDetector(
+                                  onTap:
+                                      () =>
+                                          setState(() => selectedColor = color),
+                                  child: Container(
+                                    width: 44,
+                                    height: 44,
+                                    decoration: BoxDecoration(
+                                      color: color,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color:
+                                            isSelected
+                                                ? CupertinoColors.white
+                                                : Colors.transparent,
+                                        width: 2,
                                       ),
-                                    ],
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: CupertinoColors.systemGrey
+                                              .withOpacity(0.3),
+                                          blurRadius: 4,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child:
+                                        isSelected
+                                            ? const Icon(
+                                              CupertinoIcons.checkmark,
+                                              color: CupertinoColors.white,
+                                              size: 20,
+                                            )
+                                            : null,
                                   ),
-                                  child:
-                                      isSelected
-                                          ? const Icon(
-                                            CupertinoIcons.checkmark,
-                                            color: CupertinoColors.white,
-                                            size: 20,
-                                          )
-                                          : null,
-                                ),
-                              );
-                            }).toList(),
-                      ),
-                      const SizedBox(height: 24),
-                      CupertinoButton(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        color: CupertinoDynamicColor.resolve(
-                          CupertinoColors.systemGrey5,
-                          context,
+                                );
+                              }).toList(),
                         ),
-                        borderRadius: BorderRadius.circular(10),
-                        child: const Text('Choose Custom Color'),
-                        onPressed: () {
-                          final additionalColors = [
-                            const Color(0xFF964B00),
-                            const Color(0xFF50C878),
-                            const Color(0xFFFFC0CB),
-                            const Color(0xFF40E0D0),
-                            const Color(0xFFDE3163),
-                          ];
-                          final randomColor =
-                              additionalColors[DateTime.now()
-                                      .millisecondsSinceEpoch %
-                                  additionalColors.length];
-                          setState(() => selectedColor = randomColor);
-                        },
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Custom Color',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Hue slider
+                        Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            const Text('Hue', style: TextStyle(fontSize: 14)),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: CupertinoSlider(
+                                value:
+                                    HSVColor.fromColor(selectedColor).hue / 360,
+                                onChanged: (value) {
+                                  final hsvColor = HSVColor.fromColor(
+                                    selectedColor,
+                                  );
+                                  setState(() {
+                                    selectedColor =
+                                        hsvColor.withHue(value * 360).toColor();
+                                  });
+                                },
+                                activeColor: CupertinoColors.systemBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Saturation slider
+                        Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Saturation',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: CupertinoSlider(
+                                value:
+                                    HSVColor.fromColor(
+                                      selectedColor,
+                                    ).saturation,
+                                onChanged: (value) {
+                                  final hsvColor = HSVColor.fromColor(
+                                    selectedColor,
+                                  );
+                                  setState(() {
+                                    selectedColor =
+                                        hsvColor
+                                            .withSaturation(value)
+                                            .toColor();
+                                  });
+                                },
+                                activeColor: CupertinoColors.systemBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Value slider
+                        Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Brightness',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: CupertinoSlider(
+                                value: HSVColor.fromColor(selectedColor).value,
+                                onChanged: (value) {
+                                  final hsvColor = HSVColor.fromColor(
+                                    selectedColor,
+                                  );
+                                  setState(() {
+                                    selectedColor =
+                                        hsvColor.withValue(value).toColor();
+                                  });
+                                },
+                                activeColor: CupertinoColors.systemBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
           ),
@@ -865,6 +1190,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onChanged: (value) => themeNotifier.setNoiseLevel(value),
                     subtitle: 'Add subtle noise effect to the background',
                   ),
+                  SettingsToggleItem(
+                    label: 'Use Gradient',
+                    value: themeNotifier.useGradient,
+                    onChanged: (value) => themeNotifier.setUseGradient(value),
+                    subtitle: 'Apply gradient effect to the background',
+                  ),
+                  if (themeNotifier.useGradient)
+                    SettingsItem(
+                      label: 'Secondary Color',
+                      subtitle: 'Choose the secondary color for gradient',
+                      leading: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: themeNotifier.secondaryColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: CupertinoColors.systemGrey3,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      onTap: () => _showSecondaryColorPicker(themeNotifier),
+                    ),
                 ],
               ],
             ),

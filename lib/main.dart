@@ -21,6 +21,7 @@ import 'blocs/analytics/analytics_cubit.dart';
 import 'blocs/tasks_controller/task_manager_cubit.dart';
 import 'blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'models/adapters/time_of_day_adapter.dart';
+import 'models/app_theme.dart';
 import 'models/category.dart';
 import 'models/coordinates.dart';
 import 'models/day.dart';
@@ -37,7 +38,6 @@ import 'utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   // Register Hive adapters
   Hive.registerAdapter(CategoryAdapter());
   Hive.registerAdapter(CoordinatesAdapter());
@@ -55,6 +55,7 @@ void main() async {
   Hive.registerAdapter(PomodoroStateAdapter());
   Hive.registerAdapter(AmbientSceneAdapter());
   Hive.registerAdapter(RepeatRuleInstanceAdapter());
+  Hive.registerAdapter(AppThemeAdapter());
   await Hive.initFlutter();
 
   Box<Task> tasksDB;
@@ -72,6 +73,7 @@ void main() async {
     pomodoroSessionsDB = await Hive.openBox<PomodoroSession>(
       'pomodoro_sessions',
     );
+
     await Hive.openBox<List<dynamic>>('categories_box');
     ambientScenesDB = await Hive.openBox<AmbientScene>('ambient_scenes');
   } else {
@@ -214,7 +216,11 @@ void main() async {
         Provider<WebThemeBridge>.value(value: webThemeBridge),
         ChangeNotifierProvider<AmbientService>.value(value: ambientService),
         ChangeNotifierProvider(
-          create: (context) => ThemeNotifier(webThemeBridge: webThemeBridge),
+          create:
+              (context) => ThemeNotifier(
+                webThemeBridge: webThemeBridge,
+                userSettings: selectedProfile,
+              ),
         ),
         BlocProvider<CalendarCubit>(
           create: (context) => CalendarCubit(tasksDB, daysDB, taskManager),
@@ -267,32 +273,8 @@ class MyApp extends StatelessWidget {
           value: onboardingService,
           child: CupertinoApp(
             debugShowCheckedModeBanner: false,
-            theme: CupertinoThemeData(
-              brightness: brightness,
-              primaryColor: CupertinoColors.systemIndigo,
-              primaryContrastingColor: CupertinoColors.white,
-              barBackgroundColor:
-                  brightness == Brightness.dark
-                      ? CupertinoColors.systemGrey6.darkColor
-                      : CupertinoColors.systemGrey6.color,
-              scaffoldBackgroundColor:
-                  brightness == Brightness.dark
-                      ? CupertinoColors.systemBackground.darkColor
-                      : CupertinoColors.systemBackground.color,
-              textTheme: CupertinoTextThemeData(
-                navTitleTextStyle: CupertinoTextThemeData().navTitleTextStyle
-                    .copyWith(fontWeight: FontWeight.w600),
-                navLargeTitleTextStyle: CupertinoTextThemeData()
-                    .navLargeTitleTextStyle
-                    .copyWith(fontWeight: FontWeight.bold, letterSpacing: -0.5),
-                textStyle: CupertinoTextThemeData().textStyle.copyWith(
-                  color:
-                      brightness == Brightness.dark
-                          ? CupertinoColors.label.darkColor
-                          : CupertinoColors.label.color,
-                ),
-              ),
-            ),
+            // Use the theme from ThemeNotifier to ensure custom colors, noise, and gradient are applied
+            theme: themeNotifier.currentTheme,
             // Add these two lines to support localization:
             localizationsDelegates: const [
               DefaultCupertinoLocalizations.delegate,

@@ -14,6 +14,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../widgets/gradient_theme.dart';
+
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
   final bool initialExpanded;
@@ -162,213 +164,216 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
 
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text(_pageData[_selectedIndex].label),
-        leading: GestureDetector(
-          onTap: _toggleSidebar,
-          child: const Icon(CupertinoIcons.line_horizontal_3),
+    return GradientTheme(
+      child: CupertinoPageScaffold(
+        navigationBar: CupertinoNavigationBar(
+          middle: Text(_pageData[_selectedIndex].label),
+          leading: GestureDetector(
+            onTap: _toggleSidebar,
+            child: const Icon(CupertinoIcons.line_horizontal_3),
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            top: 0, // Adjust for navigation bar height
-            child: BlocProvider.value(
-              value: context.read<CalendarCubit>(),
-              child: PageView.builder(
-                controller: _pageController,
-                physics:
-                    _isTransitioning
-                        ? const NeverScrollableScrollPhysics()
-                        : const ClampingScrollPhysics(),
-                onPageChanged: (index) {
-                  if (!_isTransitioning) {
-                    setState(() {
-                      _selectedIndex = index;
-                    });
-                  }
-                },
-                itemCount: _pageData.length,
-                itemBuilder: (context, index) {
-                  return AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return Opacity(
-                        opacity:
-                            index == _selectedIndex
-                                ? _fadeAnimation.value
-                                : 1.0 - _fadeAnimation.value,
-                        child: child,
-                      );
-                    },
-                    child: _pageData[index].page,
-                  );
-                },
+        child: Stack(
+          children: [
+            Positioned.fill(
+              top: 0, // Adjust for navigation bar height
+              child: BlocProvider.value(
+                value: context.read<CalendarCubit>(),
+                child: PageView.builder(
+                  controller: _pageController,
+                  physics:
+                      _isTransitioning
+                          ? const NeverScrollableScrollPhysics()
+                          : const ClampingScrollPhysics(),
+                  onPageChanged: (index) {
+                    if (!_isTransitioning) {
+                      setState(() {
+                        _selectedIndex = index;
+                      });
+                    }
+                  },
+                  itemCount: _pageData.length,
+                  itemBuilder: (context, index) {
+                    return AnimatedBuilder(
+                      animation: _animationController,
+                      builder: (context, child) {
+                        return Opacity(
+                          opacity:
+                              index == _selectedIndex
+                                  ? _fadeAnimation.value
+                                  : 1.0 - _fadeAnimation.value,
+                          child: child,
+                        );
+                      },
+                      child: _pageData[index].page,
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          if (_isExpanded)
-            Positioned.fill(
-              child: GestureDetector(
-                onTap: _toggleSidebar,
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                  child: Container(
-                    color:
-                        isDarkMode
-                            ? CupertinoColors.black.withOpacity(0.5)
-                            : CupertinoColors.white.withOpacity(0.5),
+            if (_isExpanded)
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: _toggleSidebar,
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                    child: Container(
+                      color:
+                          isDarkMode
+                              ? CupertinoColors.black.withOpacity(0.5)
+                              : CupertinoColors.white.withOpacity(0.5),
+                    ),
                   ),
                 ),
               ),
-            ),
-          AnimatedPositioned(
-            key: const ValueKey('sidebar'),
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            left: _isExpanded ? 0 : -320,
-            top: 0,
-            bottom: 0,
-            width: 320,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: CupertinoColors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 0),
-                    ),
-                  ],
+            AnimatedPositioned(
+              key: const ValueKey('sidebar'),
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              left: _isExpanded ? 0 : -320,
+              top: 0,
+              bottom: 0,
+              width: 320,
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  topRight: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
                 ),
-                child: SafeArea(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(
-                                color:
-                                    isDarkMode
-                                        ? CupertinoColors.darkBackgroundGray
-                                            .withOpacity(0.3)
-                                        : CupertinoColors.systemGrey5,
-                                width: 0.5,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+                    boxShadow: [
+                      BoxShadow(
+                        color: CupertinoColors.black.withOpacity(0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 0),
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color:
+                                      isDarkMode
+                                          ? CupertinoColors.darkBackgroundGray
+                                              .withOpacity(0.3)
+                                          : CupertinoColors.systemGrey5,
+                                  width: 0.5,
+                                ),
                               ),
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: CupertinoColors.systemIndigo,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    CupertinoIcons.calendar_today,
-                                    color: CupertinoColors.white,
-                                    size: 20,
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: CupertinoColors.systemIndigo,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      CupertinoIcons.calendar_today,
+                                      color: CupertinoColors.white,
+                                      size: 20,
+                                    ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Flexible(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'Flowo',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color:
-                                            isDarkMode
-                                                ? CupertinoColors.white
-                                                : CupertinoColors.black,
+                                const SizedBox(width: 12),
+                                Flexible(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        'Flowo',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              isDarkMode
+                                                  ? CupertinoColors.white
+                                                  : CupertinoColors.black,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      'Productivity App',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color:
-                                            isDarkMode
-                                                ? CupertinoColors.systemGrey
-                                                : CupertinoColors.systemGrey,
+                                      Text(
+                                        'Productivity App',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color:
+                                              isDarkMode
+                                                  ? CupertinoColors.systemGrey
+                                                  : CupertinoColors.systemGrey,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Flexible(
-                          child: ListView.builder(
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            itemCount: _pageData.length,
-                            itemBuilder: (context, index) {
-                              final item = _pageData[index];
-                              final isSelected = index == _selectedIndex;
-
-                              return SidebarMenuItem(
-                                icon: item.icon,
-                                label: item.label,
-                                accentColor: item.accentColor,
-                                isSelected: isSelected,
-                                onTap: () => _navigateToPage(index),
-                                textColor:
-                                    isDarkMode
-                                        ? CupertinoColors.white
-                                        : CupertinoColors.black,
-                              );
-                            },
-                          ),
-                        ),
-                        Flexible(
-                          fit: FlexFit.loose,
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            child: Text(
-                              'FLOWO 1.0.0',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color:
-                                    isDarkMode
-                                        ? CupertinoColors.systemGrey
-                                        : CupertinoColors.systemGrey,
-                              ),
-                              textAlign: TextAlign.center,
+                              ],
                             ),
                           ),
-                        ),
-                      ],
+                          Flexible(
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              itemCount: _pageData.length,
+                              itemBuilder: (context, index) {
+                                final item = _pageData[index];
+                                final isSelected = index == _selectedIndex;
+
+                                return SidebarMenuItem(
+                                  icon: item.icon,
+                                  label: item.label,
+                                  accentColor: item.accentColor,
+                                  isSelected: isSelected,
+                                  onTap: () => _navigateToPage(index),
+                                  textColor:
+                                      isDarkMode
+                                          ? CupertinoColors.white
+                                          : CupertinoColors.black,
+                                );
+                              },
+                            ),
+                          ),
+                          Flexible(
+                            fit: FlexFit.loose,
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              child: Text(
+                                'FLOWO 1.0.0',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color:
+                                      isDarkMode
+                                          ? CupertinoColors.systemGrey
+                                          : CupertinoColors.systemGrey,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flowo_client/models/app_theme.dart'; // Import the shared AppTheme
+import 'package:flowo_client/models/user_settings.dart'; // Import UserSettings
 import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -16,6 +17,11 @@ class ThemeNotifier extends ChangeNotifier {
   Color _customColor = const Color(0xFF0A84FF); // Default to iOS blue
   double _colorIntensity = 1.0; // 0.0 to 1.0
   double _noiseLevel = 0.0; // 0.0 to 1.0
+  bool _useGradient = false; // Whether to use gradient
+  Color _secondaryColor = const Color(0xFF34C759); // Default to iOS green
+
+  // Reference to user settings
+  UserSettings? _userSettings;
 
   // Save reference to override brightness for system or custom theme modes
   Brightness? _brightnessOverride;
@@ -23,9 +29,28 @@ class ThemeNotifier extends ChangeNotifier {
   // Web theme bridge for system theme detection on web
   final WebThemeBridge? webThemeBridge;
 
-  ThemeNotifier({this.webThemeBridge}) {
-    // Initialize with system theme by default
-    setThemeMode(AppTheme.system);
+  ThemeNotifier({this.webThemeBridge, UserSettings? userSettings}) {
+    // Store reference to user settings
+    _userSettings = userSettings;
+
+    // Initialize with settings from UserSettings if available
+    if (userSettings != null) {
+      _currentThemeMode = userSettings.themeMode;
+      _customColor = Color(userSettings.customColorValue);
+      _colorIntensity = userSettings.colorIntensity;
+      _noiseLevel = userSettings.noiseLevel;
+      _useGradient = userSettings.useGradient ?? false;
+      _secondaryColor =
+          userSettings.secondaryColorValue != null
+              ? Color(userSettings.secondaryColorValue!)
+              : const Color(0xFF34C759);
+    } else {
+      // Initialize with system theme by default
+      _currentThemeMode = AppTheme.system;
+    }
+
+    // Apply the theme
+    setThemeMode(_currentThemeMode);
 
     // Listen for system theme changes on web
     if (kIsWeb && webThemeBridge != null) {
@@ -48,6 +73,8 @@ class ThemeNotifier extends ChangeNotifier {
   Color get customColor => _customColor;
   double get colorIntensity => _colorIntensity;
   double get noiseLevel => _noiseLevel;
+  bool get useGradient => _useGradient;
+  Color get secondaryColor => _secondaryColor;
 
   // Theme color getters - all adaptive based on brightness
   Color get primaryColor => _cupertinoTheme.primaryColor;
@@ -95,6 +122,9 @@ class ThemeNotifier extends ChangeNotifier {
         brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
       );
     }
+
+    // Save settings to UserSettings if available
+    _saveThemeSettings();
 
     notifyListeners();
   }
@@ -156,6 +186,9 @@ class ThemeNotifier extends ChangeNotifier {
         break;
     }
 
+    // Save settings to UserSettings if available
+    _saveThemeSettings();
+
     notifyListeners();
   }
 
@@ -196,37 +229,70 @@ class ThemeNotifier extends ChangeNotifier {
           isADHD ? CupertinoColors.systemOrange : const Color(0xFF0A84FF);
     }
 
-    // Text color: black for light mode, white for dark mode
-    final textColor =
-        isADHD
-            ? CupertinoColors.black
-            : isDark
-            ? CupertinoColors.white
-            : CupertinoColors.black;
+    // Text color: dynamically determine based on background darkness for custom theme
+    Color textColor;
 
     // Background color: Apple-style white (#F2F2F7) for light mode, dark mode black (#1C1C1E) for dark mode
     Color backgroundColor;
 
-    if (isCustom && _noiseLevel > 0) {
-      // Apply subtle noise effect to background by slightly adjusting the color
-      final baseColor =
-          isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
-      final noiseAmount = (_noiseLevel * 8).toInt(); // Convert to 0-8 range
+    if (isCustom) {
+      // For custom theme, use the custom color as the base for background
+      // Lighten or darken it based on the brightness mode
+      final backgroundHsl = HSLColor.fromColor(_customColor);
+      final baseBackgroundColor =
+          isDark
+              ? backgroundHsl
+                  .withLightness(0.1)
+                  .toColor() // Dark background
+              : backgroundHsl.withLightness(0.95).toColor(); // Light background
 
-      // Create a subtle variation of the base color
-      backgroundColor = Color.fromARGB(
-        baseColor.alpha,
-        (baseColor.red + (noiseAmount - 4)).clamp(0, 255),
-        (baseColor.green + (noiseAmount - 2)).clamp(0, 255),
-        (baseColor.blue + noiseAmount).clamp(0, 255),
-      );
+      if (_noiseLevel > 0) {
+        // Enhanced noise effect - create a more visible texture
+        final random = DateTime.now().millisecondsSinceEpoch;
+        final noiseIntensity = _noiseLevel * 0.05; // 0-5% variation
+
+        // Create a subtle noise pattern by varying RGB values
+        backgroundColor = Color.fromARGB(
+          baseBackgroundColor.alpha,
+          (baseBackgroundColor.red *
+                  (1 + (random % 10 - 5) * noiseIntensity / 100))
+              .round()
+              .clamp(0, 255),
+          (baseBackgroundColor.green *
+                  (1 + (random % 10 - 5) * noiseIntensity / 100))
+              .round()
+              .clamp(0, 255),
+          (baseBackgroundColor.blue *
+                  (1 + (random % 10 - 5) * noiseIntensity / 100))
+              .round()
+              .clamp(0, 255),
+        );
+      } else {
+        backgroundColor = baseBackgroundColor;
+      }
+
+      // Dynamically determine text color based on background darkness
+      textColor =
+          isColorDark(backgroundColor)
+              ? CupertinoColors.white
+              : CupertinoColors.black;
     } else {
+      // For non-custom themes, use standard text colors
+      textColor =
+          isADHD
+              ? CupertinoColors.black
+              : isDark
+              ? CupertinoColors.white
+              : CupertinoColors.black;
+
+      // Standard background colors
       backgroundColor =
           isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
     }
 
     // Configure text style with appropriate weight for ADHD mode
     final textStyle = TextStyle(
+      inherit: false,
       fontFamily: _currentFont,
       color: textColor,
       fontSize: 16,
@@ -245,12 +311,14 @@ class ThemeNotifier extends ChangeNotifier {
       textTheme: CupertinoTextThemeData(
         textStyle: textStyle,
         navTitleTextStyle: TextStyle(
+          inherit: false,
           fontFamily: _currentFont,
           fontWeight: FontWeight.w600,
           color: textColor,
           fontSize: 17,
         ),
         navLargeTitleTextStyle: TextStyle(
+          inherit: false,
           fontFamily: _currentFont,
           fontWeight: FontWeight.bold,
           color: textColor,
@@ -291,6 +359,10 @@ class ThemeNotifier extends ChangeNotifier {
     if (_currentThemeMode == AppTheme.custom) {
       // Re-apply theme if already in custom mode
       _applyTheme(brightness, isADHD: false, isCustom: true);
+
+      // Save settings to UserSettings if available
+      _saveThemeSettings();
+
       notifyListeners();
     }
   }
@@ -302,6 +374,10 @@ class ThemeNotifier extends ChangeNotifier {
     if (_currentThemeMode == AppTheme.custom) {
       // Re-apply theme if already in custom mode
       _applyTheme(brightness, isADHD: false, isCustom: true);
+
+      // Save settings to UserSettings if available
+      _saveThemeSettings();
+
       notifyListeners();
     }
   }
@@ -313,6 +389,40 @@ class ThemeNotifier extends ChangeNotifier {
     if (_currentThemeMode == AppTheme.custom) {
       // Re-apply theme if already in custom mode
       _applyTheme(brightness, isADHD: false, isCustom: true);
+
+      // Save settings to UserSettings if available
+      _saveThemeSettings();
+
+      notifyListeners();
+    }
+  }
+
+  /// Set whether to use gradient
+  void setUseGradient(bool useGradient) {
+    _useGradient = useGradient;
+
+    if (_currentThemeMode == AppTheme.custom) {
+      // Re-apply theme if already in custom mode
+      _applyTheme(brightness, isADHD: false, isCustom: true);
+
+      // Save settings to UserSettings if available
+      _saveThemeSettings();
+
+      notifyListeners();
+    }
+  }
+
+  /// Set secondary color for gradient
+  void setSecondaryColor(Color color) {
+    _secondaryColor = color;
+
+    if (_currentThemeMode == AppTheme.custom) {
+      // Re-apply theme if already in custom mode
+      _applyTheme(brightness, isADHD: false, isCustom: true);
+
+      // Save settings to UserSettings if available
+      _saveThemeSettings();
+
       notifyListeners();
     }
   }
@@ -324,6 +434,35 @@ class ThemeNotifier extends ChangeNotifier {
 
     _applyTheme(brightness, isADHD: false, isCustom: true);
 
+    // Save settings to UserSettings if available
+    _saveThemeSettings();
+
     notifyListeners();
+  }
+
+  /// Determine if a color is dark (to choose appropriate text color)
+  bool isColorDark(Color color) {
+    // Calculate the perceived brightness using the formula
+    // (0.299*R + 0.587*G + 0.114*B)
+    final double brightness =
+        (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+
+    // If the brightness is less than 0.5, the color is considered dark
+    return brightness < 0.5;
+  }
+
+  /// Save current theme settings to UserSettings
+  void _saveThemeSettings() {
+    if (_userSettings != null) {
+      _userSettings!.themeMode = _currentThemeMode;
+      _userSettings!.customColorValue = _customColor.value;
+      _userSettings!.colorIntensity = _colorIntensity;
+      _userSettings!.noiseLevel = _noiseLevel;
+      _userSettings!.useGradient = _useGradient;
+      _userSettings!.secondaryColorValue = _secondaryColor.value;
+
+      // Save the updated UserSettings
+      _userSettings!.save();
+    }
   }
 }
