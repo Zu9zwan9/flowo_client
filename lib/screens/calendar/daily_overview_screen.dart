@@ -1,3 +1,4 @@
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:hive/hive.dart';
@@ -444,7 +445,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                           child: Text(
                             isFreeTimeTask
                                 ? freeTimeInfo!['label']
-                                : task.title,
+                                : getHabitName(scheduledTask) ?? task.title,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -523,27 +524,78 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     }
   }
 
-  /*
-  TODO: Complete this function
   String? getHabitName(ScheduledTask scheduledTask) {
-    Task task =
-        context.read<CalendarCubit>().tasksDB.get(scheduledTask.parentTaskId)!;
-    var frequencyType = task.frequency?.type;
-    if (frequencyType == 'daily') {
-      return task.frequency?.byDay?.first.name;
-    } else if (frequencyType == 'weekly') {
-      final scheduledDay = scheduledTask.startTime.weekday;
-      return task.frequency?.byDay
-              ?.firstWhere((instance) => instance.selectedDay == scheduledDay)
-              ?.name ??
-          'Weekly Habit';
-    } else if (frequencyType == 'monthly') {
-      return 'Monthly Habit';
-    } else {
-      return 'Habit';
+    Task? task = context.read<CalendarCubit>().tasksDB.get(
+      scheduledTask.parentTaskId,
+    );
+
+    if (task == null || task.frequency == null) {
+      return null;
+    }
+
+    var frequencyType = task.frequency!.type.toLowerCase();
+
+    switch (frequencyType) {
+      case 'daily':
+        return task.frequency!.byDay?.isNotEmpty == true
+            ? task.frequency!.byDay!.first.name
+            : 'Daily Habit';
+
+      case 'weekly':
+        final scheduledDay = _getWeekdayName(scheduledTask.startTime.weekday);
+        final weeklyInstance = task.frequency!.byDay?.firstWhere(
+              (instance) => instance.selectedDay == scheduledDay,
+        );
+        return weeklyInstance != null ? weeklyInstance.name : 'Weekly Habit';
+
+      case 'monthly':
+        if (task.frequency!.byMonthDay != null &&
+            task.frequency!.byMonthDay!.isNotEmpty) {
+          // Handle specific day of month
+          final scheduledDay = scheduledTask.startTime.day;
+          final monthlyInstance = task.frequency!.byMonthDay?.firstWhere(
+                (instance) => int.parse(instance.selectedDay) == scheduledDay,
+          );
+          return monthlyInstance != null
+              ? monthlyInstance.name
+              : 'Monthly Habit';
+        } else if (task.frequency!.bySetPos != null &&
+            task.frequency!.byDay != null) {
+          // Handle pattern (e.g., "first Monday")
+          final scheduledDay = _getWeekdayName(scheduledTask.startTime.weekday);
+          final patternInstance = task.frequency!.byDay?.firstWhere(
+                (instance) => instance.selectedDay == scheduledDay,
+          );
+          return patternInstance != null
+              ? patternInstance.name
+              : 'Monthly Pattern Habit';
+        }
+        return 'Monthly Habit';
+
+      case 'yearly':
+        return task.frequency!.byDay?.isNotEmpty == true
+            ? task.frequency!.byDay!.first.name
+            : 'Yearly Habit';
+
+      default:
+        return task.frequency!.byDay?.isNotEmpty == true
+            ? task.frequency!.byDay!.first.name
+            : task.title; // Fallback to task title if no specific name
     }
   }
- */
+
+  String _getWeekdayName(int weekday) {
+    const weekdays = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
+    return weekdays[weekday - 1];
+  }
 
   void _showTaskDetails(Task task, ScheduledTask scheduledTask) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
@@ -581,7 +633,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                         Text(freeTimeInfo['label']),
                       ],
                     )
-                    : Text(task.title),
+                    : Text(getHabitName(scheduledTask) ?? task.title),
             message: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,

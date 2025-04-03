@@ -11,6 +11,7 @@ import '../../blocs/tasks_controller/task_manager_state.dart';
 import '../../models/scheduled_task.dart';
 import '../../models/task.dart';
 import '../../models/user_settings.dart';
+import '../../utils/logger.dart';
 import '../habit/add_habit_page.dart';
 import '../task/add_task_page.dart';
 
@@ -173,7 +174,7 @@ class CalendarScreenState extends State<CalendarScreen> {
       context: context,
       builder:
           (context) => CupertinoActionSheet(
-            title: Text(task.title),
+            title: Text(getHabitName(scheduledTask) ?? task.title),
             message: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -644,7 +645,8 @@ class CalendarScreenState extends State<CalendarScreen> {
             taskSchedulePairs =
                 taskSchedulePairs.where((pair) {
                   final task = pair.task;
-                  return task.title.toLowerCase().contains(query) ||
+                  final name = getHabitName(pair.scheduledTask) ?? task.title;
+                  return name.toLowerCase().contains(query) ||
                       (task.notes != null &&
                           task.notes!.toLowerCase().contains(query)) ||
                       task.category.name.toLowerCase().contains(query);
@@ -686,7 +688,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                                         .split('.')
                                         .last,
                                   )
-                                  : task.title,
+                                  : getHabitName(scheduledTask) ?? task.title,
                           subtitle: task.notes,
                           startTime: scheduledTask.startTime,
                           endTime: scheduledTask.endTime,
@@ -744,6 +746,79 @@ class CalendarScreenState extends State<CalendarScreen> {
       'December',
     ];
     return months[month - 1];
+  }
+
+  String? getHabitName(ScheduledTask scheduledTask) {
+    Task? task = context.read<CalendarCubit>().tasksDB.get(
+      scheduledTask.parentTaskId,
+    );
+
+    if (task == null || task.frequency == null) {
+      return null;
+    }
+
+    var frequencyType = task.frequency!.type.toLowerCase();
+
+    switch (frequencyType) {
+      case 'daily':
+        return task.frequency!.byDay?.isNotEmpty == true
+            ? task.frequency!.byDay!.first.name
+            : 'Daily Habit';
+
+      case 'weekly':
+        final scheduledDay = _getWeekdayName(scheduledTask.startTime.weekday);
+        final weeklyInstance = task.frequency!.byDay?.firstWhere(
+          (instance) => instance.selectedDay == scheduledDay,
+        );
+        return weeklyInstance != null ? weeklyInstance.name : 'Weekly Habit';
+
+      case 'monthly':
+        if (task.frequency!.byMonthDay != null &&
+            task.frequency!.byMonthDay!.isNotEmpty) {
+          // Handle specific day of month
+          final scheduledDay = scheduledTask.startTime.day;
+          final monthlyInstance = task.frequency!.byMonthDay?.firstWhere(
+            (instance) => int.parse(instance.selectedDay) == scheduledDay,
+          );
+          return monthlyInstance != null
+              ? monthlyInstance.name
+              : 'Monthly Habit';
+        } else if (task.frequency!.bySetPos != null &&
+            task.frequency!.byDay != null) {
+          // Handle pattern (e.g., "first Monday")
+          final scheduledDay = _getWeekdayName(scheduledTask.startTime.weekday);
+          final patternInstance = task.frequency!.byDay?.firstWhere(
+            (instance) => instance.selectedDay == scheduledDay,
+          );
+          return patternInstance != null
+              ? patternInstance.name
+              : 'Monthly Pattern Habit';
+        }
+        return 'Monthly Habit';
+
+      case 'yearly':
+        return task.frequency!.byDay?.isNotEmpty == true
+            ? task.frequency!.byDay!.first.name
+            : 'Yearly Habit';
+
+      default:
+        return task.frequency!.byDay?.isNotEmpty == true
+            ? task.frequency!.byDay!.first.name
+            : task.title; // Fallback to task title if no specific name
+    }
+  }
+
+  String _getWeekdayName(int weekday) {
+    const weekdays = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
+    return weekdays[weekday - 1];
   }
 
   Color _getCategoryColor(String category) {
