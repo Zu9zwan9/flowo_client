@@ -1,6 +1,6 @@
-# Flowo Client Improvement Tasks
+# Flowo Improvement Tasks
 
-This document contains a detailed list of actionable improvement tasks for the Flowo Client application, focusing on AI model implementation and integration.
+This document contains a detailed list of actionable improvement tasks for the Flowo application, focusing on AI model implementation and integration.
 
 ## AI Model Implementation
 
