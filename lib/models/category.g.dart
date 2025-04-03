@@ -16,9 +16,7 @@ class CategoryAdapter extends TypeAdapter<Category> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Category(
-      name: fields[0] as String,
-    );
+    return Category(name: fields[0] as String);
   }
 
   @override

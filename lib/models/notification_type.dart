@@ -12,4 +12,12 @@ enum NotificationType {
   sound,
   @HiveField(3)
   both,
+  @HiveField(4)
+  push,
+  @HiveField(5)
+  email,
+  @HiveField(6)
+  pushAndEmail,
+  @HiveField(7)
+  disabled,
 }

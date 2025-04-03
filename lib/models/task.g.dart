@@ -23,23 +23,26 @@ class TaskAdapter extends TypeAdapter<Task> {
       deadline: fields[3] as int,
       estimatedTime: fields[4] as int,
       category: fields[5] as Category,
-      parentTask: fields[11] as Task?,
       notes: fields[6] as String?,
       location: fields[7] as Coordinates?,
       image: fields[8] as String?,
-      frequency: (fields[9] as List?)?.cast<Day>(),
-      subtasks: (fields[10] as List).cast<Task>(),
-      scheduledTasks: (fields[12] as List).cast<ScheduledTask>(),
+      frequency: fields[9] as RepeatRule?,
+      subtasks: (fields[10] as List?)?.cast<Task>(),
+      scheduledTasks: (fields[12] as List?)?.cast<ScheduledTask>(),
       isDone: fields[13] as bool,
       order: fields[14] as int?,
       overdue: fields[15] as bool,
-    );
+      color: fields[16] as int?,
+      optimisticTime: fields[17] as int?,
+      realisticTime: fields[18] as int?,
+      pessimisticTime: fields[19] as int?,
+    )..parentTaskId = fields[11] as String?;
   }
 
   @override
   void write(BinaryWriter writer, Task obj) {
     writer
-      ..writeByte(16)
+      ..writeByte(20)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -52,6 +55,12 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..write(obj.estimatedTime)
       ..writeByte(5)
       ..write(obj.category)
+      ..writeByte(17)
+      ..write(obj.optimisticTime)
+      ..writeByte(18)
+      ..write(obj.realisticTime)
+      ..writeByte(19)
+      ..write(obj.pessimisticTime)
       ..writeByte(6)
       ..write(obj.notes)
       ..writeByte(7)
@@ -63,7 +72,7 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(10)
       ..write(obj.subtasks)
       ..writeByte(11)
-      ..write(obj.parentTask)
+      ..write(obj.parentTaskId)
       ..writeByte(12)
       ..write(obj.scheduledTasks)
       ..writeByte(13)
@@ -71,7 +80,9 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(14)
       ..write(obj.order)
       ..writeByte(15)
-      ..write(obj.overdue);
+      ..write(obj.overdue)
+      ..writeByte(16)
+      ..write(obj.color);
   }
 
   @override

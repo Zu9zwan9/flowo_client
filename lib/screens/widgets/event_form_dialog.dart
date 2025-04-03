@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../../models/category.dart';
 import '../../models/task.dart';
@@ -42,9 +43,7 @@ class TaskFormDialogState extends State<TaskFormDialog> {
                 child: Column(
                   children: [
                     TextFormField(
-                      decoration: const InputDecoration(
-                        labelText: 'Title',
-                      ),
+                      decoration: const InputDecoration(labelText: 'Title'),
                       onSaved: (value) {
                         _title = value!;
                       },

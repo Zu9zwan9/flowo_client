@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="EN">
 <head>
     <!--
       If you are serving your web app in a path other than the root, change the
@@ -18,21 +18,425 @@
 
     <meta charset="UTF-8">
     <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-    <meta content="A new Flutter project." name="description">
+    <meta content="Flowo - A productivity app to help you manage tasks, track time, and stay focused." name="description">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#F2F2F7">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1C1C1E">
+    <meta name="color-scheme" content="light dark">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
 
     <!-- iOS meta tags & icons -->
-    <meta content="yes" name="mobile-web-app-capable">
-    <meta content="black" name="apple-mobile-web-app-status-bar-style">
-    <meta content="flowo_client" name="apple-mobile-web-app-title">
-    <link href="icons/Icon-192.png" rel="apple-touch-icon">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="default" name="apple-mobile-web-app-status-bar-style">
+    <meta content="Flowo" name="apple-mobile-web-app-title">
+    <link href="icons/app_icon.png" rel="apple-touch-icon">
+    <link rel="apple-touch-startup-image" href="icons/app_icon.png">
 
     <!-- Favicon -->
-    <link href="favicon.png" rel="icon" type="image/png"/>
+    <link href="app_icon.png" rel="icon" type="image/png"/>
 
-    <title>flowo_client</title>
+    <title>Flowo - Productivity App</title>
     <link href="manifest.json" rel="manifest">
+
+    <style>
+        /* Web-specific styles for better loading experience */
+        :root {
+            --primary-color: #0A84FF;
+            --background-color: #F2F2F7;
+            --text-color: #000000;
+            --card-background: #FFFFFF;
+            --secondary-background: #E5E5EA;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --spinner-background: rgba(10, 132, 255, 0.3);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary-color: #0A84FF;
+                --background-color: #1C1C1E;
+                --text-color: #FFFFFF;
+                --card-background: #2C2C2E;
+                --secondary-background: #3A3A3C;
+                --border-color: rgba(255, 255, 255, 0.1);
+                --spinner-background: rgba(10, 132, 255, 0.15);
+            }
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overflow: hidden;
+        }
+
+        #loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 999;
+            transition: opacity 0.5s ease-out;
+            background-color: var(--background-color);
+        }
+
+        #loading-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+            background-color: var(--card-background);
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        #loading img.app-icon {
+            width: 96px;
+            height: 96px;
+            margin-bottom: 24px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        #loading p {
+            font-size: 18px;
+            font-weight: 500;
+            margin: 16px 0 0;
+            color: var(--text-color);
+        }
+
+        .loading-progress {
+            width: 100%;
+            height: 4px;
+            background-color: var(--secondary-background);
+            border-radius: 2px;
+            margin-top: 16px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: var(--primary-color);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+
+        .loading-tips {
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--text-color);
+            opacity: 0.7;
+            text-align: center;
+            min-height: 20px;
+        }
+
+        .tip {
+            margin: 0;
+            animation: fade-in 0.5s ease-in-out;
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 0.7; transform: translateY(0); }
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid var(--spinner-background);
+            border-top-color: var(--primary-color);
+            animation: spin 1.2s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+            position: relative;
+        }
+
+        .spinner::after {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: -3px;
+            right: -3px;
+            bottom: -3px;
+            border-radius: 50%;
+            border: 1px solid transparent;
+            border-top-color: var(--primary-color);
+            opacity: 0.4;
+            animation: spin-reverse 1s cubic-bezier(0.42, 0, 0.58, 1) infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes spin-reverse {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0); }
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0.6; transform: scale(0.98); }
+        }
+
+        /* Responsive layout adjustments */
+        @media (min-width: 768px) {
+            html, body {
+                overflow: auto;
+            }
+
+            #loading-card {
+                transform: scale(1.1);
+                max-width: 400px;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+
+            #loading-card:hover {
+                transform: scale(1.12);
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            }
+        }
+
+        @media (min-width: 1200px) {
+            #loading-card {
+                max-width: 450px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #loading-card {
+                padding: 24px;
+                width: 85%;
+                max-width: 320px;
+            }
+
+            #loading img {
+                width: 72px;
+                height: 72px;
+            }
+        }
+
+        /* Adaptive font sizes */
+        @media (max-width: 320px) {
+            #loading p {
+                font-size: 16px;
+            }
+        }
+
+        /* Accessibility improvements */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+
+        /* Prevent FOUC (Flash of Unstyled Content) */
+        .flutter-loader {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-<script async src="flutter_bootstrap.js"></script>
+    <div id="loading">
+        <div id="loading-card">
+            <img src="app_icon.png" alt="Flowo Logo" class="app-icon">
+            <div class="spinner" role="progressbar" aria-label="Loading application"></div>
+            <p id="loading-text">Loading Flowo...</p>
+            <div class="loading-progress">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <span class="sr-only" id="loading-status">Please wait while the application loads</span>
+            <div class="loading-tips">
+                <p class="tip" id="loading-tip">Tip: Use dark mode for better night-time productivity</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize system theme detection
+        function detectColorScheme() {
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+            return isDarkMode ? 'dark' : 'light';
+        }
+
+        // Initial theme detection
+        const currentTheme = detectColorScheme();
+
+        // Loading tips to display during app initialization
+        const loadingTips = [
+            "Tip: Use dark mode for better night-time productivity",
+            "Tip: Create recurring tasks for habits you want to build",
+            "Tip: Break large tasks into smaller, manageable subtasks",
+            "Tip: The Pomodoro technique can help improve focus",
+            "Tip: Schedule your most important tasks during your peak energy hours",
+            "Tip: Use categories to organize related tasks",
+            "Tip: Review your completed tasks to celebrate progress"
+        ];
+
+        // Initialize loading progress
+        let loadingProgress = 0;
+        const progressBar = document.getElementById('progress-bar');
+        const loadingTip = document.getElementById('loading-tip');
+        const loadingText = document.getElementById('loading-text');
+        const loadingStatus = document.getElementById('loading-status');
+        let currentTipIndex = 0;
+
+        // Simulate loading progress
+        function updateLoadingProgress() {
+            // Increment progress more slowly as we approach 100%
+            const increment = loadingProgress < 70 ? 10 : (loadingProgress < 90 ? 5 : 2);
+            loadingProgress = Math.min(loadingProgress + increment, 95); // Cap at 95% until Flutter is ready
+
+            progressBar.style.width = loadingProgress + '%';
+            loadingStatus.textContent = `Loading application... ${loadingProgress}%`;
+
+            // Update loading tip every 3 seconds
+            if (loadingProgress % 30 === 0) {
+                updateLoadingTip();
+            }
+
+            if (loadingProgress < 95) {
+                setTimeout(updateLoadingProgress, 500);
+            }
+        }
+
+        // Update loading tip
+        function updateLoadingTip() {
+            currentTipIndex = (currentTipIndex + 1) % loadingTips.length;
+            loadingTip.style.opacity = '0';
+
+            setTimeout(() => {
+                loadingTip.textContent = loadingTips[currentTipIndex];
+                loadingTip.style.opacity = '0.7';
+            }, 300);
+        }
+
+        // Start loading animation
+        updateLoadingProgress();
+
+        // Show a random tip initially
+        currentTipIndex = Math.floor(Math.random() * loadingTips.length);
+        loadingTip.textContent = loadingTips[currentTipIndex];
+
+        // Hide loading screen when Flutter app is initialized
+        window.addEventListener('flutter-first-frame', function() {
+            // Complete the progress bar
+            loadingProgress = 100;
+            progressBar.style.width = '100%';
+            loadingText.textContent = 'Ready!';
+            loadingStatus.textContent = 'Application loaded successfully';
+
+            // Fade out loading screen after a short delay
+            setTimeout(function() {
+                const loadingElement = document.getElementById('loading');
+                if (loadingElement) {
+                    loadingElement.style.opacity = '0';
+                    setTimeout(function() {
+                        loadingElement.style.display = 'none';
+                    }, 500);
+                }
+            }, 600);
+        });
+
+        // Detect system color scheme changes
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+            const newTheme = e.matches ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+
+            // Notify Flutter about the theme change
+            if (window.flutterColorSchemeChanged) {
+                window.flutterColorSchemeChanged(newTheme);
+            }
+        });
+
+        // Make the current theme available to Flutter
+        window.flutterThemeReady = function(callback) {
+            if (callback && typeof callback === 'function') {
+                callback(currentTheme);
+            }
+            return currentTheme;
+        };
+
+        // Improve web performance
+        document.addEventListener('touchstart', function() {}, {passive: true});
+
+        // Add keyboard shortcuts for web
+        document.addEventListener('keydown', function(event) {
+            // Only handle keyboard shortcuts when Flutter is initialized
+            if (!window.flutterKeyboardShortcutHandler) return;
+
+            // Command/Ctrl + key shortcuts
+            if ((event.metaKey || event.ctrlKey) && !event.shiftKey) {
+                switch (event.key) {
+                    case 'n': // New task
+                        event.preventDefault();
+                        window.flutterKeyboardShortcutHandler('new_task');
+                        break;
+                    case 'p': // Start pomodoro
+                        event.preventDefault();
+                        window.flutterKeyboardShortcutHandler('pomodoro');
+                        break;
+                    case 'd': // Toggle dark mode
+                        event.preventDefault();
+                        window.flutterKeyboardShortcutHandler('toggle_theme');
+                        break;
+                    case 'f': // Search
+                        event.preventDefault();
+                        window.flutterKeyboardShortcutHandler('search');
+                        break;
+                    case ',': // Settings
+                        event.preventDefault();
+                        window.flutterKeyboardShortcutHandler('settings');
+                        break;
+                }
+            }
+
+            // Command/Ctrl + Shift + key shortcuts
+            if ((event.metaKey || event.ctrlKey) && event.shiftKey) {
+                switch (event.key) {
+                    case 'C': // Calendar view
+                        event.preventDefault();
+                        window.flutterKeyboardShortcutHandler('calendar');
+                        break;
+                    case 'H': // Home
+                        event.preventDefault();
+                        window.flutterKeyboardShortcutHandler('home');
+                        break;
+                    case 'S': // Statistics
+                        event.preventDefault();
+                        window.flutterKeyboardShortcutHandler('statistics');
+                        break;
+                }
+            }
+        });
+
+        // Register keyboard shortcut handler for Flutter to call
+        window.registerKeyboardShortcutHandler = function(handler) {
+            window.flutterKeyboardShortcutHandler = handler;
+        };
+    </script>
+
+    <script async src="flutter_bootstrap.js"></script>
 </body>
 </html>

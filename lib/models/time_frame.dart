@@ -11,8 +11,5 @@ class TimeFrame {
   @HiveField(1)
   TimeOfDay endTime;
 
-  TimeFrame({
-    required this.startTime,
-    required this.endTime,
-  });
+  TimeFrame({required this.startTime, required this.endTime});
 }

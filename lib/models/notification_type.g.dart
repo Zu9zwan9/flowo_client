@@ -21,6 +21,14 @@ class NotificationTypeAdapter extends TypeAdapter<NotificationType> {
         return NotificationType.sound;
       case 3:
         return NotificationType.both;
+      case 4:
+        return NotificationType.push;
+      case 5:
+        return NotificationType.email;
+      case 6:
+        return NotificationType.pushAndEmail;
+      case 7:
+        return NotificationType.disabled;
       default:
         return NotificationType.none;
     }
@@ -40,6 +48,18 @@ class NotificationTypeAdapter extends TypeAdapter<NotificationType> {
         break;
       case NotificationType.both:
         writer.writeByte(3);
+        break;
+      case NotificationType.push:
+        writer.writeByte(4);
+        break;
+      case NotificationType.email:
+        writer.writeByte(5);
+        break;
+      case NotificationType.pushAndEmail:
+        writer.writeByte(6);
+        break;
+      case NotificationType.disabled:
+        writer.writeByte(7);
         break;
     }
   }

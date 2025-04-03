@@ -18,9 +18,3 @@ Flowo is a task management application built with Flutter and Dart. It helps use
 
 - Flutter SDK
 - Dart SDK
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Zu9zwan9/flowo_client.git

@@ -18,7 +18,8 @@ class DayAdapter extends TypeAdapter<Day> {
     };
     return Day(
       day: fields[0] as String,
-    )..scheduledTasks = (fields[1] as List).cast<ScheduledTask>();
+      scheduledTasks: (fields[1] as List?)?.cast<ScheduledTask>(),
+    );
   }
 
   @override

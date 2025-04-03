@@ -1,5 +1,4 @@
 import 'package:flowo_client/main.dart';
-import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,8 +12,6 @@ void main() async {
   Hive.registerAdapter(TaskAdapter());
 
   // Open the box for tasks
-  final tasksDB = await Hive.openBox<Task>('tasks');
-  final daysDB = await Hive.openBox<Day>('scheduled_tasks');
 
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.

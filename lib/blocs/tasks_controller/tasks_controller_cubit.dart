@@ -1,6 +1,7 @@
 import 'package:flowo_client/models/day.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
+
 import '../../models/scheduled_task.dart';
 import '../../models/task.dart';
 import '../../utils/logger.dart';
@@ -13,7 +14,7 @@ class CalendarCubit extends Cubit<CalendarState> {
   final TaskManager taskManager;
 
   CalendarCubit(this.tasksDB, this.daysDB, this.taskManager)
-      : super(CalendarState(selectedDate: DateTime.now())) {
+    : super(CalendarState(selectedDate: DateTime.now())) {
     logInfo('CalendarCubit initialized');
     _loadTasks();
   }
@@ -25,7 +26,6 @@ class CalendarCubit extends Cubit<CalendarState> {
   }
 
   void selectDate(DateTime date) {
-    logDebug('Selected date: $date');
     emit(state.copyWith(selectedDate: date));
   }
 
@@ -63,7 +63,8 @@ class CalendarCubit extends Cubit<CalendarState> {
       logDebug('No tasks found for ${state.selectedDate}');
     } else {
       logDebug(
-          'Found ${tasksForSelectedDate.length} tasks for ${state.selectedDate}');
+        'Found ${tasksForSelectedDate.length} tasks for ${state.selectedDate}',
+      );
     }
     return tasksForSelectedDate;
   }
@@ -86,7 +87,6 @@ class CalendarCubit extends Cubit<CalendarState> {
       }
       groupedTasks[task.category.name]!.add(task);
     }
-    logDebug('Tasks grouped by category: ${groupedTasks.keys.length}');
     return groupedTasks;
   }
 

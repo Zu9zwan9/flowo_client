@@ -1,13 +1,59 @@
 {
-  "name": "flowo_client",
-  "short_name": "flowo_client",
+  "name": "Flowo - Productivity App",
+  "short_name": "Flowo",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0175C2",
-  "theme_color": "#0175C2",
-  "description": "A new Flutter project.",
-  "orientation": "portrait-primary",
+  "background_color": "#F2F2F7",
+  "theme_color": "#0A84FF",
+  "description": "A productivity app to help you manage tasks, track time, and stay focused.",
+  "orientation": "any",
   "prefer_related_applications": false,
+  "categories": ["productivity", "lifestyle", "utilities"],
+  "display_override": ["window-controls-overlay", "standalone"],
+  "handle_links": "preferred",
+  "lang": "en",
+  "dir": "ltr",
+  "id": "flowo-productivity-app",
+  "scope": "/",
+  "shortcuts": [
+    {
+      "name": "Add New Task",
+      "short_name": "New Task",
+      "description": "Quickly add a new task",
+      "url": "/?action=new_task",
+      "icons": [{ "src": "icons/shortcut-task.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Start Pomodoro",
+      "short_name": "Pomodoro",
+      "description": "Start a pomodoro session",
+      "url": "/?action=pomodoro",
+      "icons": [{ "src": "icons/shortcut-pomodoro.png", "sizes": "96x96" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "icons/screenshot-1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Flowo Task Management"
+    },
+    {
+      "src": "icons/screenshot-2.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Flowo Pomodoro Timer"
+    },
+    {
+      "src": "icons/screenshot-mobile-1.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "platform": "narrow",
+      "label": "Flowo on Mobile"
+    }
+  ],
   "icons": [
     {
       "src": "icons/Icon-192.png",
@@ -30,6 +76,19 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    },
+    {
+      "src": "icons/Icon-monochrome-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "monochrome"
     }
-  ]
+  ],
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "theme_color_dark": "#1C1C1E",
+  "background_color_dark": "#1C1C1E",
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
+  "related_applications": []
 }

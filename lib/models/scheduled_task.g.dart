@@ -17,36 +17,39 @@ class ScheduledTaskAdapter extends TypeAdapter<ScheduledTask> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return ScheduledTask(
-      parentTask: fields[0] as Task,
-      startTime: fields[1] as DateTime,
-      endTime: fields[2] as DateTime,
-      urgency: fields[3] as double?,
-      type: fields[4] as ScheduledTaskType,
-      travelingTime: fields[5] as int,
-      breakTime: fields[6] as int,
-      notification: fields[7] as NotificationType,
+      scheduledTaskId: fields[0] as String,
+      parentTaskId: fields[1] as String,
+      startTime: fields[2] as DateTime,
+      endTime: fields[3] as DateTime,
+      urgency: fields[4] as double?,
+      type: fields[5] as ScheduledTaskType,
+      travelingTime: fields[6] as int,
+      breakTime: fields[7] as int,
+      notification: fields[8] as NotificationType,
     );
   }
 
   @override
   void write(BinaryWriter writer, ScheduledTask obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
-      ..write(obj.parentTask)
+      ..write(obj.scheduledTaskId)
       ..writeByte(1)
-      ..write(obj.startTime)
+      ..write(obj.parentTaskId)
       ..writeByte(2)
-      ..write(obj.endTime)
+      ..write(obj.startTime)
       ..writeByte(3)
-      ..write(obj.urgency)
+      ..write(obj.endTime)
       ..writeByte(4)
-      ..write(obj.type)
+      ..write(obj.urgency)
       ..writeByte(5)
-      ..write(obj.travelingTime)
+      ..write(obj.type)
       ..writeByte(6)
-      ..write(obj.breakTime)
+      ..write(obj.travelingTime)
       ..writeByte(7)
+      ..write(obj.breakTime)
+      ..writeByte(8)
       ..write(obj.notification);
   }
 
