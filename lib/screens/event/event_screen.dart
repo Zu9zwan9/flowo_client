@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 
 import '../task/task_page_screen.dart';
+import 'event_form_screen.dart';
 
 // Constants for styling adhering to HIG
 class EventScreenConstants {
@@ -125,9 +126,9 @@ class _EventScreenState extends State<EventScreen> {
   void _navigateToEditScreen(BuildContext context) {
     Navigator.push(
       context,
-      CupertinoPageRoute(builder: (context) => EventEditScreen(event: _event)),
+      CupertinoPageRoute(builder: (context) => EventFormScreen(event: _event)),
     ).then(
-      (_) => setState(() {
+          (_) => setState(() {
         _event = widget.event;
         _notesController.text = _event.notes ?? '';
       }),

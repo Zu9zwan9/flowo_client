@@ -9,6 +9,7 @@ import '../../blocs/tasks_controller/task_manager_state.dart';
 import '../../models/task.dart';
 import '../../utils/category_utils.dart';
 import '../../utils/debouncer.dart';
+import '../event/event_form_screen.dart';
 import '../event/event_screen.dart';
 import '../habit/add_habit_page.dart';
 import '../home_screen.dart';
@@ -516,7 +517,7 @@ class _TaskListScreenState extends State<TaskListScreen>
       CupertinoPageRoute(
         builder: (context) {
           if (task.category.name.toLowerCase().contains('event')) {
-            return EventEditScreen(event: task);
+            return EventFormScreen(event: task);
           } else if (task.frequency != null) {
             return AddHabitPage(habit: task);
           } else {

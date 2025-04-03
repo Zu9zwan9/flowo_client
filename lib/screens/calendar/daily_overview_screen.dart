@@ -523,6 +523,28 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     }
   }
 
+  /*
+  TODO: Complete this function
+  String? getHabitName(ScheduledTask scheduledTask) {
+    Task task =
+        context.read<CalendarCubit>().tasksDB.get(scheduledTask.parentTaskId)!;
+    var frequencyType = task.frequency?.type;
+    if (frequencyType == 'daily') {
+      return task.frequency?.byDay?.first.name;
+    } else if (frequencyType == 'weekly') {
+      final scheduledDay = scheduledTask.startTime.weekday;
+      return task.frequency?.byDay
+              ?.firstWhere((instance) => instance.selectedDay == scheduledDay)
+              ?.name ??
+          'Weekly Habit';
+    } else if (frequencyType == 'monthly') {
+      return 'Monthly Habit';
+    } else {
+      return 'Habit';
+    }
+  }
+ */
+
   void _showTaskDetails(Task task, ScheduledTask scheduledTask) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
 

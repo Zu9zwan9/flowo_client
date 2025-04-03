@@ -4,6 +4,7 @@ import 'package:flowo_client/utils/logger.dart';
 import 'package:hive/hive.dart';
 
 import '../../models/category.dart';
+import '../../models/day.dart';
 import '../../models/repeat_rule.dart';
 import '../../models/task.dart';
 import '../../models/user_settings.dart';
@@ -171,6 +172,66 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
     // Update state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+  }
+
+  void editEvent({
+    required Task task,
+    required String title,
+    required DateTime start,
+    required DateTime end,
+    String? location,
+    String? notes,
+    int? color,
+    int? travelingTime,
+  }) {
+    logInfo(
+      'Editing event: ${task.title} to new title - $title, start - $start, end - $end',
+    );
+
+    if (task.scheduledTasks.isNotEmpty) {
+      final scheduledTask = task.scheduledTasks.first;
+      final dateKey = _formatDateKey(scheduledTask.startTime);
+      final daysBox = Hive.box<Day>('scheduled_tasks');
+      final day = daysBox.get(dateKey);
+
+      if (day != null) {
+        day.scheduledTasks.removeWhere(
+          (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+        );
+        if (day.scheduledTasks.isEmpty) {
+          daysBox.delete(dateKey);
+        } else {
+          daysBox.put(dateKey, day);
+        }
+        logInfo('Removed previous scheduled task for event: ${task.title}');
+      }
+      task.scheduledTasks.clear();
+    }
+
+    final estimatedTime = end.difference(start).inMilliseconds;
+    final deadline = end.millisecondsSinceEpoch;
+
+    taskManager.editTask(
+      task,
+      title,
+      0,
+      estimatedTime,
+      deadline,
+      task.category,
+      null,
+      notes: notes,
+      color: color,
+    );
+
+    taskManager.scheduler.scheduleEvent(
+      task: task,
+      start: start,
+      end: end,
+    );
+    taskManager.tasksDB.put(task.id, task);
+
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    logInfo('Event updated successfully: ${task.title}');
   }
 
   void scheduleTasks() {
