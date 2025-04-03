@@ -1,4 +1,4 @@
-import 'package:flowo_client/screens/pomodoro/pomodoro_screen.dart';
+import 'package:flowo_client/screens/pomodoro/pomodoro_timer_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
@@ -200,7 +200,7 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
                               context,
                               CupertinoPageRoute(
                                 builder:
-                                    (context) => PomodoroScreen(
+                                    (context) => PomodoroTimerScreen(
                                       task: taskToUse,
                                       customDuration:
                                           null, // No more custom duration option

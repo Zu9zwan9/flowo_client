@@ -101,128 +101,130 @@ class _NameInputScreenState extends State<NameInputScreen> {
         backgroundColor: theme.barBackgroundColor.withOpacity(0.8),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 40),
-              // App logo
-              Center(
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.activeBlue,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: CupertinoColors.systemGrey.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
+                // App logo
+                Center(
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.activeBlue,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: CupertinoColors.systemGrey.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        CupertinoIcons.calendar_today,
+                        color: CupertinoColors.white,
+                        size: 40,
                       ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      CupertinoIcons.calendar_today,
-                      color: CupertinoColors.white,
-                      size: 40,
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              // App name
-              Center(
-                child: Text(
-                  'Flowo',
-                  style: theme.textTheme.navLargeTitleTextStyle,
+                const SizedBox(height: 24),
+                // App name
+                Center(
+                  child: Text(
+                    'Flowo',
+                    style: theme.textTheme.navLargeTitleTextStyle,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              // App tagline
-              Center(
-                child: Text(
-                  'Your personal productivity assistant',
+                const SizedBox(height: 8),
+                // App tagline
+                Center(
+                  child: Text(
+                    'Your personal productivity assistant',
+                    style: theme.textTheme.textStyle.copyWith(
+                      fontSize: 16,
+                      color: CupertinoColors.systemGrey,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 60),
+                // Welcome message
+                Text(
+                  'What\'s your name?',
+                  style: theme.textTheme.navLargeTitleTextStyle.copyWith(
+                    fontSize: 24,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'We\'ll personalize your experience',
                   style: theme.textTheme.textStyle.copyWith(
                     fontSize: 16,
                     color: CupertinoColors.systemGrey,
                   ),
                 ),
-              ),
-              const SizedBox(height: 60),
-              // Welcome message
-              Text(
-                'What\'s your name?',
-                style: theme.textTheme.navLargeTitleTextStyle.copyWith(
-                  fontSize: 24,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'We\'ll personalize your experience',
-                style: theme.textTheme.textStyle.copyWith(
-                  fontSize: 16,
-                  color: CupertinoColors.systemGrey,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Name input field
-              CupertinoTextField(
-                controller: _nameController,
-                placeholder: 'Enter your name',
-                padding: const EdgeInsets.all(16),
-                clearButtonMode: OverlayVisibilityMode.editing,
-                autocorrect: false,
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey6.resolveFrom(context),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: CupertinoColors.systemGrey5.resolveFrom(context),
-                    width: 1.0,
+                const SizedBox(height: 24),
+                // Name input field
+                CupertinoTextField(
+                  controller: _nameController,
+                  placeholder: 'Enter your name',
+                  padding: const EdgeInsets.all(16),
+                  clearButtonMode: OverlayVisibilityMode.editing,
+                  autocorrect: false,
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemGrey6.resolveFrom(context),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: CupertinoColors.systemGrey5.resolveFrom(context),
+                      width: 1.0,
+                    ),
                   ),
-                ),
-                style: theme.textTheme.textStyle,
-                placeholderStyle: theme.textTheme.textStyle.copyWith(
-                  color: CupertinoColors.systemGrey,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Continue button
-              CupertinoButton(
-                onPressed: _isNameValid ? _submitName : null,
-                color: CupertinoColors.activeBlue,
-                disabledColor: CupertinoColors.systemGrey4,
-                borderRadius: BorderRadius.circular(12),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child:
-                    _isSubmitting
-                        ? const CupertinoActivityIndicator(
-                          color: CupertinoColors.white,
-                        )
-                        : const Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: CupertinoColors.white,
-                          ),
-                        ),
-              ),
-              const Spacer(),
-              // Footer
-              Center(
-                child: Text(
-                  'FLOWO 1.0.0',
-                  style: theme.textTheme.tabLabelTextStyle.copyWith(
-                    fontSize: 12,
+                  style: theme.textTheme.textStyle,
+                  placeholderStyle: theme.textTheme.textStyle.copyWith(
                     color: CupertinoColors.systemGrey,
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 24),
+                // Continue button
+                CupertinoButton(
+                  onPressed: _isNameValid ? _submitName : null,
+                  color: CupertinoColors.activeBlue,
+                  disabledColor: CupertinoColors.systemGrey4,
+                  borderRadius: BorderRadius.circular(12),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child:
+                      _isSubmitting
+                          ? const CupertinoActivityIndicator(
+                            color: CupertinoColors.white,
+                          )
+                          : const Text(
+                            'Continue',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: CupertinoColors.white,
+                            ),
+                          ),
+                ),
+                const SizedBox(height: 40),
+                // Footer
+                Center(
+                  child: Text(
+                    'FLOWO 1.0.0',
+                    style: theme.textTheme.tabLabelTextStyle.copyWith(
+                      fontSize: 12,
+                      color: CupertinoColors.systemGrey,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),

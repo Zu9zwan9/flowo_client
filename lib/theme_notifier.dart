@@ -254,16 +254,16 @@ class ThemeNotifier extends ChangeNotifier {
 
         // Create a subtle noise pattern by varying RGB values
         backgroundColor = Color.fromARGB(
-          baseBackgroundColor.alpha,
-          (baseBackgroundColor.red *
+          baseBackgroundColor.a.round(),
+          (baseBackgroundColor.r *
                   (1 + (random % 10 - 5) * noiseIntensity / 100))
               .round()
               .clamp(0, 255),
-          (baseBackgroundColor.green *
+          (baseBackgroundColor.g *
                   (1 + (random % 10 - 5) * noiseIntensity / 100))
               .round()
               .clamp(0, 255),
-          (baseBackgroundColor.blue *
+          (baseBackgroundColor.b *
                   (1 + (random % 10 - 5) * noiseIntensity / 100))
               .round()
               .clamp(0, 255),
@@ -446,7 +446,7 @@ class ThemeNotifier extends ChangeNotifier {
     // Calculate the perceived brightness using the formula
     // (0.299*R + 0.587*G + 0.114*B)
     final double brightness =
-        (0.299 * color.red + 0.587 * color.green + 0.114 * color.blue) / 255;
+        (0.299 * color.r + 0.587 * color.g + 0.114 * color.b) / 255;
 
     // If the brightness is less than 0.5, the color is considered dark
     return brightness < 0.5;
@@ -456,11 +456,11 @@ class ThemeNotifier extends ChangeNotifier {
   void _saveThemeSettings() {
     if (_userSettings != null) {
       _userSettings!.themeMode = _currentThemeMode;
-      _userSettings!.customColorValue = _customColor.value;
+      _userSettings!.customColorValue = _customColor.toARGB32();
       _userSettings!.colorIntensity = _colorIntensity;
       _userSettings!.noiseLevel = _noiseLevel;
       _userSettings!.useGradient = _useGradient;
-      _userSettings!.secondaryColorValue = _secondaryColor.value;
+      _userSettings!.secondaryColorValue = _secondaryColor.toARGB32();
 
       try {
         // Try to save the updated UserSettings
