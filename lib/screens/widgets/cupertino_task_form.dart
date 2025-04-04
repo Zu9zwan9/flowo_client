@@ -76,7 +76,7 @@ class CupertinoTaskForm {
 
   /// Adaptive input decoration that respects the current theme
   BoxDecoration get inputDecoration => BoxDecoration(
-    color: _backgroundColor,
+    // color: _backgroundColor,
     borderRadius: BorderRadius.circular(10),
     border: Border.all(color: _borderColor),
   );
@@ -338,7 +338,6 @@ class CupertinoTaskForm {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: _backgroundColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: _borderColor),
       ),

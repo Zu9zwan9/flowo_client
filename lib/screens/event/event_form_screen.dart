@@ -89,9 +89,11 @@ class EventFormScreenState extends State<EventFormScreen>
   Widget build(BuildContext context) {
     final theme = CupertinoFormTheme(context);
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: Text(widget.event != null ? 'Edit Event' : 'New Event'),
-      ),
+      navigationBar: widget.event != null
+          ? CupertinoNavigationBar(
+              middle: Text('Edit Event'),
+            )
+          : null,
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(CupertinoFormTheme.horizontalSpacing),

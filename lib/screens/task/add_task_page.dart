@@ -119,10 +119,7 @@ class _AddTaskPageState extends State<AddTaskPage>
       navigationBar:
           widget.task == null
               ? null
-              : CupertinoNavigationBar(
-                middle: Text('Edit Task')
-              ),
-      backgroundColor: form.backgroundColor,
+              : CupertinoNavigationBar(middle: Text('Edit Task')),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
@@ -215,38 +212,24 @@ class _AddTaskPageState extends State<AddTaskPage>
                 ),
 
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing),
-
-                // Category Section
                 form.sectionTitle('Category'),
-                Center(
-                  child: CupertinoButton(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                form.formGroup(
+                  children: [
+                    form.selectionButton(
+                      label: 'Category',
+                      value:
+                          _categoryOptions.isEmpty
+                              ? 'Add a category'
+                              : _selectedCategory,
+                      onTap: () => _showCategoryManagerDialog(context),
+                      icon: CupertinoIcons.tag,
+                      color: CupertinoTheme.of(context).primaryColor,
                     ),
-                    color: CupertinoTheme.of(
-                      context,
-                    ).primaryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    onPressed: () => _showCategoryManagerDialog(context),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(CupertinoIcons.settings, size: 16),
-                        SizedBox(width: 4),
-                        Text(
-                          'Manage Categories',
-                          style: TextStyle(fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: CupertinoTaskForm.elementSpacing),
-
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing),
 
-                // Priority Section
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
                 form.sectionTitle('Priority'),
                 form.formGroup(
                   children: [

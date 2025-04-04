@@ -167,8 +167,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     taskManager.tasksDB.put(task.id, task);
 
     // Recalculate scheduling after edit
-    taskManager.removeScheduledTasks();
-    taskManager.scheduleTasks();
+    taskManager.removeScheduledTasksFor(task);
+    taskManager.manageHabits();
 
     // Update state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));

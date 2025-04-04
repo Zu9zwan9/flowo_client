@@ -51,7 +51,7 @@ class CalendarCubit extends Cubit<CalendarState> {
   }
 
   Future<List<ScheduledTask>> getScheduledTasksForSelectedDate() async {
-    final date = _formatDateKey(state.selectedDate);
+    final date = _formatDateKey(DateTime.now());
     List<ScheduledTask> tasksForSelectedDate = [];
     for (Day day in daysDB.values) {
       if (day.day == date) {
@@ -60,10 +60,10 @@ class CalendarCubit extends Cubit<CalendarState> {
     }
 
     if (tasksForSelectedDate.isEmpty) {
-      logDebug('No tasks found for ${state.selectedDate}');
+      logDebug('No tasks found for $date');
     } else {
       logDebug(
-        'Found ${tasksForSelectedDate.length} tasks for ${state.selectedDate}',
+        'Found ${tasksForSelectedDate.length} tasks for $date',
       );
     }
     return tasksForSelectedDate;

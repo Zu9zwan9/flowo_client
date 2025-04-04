@@ -80,6 +80,13 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
             SliverToBoxAdapter(child: _buildHeader()),
             SliverToBoxAdapter(
               child: _buildTimeSection(
+                'Night',
+                TimeOfDay(hour: 0, minute: 0),
+                TimeOfDay(hour: 5, minute: 0),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: _buildTimeSection(
                 'Morning',
                 TimeOfDay(hour: 5, minute: 0),
                 TimeOfDay(hour: 12, minute: 0),

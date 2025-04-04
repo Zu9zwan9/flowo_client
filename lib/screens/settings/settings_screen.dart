@@ -210,60 +210,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _loadSettings() {
-    final currentSettings =
-        context.read<TaskManagerCubit>().taskManager.userSettings;
+    final currentSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
     setState(() {
-      _sleepTime =
-          currentSettings.sleepTime.isNotEmpty
-              ? currentSettings.sleepTime.first.startTime
-              : const TimeOfDay(hour: 22, minute: 0);
-      _wakeupTime =
-          currentSettings.sleepTime.isNotEmpty
-              ? currentSettings.sleepTime.first.endTime
-              : const TimeOfDay(hour: 7, minute: 0);
-      _breakDuration =
-          (currentSettings.breakTime ?? 15 * 60 * 1000) ~/ (60 * 1000);
+      // Sleep Time (unchanged - works correctly)
+      _sleepTime = currentSettings.sleepTime.isNotEmpty
+          ? currentSettings.sleepTime.first.startTime
+          : const TimeOfDay(hour: 22, minute: 0);
+      _wakeupTime = currentSettings.sleepTime.isNotEmpty
+          ? currentSettings.sleepTime.first.endTime
+          : const TimeOfDay(hour: 7, minute: 0);
+
+      // Break and Session Duration (unchanged)
+      _breakDuration = (currentSettings.breakTime ?? 15 * 60 * 1000) ~/ (60 * 1000);
       _minSessionDuration = currentSettings.minSession ~/ (60 * 1000);
-      _mealTimes = List.from(
-        currentSettings.mealBreaks.isNotEmpty
-            ? currentSettings.mealBreaks
-            : [
-              TimeFrame(
-                startTime: TimeOfDay(hour: 8, minute: 0),
-                endTime: TimeOfDay(hour: 8, minute: 30),
-              ),
-              TimeFrame(
-                startTime: TimeOfDay(hour: 13, minute: 0),
-                endTime: TimeOfDay(hour: 13, minute: 30),
-              ),
-              TimeFrame(
-                startTime: TimeOfDay(hour: 19, minute: 0),
-                endTime: TimeOfDay(hour: 19, minute: 30),
-              ),
-            ],
-      );
-      _freeTimes = List.from(
-        currentSettings.freeTime.isNotEmpty
-            ? currentSettings.freeTime
-            : [
-              TimeFrame(
-                startTime: TimeOfDay(hour: 17, minute: 0),
-                endTime: TimeOfDay(hour: 18, minute: 30),
-              ),
-            ],
-      );
-      _activeDays = Map.from(
-        currentSettings.activeDays ??
-            {
-              'Monday': true,
-              'Tuesday': true,
-              'Wednesday': true,
-              'Thursday': true,
-              'Friday': true,
-              'Saturday': true,
-              'Sunday': true,
-            },
-      );
+      _mealTimes = List.from(currentSettings.mealBreaks);
+      _freeTimes = List.from(currentSettings.freeTime);
+      _activeDays = Map.from(currentSettings.activeDays ?? {
+        'Monday': true,
+        'Tuesday': true,
+        'Wednesday': true,
+        'Thursday': true,
+        'Friday': true,
+        'Saturday': true,
+        'Sunday': true,
+      });
       _dateFormat = currentSettings.dateFormat;
       _monthFormat = currentSettings.monthFormat;
       _is24HourFormat = currentSettings.is24HourFormat;

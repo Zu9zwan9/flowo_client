@@ -456,6 +456,21 @@ class TaskManager {
     logInfo('Removed scheduled tasks after ${now.toIso8601String()}');
   }
 
+  void removeScheduledTasksFor(Task task){
+    for (var day in daysDB.values) {
+      final toRemove = day.scheduledTasks
+          .where((st) => st.parentTaskId == task.id)
+          .toList();
+      for (var scheduledTask in toRemove) {
+        day.scheduledTasks.remove(scheduledTask);
+        task.scheduledTasks.remove(scheduledTask);
+      }
+      daysDB.put(day.day, day);
+    }
+    tasksDB.put(task.id, task);
+    logInfo('Removed scheduled tasks for ${task.title}');
+  }
+
   /// Converts day names to weekday integers (1 = Monday, ..., 7 = Sunday).
   int _dayNameToInt(String dayName) {
     const dayMap = {
@@ -467,8 +482,8 @@ class TaskManager {
       'saturday': 6,
       'sunday': 7,
     };
-    return dayMap[dayName.toLowerCase()] ?? 1; // Default to Monday if invalid
-    /// TODO fix potential error with monday
+    return dayMap[dayName.toLowerCase()] ?? 1;
+
   }
 
   Future<List<Task>> breakdownAndScheduleTask(Task task) async {
