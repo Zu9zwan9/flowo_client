@@ -11,12 +11,12 @@ import '../../utils/category_utils.dart';
 import '../../utils/debouncer.dart';
 import '../event/event_form_screen.dart';
 import '../event/event_screen.dart';
-import '../habit/add_habit_page.dart';
+import '../habit/habit_form_screen.dart';
 import '../home_screen.dart';
 import '../widgets/cupertino_divider.dart';
 import '../widgets/task_list_components.dart';
 import '../widgets/task_list_item.dart';
-import 'add_task_page.dart';
+import 'task_form_screen.dart';
 import 'task_page_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
@@ -519,9 +519,9 @@ class _TaskListScreenState extends State<TaskListScreen>
           if (task.category.name.toLowerCase().contains('event')) {
             return EventFormScreen(event: task);
           } else if (task.frequency != null) {
-            return AddHabitPage(habit: task);
+            return HabitFormScreen(habit: task);
           } else {
-            return AddTaskPage(task: task);
+            return TaskFormScreen(task: task);
           }
         },
       ),

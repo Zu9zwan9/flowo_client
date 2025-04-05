@@ -14,17 +14,17 @@ import '../../services/category_service.dart';
 import '../../utils/logger.dart';
 import '../home_screen.dart';
 
-class AddTaskPage extends StatefulWidget {
+class TaskFormScreen extends StatefulWidget {
   final DateTime? selectedDate;
   final Task? task;
 
-  const AddTaskPage({super.key, this.selectedDate, this.task});
+  const TaskFormScreen({super.key, this.selectedDate, this.task});
 
   @override
-  State<AddTaskPage> createState() => _AddTaskPageState();
+  State<TaskFormScreen> createState() => _TaskFormScreenState();
 }
 
-class _AddTaskPageState extends State<AddTaskPage>
+class _TaskFormScreenState extends State<TaskFormScreen>
     with SingleTickerProviderStateMixin {
   // MARK: - Form data and controllers
   final _formKey = GlobalKey<FormState>();
@@ -117,9 +117,11 @@ class _AddTaskPageState extends State<AddTaskPage>
     final form = CupertinoTaskForm(context);
     return CupertinoPageScaffold(
       navigationBar:
-          widget.task == null
-              ? null
-              : CupertinoNavigationBar(middle: Text('Edit Task')),
+          widget.task != null
+              ? CupertinoNavigationBar(middle: Text('Edit Task'))
+              : Navigator.canPop(context)
+              ? CupertinoNavigationBar(middle: Text('Create Task'))
+              : null,
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
@@ -813,7 +815,6 @@ class _AddTaskPageState extends State<AddTaskPage>
     final taskManagerCubit = context.read<TaskManagerCubit>();
 
     if (widget.task == null) {
-      // Створення нового завдання
       taskManagerCubit.createTask(
         title: _titleController.text,
         priority: _formData.priority,
@@ -827,7 +828,6 @@ class _AddTaskPageState extends State<AddTaskPage>
         pessimisticTime: _formData.pessimisticTime,
       );
     } else {
-      // Редагування існуючого завдання
       taskManagerCubit.editTask(
         task: widget.task!,
         title: _titleController.text,
@@ -846,10 +846,15 @@ class _AddTaskPageState extends State<AddTaskPage>
     logInfo(
       'Task ${widget.task == null ? "Created" : "Updated"}: ${_titleController.text}',
     );
-    Navigator.pushReplacement(
-      context,
-      CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),
-    );
+
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacement(
+        context,
+        CupertinoPageRoute(builder: (_) => const HomeScreen()),
+      );
+    }
   }
 
   DateTime _roundToNearestFiveMinutes(DateTime dateTime) {

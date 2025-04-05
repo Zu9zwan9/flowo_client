@@ -21,17 +21,17 @@ extension StringExtension on String {
       isEmpty ? this : "${this[0].toUpperCase()}${substring(1)}";
 }
 
-class AddHabitPage extends StatefulWidget {
+class HabitFormScreen extends StatefulWidget {
   final DateTime? selectedDate;
   final Task? habit;
 
-  const AddHabitPage({super.key, this.selectedDate, this.habit});
+  const HabitFormScreen({super.key, this.selectedDate, this.habit});
 
   @override
-  AddHabitPageState createState() => AddHabitPageState();
+  HabitFormScreenState createState() => HabitFormScreenState();
 }
 
-class AddHabitPageState extends State<AddHabitPage>
+class HabitFormScreenState extends State<HabitFormScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
@@ -73,7 +73,9 @@ class AddHabitPageState extends State<AddHabitPage>
       _notesController.text = habit.notes ?? '';
       _selectedCategory = habit.category.name;
       _selectedStartDate = DateTime.fromMillisecondsSinceEpoch(habit.deadline);
-      _selectedEndDate = habit.frequency?.endRepeat ?? _selectedStartDate.add(const Duration(days: 7));
+      _selectedEndDate =
+          habit.frequency?.endRepeat ??
+          _selectedStartDate.add(const Duration(days: 7));
 
       _nameController = TextEditingController();
 
@@ -83,7 +85,8 @@ class AddHabitPageState extends State<AddHabitPage>
         _intervalController.text = repeatRule.interval.toString();
         _intervalValue = repeatRule.interval;
 
-        if (_selectedFrequencyType == 'daily' || _selectedFrequencyType == 'yearly') {
+        if (_selectedFrequencyType == 'daily' ||
+            _selectedFrequencyType == 'yearly') {
           if (repeatRule.byDay != null && repeatRule.byDay!.isNotEmpty) {
             final instance = repeatRule.byDay![0];
             _nameController.text = instance.name;
@@ -200,11 +203,11 @@ class AddHabitPageState extends State<AddHabitPage>
     final theme = CupertinoFormTheme(context);
     return CupertinoPageScaffold(
       navigationBar:
-      widget.habit == null
-          ? null
-          : CupertinoNavigationBar(
-          middle: Text('Edit Habit')
-      ),
+          widget.habit != null
+              ? CupertinoNavigationBar(middle: Text('Edit Habit'))
+              : Navigator.canPop(context)
+              ? CupertinoNavigationBar(middle: Text('Create Habit'))
+              : null,
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
@@ -1451,7 +1454,7 @@ class AddHabitPageState extends State<AddHabitPage>
           ),
     );
   }
-  
+
   void _showDeleteConfirmation(
     BuildContext context,
     String category,
@@ -1566,16 +1569,17 @@ class AddHabitPageState extends State<AddHabitPage>
     if (!_formKey.currentState!.validate()) {
       showCupertinoDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Validation Error'),
-          content: const Text('Please fill in all required fields.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-              onPressed: () => Navigator.pop(context),
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('Validation Error'),
+              content: const Text('Please fill in all required fields.'),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-          ],
-        ),
       );
       return;
     }
@@ -1583,24 +1587,30 @@ class AddHabitPageState extends State<AddHabitPage>
     if (_categoryOptions.isEmpty) {
       showCupertinoDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('No Categories'),
-          content: const Text('Please add a category before saving the habit.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-              onPressed: () => Navigator.pop(context),
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('No Categories'),
+              content: const Text(
+                'Please add a category before saving the habit.',
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                CupertinoDialogAction(
+                  isDefaultAction: true,
+                  child: const Text(
+                    'Add Category',
+                    style: TextStyle(fontSize: 14.0),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showAddCategoryDialog(context);
+                  },
+                ),
+              ],
             ),
-            CupertinoDialogAction(
-              isDefaultAction: true,
-              child: const Text('Add Category', style: TextStyle(fontSize: 14.0)),
-              onPressed: () {
-                Navigator.pop(context);
-                _showAddCategoryDialog(context);
-              },
-            ),
-          ],
-        ),
       );
       return;
     }
@@ -1608,16 +1618,17 @@ class AddHabitPageState extends State<AddHabitPage>
     if (_selectedCategory.isEmpty) {
       showCupertinoDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Validation Error'),
-          content: const Text('Please select a category.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-              onPressed: () => Navigator.pop(context),
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('Validation Error'),
+              content: const Text('Please select a category.'),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-          ],
-        ),
       );
       return;
     }
@@ -1625,35 +1636,42 @@ class AddHabitPageState extends State<AddHabitPage>
     if (_selectedEndDate.isBefore(_selectedStartDate)) {
       showCupertinoDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Invalid Date'),
-          content: const Text('End date must be after start date.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-              onPressed: () => Navigator.pop(context),
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('Invalid Date'),
+              content: const Text('End date must be after start date.'),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-          ],
-        ),
       );
       return;
     }
 
     RepeatRule? repeatRule;
-    if (_selectedFrequencyType == 'daily' || _selectedFrequencyType == 'yearly') {
-      if (_nameController.text.isEmpty || _startTime == null || _endTime == null) {
+    if (_selectedFrequencyType == 'daily' ||
+        _selectedFrequencyType == 'yearly') {
+      if (_nameController.text.isEmpty ||
+          _startTime == null ||
+          _endTime == null) {
         showCupertinoDialog(
           context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('Validation Error'),
-            content: const Text('Please provide habit name, start time, and end time.'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                onPressed: () => Navigator.pop(context),
+          builder:
+              (context) => CupertinoAlertDialog(
+                title: const Text('Validation Error'),
+                content: const Text(
+                  'Please provide habit name, start time, and end time.',
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
         return;
       }
@@ -1674,20 +1692,26 @@ class AddHabitPageState extends State<AddHabitPage>
     } else if (_selectedFrequencyType == 'weekly') {
       if (_weeklyInstances.isEmpty ||
           _weeklyInstances.any(
-                (inst) => inst['nameController'].text.isEmpty || inst['start'] == null || inst['end'] == null,
+            (inst) =>
+                inst['nameController'].text.isEmpty ||
+                inst['start'] == null ||
+                inst['end'] == null,
           )) {
         showCupertinoDialog(
           context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('Validation Error'),
-            content: const Text('Please provide details for all weekly habits.'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                onPressed: () => Navigator.pop(context),
+          builder:
+              (context) => CupertinoAlertDialog(
+                title: const Text('Validation Error'),
+                content: const Text(
+                  'Please provide details for all weekly habits.',
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
               ),
-            ],
-          ),
         );
         return;
       }
@@ -1696,35 +1720,42 @@ class AddHabitPageState extends State<AddHabitPage>
         interval: _intervalValue,
         startRepeat: _selectedStartDate,
         endRepeat: _selectedEndDate,
-        byDay: _weeklyInstances
-            .map(
-              (inst) => RepeatRuleInstance(
-            selectedDay: inst['day'],
-            name: inst['nameController'].text,
-            start: inst['start'],
-            end: inst['end'],
-          ),
-        )
-            .toList(),
+        byDay:
+            _weeklyInstances
+                .map(
+                  (inst) => RepeatRuleInstance(
+                    selectedDay: inst['day'],
+                    name: inst['nameController'].text,
+                    start: inst['start'],
+                    end: inst['end'],
+                  ),
+                )
+                .toList(),
       );
     } else if (_selectedFrequencyType == 'monthly') {
       if (_monthlyType == 'specific') {
         if (_monthlySpecificInstances.isEmpty ||
             _monthlySpecificInstances.any(
-                  (inst) => inst['nameController'].text.isEmpty || inst['start'] == null || inst['end'] == null,
+              (inst) =>
+                  inst['nameController'].text.isEmpty ||
+                  inst['start'] == null ||
+                  inst['end'] == null,
             )) {
           showCupertinoDialog(
             context: context,
-            builder: (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please provide details for all monthly specific days.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
+            builder:
+                (context) => CupertinoAlertDialog(
+                  title: const Text('Validation Error'),
+                  content: const Text(
+                    'Please provide details for all monthly specific days.',
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           );
           return;
         }
@@ -1733,16 +1764,17 @@ class AddHabitPageState extends State<AddHabitPage>
           interval: _intervalValue,
           startRepeat: _selectedStartDate,
           endRepeat: _selectedEndDate,
-          byMonthDay: _monthlySpecificInstances
-              .map(
-                (inst) => RepeatRuleInstance(
-              selectedDay: inst['day'].toString(),
-              name: inst['nameController'].text,
-              start: inst['start'],
-              end: inst['end'],
-            ),
-          )
-              .toList(),
+          byMonthDay:
+              _monthlySpecificInstances
+                  .map(
+                    (inst) => RepeatRuleInstance(
+                      selectedDay: inst['day'].toString(),
+                      name: inst['nameController'].text,
+                      start: inst['start'],
+                      end: inst['end'],
+                    ),
+                  )
+                  .toList(),
         );
       } else {
         if (_monthlyWeek == null ||
@@ -1752,16 +1784,19 @@ class AddHabitPageState extends State<AddHabitPage>
             _endTime == null) {
           showCupertinoDialog(
             context: context,
-            builder: (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please provide all details for the monthly pattern.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
+            builder:
+                (context) => CupertinoAlertDialog(
+                  title: const Text('Validation Error'),
+                  content: const Text(
+                    'Please provide all details for the monthly pattern.',
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK', style: TextStyle(fontSize: 14.0)),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           );
           return;
         }
@@ -1792,7 +1827,7 @@ class AddHabitPageState extends State<AddHabitPage>
         title: _titleController.text,
         priority: {'Low': 0, 'Normal': 1, 'High': 2}[_priority] ?? 1,
         deadline: _selectedStartDate.millisecondsSinceEpoch,
-        estimatedTime: 0, // Ви можете додати поле для estimatedTime, якщо потрібно
+        estimatedTime: 0,
         category: Category(name: _selectedCategory),
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         frequency: repeatRule,
@@ -1803,7 +1838,7 @@ class AddHabitPageState extends State<AddHabitPage>
         title: _titleController.text,
         priority: {'Low': 0, 'Normal': 1, 'High': 2}[_priority] ?? 1,
         deadline: _selectedStartDate.millisecondsSinceEpoch,
-        estimatedTime: 0, // Ви можете додати поле для estimatedTime, якщо потрібно
+        estimatedTime: 0,
         category: Category(name: _selectedCategory),
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         frequency: repeatRule,
@@ -1815,10 +1850,14 @@ class AddHabitPageState extends State<AddHabitPage>
     } else {
       Navigator.pushReplacement(
         context,
-        CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),
+        CupertinoPageRoute(builder: (_) => const HomeScreen()),
       );
     }
 
-    logInfo(widget.habit == null ? 'Created Habit: ${_titleController.text}' : 'Updated Habit: ${_titleController.text}');
+    logInfo(
+      widget.habit == null
+          ? 'Created Habit: ${_titleController.text}'
+          : 'Updated Habit: ${_titleController.text}',
+    );
   }
 }

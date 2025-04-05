@@ -50,19 +50,21 @@ class EventFormScreenState extends State<EventFormScreen>
     _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
 
     if (widget.event != null) {
-      // Редактирование существующего события
       final event = widget.event!;
       _titleController.text = event.title;
       _notesController.text = event.notes ?? '';
       _locationController.text = event.location?.toString() ?? '';
 
-      final scheduledTask = event.scheduledTasks.isNotEmpty ? event.scheduledTasks.first : null;
-      _startTime = scheduledTask?.startTime ?? DateTime.fromMillisecondsSinceEpoch(event.deadline);
-      _endTime = scheduledTask?.endTime ?? _startTime.add(const Duration(hours: 1));
+      final scheduledTask =
+          event.scheduledTasks.isNotEmpty ? event.scheduledTasks.first : null;
+      _startTime =
+          scheduledTask?.startTime ??
+          DateTime.fromMillisecondsSinceEpoch(event.deadline);
+      _endTime =
+          scheduledTask?.endTime ?? _startTime.add(const Duration(hours: 1));
       _selectedColor = event.color;
       _travelingTime = event.scheduledTasks.first.travelingTime ?? 0;
     } else {
-      // Создание нового события
       _startTime = widget.selectedDate ?? DateTime.now();
       _endTime = _startTime.add(const Duration(hours: 1));
     }
@@ -89,11 +91,12 @@ class EventFormScreenState extends State<EventFormScreen>
   Widget build(BuildContext context) {
     final theme = CupertinoFormTheme(context);
     return CupertinoPageScaffold(
-      navigationBar: widget.event != null
-          ? CupertinoNavigationBar(
-              middle: Text('Edit Event'),
-            )
-          : null,
+      navigationBar:
+          widget.event != null
+              ? CupertinoNavigationBar(middle: Text('Edit Event'))
+              : Navigator.canPop(context)
+              ? CupertinoNavigationBar(middle: Text('Create Event'))
+              : null,
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(CupertinoFormTheme.horizontalSpacing),
@@ -126,6 +129,13 @@ class EventFormScreenState extends State<EventFormScreen>
                       placeholder: 'Location',
                     ),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
+                  ],
+                ),
+                SizedBox(height: CupertinoFormTheme.sectionSpacing),
+                CupertinoFormWidgets.formGroup(
+                  context: context,
+                  title: 'Time',
+                  children: [
                     CupertinoFormWidgets.selectionButton(
                       context: context,
                       label: 'Starts',
@@ -169,7 +179,8 @@ class EventFormScreenState extends State<EventFormScreen>
                       context: context,
                       colors: _colorOptions,
                       selectedColor: _selectedColor,
-                      onColorSelected: (color) => setState(() => _selectedColor = color),
+                      onColorSelected:
+                          (color) => setState(() => _selectedColor = color),
                     ),
                   ],
                 ),
@@ -186,14 +197,17 @@ class EventFormScreenState extends State<EventFormScreen>
                     CupertinoFormWidgets.selectionButton(
                       context: context,
                       label: 'Duration',
-                      value: '${(_travelingTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_travelingTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+                      value:
+                          '${(_travelingTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_travelingTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
                       onTap: () async {
-                        final duration = await CupertinoFormWidgets.showDurationPicker(
-                          context: context,
-                          initialHours: _travelingTime ~/ 3600000,
-                          initialMinutes: (_travelingTime % 3600000) ~/ 60000,
-                          maxHours: 12,
-                        );
+                        final duration =
+                            await CupertinoFormWidgets.showDurationPicker(
+                              context: context,
+                              initialHours: _travelingTime ~/ 3600000,
+                              initialMinutes:
+                                  (_travelingTime % 3600000) ~/ 60000,
+                              maxHours: 12,
+                            );
                         if (mounted) setState(() => _travelingTime = duration);
                       },
                       color: theme.accentColor,
@@ -209,7 +223,7 @@ class EventFormScreenState extends State<EventFormScreen>
                     text: widget.event != null ? 'Save Changes' : 'Save Event',
                     onPressed: () {
                       _animationController.forward().then(
-                            (_) => _animationController.reverse(),
+                        (_) => _animationController.reverse(),
                       );
                       _saveEvent(context);
                     },
@@ -223,7 +237,10 @@ class EventFormScreenState extends State<EventFormScreen>
     );
   }
 
-  Future<void> _showDateTimePicker(BuildContext context, {required bool isStart}) async {
+  Future<void> _showDateTimePicker(
+    BuildContext context, {
+    required bool isStart,
+  }) async {
     final now = DateTime.now();
     DateTime initialDateTime = isStart ? _startTime : _endTime;
     if (initialDateTime.isBefore(now)) initialDateTime = now;
@@ -232,37 +249,39 @@ class EventFormScreenState extends State<EventFormScreen>
 
     final pickedDateTime = await showCupertinoModalPopup<DateTime>(
       context: context,
-      builder: (context) => Container(
-        height: 300,
-        color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            child: Column(
               children: [
-                CupertinoButton(
-                  child: const Text('Cancel'),
-                  onPressed: () => Navigator.pop(context),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context, selectedDateTime),
+                    ),
+                  ],
                 ),
-                CupertinoButton(
-                  child: const Text('Done'),
-                  onPressed: () => Navigator.pop(context, selectedDateTime),
+                Expanded(
+                  child: CupertinoDatePicker(
+                    mode: CupertinoDatePickerMode.dateAndTime,
+                    initialDateTime: initialDateTime,
+                    minimumDate: now,
+                    maximumDate: DateTime.now().add(const Duration(days: 730)),
+                    use24hFormat: _userSettings.is24HourFormat,
+                    onDateTimeChanged:
+                        (dateTime) => selectedDateTime = dateTime,
+                  ),
                 ),
               ],
             ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.dateAndTime,
-                initialDateTime: initialDateTime,
-                minimumDate: now,
-                maximumDate: DateTime.now().add(const Duration(days: 730)),
-                use24hFormat: _userSettings.is24HourFormat,
-                onDateTimeChanged: (dateTime) => selectedDateTime = dateTime,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
 
     if (pickedDateTime != null && mounted) {
@@ -283,16 +302,17 @@ class EventFormScreenState extends State<EventFormScreen>
     if (!_formKey.currentState!.validate()) {
       showCupertinoDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Validation Error'),
-          content: const Text('Please fill in all required fields.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('Validation Error'),
+              content: const Text('Please fill in all required fields.'),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-          ],
-        ),
       );
       return;
     }
@@ -300,16 +320,17 @@ class EventFormScreenState extends State<EventFormScreen>
     if (_endTime.isBefore(_startTime)) {
       showCupertinoDialog(
         context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Invalid Time'),
-          content: const Text('End time must be after start time.'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
+        builder:
+            (context) => CupertinoAlertDialog(
+              title: const Text('Invalid Time'),
+              content: const Text('End time must be after start time.'),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('OK'),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-          ],
-        ),
       );
       return;
     }
@@ -321,7 +342,10 @@ class EventFormScreenState extends State<EventFormScreen>
         title: _titleController.text,
         start: _startTime,
         end: _endTime,
-        location: _locationController.text.isNotEmpty ? _locationController.text : null,
+        location:
+            _locationController.text.isNotEmpty
+                ? _locationController.text
+                : null,
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         color: _selectedColor,
         travelingTime: _travelingTime,
@@ -332,7 +356,10 @@ class EventFormScreenState extends State<EventFormScreen>
         title: _titleController.text,
         start: _startTime,
         end: _endTime,
-        location: _locationController.text.isNotEmpty ? _locationController.text : null,
+        location:
+            _locationController.text.isNotEmpty
+                ? _locationController.text
+                : null,
         notes: _notesController.text.isNotEmpty ? _notesController.text : null,
         color: _selectedColor,
         travelingTime: _travelingTime,
@@ -340,9 +367,13 @@ class EventFormScreenState extends State<EventFormScreen>
       logInfo('Saved Event: ${_titleController.text}');
     }
 
-    Navigator.pushReplacement(
-      context,
-      CupertinoPageRoute(builder: (_) => const HomeScreen()),
-    ).then((_) => context.read<TaskManagerCubit>().state);
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacement(
+        context,
+        CupertinoPageRoute(builder: (_) => const HomeScreen()),
+      );
+    }
   }
 }

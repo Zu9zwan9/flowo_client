@@ -3,6 +3,7 @@ import 'package:flowo_client/screens/event/event_form_screen.dart';
 import 'package:flowo_client/screens/widgets/calendar_widgets.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
@@ -11,9 +12,8 @@ import '../../blocs/tasks_controller/task_manager_state.dart';
 import '../../models/scheduled_task.dart';
 import '../../models/task.dart';
 import '../../models/user_settings.dart';
-import '../../utils/logger.dart';
-import '../habit/add_habit_page.dart';
-import '../task/add_task_page.dart';
+import '../habit/habit_form_screen.dart';
+import '../task/task_form_screen.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
@@ -204,9 +204,7 @@ class CalendarScreenState extends State<CalendarScreen> {
             actions: [
               CupertinoActionSheetAction(
                 onPressed: () {
-                  Navigator.pop(context);
-                  // Navigate to edit event screen
-                  // This would be implemented in a real app
+                  _editTask(context, task);
                 },
                 child: const Text('Edit Event'),
               ),
@@ -224,6 +222,24 @@ class CalendarScreenState extends State<CalendarScreen> {
               child: const Text('Cancel'),
             ),
           ),
+    );
+  }
+
+  void _editTask(BuildContext context, Task task) {
+    HapticFeedback.mediumImpact();
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) {
+          if (task.category.name.toLowerCase().contains('event')) {
+            return EventFormScreen(event: task);
+          } else if (task.frequency != null) {
+            return HabitFormScreen(habit: task);
+          } else {
+            return TaskFormScreen(task: task);
+          }
+        },
+      ),
     );
   }
 
@@ -343,7 +359,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     Navigator.push(
       context,
       CupertinoPageRoute(
-        builder: (context) => AddTaskPage(selectedDate: _selectedDate),
+        builder: (context) => TaskFormScreen(selectedDate: _selectedDate),
       ),
     ).then((_) => _refreshData());
   }
@@ -361,7 +377,7 @@ class CalendarScreenState extends State<CalendarScreen> {
     Navigator.push(
       context,
       CupertinoPageRoute(
-        builder: (context) => AddHabitPage(selectedDate: _selectedDate),
+        builder: (context) => HabitFormScreen(selectedDate: _selectedDate),
       ),
     ).then((_) => _refreshData());
   }
@@ -390,6 +406,10 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   Widget _buildContent() {
+    final textColor =
+        CupertinoTheme.of(context).textTheme.textStyle.color ??
+        CupertinoColors.label;
+
     if (_isLoading) {
       return const Center(child: CupertinoActivityIndicator(radius: 16));
     }
@@ -447,10 +467,10 @@ class CalendarScreenState extends State<CalendarScreen> {
                     padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
                     child: Text(
                       '${_weekdayName(_selectedDate.weekday)}, ${_monthName(_selectedDate.month)} ${_selectedDate.day}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: CupertinoColors.label,
+                        color: textColor,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -550,11 +570,7 @@ class CalendarScreenState extends State<CalendarScreen> {
             timeFormat: 'h:mm a',
             timeInterval: Duration(minutes: 30),
             timeIntervalHeight: 80,
-            timeTextStyle: TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
-              color: CupertinoColors.systemGrey,
-            ),
+            timeTextStyle: TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
           ),
           selectionDecoration: BoxDecoration(
             shape: BoxShape.rectangle,
@@ -563,10 +579,12 @@ class CalendarScreenState extends State<CalendarScreen> {
           todayHighlightColor: CupertinoColors.activeBlue,
           headerHeight: 0,
           // Hide the default header since we have our own
-          viewHeaderStyle: const ViewHeaderStyle(
+          viewHeaderStyle: ViewHeaderStyle(
             dayTextStyle: TextStyle(
               fontSize: 12,
-              color: CupertinoColors.systemGrey,
+              color:
+                  CupertinoTheme.of(context).textTheme.textStyle.color ??
+                  CupertinoColors.label,
             ),
           ),
           appointmentTextStyle: const TextStyle(fontSize: 14),
