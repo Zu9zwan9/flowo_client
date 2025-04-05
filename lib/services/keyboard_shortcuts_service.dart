@@ -6,7 +6,6 @@ import '../theme_notifier.dart';
 import 'web_theme_bridge.dart';
 
 /// A service that handles keyboard shortcuts for the web platform.
-/// This follows the Single Responsibility Principle by focusing only on keyboard shortcuts.
 class KeyboardShortcutsService {
   final BuildContext context;
   final WebThemeBridge? webThemeBridge;

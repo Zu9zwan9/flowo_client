@@ -65,7 +65,7 @@ class PushNotificationService implements IPushNotificationService {
     logInfo(
       'App opened from push notification: ${message.notification?.title}',
     );
-    // Handle the message, e.g., navigate to a specific screen
+    // TODO: Handle the message, e.g., navigate to a specific screen
   }
 
   @override

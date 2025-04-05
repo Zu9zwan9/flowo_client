@@ -7,7 +7,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// A service class that manages user profile data and operations
-/// Following SOLID principles by separating business logic from UI
 class ProfileManager {
   late Box<UserProfile> _userProfilesBox;
   UserProfile? _currentProfile;

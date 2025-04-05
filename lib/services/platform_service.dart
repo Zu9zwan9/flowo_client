@@ -1,4 +1,3 @@
-import 'package:flowo_client/services/web/web_utilities.dart';
 import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 

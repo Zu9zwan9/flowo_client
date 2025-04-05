@@ -129,7 +129,6 @@ class HabitFormScreenState extends State<HabitFormScreen>
         }
       }
     } else {
-      // Создание новой привычки
       _selectedStartDate = widget.selectedDate ?? DateTime.now();
       _selectedEndDate = _selectedStartDate.add(const Duration(days: 7));
       _nameController = TextEditingController();
@@ -198,6 +197,104 @@ class HabitFormScreenState extends State<HabitFormScreen>
     return setPosMap[setPos] ?? 'first';
   }
 
+  // Validates the entire form and returns an error message if invalid
+  String? _validateForm() {
+    // Check if title is empty
+    if (_titleController.text.trim().isEmpty) {
+      return 'Habit title is required';
+    }
+
+    // Validate start and end dates
+    final now = DateTime.now();
+    if (_selectedStartDate.isBefore(DateTime(now.year, now.month, now.day))) {
+      return 'Start date cannot be in the past';
+    }
+    if (_selectedEndDate.isBefore(_selectedStartDate)) {
+      return 'End date must be after start date';
+    }
+
+    // Check if category is selected
+    if (_categoryOptions.isEmpty || _selectedCategory.isEmpty) {
+      return 'Please select or add a category';
+    }
+
+    // Validate interval
+    if (_intervalValue <= 0) {
+      return 'Repeat interval must be greater than zero';
+    }
+
+    // Validate frequency-specific details
+    if (_selectedFrequencyType == 'daily' ||
+        _selectedFrequencyType == 'yearly') {
+      if (_nameController.text.trim().isEmpty) {
+        return 'Habit name is required for $_selectedFrequencyType frequency';
+      }
+      if (_startTime == null || _endTime == null) {
+        return 'Start and end times are required for $_selectedFrequencyType frequency';
+      }
+      if (_endTime!.hour < _startTime!.hour ||
+          (_endTime!.hour == _startTime!.hour &&
+              _endTime!.minute <= _startTime!.minute)) {
+        return 'End time must be after start time for $_selectedFrequencyType frequency';
+      }
+    } else if (_selectedFrequencyType == 'weekly') {
+      if (_weeklyInstances.isEmpty) {
+        return 'At least one day must be selected for weekly frequency';
+      }
+      for (var inst in _weeklyInstances) {
+        if (inst['nameController'].text.trim().isEmpty) {
+          return 'Habit name is required for all weekly instances';
+        }
+        if (inst['start'] == null || inst['end'] == null) {
+          return 'Start and end times are required for all weekly instances';
+        }
+        final start = inst['start'] as TimeOfDay;
+        final end = inst['end'] as TimeOfDay;
+        if (end.hour < start.hour ||
+            (end.hour == start.hour && end.minute <= start.minute)) {
+          return 'End time must be after start time for ${inst['day']}';
+        }
+      }
+    } else if (_selectedFrequencyType == 'monthly') {
+      if (_monthlyType == 'specific') {
+        if (_monthlySpecificInstances.isEmpty) {
+          return 'At least one day must be selected for monthly specific frequency';
+        }
+        for (var inst in _monthlySpecificInstances) {
+          if (inst['nameController'].text.trim().isEmpty) {
+            return 'Habit name is required for all monthly specific instances';
+          }
+          if (inst['start'] == null || inst['end'] == null) {
+            return 'Start and end times are required for all monthly specific instances';
+          }
+          final start = inst['start'] as TimeOfDay;
+          final end = inst['end'] as TimeOfDay;
+          if (end.hour < start.hour ||
+              (end.hour == start.hour && end.minute <= start.minute)) {
+            return 'End time must be after start time for day ${inst['day']}';
+          }
+        }
+      } else {
+        if (_monthlyWeek == null || _monthlyDayOfWeek == null) {
+          return 'Week and day of week must be selected for monthly pattern';
+        }
+        if (_nameController.text.trim().isEmpty) {
+          return 'Habit name is required for monthly pattern';
+        }
+        if (_startTime == null || _endTime == null) {
+          return 'Start and end times are required for monthly pattern';
+        }
+        if (_endTime!.hour < _startTime!.hour ||
+            (_endTime!.hour == _startTime!.hour &&
+                _endTime!.minute <= _startTime!.minute)) {
+          return 'End time must be after start time for monthly pattern';
+        }
+      }
+    }
+
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = CupertinoFormTheme(context);
@@ -224,7 +321,8 @@ class HabitFormScreenState extends State<HabitFormScreen>
                       context: context,
                       controller: _titleController,
                       placeholder: 'Habit Title *',
-                      validator: (value) => value!.isEmpty ? 'Required' : null,
+                      validator:
+                          (value) => value!.trim().isEmpty ? 'Required' : null,
                     ),
                     const SizedBox(height: 12.0),
                     CupertinoFormWidgets.textField(
@@ -301,10 +399,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
     );
   }
 
-  Widget _buildFrequencySection(
-    BuildContext context,
-    CupertinoFormTheme theme,
-  ) {
+  Widget _buildFrequencySection(BuildContext context, CupertinoFormTheme theme) {
     final frequencyTypes = ['daily', 'weekly', 'monthly', 'yearly'];
     final primaryColor = CupertinoTheme.of(context).primaryColor;
     final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
@@ -319,14 +414,13 @@ class HabitFormScreenState extends State<HabitFormScreen>
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
-          children:
-              frequencyTypes.map((type) {
-                return _buildFrequencyTab(
-                  type: type,
-                  icon: _getFrequencyIcon(type),
-                  primaryColor: primaryColor,
-                );
-              }).toList(),
+          children: frequencyTypes.map((type) {
+            return _buildFrequencyTab(
+              type: type,
+              icon: _getFrequencyIcon(type),
+              primaryColor: primaryColor,
+            );
+          }).toList(),
         ),
       ),
       const SizedBox(height: 12.0),
@@ -334,10 +428,9 @@ class HabitFormScreenState extends State<HabitFormScreen>
       const SizedBox(height: 8.0),
       Container(
         decoration: BoxDecoration(
-          color:
-              CupertinoTheme.of(context).brightness == Brightness.dark
-                  ? CupertinoColors.systemGrey6.darkColor
-                  : CupertinoColors.systemGrey6.color,
+          color: CupertinoTheme.of(context).brightness == Brightness.dark
+              ? CupertinoColors.systemGrey6.darkColor
+              : CupertinoColors.systemGrey6.color,
           borderRadius: BorderRadius.circular(10.0),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -345,14 +438,39 @@ class HabitFormScreenState extends State<HabitFormScreen>
           children: [
             SizedBox(
               width: 60,
-              child: CupertinoFormWidgets.textField(
-                context: context,
+              child: CupertinoTextField(
                 controller: _intervalController,
                 placeholder: '1',
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly], // Ограничение ввода только цифрами
+                style: theme.valueTextStyle,
+                decoration: BoxDecoration(
+                  border: Border.all(color: CupertinoColors.systemGrey4),
+                  borderRadius: BorderRadius.circular(5),
+                ),
                 onChanged: (value) {
                   if (value.isNotEmpty) {
-                    setState(() => _intervalValue = int.tryParse(value) ?? 1);
+                    setState(() {
+                      _intervalValue = int.tryParse(value) ?? 1;
+                      // Immediate validation for interval
+                      if (_intervalValue <= 0) {
+                        showCupertinoDialog(
+                          context: context,
+                          builder: (context) => CupertinoAlertDialog(
+                            title: const Text('Invalid Interval'),
+                            content: const Text('Interval must be greater than zero'),
+                            actions: [
+                              CupertinoDialogAction(
+                                child: const Text('OK'),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ],
+                          ),
+                        );
+                        _intervalController.text = '1';
+                        _intervalValue = 1;
+                      }
+                    });
                   }
                 },
               ),
@@ -373,8 +491,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
       ),
     ];
 
-    if (_selectedFrequencyType == 'daily' ||
-        _selectedFrequencyType == 'yearly') {
+    if (_selectedFrequencyType == 'daily' || _selectedFrequencyType == 'yearly') {
       frequencyWidgets.addAll(_buildSingleInstanceWidgets(context, theme));
     } else if (_selectedFrequencyType == 'weekly') {
       frequencyWidgets.addAll(_buildWeeklyWidgets(context, theme));
@@ -400,9 +517,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
       child: GestureDetector(
         onTap: () {
           HapticFeedback.selectionClick();
-          setState(() {
-            _selectedFrequencyType = type;
-          });
+          setState(() => _selectedFrequencyType = type);
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -477,7 +592,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
         context: context,
         controller: _nameController,
         placeholder: 'Habit Name *',
-        validator: (value) => value!.isEmpty ? 'Required' : null,
+        validator: (value) => value!.trim().isEmpty ? 'Required' : null,
       ),
       const SizedBox(height: 12.0),
       CupertinoFormWidgets.selectionButton(
@@ -492,7 +607,34 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 : 'Select',
         onTap: () async {
           final time = await _pickTime(context, _startTime);
-          if (time != null) setState(() => _startTime = time);
+          if (time != null && mounted) {
+            setState(() {
+              _startTime = time;
+              // Immediate validation for time
+              if (_endTime != null &&
+                  (_endTime!.hour < _startTime!.hour ||
+                      (_endTime!.hour == _startTime!.hour &&
+                          _endTime!.minute <= _startTime!.minute))) {
+                showCupertinoDialog(
+                  context: context,
+                  builder:
+                      (context) => CupertinoAlertDialog(
+                        title: const Text('Time Error'),
+                        content: const Text(
+                          'End time must be after start time',
+                        ),
+                        actions: [
+                          CupertinoDialogAction(
+                            child: const Text('OK'),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                );
+                _endTime = null;
+              }
+            });
+          }
         },
         color: theme.secondaryColor,
         icon: CupertinoIcons.time,
@@ -511,7 +653,34 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 : 'Select',
         onTap: () async {
           final time = await _pickTime(context, _endTime);
-          if (time != null) setState(() => _endTime = time);
+          if (time != null && mounted) {
+            setState(() {
+              _endTime = time;
+              // Immediate validation for time
+              if (_startTime != null &&
+                  (_endTime!.hour < _startTime!.hour ||
+                      (_endTime!.hour == _startTime!.hour &&
+                          _endTime!.minute <= _startTime!.minute))) {
+                showCupertinoDialog(
+                  context: context,
+                  builder:
+                      (context) => CupertinoAlertDialog(
+                        title: const Text('Time Error'),
+                        content: const Text(
+                          'End time must be after start time',
+                        ),
+                        actions: [
+                          CupertinoDialogAction(
+                            child: const Text('OK'),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
+                      ),
+                );
+                _endTime = null;
+              }
+            });
+          }
         },
         color: theme.accentColor,
         icon: CupertinoIcons.time_solid,
@@ -556,7 +725,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 context: context,
                 controller: inst['nameController'],
                 placeholder: 'Habit Name *',
-                validator: (value) => value!.isEmpty ? 'Required' : null,
+                validator: (value) => value!.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 12.0),
               CupertinoFormWidgets.selectionButton(
@@ -577,7 +746,36 @@ class HabitFormScreenState extends State<HabitFormScreen>
                         : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['start']);
-                  if (time != null) setState(() => inst['start'] = time);
+                  if (time != null && mounted) {
+                    setState(() {
+                      inst['start'] = time;
+                      // Immediate validation for weekly instance time
+                      if (inst['end'] != null) {
+                        final end = inst['end'] as TimeOfDay;
+                        if (end.hour < time.hour ||
+                            (end.hour == time.hour &&
+                                end.minute <= time.minute)) {
+                          showCupertinoDialog(
+                            context: context,
+                            builder:
+                                (context) => CupertinoAlertDialog(
+                                  title: const Text('Time Error'),
+                                  content: const Text(
+                                    'End time must be after start time',
+                                  ),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      child: const Text('OK'),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                ),
+                          );
+                          inst['end'] = null;
+                        }
+                      }
+                    });
+                  }
                 },
                 color: theme.secondaryColor,
                 icon: CupertinoIcons.time,
@@ -602,7 +800,36 @@ class HabitFormScreenState extends State<HabitFormScreen>
                         : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['end']);
-                  if (time != null) setState(() => inst['end'] = time);
+                  if (time != null && mounted) {
+                    setState(() {
+                      inst['end'] = time;
+                      // Immediate validation for weekly instance time
+                      if (inst['start'] != null) {
+                        final start = inst['start'] as TimeOfDay;
+                        if (time.hour < start.hour ||
+                            (time.hour == start.hour &&
+                                time.minute <= start.minute)) {
+                          showCupertinoDialog(
+                            context: context,
+                            builder:
+                                (context) => CupertinoAlertDialog(
+                                  title: const Text('Time Error'),
+                                  content: const Text(
+                                    'End time must be after start time',
+                                  ),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      child: const Text('OK'),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                ),
+                          );
+                          inst['end'] = null;
+                        }
+                      }
+                    });
+                  }
                 },
                 color: theme.accentColor,
                 icon: CupertinoIcons.time_solid,
@@ -742,7 +969,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 context: context,
                 controller: inst['nameController'],
                 placeholder: 'Habit Name *',
-                validator: (value) => value!.isEmpty ? 'Required' : null,
+                validator: (value) => value!.trim().isEmpty ? 'Required' : null,
               ),
               const SizedBox(height: 12.0),
               CupertinoFormWidgets.selectionButton(
@@ -763,7 +990,36 @@ class HabitFormScreenState extends State<HabitFormScreen>
                         : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['start']);
-                  if (time != null) setState(() => inst['start'] = time);
+                  if (time != null && mounted) {
+                    setState(() {
+                      inst['start'] = time;
+                      // Immediate validation for monthly specific instance time
+                      if (inst['end'] != null) {
+                        final end = inst['end'] as TimeOfDay;
+                        if (end.hour < time.hour ||
+                            (end.hour == time.hour &&
+                                end.minute <= time.minute)) {
+                          showCupertinoDialog(
+                            context: context,
+                            builder:
+                                (context) => CupertinoAlertDialog(
+                                  title: const Text('Time Error'),
+                                  content: const Text(
+                                    'End time must be after start time',
+                                  ),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      child: const Text('OK'),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                ),
+                          );
+                          inst['end'] = null;
+                        }
+                      }
+                    });
+                  }
                 },
                 color: theme.secondaryColor,
                 icon: CupertinoIcons.time,
@@ -788,7 +1044,36 @@ class HabitFormScreenState extends State<HabitFormScreen>
                         : 'Select',
                 onTap: () async {
                   final time = await _pickTime(context, inst['end']);
-                  if (time != null) setState(() => inst['end'] = time);
+                  if (time != null && mounted) {
+                    setState(() {
+                      inst['end'] = time;
+                      // Immediate validation for monthly specific instance time
+                      if (inst['start'] != null) {
+                        final start = inst['start'] as TimeOfDay;
+                        if (time.hour < start.hour ||
+                            (time.hour == start.hour &&
+                                time.minute <= start.minute)) {
+                          showCupertinoDialog(
+                            context: context,
+                            builder:
+                                (context) => CupertinoAlertDialog(
+                                  title: const Text('Time Error'),
+                                  content: const Text(
+                                    'End time must be after start time',
+                                  ),
+                                  actions: [
+                                    CupertinoDialogAction(
+                                      child: const Text('OK'),
+                                      onPressed: () => Navigator.pop(context),
+                                    ),
+                                  ],
+                                ),
+                          );
+                          inst['end'] = null;
+                        }
+                      }
+                    });
+                  }
                 },
                 color: theme.accentColor,
                 icon: CupertinoIcons.time_solid,
@@ -934,6 +1219,29 @@ class HabitFormScreenState extends State<HabitFormScreen>
         } else {
           _selectedEndDate = pickedDate;
         }
+        // Immediate validation for dates
+        final error = _validateForm();
+        if (error != null && error.contains('date')) {
+          showCupertinoDialog(
+            context: context,
+            builder:
+                (context) => CupertinoAlertDialog(
+                  title: const Text('Date Error'),
+                  content: Text(error),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+          );
+          if (isStart) {
+            _selectedStartDate = minimumDate;
+          } else {
+            _selectedEndDate = _selectedStartDate.add(const Duration(days: 7));
+          }
+        }
       });
     }
   }
@@ -982,9 +1290,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
                     mode: CupertinoDatePickerMode.time,
                     initialDateTime: initialDateTime,
                     use24hFormat: _userSettings.is24HourFormat,
-                    onDateTimeChanged: (dateTime) {
-                      selectedTime = dateTime;
-                    },
+                    onDateTimeChanged: (dateTime) => selectedTime = dateTime,
                   ),
                 ),
               ],
@@ -1307,20 +1613,15 @@ class HabitFormScreenState extends State<HabitFormScreen>
                       return CupertinoActionSheetAction(
                         onPressed: () {
                           HapticFeedback.selectionClick();
-                          setDialogState(() {
-                            tempSelectedCategory = category;
-                          });
+                          setDialogState(() => tempSelectedCategory = category);
                         },
-                        // TODO: remove space between button and edges in category selector
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           color:
                               isSelected
                                   ? CupertinoTheme.of(
                                     context,
-                                  ).primaryColor.withOpacity(
-                                    0.1,
-                                  ) // Subtle background highlight
+                                  ).primaryColor.withOpacity(0.1)
                                   : Colors.transparent,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1565,81 +1866,17 @@ class HabitFormScreenState extends State<HabitFormScreen>
     return icons[category] ?? CupertinoIcons.tag;
   }
 
+  // Saves the habit after performing validation
   void _saveTask(BuildContext context) {
-    if (!_formKey.currentState!.validate()) {
+    final validationError = _validateForm();
+
+    if (validationError != null) {
       showCupertinoDialog(
         context: context,
         builder:
             (context) => CupertinoAlertDialog(
               title: const Text('Validation Error'),
-              content: const Text('Please fill in all required fields.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-      );
-      return;
-    }
-
-    if (_categoryOptions.isEmpty) {
-      showCupertinoDialog(
-        context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('No Categories'),
-              content: const Text(
-                'Please add a category before saving the habit.',
-              ),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('Cancel', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text(
-                    'Add Category',
-                    style: TextStyle(fontSize: 14.0),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _showAddCategoryDialog(context);
-                  },
-                ),
-              ],
-            ),
-      );
-      return;
-    }
-
-    if (_selectedCategory.isEmpty) {
-      showCupertinoDialog(
-        context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please select a category.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-      );
-      return;
-    }
-
-    if (_selectedEndDate.isBefore(_selectedStartDate)) {
-      showCupertinoDialog(
-        context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('Invalid Date'),
-              content: const Text('End date must be after start date.'),
+              content: Text(validationError),
               actions: [
                 CupertinoDialogAction(
                   child: const Text('OK', style: TextStyle(fontSize: 14.0)),
@@ -1654,27 +1891,6 @@ class HabitFormScreenState extends State<HabitFormScreen>
     RepeatRule? repeatRule;
     if (_selectedFrequencyType == 'daily' ||
         _selectedFrequencyType == 'yearly') {
-      if (_nameController.text.isEmpty ||
-          _startTime == null ||
-          _endTime == null) {
-        showCupertinoDialog(
-          context: context,
-          builder:
-              (context) => CupertinoAlertDialog(
-                title: const Text('Validation Error'),
-                content: const Text(
-                  'Please provide habit name, start time, and end time.',
-                ),
-                actions: [
-                  CupertinoDialogAction(
-                    child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-        );
-        return;
-      }
       repeatRule = RepeatRule(
         type: _selectedFrequencyType,
         interval: _intervalValue,
@@ -1683,38 +1899,13 @@ class HabitFormScreenState extends State<HabitFormScreen>
         byDay: [
           RepeatRuleInstance(
             selectedDay: _selectedFrequencyType,
-            name: _nameController.text,
+            name: _nameController.text.trim(),
             start: _startTime!,
             end: _endTime!,
           ),
         ],
       );
     } else if (_selectedFrequencyType == 'weekly') {
-      if (_weeklyInstances.isEmpty ||
-          _weeklyInstances.any(
-            (inst) =>
-                inst['nameController'].text.isEmpty ||
-                inst['start'] == null ||
-                inst['end'] == null,
-          )) {
-        showCupertinoDialog(
-          context: context,
-          builder:
-              (context) => CupertinoAlertDialog(
-                title: const Text('Validation Error'),
-                content: const Text(
-                  'Please provide details for all weekly habits.',
-                ),
-                actions: [
-                  CupertinoDialogAction(
-                    child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-        );
-        return;
-      }
       repeatRule = RepeatRule(
         type: 'weekly',
         interval: _intervalValue,
@@ -1725,7 +1916,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 .map(
                   (inst) => RepeatRuleInstance(
                     selectedDay: inst['day'],
-                    name: inst['nameController'].text,
+                    name: inst['nameController'].text.trim(),
                     start: inst['start'],
                     end: inst['end'],
                   ),
@@ -1734,31 +1925,6 @@ class HabitFormScreenState extends State<HabitFormScreen>
       );
     } else if (_selectedFrequencyType == 'monthly') {
       if (_monthlyType == 'specific') {
-        if (_monthlySpecificInstances.isEmpty ||
-            _monthlySpecificInstances.any(
-              (inst) =>
-                  inst['nameController'].text.isEmpty ||
-                  inst['start'] == null ||
-                  inst['end'] == null,
-            )) {
-          showCupertinoDialog(
-            context: context,
-            builder:
-                (context) => CupertinoAlertDialog(
-                  title: const Text('Validation Error'),
-                  content: const Text(
-                    'Please provide details for all monthly specific days.',
-                  ),
-                  actions: [
-                    CupertinoDialogAction(
-                      child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-          );
-          return;
-        }
         repeatRule = RepeatRule(
           type: 'monthly',
           interval: _intervalValue,
@@ -1769,7 +1935,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
                   .map(
                     (inst) => RepeatRuleInstance(
                       selectedDay: inst['day'].toString(),
-                      name: inst['nameController'].text,
+                      name: inst['nameController'].text.trim(),
                       start: inst['start'],
                       end: inst['end'],
                     ),
@@ -1777,29 +1943,6 @@ class HabitFormScreenState extends State<HabitFormScreen>
                   .toList(),
         );
       } else {
-        if (_monthlyWeek == null ||
-            _monthlyDayOfWeek == null ||
-            _nameController.text.isEmpty ||
-            _startTime == null ||
-            _endTime == null) {
-          showCupertinoDialog(
-            context: context,
-            builder:
-                (context) => CupertinoAlertDialog(
-                  title: const Text('Validation Error'),
-                  content: const Text(
-                    'Please provide all details for the monthly pattern.',
-                  ),
-                  actions: [
-                    CupertinoDialogAction(
-                      child: const Text('OK', style: TextStyle(fontSize: 14.0)),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-          );
-          return;
-        }
         repeatRule = RepeatRule(
           type: 'monthly',
           interval: _intervalValue,
@@ -1809,7 +1952,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
           byDay: [
             RepeatRuleInstance(
               selectedDay: _monthlyDayOfWeek!,
-              name: _nameController.text,
+              name: _nameController.text.trim(),
               start: _startTime!,
               end: _endTime!,
             ),
@@ -1821,26 +1964,30 @@ class HabitFormScreenState extends State<HabitFormScreen>
     final tasksCubit = context.read<TaskManagerCubit>();
 
     if (widget.habit != null) {
-      // Редагування існуючої звички
       tasksCubit.editTask(
         task: widget.habit!,
-        title: _titleController.text,
+        title: _titleController.text.trim(),
         priority: {'Low': 0, 'Normal': 1, 'High': 2}[_priority] ?? 1,
         deadline: _selectedStartDate.millisecondsSinceEpoch,
         estimatedTime: 0,
         category: Category(name: _selectedCategory),
-        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+        notes:
+            _notesController.text.isNotEmpty
+                ? _notesController.text.trim()
+                : null,
         frequency: repeatRule,
       );
     } else {
-      // Створення нової звички
       tasksCubit.createTask(
-        title: _titleController.text,
+        title: _titleController.text.trim(),
         priority: {'Low': 0, 'Normal': 1, 'High': 2}[_priority] ?? 1,
         deadline: _selectedStartDate.millisecondsSinceEpoch,
         estimatedTime: 0,
         category: Category(name: _selectedCategory),
-        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
+        notes:
+            _notesController.text.isNotEmpty
+                ? _notesController.text.trim()
+                : null,
         frequency: repeatRule,
       );
     }
