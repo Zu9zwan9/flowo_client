@@ -17,24 +17,42 @@ class PushNotificationService implements IPushNotificationService {
     try {
       // Initialize Firebase if it hasn't been initialized yet
       if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp();
+        try {
+          await Firebase.initializeApp();
+        } catch (e) {
+          logError('Failed to initialize Firebase: $e');
+          // Mark as initialized but with limited functionality
+          _isInitialized = true;
+          return;
+        }
       }
 
       // Request permission for iOS and web
-      await requestPermission();
+      try {
+        await requestPermission();
+      } catch (e) {
+        logError('Failed to request notification permission: $e');
+        // Continue with limited functionality
+      }
 
-      // Configure message handling
-      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
-      FirebaseMessaging.onBackgroundMessage(
-        _firebaseMessagingBackgroundHandler,
-      );
+      try {
+        // Configure message handling
+        FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+        FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
+        FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler,
+        );
+      } catch (e) {
+        logError('Failed to configure message handling: $e');
+        // Continue with limited functionality
+      }
 
       _isInitialized = true;
       logInfo('Push notification service initialized');
     } catch (e) {
       logError('Failed to initialize push notification service: $e');
-      rethrow;
+      // Mark as initialized but with limited functionality
+      _isInitialized = true;
     }
   }
 
@@ -71,24 +89,34 @@ class PushNotificationService implements IPushNotificationService {
   @override
   Future<String?> getDeviceToken() async {
     if (!_isInitialized) await initialize();
-    return await _firebaseMessaging.getToken();
+    try {
+      return await _firebaseMessaging.getToken();
+    } catch (e) {
+      logError('Failed to get device token: $e');
+      return null;
+    }
   }
 
   @override
   Future<void> notifyTaskStart(Task task, ScheduledTask scheduledTask) async {
-    if (!_isInitialized) await initialize();
+    try {
+      if (!_isInitialized) await initialize();
 
-    // For push notifications, we would typically send this to a server
-    // that would then use FCM to send the notification to the device
-    // This is a simplified implementation that logs the notification
-    logInfo('Push notification for task start would be sent: ${task.title}');
+      // For push notifications, we would typically send this to a server
+      // that would then use FCM to send the notification to the device
+      // This is a simplified implementation that logs the notification
+      logInfo('Push notification for task start would be sent: ${task.title}');
 
-    // In a real implementation, you would send a request to your server:
-    // await _sendNotificationToServer(
-    //   title: 'Task Started: ${task.title}',
-    //   body: 'Your task has started.',
-    //   data: {'taskId': task.id},
-    // );
+      // In a real implementation, you would send a request to your server:
+      // await _sendNotificationToServer(
+      //   title: 'Task Started: ${task.title}',
+      //   body: 'Your task has started.',
+      //   data: {'taskId': task.id},
+      // );
+    } catch (e) {
+      logError('Failed to send push notification for task start: $e');
+      // Continue without sending the notification
+    }
   }
 
   @override
@@ -97,58 +125,82 @@ class PushNotificationService implements IPushNotificationService {
     ScheduledTask scheduledTask,
     Duration timeBeforeStart,
   ) async {
-    if (!_isInitialized) await initialize();
+    try {
+      if (!_isInitialized) await initialize();
 
-    // Calculate minutes before start
-    final minutes = timeBeforeStart.inMinutes;
-    final reminderText =
-        minutes > 0 ? 'Starting in $minutes minutes' : 'Starting now';
+      // Calculate minutes before start
+      final minutes = timeBeforeStart.inMinutes;
+      final reminderText =
+          minutes > 0 ? 'Starting in $minutes minutes' : 'Starting now';
 
-    // For push notifications, we would typically send this to a server
-    // that would then use FCM to send the notification to the device
-    logInfo(
-      'Push notification for task reminder would be sent: ${task.title} - $reminderText',
-    );
+      // For push notifications, we would typically send this to a server
+      // that would then use FCM to send the notification to the device
+      logInfo(
+        'Push notification for task reminder would be sent: ${task.title} - $reminderText',
+      );
 
-    // In a real implementation, you would send a request to your server:
-    // await _sendNotificationToServer(
-    //   title: 'Reminder: ${task.title}',
-    //   body: reminderText,
-    //   data: {'taskId': task.id},
-    // );
+      // In a real implementation, you would send a request to your server:
+      // await _sendNotificationToServer(
+      //   title: 'Reminder: ${task.title}',
+      //   body: reminderText,
+      //   data: {'taskId': task.id},
+      // );
+    } catch (e) {
+      logError('Failed to send push notification for task reminder: $e');
+      // Continue without sending the notification
+    }
   }
 
   @override
   Future<void> cancelNotification(String taskId) async {
-    if (!_isInitialized) await initialize();
+    try {
+      if (!_isInitialized) await initialize();
 
-    // For push notifications, cancellation would typically be handled by the server
-    logInfo('Push notification cancellation would be sent for task: $taskId');
+      // For push notifications, cancellation would typically be handled by the server
+      logInfo('Push notification cancellation would be sent for task: $taskId');
 
-    // In a real implementation, you would send a request to your server:
-    // await _sendCancellationToServer(taskId);
+      // In a real implementation, you would send a request to your server:
+      // await _sendCancellationToServer(taskId);
+    } catch (e) {
+      logError('Failed to cancel push notification: $e');
+      // Continue without cancelling the notification
+    }
   }
 
   @override
   Future<void> cancelAllNotifications() async {
-    if (!_isInitialized) await initialize();
+    try {
+      if (!_isInitialized) await initialize();
 
-    // For push notifications, cancellation would typically be handled by the server
-    logInfo('All push notifications would be cancelled');
+      // For push notifications, cancellation would typically be handled by the server
+      logInfo('All push notifications would be cancelled');
 
-    // In a real implementation, you would send a request to your server:
-    // await _sendCancelAllToServer();
+      // In a real implementation, you would send a request to your server:
+      // await _sendCancelAllToServer();
+    } catch (e) {
+      logError('Failed to cancel all push notifications: $e');
+      // Continue without cancelling the notifications
+    }
   }
 }
 
 // This function must be top-level (not a class method)
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Initialize Firebase if needed
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp();
-  }
+  try {
+    // Initialize Firebase if needed
+    if (Firebase.apps.isEmpty) {
+      try {
+        await Firebase.initializeApp();
+      } catch (e) {
+        print('Failed to initialize Firebase in background handler: $e');
+        return;
+      }
+    }
 
-  print('Handling a background message: ${message.messageId}');
-  // Handle background message
+    print('Handling a background message: ${message.messageId}');
+    // Handle background message
+  } catch (e) {
+    print('Error in background message handler: $e');
+  }
 }
