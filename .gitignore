@@ -32,7 +32,7 @@ migrate_working_dir/
 /build/
 
 # iOS specific
-/ios/Pods/
+
 /ios/Flutter/flutter_export_environment.sh
 
 # Symbolication related
