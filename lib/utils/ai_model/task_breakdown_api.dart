@@ -204,28 +204,7 @@ class TaskBreakdownAPI {
     return parseSubtasks(response);
   }
 
-  /// Checks if a line represents a subtask (starts with a number or bullet point)
-  bool _isSubtaskLine(String line) {
-    // Check for numbered items (e.g., "1. ", "2) ", etc.)
-    if (RegExp(r'^\d+[.)\-]?\s+').hasMatch(line)) {
-      return true;
-    }
 
-    // Check for bullet points
-    if (line.startsWith('• ') ||
-        line.startsWith('* ') ||
-        line.startsWith('- ')) {
-      return true;
-    }
-
-    return false;
-  }
-
-  /// Cleans a subtask line by removing the number/bullet and any leading whitespace
-  String _cleanSubtaskLine(String line) {
-    // Remove numbers, bullets, and any leading whitespace
-    return line.replaceFirst(RegExp(r'^\d+[.)\-]?\s+|^[•*\-]\s+'), '').trim();
-  }
 
   Map<String, dynamic>? _parseSubtaskLine(String line) {
     final regex = RegExp(r'^\d+\.\s*(.+?)\s*\((\d+)\s*minutes?\)$');

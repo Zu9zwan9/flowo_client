@@ -195,8 +195,6 @@ void main() async {
 
   appLogger.info('Hive initialized and task boxes opened', 'App');
 
-  // Create analytics service
-  // Create services
   final analyticsService = AnalyticsService();
   final ambientService = AmbientService(ambientScenesDB);
 

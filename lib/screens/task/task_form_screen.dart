@@ -389,6 +389,27 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     if (pickedDateTime != null && mounted) {
       setState(() {
         _formData.selectedDateTime = pickedDateTime;
+
+        final dateError = _validateForm();
+        if (dateError != null && dateError.contains('Deadline')) {
+          showCupertinoDialog(
+            context: context,
+            builder:
+                (context) => CupertinoAlertDialog(
+                  title: const Text('Date Error'),
+                  content: Text(dateError),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+          );
+          _formData.selectedDateTime = _roundToNearestFiveMinutes(
+            DateTime.now(),
+          );
+        }
       });
     }
   }
@@ -443,11 +464,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
           case 'pessimistic':
             _formData.pessimisticTime = duration;
             break;
-          default:
-            _formData.estimatedTime = duration;
         }
-
-        // Calculate the estimated time using the PERT formula
         _formData.calculateEstimatedTime();
       });
     }
@@ -775,32 +792,47 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     return icons[category] ?? CupertinoIcons.tag;
   }
 
-  void _saveTask(BuildContext context) {
-    if (!_formKey.currentState!.validate()) {
-      showCupertinoDialog(
-        context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please fill in all required fields.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-      );
-      return;
+  String? _validateForm() {
+    if (_titleController.text.trim().isEmpty) {
+      return 'Task name is required';
     }
 
     if (_categoryOptions.isEmpty || _selectedCategory.isEmpty) {
+      return 'Please select or add a category';
+    }
+
+    if (_formData.optimisticTime > _formData.realisticTime) {
+      return 'Optimistic time should not exceed realistic time';
+    }
+    if (_formData.realisticTime > _formData.pessimisticTime) {
+      return 'Realistic time should not exceed pessimistic time';
+    }
+    if (_formData.optimisticTime <= 0) {
+      return 'Optimistic time must be greater than zero';
+    }
+
+    final now = DateTime.now();
+    if (_formData.selectedDateTime.isBefore(now)) {
+      return 'Deadline cannot be in the past';
+    }
+
+    if (_formData.selectedDateTime.difference(now).inMilliseconds < _formData.estimatedTime) {
+      return 'Deadline is too close to accommodate the estimated time';
+    }
+
+    return null;
+  }
+
+  void _saveTask(BuildContext context) {
+    final validationError = _validateForm();
+
+    if (validationError != null) {
       showCupertinoDialog(
         context: context,
         builder:
             (context) => CupertinoAlertDialog(
               title: const Text('Validation Error'),
-              content: const Text('Please select or add a category.'),
+              content: Text(validationError),
               actions: [
                 CupertinoDialogAction(
                   child: const Text('OK'),
