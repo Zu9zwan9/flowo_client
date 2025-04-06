@@ -90,26 +90,23 @@ class NotificationManager {
           );
           break;
         case NotificationType.email:
-          // Email notification
-          // We'll schedule this locally and send it at the appropriate time
-          _scheduleEmailNotification(
-            task,
-            scheduledTask,
-            scheduledTime,
-            false, // Not a reminder
-          );
-          break;
-        case NotificationType.pushAndEmail:
-          // Both push and email
+          // Use push notification instead of email as per requirements
           logInfo(
             'Would schedule push notification for task start: ${task.title} at $scheduledTime',
           );
-          _scheduleEmailNotification(
-            task,
-            scheduledTask,
-            scheduledTime,
-            false, // Not a reminder
+          break;
+        case NotificationType.pushAndEmail:
+          // Prioritize push notifications over email
+          logInfo(
+            'Would schedule push notification for task start: ${task.title} at $scheduledTime',
           );
+          // Email notifications are disabled as per requirements
+          // _scheduleEmailNotification(
+          //   task,
+          //   scheduledTask,
+          //   scheduledTime,
+          //   false, // Not a reminder
+          // );
           break;
         case NotificationType.disabled:
           // TODO: Handle this case.
@@ -152,27 +149,24 @@ class NotificationManager {
           );
           break;
         case NotificationType.email:
-          // Email notification
-          _scheduleEmailNotification(
-            task,
-            scheduledTask,
-            scheduledTime,
-            true, // Is a reminder
-            timeBeforeStart: timeBeforeStart,
-          );
-          break;
-        case NotificationType.pushAndEmail:
-          // Both push and email
+          // Use push notification instead of email as per requirements
           logInfo(
             'Would schedule push notification for task reminder: ${task.title} at $scheduledTime',
           );
-          _scheduleEmailNotification(
-            task,
-            scheduledTask,
-            scheduledTime,
-            true, // Is a reminder
-            timeBeforeStart: timeBeforeStart,
+          break;
+        case NotificationType.pushAndEmail:
+          // Prioritize push notifications over email
+          logInfo(
+            'Would schedule push notification for task reminder: ${task.title} at $scheduledTime',
           );
+          // Email notifications are disabled as per requirements
+          // _scheduleEmailNotification(
+          //   task,
+          //   scheduledTask,
+          //   scheduledTime,
+          //   true, // Is a reminder
+          //   timeBeforeStart: timeBeforeStart,
+          // );
           break;
         case NotificationType.disabled:
           // TODO: Handle this case.
@@ -203,13 +197,14 @@ class NotificationManager {
           await _pushNotificationService.notifyTaskStart(task, scheduledTask);
           break;
         case NotificationType.email:
-          // Email notification
-          await _emailNotificationService.notifyTaskStart(task, scheduledTask);
+          // Use push notification instead of email as per requirements
+          await _pushNotificationService.notifyTaskStart(task, scheduledTask);
           break;
         case NotificationType.pushAndEmail:
-          // Both push and email
+          // Prioritize push notifications over email
           await _pushNotificationService.notifyTaskStart(task, scheduledTask);
-          await _emailNotificationService.notifyTaskStart(task, scheduledTask);
+          // Email notifications are disabled as per requirements
+          // await _emailNotificationService.notifyTaskStart(task, scheduledTask);
           break;
         case NotificationType.disabled:
           // TODO: Handle this case.
@@ -252,25 +247,26 @@ class NotificationManager {
           );
           break;
         case NotificationType.email:
-          // Email notification
-          await _emailNotificationService.notifyTaskReminder(
+          // Use push notification instead of email as per requirements
+          await _pushNotificationService.notifyTaskReminder(
             task,
             scheduledTask,
             timeBeforeStart,
           );
           break;
         case NotificationType.pushAndEmail:
-          // Both push and email
+          // Prioritize push notifications over email
           await _pushNotificationService.notifyTaskReminder(
             task,
             scheduledTask,
             timeBeforeStart,
           );
-          await _emailNotificationService.notifyTaskReminder(
-            task,
-            scheduledTask,
-            timeBeforeStart,
-          );
+          // Email notifications are disabled as per requirements
+          // await _emailNotificationService.notifyTaskReminder(
+          //   task,
+          //   scheduledTask,
+          //   timeBeforeStart,
+          // );
           break;
         case NotificationType.disabled:
           // TODO: Handle this case.
