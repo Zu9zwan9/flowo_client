@@ -33,6 +33,8 @@
 	</dict>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>We need to send you notifications about your tasks and reminders.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires microphone access for audio features in media playback and recording.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
