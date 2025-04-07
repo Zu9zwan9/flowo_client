@@ -1,4 +1,5 @@
 import 'package:flowo_client/screens/habit/habit_details_screen.dart';
+import 'package:flowo_client/services/test_notification_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -196,6 +197,12 @@ class _TaskListScreenState extends State<TaskListScreen>
                     onPressed: () => _showScheduleDialog(context),
                     icon: CupertinoIcons.calendar,
                     label: 'Schedule',
+                  ),
+                  const SizedBox(height: 8),
+                  TaskActionButton(
+                    onPressed: () => NotiService().showTestNotification(),
+                    icon: CupertinoIcons.calendar,
+                    label: 'Show Notification',
                   ),
                 ],
               ),

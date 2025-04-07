@@ -21,17 +21,23 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
       try {
         await Firebase.initializeApp();
       } catch (e) {
-        print('Failed to initialize Firebase in background handler: $e');
+        if (kDebugMode) {
+          print('Failed to initialize Firebase in background handler: $e');
+        }
         return;
       }
     }
 
-    print('Handling a background message: ${message.messageId}');
+    if (kDebugMode) {
+      print('Handling a background message: ${message.messageId}');
+    }
 
     // Handle the background message
     // For example, you could show a notification or update local storage
   } catch (e) {
-    print('Error in background message handler: $e');
+    if (kDebugMode) {
+      print('Error in background message handler: $e');
+    }
   }
 }
 
