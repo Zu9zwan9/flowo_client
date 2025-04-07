@@ -1,7 +1,8 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotiService {
-  final notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   bool _isInitialized = false;
 
@@ -10,7 +11,9 @@ class NotiService {
   Future<void> initNotification() async {
     if (_isInitialized) return;
 
-    const initSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const initSettingsAndroid = AndroidInitializationSettings(
+      '@assets/app_icon',
+    );
 
     const initSettingsIOS = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -30,11 +33,12 @@ class NotiService {
   NotificationDetails notificationDetails() {
     return const NotificationDetails(
       android: AndroidNotificationDetails(
-        'test_channel',
-        'Test Channel',
-        channelDescription: 'This is a test channel',
+        'your_channel_id',
+        'your_channel_name',
+        channelDescription: 'your_channel_description',
         importance: Importance.max,
         priority: Priority.high,
+        icon: '@assets/app_icon',
       ),
       iOS: DarwinNotificationDetails(),
     );
