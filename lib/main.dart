@@ -7,13 +7,8 @@ import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient_service.dart';
 import 'package:flowo_client/services/analytics_service.dart';
-import 'package:flowo_client/services/email_notification_service.dart';
-import 'package:flowo_client/services/local_notification_service.dart';
-import 'package:flowo_client/services/notification_manager.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
-import 'package:flowo_client/services/push_notification_service.dart';
 import 'package:flowo_client/services/security_service.dart';
-import 'package:flowo_client/services/test_notification_service.dart';
 import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
@@ -46,7 +41,7 @@ import 'utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-NotiService().initNotification();
+
   // Initialize security service to protect against reverse engineering
   if (!kIsWeb) {
     final securityService = SecurityService(
@@ -132,49 +127,49 @@ NotiService().initNotification();
 
   // Create and save default UserSettings if it's the first launch
   var selectedProfile =
-  profiles.values.isNotEmpty
-      ? profiles.values.first
-      : UserSettings(
-    name: 'Default',
-    minSession: 15 * 60 * 1000, // Convert to milliseconds
-    breakTime: 15 * 60 * 1000, // Default break time (15 minutes)
-    sleepTime: [
-      TimeFrame(
-        startTime: const TimeOfDay(hour: 22, minute: 0),
-        endTime: const TimeOfDay(hour: 7, minute: 0),
-      ),
-    ],
-    mealBreaks: [
-      TimeFrame(
-        startTime: const TimeOfDay(hour: 8, minute: 0),
-        endTime: const TimeOfDay(hour: 8, minute: 30),
-      ),
-      TimeFrame(
-        startTime: const TimeOfDay(hour: 12, minute: 0),
-        endTime: const TimeOfDay(hour: 13, minute: 0),
-      ),
-      TimeFrame(
-        startTime: const TimeOfDay(hour: 18, minute: 0),
-        endTime: const TimeOfDay(hour: 19, minute: 0),
-      ),
-    ],
-    freeTime: [
-      TimeFrame(
-        startTime: const TimeOfDay(hour: 19, minute: 0),
-        endTime: const TimeOfDay(hour: 22, minute: 0),
-      ),
-    ],
-    activeDays: {
-      'Monday': true,
-      'Tuesday': true,
-      'Wednesday': true,
-      'Thursday': true,
-      'Friday': true,
-      'Saturday': true,
-      'Sunday': true,
-    },
-    defaultNotificationType: NotificationType.sound,
-  );
+      profiles.values.isNotEmpty
+          ? profiles.values.first
+          : UserSettings(
+            name: 'Default',
+            minSession: 15 * 60 * 1000, // Convert to milliseconds
+            breakTime: 15 * 60 * 1000, // Default break time (15 minutes)
+            sleepTime: [
+              TimeFrame(
+                startTime: const TimeOfDay(hour: 22, minute: 0),
+                endTime: const TimeOfDay(hour: 7, minute: 0),
+              ),
+            ],
+            mealBreaks: [
+              TimeFrame(
+                startTime: const TimeOfDay(hour: 8, minute: 0),
+                endTime: const TimeOfDay(hour: 8, minute: 30),
+              ),
+              TimeFrame(
+                startTime: const TimeOfDay(hour: 12, minute: 0),
+                endTime: const TimeOfDay(hour: 13, minute: 0),
+              ),
+              TimeFrame(
+                startTime: const TimeOfDay(hour: 18, minute: 0),
+                endTime: const TimeOfDay(hour: 19, minute: 0),
+              ),
+            ],
+            freeTime: [
+              TimeFrame(
+                startTime: const TimeOfDay(hour: 19, minute: 0),
+                endTime: const TimeOfDay(hour: 22, minute: 0),
+              ),
+            ],
+            activeDays: {
+              'Monday': true,
+              'Tuesday': true,
+              'Wednesday': true,
+              'Thursday': true,
+              'Friday': true,
+              'Saturday': true,
+              'Sunday': true,
+            },
+            defaultNotificationType: NotificationType.sound,
+          );
 
   // Save the default settings to the Hive box if it's the first launch
   if (isFirstLaunch) {
@@ -226,7 +221,7 @@ NotiService().initNotification();
     tasksDB: tasksDB,
     userSettings: selectedProfile,
     huggingFaceApiKey:
-    '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', // Default API key
+        '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', // Default API key
   );
 
   appLogger.info('Hive initialized and task boxes opened', 'App');
@@ -234,12 +229,7 @@ NotiService().initNotification();
   final analyticsService = AnalyticsService();
   final ambientService = AmbientService(ambientScenesDB);
 
-  // Initialize notification services
-  final notificationManager = NotificationManager.createDefault();
-  await notificationManager.initialize();
-
   appLogger.info('Hive initialized and task boxes opened', 'App');
-  appLogger.info('Notification services initialized', 'App');
 
   // Create web theme bridge for system theme detection
   final webThemeBridge = WebThemeBridge();
@@ -254,13 +244,12 @@ NotiService().initNotification();
         Provider<Box<AmbientScene>>.value(value: ambientScenesDB),
         Provider<WebThemeBridge>.value(value: webThemeBridge),
         ChangeNotifierProvider<AmbientService>.value(value: ambientService),
-        Provider<NotificationManager>.value(value: notificationManager),
         ChangeNotifierProvider(
           create:
               (context) => ThemeNotifier(
-            webThemeBridge: webThemeBridge,
-            userSettings: selectedProfile,
-          ),
+                webThemeBridge: webThemeBridge,
+                userSettings: selectedProfile,
+              ),
         ),
         BlocProvider<CalendarCubit>(
           create: (context) => CalendarCubit(tasksDB, daysDB, taskManager),
@@ -324,9 +313,9 @@ class MyApp extends StatelessWidget {
             ],
             supportedLocales: const [Locale('en', 'US')],
             home:
-            isOnboardingCompleted
-                ? const HomeScreen(initialExpanded: false)
-                : const NameInputScreen(),
+                isOnboardingCompleted
+                    ? const HomeScreen(initialExpanded: false)
+                    : const NameInputScreen(),
           ),
         );
       },

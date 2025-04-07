@@ -200,7 +200,11 @@ class _TaskListScreenState extends State<TaskListScreen>
                   ),
                   const SizedBox(height: 8),
                   TaskActionButton(
-                    onPressed: () => NotiService().showTestNotification(),
+                    onPressed:
+                        () => NotiService().showTestNotification(
+                          title: "Title",
+                          body: "Body",
+                        ),
                     icon: CupertinoIcons.calendar,
                     label: 'Show Notification',
                   ),
