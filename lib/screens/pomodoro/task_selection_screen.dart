@@ -2,6 +2,7 @@ import 'package:flowo_client/screens/pomodoro/pomodoro_timer_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
+import '../../models/scheduled_task.dart';
 import '../../models/task.dart';
 
 class TaskSelectionScreen extends StatefulWidget {
@@ -14,7 +15,8 @@ class TaskSelectionScreen extends StatefulWidget {
 class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
   Task? _selectedTask;
   Task? _selectedSubtask;
-  int customDuration = 25 * 60 * 1000; // Default 25 minutes
+  ScheduledTask? _selectedScheduledTask;
+  final int _customDuration = 25 * 60 * 1000; // Default 25 minutes
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +24,9 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
     final tasks = tasksBox.values.where((task) => !task.isDone).toList();
 
     return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('Select Task for Pomodoro'),
+      ),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -52,6 +57,8 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
                               onTap: () {
                                 setState(() {
                                   _selectedTask = task;
+                                  _selectedSubtask = null;
+                                  _selectedScheduledTask = null;
                                 });
                               },
                               child: Container(
@@ -185,6 +192,95 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
                 ),
               ],
 
+              // Scheduled tasks selection (only shown when a task is selected)
+              if (_selectedTask != null &&
+                  _selectedTask!.scheduledTasks.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Select a scheduled task (optional):',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: CupertinoColors.systemGrey4),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ListView.builder(
+                    itemCount: _selectedTask!.scheduledTasks.length,
+                    itemBuilder: (context, index) {
+                      final scheduledTask =
+                          _selectedTask!.scheduledTasks[index];
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            // Toggle selection of scheduled task
+                            if (_selectedScheduledTask?.scheduledTaskId ==
+                                scheduledTask.scheduledTaskId) {
+                              _selectedScheduledTask = null;
+                            } else {
+                              _selectedScheduledTask = scheduledTask;
+                            }
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color:
+                                _selectedScheduledTask?.scheduledTaskId ==
+                                        scheduledTask.scheduledTaskId
+                                    ? CupertinoColors.activeBlue.withOpacity(
+                                      0.1,
+                                    )
+                                    : CupertinoColors.systemBackground,
+                            border: Border(
+                              bottom: BorderSide(
+                                color: CupertinoColors.systemGrey4,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _selectedScheduledTask?.scheduledTaskId ==
+                                        scheduledTask.scheduledTaskId
+                                    ? CupertinoIcons.checkmark_circle_fill
+                                    : CupertinoIcons.circle,
+                                color:
+                                    _selectedScheduledTask?.scheduledTaskId ==
+                                            scheduledTask.scheduledTaskId
+                                        ? CupertinoColors.activeBlue
+                                        : CupertinoColors.systemGrey,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '${scheduledTask.startTime.hour}:${scheduledTask.startTime.minute.toString().padLeft(2, '0')} - ${scheduledTask.endTime.hour}:${scheduledTask.endTime.minute.toString().padLeft(2, '0')}',
+                                      style: const TextStyle(fontSize: 16),
+                                    ),
+                                    Text(
+                                      'Type: ${scheduledTask.type.toString().split('.').last}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: CupertinoColors.systemGrey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+
               const SizedBox(height: 24),
 
               // Start button
@@ -196,12 +292,25 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
                           ? () {
                             // If a subtask is selected, use that instead of the main task
                             final taskToUse = _selectedSubtask ?? _selectedTask;
+
+                            // If a scheduled task is selected, use its parent task
+                            Task? finalTaskToUse = taskToUse;
+                            if (_selectedScheduledTask != null) {
+                              // Get the parent task from the scheduled task if available
+                              final parentTask =
+                                  _selectedScheduledTask!.parentTask;
+                              if (parentTask != null) {
+                                finalTaskToUse = parentTask;
+                              }
+                            }
+
                             Navigator.push(
                               context,
                               CupertinoPageRoute(
                                 builder:
-                                    (context) => PomodoroTimerScreen(
-                                      task: taskToUse,
+                                    (context) => PomodoroScreen(
+                                      task: finalTaskToUse,
+                                      scheduledTask: _selectedScheduledTask,
                                       customDuration:
                                           null, // No more custom duration option
                                     ),

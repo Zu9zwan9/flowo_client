@@ -1,11 +1,12 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
 part 'ambient_scene.g.dart';
 
 /// Represents a type of ambient scene (e.g., Cafe, Forest, Beach)
 @HiveType(typeId: 16)
-class AmbientScene extends Equatable {
+class AmbientScene extends HiveObject with EquatableMixin {
   @HiveField(0)
   final String id;
 
@@ -27,7 +28,7 @@ class AmbientScene extends Equatable {
   @HiveField(6)
   final String category;
 
-  const AmbientScene({
+  AmbientScene({
     required this.id,
     required this.name,
     required this.description,
@@ -67,5 +68,21 @@ class AmbientScene extends Equatable {
       thumbnailAssetPath: thumbnailAssetPath ?? this.thumbnailAssetPath,
       category: category ?? this.category,
     );
+  }
+
+  /// Safely saves this object if it's in a box
+  bool trySave() {
+    try {
+      if (isInBox) {
+        save();
+        return true;
+      }
+      return false;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Failed to save AmbientScene: $e');
+      }
+      return false;
+    }
   }
 }

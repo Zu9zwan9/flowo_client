@@ -22,10 +22,13 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
   void initState() {
     super.initState();
     _goalController.addListener(_validateGoal);
+    _goalController.addListener(_hideKeyboardOnDone);
   }
 
   @override
   void dispose() {
+    _goalController.removeListener(_validateGoal);
+    _goalController.removeListener(_hideKeyboardOnDone);
     _goalController.dispose();
     super.dispose();
   }
@@ -34,6 +37,12 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
     setState(() {
       _isGoalValid = _goalController.text.trim().isNotEmpty;
     });
+  }
+
+  void _hideKeyboardOnDone() {
+    if (_goalController.text.endsWith('\n')) {
+      FocusScope.of(context).unfocus();
+    }
   }
 
   Future<void> _submitGoal() async {
@@ -112,110 +121,112 @@ class _GoalInputScreenState extends State<GoalInputScreen> {
         backgroundColor: theme.barBackgroundColor.withOpacity(0.8),
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 40),
-              // Goal icon
-              Center(
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: CupertinoColors.activeGreen,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: CupertinoColors.systemGrey.withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
+                // Goal icon
+                Center(
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.activeGreen,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: CupertinoColors.systemGrey.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        CupertinoIcons.flag_fill,
+                        color: CupertinoColors.white,
+                        size: 40,
                       ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      CupertinoIcons.flag_fill,
-                      color: CupertinoColors.white,
-                      size: 40,
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 40),
-              // Goal question
-              Text(
-                'What\'s your main goal?',
-                style: theme.textTheme.navLargeTitleTextStyle.copyWith(
-                  fontSize: 24,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Goal description
-              Text(
-                'This will help us personalize your experience.',
-                style: theme.textTheme.textStyle.copyWith(
-                  fontSize: 16,
-                  color: CupertinoColors.systemGrey,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Goal input field
-              CupertinoTextField(
-                controller: _goalController,
-                placeholder: 'e.g., Improve productivity, Learn a new skill',
-                padding: const EdgeInsets.all(16),
-                clearButtonMode: OverlayVisibilityMode.editing,
-                maxLines: 3,
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey6.resolveFrom(context),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: CupertinoColors.systemGrey5.resolveFrom(context),
-                    width: 1.0,
+                const SizedBox(height: 40),
+                // Goal question
+                Text(
+                  'What\'s your main goal?',
+                  style: theme.textTheme.navLargeTitleTextStyle.copyWith(
+                    fontSize: 24,
                   ),
                 ),
-                style: theme.textTheme.textStyle,
-                placeholderStyle: theme.textTheme.textStyle.copyWith(
-                  color: CupertinoColors.systemGrey,
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Continue button
-              CupertinoButton(
-                onPressed: _isGoalValid ? _submitGoal : null,
-                color: CupertinoColors.activeGreen,
-                disabledColor: CupertinoColors.systemGrey4,
-                borderRadius: BorderRadius.circular(12),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child:
-                    _isSubmitting
-                        ? const CupertinoActivityIndicator(
-                          color: CupertinoColors.white,
-                        )
-                        : const Text(
-                          'Continue',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: CupertinoColors.white,
-                          ),
-                        ),
-              ),
-              const Spacer(),
-              // Footer
-              Center(
-                child: Text(
-                  'FLOWO 1.0.0',
-                  style: theme.textTheme.tabLabelTextStyle.copyWith(
-                    fontSize: 12,
+                const SizedBox(height: 12),
+                // Goal description
+                Text(
+                  'This will help us personalize your experience.',
+                  style: theme.textTheme.textStyle.copyWith(
+                    fontSize: 16,
                     color: CupertinoColors.systemGrey,
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 24),
+                // Goal input field
+                CupertinoTextField(
+                  controller: _goalController,
+                  placeholder: 'e.g., Improve productivity, Learn a new skill',
+                  padding: const EdgeInsets.all(16),
+                  clearButtonMode: OverlayVisibilityMode.editing,
+                  maxLines: 3,
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemGrey6.resolveFrom(context),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: CupertinoColors.systemGrey5.resolveFrom(context),
+                      width: 1.0,
+                    ),
+                  ),
+                  style: theme.textTheme.textStyle,
+                  placeholderStyle: theme.textTheme.textStyle.copyWith(
+                    color: CupertinoColors.systemGrey,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Continue button
+                CupertinoButton(
+                  onPressed: _isGoalValid ? _submitGoal : null,
+                  color: CupertinoColors.activeGreen,
+                  disabledColor: CupertinoColors.systemGrey4,
+                  borderRadius: BorderRadius.circular(12),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child:
+                      _isSubmitting
+                          ? const CupertinoActivityIndicator(
+                            color: CupertinoColors.white,
+                          )
+                          : const Text(
+                            'Continue',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: CupertinoColors.white,
+                            ),
+                          ),
+                ),
+                const SizedBox(height: 40),
+                // Footer
+                Center(
+                  child: Text(
+                    'FLOWO 1.0.0',
+                    style: theme.textTheme.tabLabelTextStyle.copyWith(
+                      fontSize: 12,
+                      color: CupertinoColors.systemGrey,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),

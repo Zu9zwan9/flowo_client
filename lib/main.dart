@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flowo_client/models/ambient_scene.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/repeat_rule_instance.dart';
@@ -6,6 +8,7 @@ import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient_service.dart';
 import 'package:flowo_client/services/analytics_service.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
+import 'package:flowo_client/services/security_service.dart';
 import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
@@ -38,6 +41,34 @@ import 'utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize security service to protect against reverse engineering
+  if (!kIsWeb) {
+    final securityService = SecurityService(
+      // For Android
+      onRootDetected: () => exit(0),
+      onEmulatorDetected: () => exit(0),
+      onFingerprintDetected: () => exit(0),
+      onHookDetected: () => exit(0),
+      onTamperDetected: () => exit(0),
+
+      // For iOS
+      onSignatureDetected: () => exit(0),
+      onRuntimeManipulationDetected: () => exit(0),
+      onJailbreakDetected: () => exit(0),
+      onPasscodeChangeDetected: () => exit(0),
+      onPasscodeDetected: () => exit(0),
+      onSimulatorDetected: () => exit(0),
+      onMissingSecureEnclaveDetected: () => exit(0),
+
+      // Common for both platforms
+      onDebuggerDetected: () => exit(0),
+    );
+
+    // Initialize security checks
+    await securityService.initialize();
+  }
+
   // Register Hive adapters
   Hive.registerAdapter(CategoryAdapter());
   Hive.registerAdapter(CoordinatesAdapter());

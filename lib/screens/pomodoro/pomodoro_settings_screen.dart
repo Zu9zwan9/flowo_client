@@ -23,8 +23,8 @@ class _PomodoroSettingsScreenState extends State<PomodoroSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Pomodoro Settings'),
+      navigationBar: CupertinoNavigationBar(
+        middle: const Text('Pomodoro Settings'),
       ),
       child: SafeArea(
         child: ListView(
@@ -176,6 +176,36 @@ class _PomodoroSettingsScreenState extends State<PomodoroSettingsScreen> {
                   _showResetConfirmation();
                 },
                 child: const Text('Reset to Defaults'),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Apply button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: CupertinoButton(
+                color: CupertinoTheme.of(context).primaryColor,
+                onPressed: () {
+                  // Save settings safely
+                  try {
+                    // Try to save if the object is in a box
+                    if (_settings.isInBox) {
+                      _settings.save();
+                    }
+                  } catch (e) {
+                    // Ignore the error if the object is not in a box
+                    // The settings will still be applied in memory
+                  }
+                  // Update UI
+                  setState(() {});
+                  // Return to previous screen
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  'Apply',
+                  style: TextStyle(color: CupertinoColors.white),
+                ),
               ),
             ),
 

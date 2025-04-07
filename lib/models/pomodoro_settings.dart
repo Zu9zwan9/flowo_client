@@ -59,7 +59,14 @@ class PomodoroSettings extends HiveObject with ChangeNotifier {
     if (value != _focusDuration) {
       _focusDuration = value;
       notifyListeners();
-      save();
+      try {
+        if (isInBox) {
+          save();
+        }
+      } catch (e) {
+        // Ignore the error if the object is not in a box
+        // The settings will still be applied in memory
+      }
     }
   }
 
@@ -67,7 +74,14 @@ class PomodoroSettings extends HiveObject with ChangeNotifier {
     if (value != _shortBreakDuration) {
       _shortBreakDuration = value;
       notifyListeners();
-      save();
+      try {
+        if (isInBox) {
+          save();
+        }
+      } catch (e) {
+        // Ignore the error if the object is not in a box
+        // The settings will still be applied in memory
+      }
     }
   }
 
@@ -75,7 +89,14 @@ class PomodoroSettings extends HiveObject with ChangeNotifier {
     if (value != _longBreakDuration) {
       _longBreakDuration = value;
       notifyListeners();
-      save();
+      try {
+        if (isInBox) {
+          save();
+        }
+      } catch (e) {
+        // Ignore the error if the object is not in a box
+        // The settings will still be applied in memory
+      }
     }
   }
 
@@ -83,7 +104,14 @@ class PomodoroSettings extends HiveObject with ChangeNotifier {
     if (value != _sessionsBeforeLongBreak) {
       _sessionsBeforeLongBreak = value;
       notifyListeners();
-      save();
+      try {
+        if (isInBox) {
+          save();
+        }
+      } catch (e) {
+        // Ignore the error if the object is not in a box
+        // The settings will still be applied in memory
+      }
     }
   }
 
@@ -91,7 +119,14 @@ class PomodoroSettings extends HiveObject with ChangeNotifier {
     if (value != _autoStartBreaks) {
       _autoStartBreaks = value;
       notifyListeners();
-      save();
+      try {
+        if (isInBox) {
+          save();
+        }
+      } catch (e) {
+        // Ignore the error if the object is not in a box
+        // The settings will still be applied in memory
+      }
     }
   }
 
@@ -99,7 +134,14 @@ class PomodoroSettings extends HiveObject with ChangeNotifier {
     if (value != _autoStartNextSession) {
       _autoStartNextSession = value;
       notifyListeners();
-      save();
+      try {
+        if (isInBox) {
+          save();
+        }
+      } catch (e) {
+        // Ignore the error if the object is not in a box
+        // The settings will still be applied in memory
+      }
     }
   }
 
@@ -107,7 +149,14 @@ class PomodoroSettings extends HiveObject with ChangeNotifier {
     if (value != _soundEnabled) {
       _soundEnabled = value;
       notifyListeners();
-      save();
+      try {
+        if (isInBox) {
+          save();
+        }
+      } catch (e) {
+        // Ignore the error if the object is not in a box
+        // The settings will still be applied in memory
+      }
     }
   }
 
@@ -115,7 +164,14 @@ class PomodoroSettings extends HiveObject with ChangeNotifier {
     if (value != _vibrationEnabled) {
       _vibrationEnabled = value;
       notifyListeners();
-      save();
+      try {
+        if (isInBox) {
+          save();
+        }
+      } catch (e) {
+        // Ignore the error if the object is not in a box
+        // The settings will still be applied in memory
+      }
     }
   }
 
@@ -123,7 +179,14 @@ class PomodoroSettings extends HiveObject with ChangeNotifier {
     if (value != _notificationsEnabled) {
       _notificationsEnabled = value;
       notifyListeners();
-      save();
+      try {
+        if (isInBox) {
+          save();
+        }
+      } catch (e) {
+        // Ignore the error if the object is not in a box
+        // The settings will still be applied in memory
+      }
     }
   }
 
@@ -160,7 +223,14 @@ class PomodoroSettings extends HiveObject with ChangeNotifier {
     _vibrationEnabled = true;
     _notificationsEnabled = true;
     notifyListeners();
-    save();
+    try {
+      if (isInBox) {
+        save();
+      }
+    } catch (e) {
+      // Ignore the error if the object is not in a box
+      // The settings will still be applied in memory
+    }
   }
 
   // Helper method to convert minutes to milliseconds
