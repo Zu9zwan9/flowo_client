@@ -1,3 +1,4 @@
+import 'package:flowo_client/screens/task/task_list_screen.dart';
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
@@ -12,7 +13,6 @@ import '../../models/task_form_data.dart';
 import '../../models/user_settings.dart';
 import '../../services/category_service.dart';
 import '../../utils/logger.dart';
-import '../home_screen.dart';
 
 class TaskFormScreen extends StatefulWidget {
   final DateTime? selectedDate;
@@ -325,8 +325,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       return CupertinoColors.systemRed.resolveFrom(context);
     }
   }
-
-  // MARK: - Action Methods
 
   void _saveTaskWithAnimation(BuildContext context) {
     // Play button animation
@@ -816,7 +814,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       return 'Deadline cannot be in the past';
     }
 
-    if (_formData.selectedDateTime.difference(now).inMilliseconds < _formData.estimatedTime) {
+    if (_formData.selectedDateTime.difference(now).inMilliseconds <
+        _formData.estimatedTime) {
       return 'Deadline is too close to accommodate the estimated time';
     }
 
@@ -884,7 +883,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     } else {
       Navigator.pushReplacement(
         context,
-        CupertinoPageRoute(builder: (_) => const HomeScreen()),
+        CupertinoPageRoute(builder: (_) => const TaskListScreen()),
       );
     }
   }

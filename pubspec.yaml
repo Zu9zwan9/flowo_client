@@ -53,6 +53,7 @@ dependencies:
   #webview
   flutter_inappwebview: ^6.1.5
   audio_session: ^0.1.25
+  flutter_timezone: ^4.1.0
 
 dev_dependencies:
   build_runner: ^2.1.7

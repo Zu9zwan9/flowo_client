@@ -1,24 +1,31 @@
 package com.u7wells.flowo_client
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Debug
+import android.app.AlarmManager
+import android.provider.Settings
+import androidx.annotation.RequiresApi
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
-import java.util.Arrays
 
 class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.flowo.security"
+    private val securityChannel = "com.flowo.security"
+    private val notificationsChannel = "flutter_local_notifications"
 
+    @RequiresApi(Build.VERSION_CODES.P)
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
+
+        // Security channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, securityChannel).setMethodCallHandler { call, result ->
             when (call.method) {
                 "isDebuggerAttached" -> result.success(isDebuggerAttached())
                 "isRooted" -> result.success(isRooted())
@@ -26,6 +33,30 @@ class MainActivity : FlutterActivity() {
                 "isFingerprintTampered" -> result.success(isFingerprintTampered())
                 "isHooked" -> result.success(isHooked())
                 "isTampered" -> result.success(isTampered())
+                else -> result.notImplemented()
+            }
+        }
+
+        // Notifications channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, notificationsChannel).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "requestExactAlarmPermission" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                        if (!alarmManager.canScheduleExactAlarms()) {
+                            // Launch intent to request exact alarm permission
+                            val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+                                data = android.net.Uri.parse("package:$packageName")
+                            }
+                            startActivity(intent)
+                            result.success(false) // Permission not yet granted; user must approve
+                        } else {
+                            result.success(true) // Permission already granted
+                        }
+                    } else {
+                        result.success(true) // No special permission needed below Android 12
+                    }
+                }
                 else -> result.notImplemented()
             }
         }
@@ -110,10 +141,16 @@ class MainActivity : FlutterActivity() {
     }
 
     // Check if the app's fingerprint has been tampered with
+    @RequiresApi(Build.VERSION_CODES.P)
     private fun isFingerprintTampered(): Boolean {
         try {
-            val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
-            // In a real implementation, you would compare the signature with a known good signature
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong()))
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+            }
+            // In a real implementation, compare the signing certificates with a known good signature
             // For this example, we'll just return false
             return false
         } catch (e: Exception) {

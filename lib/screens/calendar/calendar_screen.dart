@@ -392,17 +392,7 @@ class CalendarScreenState extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        middle: const Text('Calendar'),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: _navigateToAddEvent,
-          child: const Icon(CupertinoIcons.add),
-        ),
-      ),
-      child: SafeArea(child: _buildContent()),
-    );
+    return CupertinoPageScaffold(child: SafeArea(child: _buildContent()));
   }
 
   Widget _buildContent() {

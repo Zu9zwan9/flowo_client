@@ -2,10 +2,8 @@ import 'dart:ui';
 
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/screens/add_item_screen.dart';
-import 'package:flowo_client/screens/ambient/ambient_screen.dart';
 import 'package:flowo_client/screens/analytics/analytics_screen.dart';
 import 'package:flowo_client/screens/calendar/daily_overview_screen.dart';
-import 'package:flowo_client/screens/pomodoro/task_selection_screen.dart';
 import 'package:flowo_client/screens/profile/profile_screen.dart';
 import 'package:flowo_client/screens/settings/settings_screen.dart';
 import 'package:flowo_client/screens/task/task_list_screen.dart';
@@ -15,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../widgets/gradient_theme.dart';
+import 'calendar/calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -80,6 +79,12 @@ class _HomeScreenState extends State<HomeScreen>
       accentColor: CupertinoColors.systemBlue,
     ),
     (
+      page: CalendarScreen(),
+      icon: CupertinoIcons.calendar,
+      label: 'Calendar',
+      accentColor: CupertinoColors.systemPink,
+    ),
+    (
       page: TaskListScreen(),
       icon: CupertinoIcons.list_bullet,
       label: 'Tasks',
@@ -90,18 +95,6 @@ class _HomeScreenState extends State<HomeScreen>
       icon: CupertinoIcons.add_circled,
       label: 'Create',
       accentColor: CupertinoColors.systemIndigo,
-    ),
-    (
-      page: TaskSelectionScreen(),
-      icon: CupertinoIcons.timer,
-      label: 'Pomodoro',
-      accentColor: CupertinoColors.systemRed,
-    ),
-    (
-      page: AmbientScreen(),
-      icon: CupertinoIcons.music_note_2,
-      label: 'Ambient',
-      accentColor: CupertinoColors.systemTeal,
     ),
     (
       page: ProfileScreen(),

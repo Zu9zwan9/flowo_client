@@ -183,7 +183,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                         CupertinoPageRoute(
                           builder:
                               (context) => const HomeScreen(
-                                initialIndex: 2,
+                                initialIndex: 3,
                                 initialExpanded: false,
                               ),
                         ),
@@ -207,6 +207,18 @@ class _TaskListScreenState extends State<TaskListScreen>
                         ),
                     icon: CupertinoIcons.calendar,
                     label: 'Show Notification',
+                  ),
+                  const SizedBox(height: 8),
+                  TaskActionButton(
+                    onPressed:
+                        () => NotiService().scheduleNotification(
+                          title: "Title",
+                          body: "Body",
+                          hour: 17,
+                          minute: 11,
+                        ),
+                    icon: CupertinoIcons.calendar,
+                    label: 'Schedule Notification',
                   ),
                 ],
               ),
@@ -373,7 +385,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                               ).textTheme.navTitleTextStyle.copyWith(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
-                                overflow: TextOverflow.ellipsis,
+                                overflow: TextOverflow.visible,
                               ),
                               semanticsLabel: '$category category',
                             ),
