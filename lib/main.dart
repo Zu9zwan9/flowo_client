@@ -7,8 +7,10 @@ import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient_service.dart';
 import 'package:flowo_client/services/analytics_service.dart';
+import 'package:flowo_client/services/notification_manager.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
 import 'package:flowo_client/services/security_service.dart';
+import 'package:flowo_client/services/test_notification_service.dart';
 import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
@@ -41,7 +43,7 @@ import 'utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  NotiService().initNotification();
   // Initialize security service to protect against reverse engineering
   if (!kIsWeb) {
     final securityService = SecurityService(
@@ -229,7 +231,12 @@ void main() async {
   final analyticsService = AnalyticsService();
   final ambientService = AmbientService(ambientScenesDB);
 
+  // Initialize notification services
+  final notificationManager = NotificationManager.createDefault();
+  await notificationManager.initialize();
+
   appLogger.info('Hive initialized and task boxes opened', 'App');
+  appLogger.info('Notification services initialized', 'App');
 
   // Create web theme bridge for system theme detection
   final webThemeBridge = WebThemeBridge();
@@ -244,6 +251,7 @@ void main() async {
         Provider<Box<AmbientScene>>.value(value: ambientScenesDB),
         Provider<WebThemeBridge>.value(value: webThemeBridge),
         ChangeNotifierProvider<AmbientService>.value(value: ambientService),
+        Provider<NotificationManager>.value(value: notificationManager),
         ChangeNotifierProvider(
           create:
               (context) => ThemeNotifier(
