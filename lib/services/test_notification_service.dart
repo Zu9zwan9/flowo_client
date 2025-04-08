@@ -12,7 +12,7 @@ class NotiService {
     if (_isInitialized) return;
 
     const initSettingsAndroid = AndroidInitializationSettings(
-      '@assets/app_icon',
+      '@mipmap/ic_launcher',
     );
 
     const initSettingsIOS = DarwinInitializationSettings(
@@ -38,7 +38,7 @@ class NotiService {
         channelDescription: 'your_channel_description',
         importance: Importance.max,
         priority: Priority.high,
-        icon: '@assets/app_icon',
+        icon: '@mipmap/ic_launcher',
       ),
       iOS: DarwinNotificationDetails(),
     );
