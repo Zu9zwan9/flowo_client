@@ -1,6 +1,7 @@
 import 'package:flowo_client/models/app_theme.dart'; // Import the shared AppTheme
 import 'package:flowo_client/models/user_settings.dart'; // Import UserSettings
 import 'package:flowo_client/services/web_theme_bridge.dart';
+import 'package:flowo_client/theme/app_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -225,15 +226,14 @@ class ThemeNotifier extends ChangeNotifier {
               .toColor();
       primaryColor = adjustedColor;
     } else {
-      // Default theme colors
-      primaryColor =
-          isADHD ? CupertinoColors.systemOrange : const Color(0xFF0A84FF);
+      // Default theme colors using AppColors
+      primaryColor = isADHD ? AppColors.accent : AppColors.primary;
     }
 
     // Text color: dynamically determine based on background darkness for custom theme
     Color textColor;
 
-    // Background color: Apple-style white (#F2F2F7) for light mode, dark mode black (#1C1C1E) for dark mode
+    // Background color: Use AppColors for consistent system colors
     Color backgroundColor;
 
     if (isCustom) {
@@ -273,22 +273,18 @@ class ThemeNotifier extends ChangeNotifier {
       }
 
       // Dynamically determine text color based on background darkness
-      textColor =
-          isColorDark(backgroundColor)
-              ? CupertinoColors.white
-              : CupertinoColors.black;
+      textColor = AppColors.appropriateTextColor(backgroundColor);
     } else {
-      // For non-custom themes, use standard text colors
+      // For non-custom themes, use standard text colors from AppColors
       textColor =
           isADHD
-              ? CupertinoColors.black
+              ? AppColors.label
               : isDark
               ? CupertinoColors.white
               : CupertinoColors.black;
 
-      // Standard background colors
-      backgroundColor =
-          isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF2F2F7);
+      // Standard background colors from AppColors
+      backgroundColor = isDark ? AppColors.background : AppColors.background;
     }
 
     // Configure text style with appropriate weight for ADHD mode

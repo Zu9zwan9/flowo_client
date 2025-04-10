@@ -163,9 +163,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   void _navigateToEditScreen(BuildContext context) {
     Navigator.push(
       context,
-      CupertinoPageRoute(
-        builder: (context) => TaskFormScreen(task: _task),
-      ),
+      CupertinoPageRoute(builder: (context) => TaskFormScreen(task: _task)),
     ).then((_) {
       setState(() {
         _task = widget.task;

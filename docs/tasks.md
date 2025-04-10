@@ -1,119 +1,40 @@
-# Flowo Improvement Tasks
+# Push Notification Implementation Tasks for Flutter
 
-This document contains a detailed list of actionable improvement tasks for the Flowo application, focusing on AI model implementation and integration.
+Develop a full push notification feature for an existing Flutter/Dart application using Firebase Cloud Messaging (FCM), targeting both Android and iOS platforms, with all UI following Cupertino design. Assume I have a paid Apple Developer account for iOS setup. Provide all code in Dart and detailed instructions where applicable. Complete each of the following tasks:
 
-## AI Model Implementation
+- [x] **Dynamic Colors**: Implement system-based dynamic colors that adapt to light and dark modes on both Android and iOS, using Flutter's `ThemeData` with `CupertinoColors` or custom `ColorScheme` compatible with Apple's Human Interface Guidelines. Apply these colors consistently across all Cupertino-styled UI elements.
+- [ ] **Cupertino Design**: Build the entire UI using Cupertino widgets (e.g., `CupertinoApp`, `CupertinoPageScaffold`, `CupertinoButton`) for both Android and iOS, adhering to Apple's Human Interface Guidelines for layout, spacing, typography, and navigation patterns (e.g., navigation bars, modals), ensuring a consistent iOS-like experience across platforms.
+- [ ] **SOLID Principles**: Structure the codebase using SOLID principles:
+    [ ] Single Responsibility: Each class should have one purpose (e.g., separate notification handling from UI).
+    [ ] Open/Closed: Design classes to be extensible without modification.
+    [ ] Liskov Substitution: Ensure subclasses can replace their base classes.
+    [ ] Interface Segregation: Use specific interfaces rather than large, general ones.
+    [ ] Dependency Inversion: Depend on abstractions (abstract classes/interfaces) rather than concrete implementations.
+- [ ] **OOP Best Practices**: Apply object-oriented programming principles in Dart:
+    [ ] Encapsulation: Hide implementation details and expose only necessary interfaces.
+    [ ] Inheritance: Use base classes or interfaces where beneficial.
+    [ ] Polymorphism: Allow flexible behavior through interface implementation or subclassing.
+- [x] **Firebase Integration**: Fully integrate Firebase Cloud Messaging for both Android and iOS with the following sub-tasks:
+     [x] Set up Firebase Cloud Messaging by configuring the project with Firebase (e.g., adding `google-services.json` for Android and `GoogleService-Info.plist` for iOS), enabling push notifications in Xcode for iOS, and linking with an APNs key from the Apple Developer account.
+     [x] Handle notification permissions by requesting user authorization on both platforms, using platform-specific APIs via Flutter (e.g., `firebase_messaging` package).
+     [x] Manage FCM tokens and implement logic to retrieve and store them securely for both platforms.
+     [x] Handle incoming notifications in both foreground and background states, displaying them appropriately based on app state with Cupertino-styled alerts on both platforms.
+     [x] Implement notification actions for different notification types (tasks, events, habits).
+     [x] Add support for deep links in notifications.
+     [x] Add support for notification categories.
+- [x] **User-Adjustable Notifications**: Enable users to customize notifications for tasks, events, and habits:
+     [x] Implement notification settings when creating tasks, events, and habits, allowing users to select the notification type (e.g., alert, badge, sound where applicable) and how much time before the task/event/habit to send the notification (e.g., 5 minutes, 1 hour, 1 day), presented in a Cupertino-style interface.
+     [x] Add the same notification customization options in the edit screens for tasks, events, and habits, ensuring users can modify the type and timing after creation, using Cupertino widgets like `CupertinoPicker` or `CupertinoSegmentedControl`.
+     [x] Store these settings persistently using Hive and schedule notifications accordingly via FCM local scheduling with `flutter_local_notifications`.
+- [ ] **Best Practices**: Incorporate the following development best practices:
+     [ ] Use Dart's asynchronous programming (async/await) for all asynchronous operations, such as requesting permissions or fetching tokens.
+     [ ] Implement comprehensive error handling with custom exception classes and meaningful user feedback, displayed in Cupertino-style dialogs.
+     [ ] Use dependency injection (e.g., with `provider` or `get_it`) to provide the notification service to other components, enhancing testability.
 
-### Self-hosted AI Model for Smartphones
-[ ] 1. Research lightweight LLM models suitable for mobile devices (e.g., GGML, GGUF formats)
-[ ] 2. Evaluate models like Llama 2 7B, Phi-2, Gemma 2B for mobile compatibility
-[ ] 3. Create a native module for model inference on Android using TFLite or PyTorch Mobile
-[ ] 4. Create a native module for model inference on iOS using Core ML or Metal
-[ ] 5. Implement model quantization to reduce size and improve performance
-[ ] 6. Develop a model download manager for on-demand model loading
-[ ] 7. Implement caching mechanism for model weights to reduce storage requirements
-[ ] 8. Create a fallback mechanism to cloud API when local inference is not possible
-[ ] 9. Add battery usage monitoring and optimization for model inference
-[ ] 10. Implement model version management for updates
+Provide the following deliverables in Dart:
+ [x] An abstract class/interface defining the notification service and a concrete class implementing it for Firebase integration.
+ [x] Configuration of Firebase Messaging in the app's entry point `main.dart` and handling of notification delegates for both platforms.
+ [ ] A sample Cupertino-based UI for both Android and iOS (e.g., a screen with a `CupertinoButton` to request permissions and display notification status, plus creation/edit screens for tasks, events, and habits with notification settings using Cupertino widgets).
+ [ ] Step-by-step instructions for Firebase setup, including adding `google-services.json` for Android, `GoogleService-Info.plist` for iOS, configuring APNs in the Apple Developer account, and enabling push notifications in both platforms' configurations.
 
-### Self-hosted AI Model for Local Testing
-[ ] 11. Set up a local inference server using Hugging Face's Text Generation Inference (TGI)
-[ ] 12. Create Docker configuration for easy deployment of local inference server
-[ ] 13. Implement model configuration for the zephyr-7b-beta model
-[ ] 14. Develop a testing framework for comparing local inference results with HF API results
-[ ] 15. Create a toggle in the app to switch between local and cloud inference
-[ ] 16. Implement performance benchmarking tools for local inference
-[ ] 17. Add logging and monitoring for local inference server
-[ ] 18. Create documentation for setting up and using the local inference server
-[ ] 19. Implement automated tests for the local inference server
-[ ] 20. Add support for multiple models in the local inference server
-
-### HF Inference API Improvements
-[ ] 21. Refactor existing API client code to use a common base class
-[ ] 22. Implement proper error handling and retry logic for API requests
-[ ] 23. Add support for API request batching to reduce latency
-[ ] 24. Implement request caching to reduce API usage
-[ ] 25. Add support for streaming responses in all API clients
-[ ] 26. Improve prompt engineering for better results
-[ ] 27. Implement API usage monitoring and quota management
-[ ] 28. Add support for multiple API keys and load balancing
-[ ] 29. Implement fallback models when primary model is unavailable
-[ ] 30. Create a more robust offline mode with pre-generated responses
-
-## Architecture Improvements
-
-### Code Structure
-[ ] 31. Create a unified AI service interface for all AI-related functionality
-[ ] 32. Implement the repository pattern for AI model access
-[ ] 33. Separate model-specific code from business logic
-[ ] 34. Create a proper dependency injection system for AI services
-[ ] 35. Implement a plugin architecture for different AI model providers
-[ ] 36. Refactor duplicate code in AI model implementations
-[ ] 37. Create comprehensive unit tests for AI functionality
-[ ] 38. Implement integration tests for AI services
-[ ] 39. Add proper documentation for AI-related code
-[ ] 40. Create examples for extending AI functionality
-
-### Performance Optimization
-[ ] 41. Implement request throttling to prevent API overuse
-[ ] 42. Add response caching for frequently used prompts
-[ ] 43. Optimize prompt templates to reduce token usage
-[ ] 44. Implement background processing for non-urgent AI tasks
-[ ] 45. Add progress indicators for long-running AI operations
-[ ] 46. Optimize memory usage during model inference
-[ ] 47. Implement lazy loading of AI services
-[ ] 48. Add performance monitoring for AI operations
-[ ] 49. Optimize JSON parsing for API responses
-[ ] 50. Implement efficient storage of model outputs
-
-## User Experience Improvements
-
-### Settings and Configuration
-[ ] 51. Add user interface for selecting AI model provider (local, HF, etc.)
-[ ] 52. Create settings for controlling AI usage (e.g., when to use AI features)
-[ ] 53. Implement user-configurable prompt templates
-[ ] 54. Add ability to customize model parameters (temperature, max tokens, etc.)
-[ ] 55. Create a debug mode for viewing raw AI responses
-[ ] 56. Add privacy settings for AI data usage
-[ ] 57. Implement user feedback mechanism for AI responses
-[ ] 58. Create a user interface for managing downloaded models
-[ ] 59. Add settings for controlling offline AI behavior
-[ ] 60. Implement user-specific fine-tuning options
-
-### New Features
-[ ] 61. Add AI-powered task prioritization
-[ ] 62. Implement smart task scheduling based on user behavior
-[ ] 63. Create AI-generated task templates
-[ ] 64. Add natural language task input processing
-[ ] 65. Implement AI-powered productivity insights
-[ ] 66. Add voice input for task creation with AI processing
-[ ] 67. Create AI-assisted task completion tracking
-[ ] 68. Implement context-aware task suggestions
-[ ] 69. Add AI-powered habit formation assistance
-[ ] 70. Create personalized productivity recommendations
-
-## Security and Privacy
-
-[ ] 71. Implement proper API key management
-[ ] 72. Add encryption for locally stored model data
-[ ] 73. Create privacy-focused prompt engineering to avoid PII transmission
-[ ] 74. Implement user consent for AI feature usage
-[ ] 75. Add data minimization techniques for API requests
-[ ] 76. Create audit logging for AI operations
-[ ] 77. Implement secure storage for user prompts and responses
-[ ] 78. Add option to delete AI-related user data
-[ ] 79. Create privacy policy specific to AI features
-[ ] 80. Implement compliance checks for AI usage
-
-## Documentation and Training
-
-[ ] 81. Create developer documentation for AI integration
-[ ] 82. Add user documentation for AI features
-[ ] 83. Create tutorials for extending AI functionality
-[ ] 84. Implement example prompts for different use cases
-[ ] 85. Add documentation for model selection criteria
-[ ] 86. Create troubleshooting guide for AI features
-[ ] 87. Implement in-app guidance for AI features
-[ ] 88. Add performance expectations documentation
-[ ] 89. Create contribution guidelines for AI-related code
-[ ] 90. Implement a knowledge base for common AI issues
+[x] Ensure the final implementation is production-ready, modular, maintainable, and follows modern Flutter development standards, with a consistent Cupertino design across Android and iOS.

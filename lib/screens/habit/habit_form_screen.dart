@@ -399,7 +399,10 @@ class HabitFormScreenState extends State<HabitFormScreen>
     );
   }
 
-  Widget _buildFrequencySection(BuildContext context, CupertinoFormTheme theme) {
+  Widget _buildFrequencySection(
+    BuildContext context,
+    CupertinoFormTheme theme,
+  ) {
     final frequencyTypes = ['daily', 'weekly', 'monthly', 'yearly'];
     final primaryColor = CupertinoTheme.of(context).primaryColor;
     final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
@@ -414,13 +417,14 @@ class HabitFormScreenState extends State<HabitFormScreen>
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
-          children: frequencyTypes.map((type) {
-            return _buildFrequencyTab(
-              type: type,
-              icon: _getFrequencyIcon(type),
-              primaryColor: primaryColor,
-            );
-          }).toList(),
+          children:
+              frequencyTypes.map((type) {
+                return _buildFrequencyTab(
+                  type: type,
+                  icon: _getFrequencyIcon(type),
+                  primaryColor: primaryColor,
+                );
+              }).toList(),
         ),
       ),
       const SizedBox(height: 12.0),
@@ -428,9 +432,10 @@ class HabitFormScreenState extends State<HabitFormScreen>
       const SizedBox(height: 8.0),
       Container(
         decoration: BoxDecoration(
-          color: CupertinoTheme.of(context).brightness == Brightness.dark
-              ? CupertinoColors.systemGrey6.darkColor
-              : CupertinoColors.systemGrey6.color,
+          color:
+              CupertinoTheme.of(context).brightness == Brightness.dark
+                  ? CupertinoColors.systemGrey6.darkColor
+                  : CupertinoColors.systemGrey6.color,
           borderRadius: BorderRadius.circular(10.0),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -442,7 +447,9 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 controller: _intervalController,
                 placeholder: '1',
                 keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly], // Ограничение ввода только цифрами
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ], // Ограничение ввода только цифрами
                 style: theme.valueTextStyle,
                 decoration: BoxDecoration(
                   border: Border.all(color: CupertinoColors.systemGrey4),
@@ -456,16 +463,19 @@ class HabitFormScreenState extends State<HabitFormScreen>
                       if (_intervalValue <= 0) {
                         showCupertinoDialog(
                           context: context,
-                          builder: (context) => CupertinoAlertDialog(
-                            title: const Text('Invalid Interval'),
-                            content: const Text('Interval must be greater than zero'),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('OK'),
-                                onPressed: () => Navigator.pop(context),
+                          builder:
+                              (context) => CupertinoAlertDialog(
+                                title: const Text('Invalid Interval'),
+                                content: const Text(
+                                  'Interval must be greater than zero',
+                                ),
+                                actions: [
+                                  CupertinoDialogAction(
+                                    child: const Text('OK'),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
                         );
                         _intervalController.text = '1';
                         _intervalValue = 1;
@@ -491,7 +501,8 @@ class HabitFormScreenState extends State<HabitFormScreen>
       ),
     ];
 
-    if (_selectedFrequencyType == 'daily' || _selectedFrequencyType == 'yearly') {
+    if (_selectedFrequencyType == 'daily' ||
+        _selectedFrequencyType == 'yearly') {
       frequencyWidgets.addAll(_buildSingleInstanceWidgets(context, theme));
     } else if (_selectedFrequencyType == 'weekly') {
       frequencyWidgets.addAll(_buildWeeklyWidgets(context, theme));
@@ -526,7 +537,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
             color:
                 isSelected
                     ? CupertinoColors.systemBackground.resolveFrom(context)
-                    : Colors.transparent,
+                    : CupertinoColors.transparent,
             borderRadius: BorderRadius.circular(9),
           ),
           margin: const EdgeInsets.all(2),
@@ -1622,7 +1633,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
                                   ? CupertinoTheme.of(
                                     context,
                                   ).primaryColor.withOpacity(0.1)
-                                  : Colors.transparent,
+                                  : CupertinoColors.transparent,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [

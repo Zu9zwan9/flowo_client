@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "476100136448",
+    "project_id": "flowo-fc2e5",
+    "storage_bucket": "flowo-fc2e5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:476100136448:android:87bddb23d8ec45f6d152e5",
+        "android_client_info": {
+          "package_name": "com.u7wells.flowo_client"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCC0OQuKymntdf_Ivw8NBtqTPvEd4J555c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

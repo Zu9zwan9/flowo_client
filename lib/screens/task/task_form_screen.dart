@@ -1,3 +1,4 @@
+import 'package:flowo_client/models/notification_type.dart';
 import 'package:flowo_client/screens/task/task_list_screen.dart';
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
@@ -30,6 +31,10 @@ class _TaskFormScreenState extends State<TaskFormScreen>
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
+
+  // Notification settings
+  NotificationType _selectedNotificationType = NotificationType.sound;
+  int _notificationTime = 30; // Default: 30 minutes before deadline
 
   // Task data model
   late final TaskFormData _formData;
@@ -70,6 +75,17 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       _titleController.text = widget.task!.title;
       _notesController.text = widget.task!.notes ?? '';
       _selectedCategory = widget.task!.category.name;
+
+      // Initialize notification settings from task if available
+      if (widget.task!.notificationType != null) {
+        _selectedNotificationType = widget.task!.notificationType!;
+      } else {
+        _selectedNotificationType = _userSettings.defaultNotificationType;
+      }
+
+      if (widget.task!.notificationTime != null) {
+        _notificationTime = widget.task!.notificationTime!;
+      }
     } else {
       _formData = TaskFormData(
         selectedDateTime:
@@ -81,6 +97,9 @@ class _TaskFormScreenState extends State<TaskFormScreen>
         realisticTime: 0,
         pessimisticTime: 0,
       );
+
+      // Use default notification settings from user settings
+      _selectedNotificationType = _userSettings.defaultNotificationType;
     }
 
     _animationController = AnimationController(
@@ -280,6 +299,30 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                   ],
                 ),
 
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+
+                // Notification Settings Section
+                form.sectionTitle('Notification Settings'),
+                form.formGroup(
+                  children: [
+                    form.selectionButton(
+                      label: 'Notification Type',
+                      value: _getNotificationTypeLabel(
+                        _selectedNotificationType,
+                      ),
+                      onTap: () => _showNotificationTypePicker(context),
+                      icon: CupertinoIcons.bell,
+                    ),
+                    form.divider(),
+                    form.selectionButton(
+                      label: 'Notification Time',
+                      value: _formatNotificationTime(_notificationTime),
+                      onTap: () => _showNotificationTimePicker(context),
+                      icon: CupertinoIcons.time,
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing * 2),
 
                 // Save Button
@@ -308,6 +351,172 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     final hours = milliseconds ~/ 3600000;
     final minutes = (milliseconds % 3600000) ~/ 60000;
     return '${hours.toString().padLeft(2, '0')}h ${minutes.toString().padLeft(2, '0')}m';
+  }
+
+  String _getNotificationTypeLabel(NotificationType type) {
+    switch (type) {
+      case NotificationType.none:
+        return 'None';
+      case NotificationType.vibration:
+        return 'Vibration Only';
+      case NotificationType.sound:
+        return 'Sound Only';
+      case NotificationType.both:
+        return 'Sound & Vibration';
+      case NotificationType.push:
+        return 'Push Notification';
+      case NotificationType.email:
+        return 'Email';
+      case NotificationType.pushAndEmail:
+        return 'Push & Email';
+      case NotificationType.disabled:
+        return 'Disabled';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  String _formatNotificationTime(int minutes) {
+    if (minutes < 60) {
+      return '$minutes minutes before';
+    } else if (minutes == 60) {
+      return '1 hour before';
+    } else if (minutes % 60 == 0) {
+      return '${minutes ~/ 60} hours before';
+    } else {
+      final hours = minutes ~/ 60;
+      final mins = minutes % 60;
+      return '$hours hours $mins minutes before';
+    }
+  }
+
+  Future<void> _showNotificationTypePicker(BuildContext context) async {
+    final pickedType = await showCupertinoModalPopup<NotificationType>(
+      context: context,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed:
+                          () =>
+                              Navigator.pop(context, _selectedNotificationType),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: NotificationType.values.indexOf(
+                        _selectedNotificationType,
+                      ),
+                    ),
+                    onSelectedItemChanged: (index) {
+                      if (mounted) {
+                        setState(() {
+                          _selectedNotificationType =
+                              NotificationType.values[index];
+                        });
+                      }
+                    },
+                    children:
+                        NotificationType.values
+                            .map(
+                              (type) => Text(_getNotificationTypeLabel(type)),
+                            )
+                            .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+
+    if (pickedType != null && mounted) {
+      setState(() {
+        _selectedNotificationType = pickedType;
+      });
+    }
+  }
+
+  Future<void> _showNotificationTimePicker(BuildContext context) async {
+    // Define common notification time options in minutes
+    final List<int> timeOptions = [5, 15, 30, 60, 120, 180, 360, 720, 1440];
+
+    // Find the closest option to the current notification time
+    int initialIndex = 0;
+    int minDifference = (timeOptions[0] - _notificationTime).abs();
+
+    for (int i = 1; i < timeOptions.length; i++) {
+      final difference = (timeOptions[i] - _notificationTime).abs();
+      if (difference < minDifference) {
+        minDifference = difference;
+        initialIndex = i;
+      }
+    }
+
+    final pickedTime = await showCupertinoModalPopup<int>(
+      context: context,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed:
+                          () => Navigator.pop(context, _notificationTime),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: initialIndex,
+                    ),
+                    onSelectedItemChanged: (index) {
+                      if (mounted) {
+                        setState(() {
+                          _notificationTime = timeOptions[index];
+                        });
+                      }
+                    },
+                    children:
+                        timeOptions
+                            .map((time) => Text(_formatNotificationTime(time)))
+                            .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+
+    if (pickedTime != null && mounted) {
+      setState(() {
+        _notificationTime = pickedTime;
+      });
+    }
   }
 
   String _getPriorityLabel(int priority) {
@@ -857,6 +1066,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
         optimisticTime: _formData.optimisticTime,
         realisticTime: _formData.realisticTime,
         pessimisticTime: _formData.pessimisticTime,
+        notificationType: _selectedNotificationType,
+        notificationTime: _notificationTime,
       );
     } else {
       taskManagerCubit.editTask(
@@ -871,6 +1082,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
         optimisticTime: _formData.optimisticTime,
         realisticTime: _formData.realisticTime,
         pessimisticTime: _formData.pessimisticTime,
+        notificationType: _selectedNotificationType,
+        notificationTime: _notificationTime,
       );
     }
 

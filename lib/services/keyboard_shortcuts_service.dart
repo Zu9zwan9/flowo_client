@@ -10,11 +10,13 @@ class KeyboardShortcutsService {
   final BuildContext context;
   final WebThemeBridge? webThemeBridge;
   final GlobalKey<NavigatorState> navigatorKey;
+  final FocusNode? searchFocusNode;
 
   KeyboardShortcutsService({
     required this.context,
     required this.navigatorKey,
     this.webThemeBridge,
+    this.searchFocusNode,
   }) {
     if (kIsWeb && webThemeBridge != null) {
       _registerKeyboardShortcutHandler();
@@ -75,9 +77,11 @@ class KeyboardShortcutsService {
   }
 
   /// Focuses the search field.
+  /// Focuses the search field.
   void _focusSearch() {
-    // This would need to be implemented by finding and focusing the search field
-    // in the current screen, which would require a more complex implementation.
+    if (searchFocusNode != null && searchFocusNode!.canRequestFocus) {
+      searchFocusNode!.requestFocus();
+    }
   }
 
   /// Navigates to the settings screen.

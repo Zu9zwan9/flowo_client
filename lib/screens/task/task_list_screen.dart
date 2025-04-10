@@ -214,8 +214,8 @@ class _TaskListScreenState extends State<TaskListScreen>
                         () => NotiService().scheduleNotification(
                           title: "Title",
                           body: "Body",
-                          hour: 17,
-                          minute: 11,
+                          hour: 22,
+                          minute: 3,
                         ),
                     icon: CupertinoIcons.calendar,
                     label: 'Schedule Notification',

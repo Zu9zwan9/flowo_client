@@ -1,16 +1,15 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../theme_notifier.dart';
 
 /// A widget that applies a gradient to the app's background by modifying the theme
 class GradientTheme extends StatelessWidget {
   final Widget child;
-  
-  const GradientTheme({
-    super.key,
-    required this.child,
-  });
-  
+
+  const GradientTheme({super.key, required this.child});
+
   @override
   Widget build(BuildContext context) {
     return Consumer<ThemeNotifier>(
@@ -19,7 +18,7 @@ class GradientTheme extends StatelessWidget {
         if (!themeNotifier.useGradient) {
           return child;
         }
-        
+
         // Create a custom theme with gradient background
         return Stack(
           children: [

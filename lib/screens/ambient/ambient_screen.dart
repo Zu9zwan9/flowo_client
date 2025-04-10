@@ -140,8 +140,6 @@ class _AmbientScreenState extends State<AmbientScreen>
             (_isFullScreen || !_showControls)
                 ? null
                 : CupertinoNavigationBar(
-                  // Add a unique heroTag to avoid conflicts with other navigation bars
-                  heroTag: 'ambient_screen_nav_bar',
                   transitionBetweenRoutes: false,
                   middle: const Text('Ambient Focus'),
                   trailing: Row(

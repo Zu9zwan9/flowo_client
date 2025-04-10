@@ -5,6 +5,7 @@ import 'package:hive/hive.dart';
 
 import '../../models/category.dart';
 import '../../models/day.dart';
+import '../../models/notification_type.dart';
 import '../../models/repeat_rule.dart';
 import '../../models/task.dart';
 import '../../models/user_settings.dart';
@@ -31,8 +32,10 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     int? optimisticTime,
     int? realisticTime,
     int? pessimisticTime,
+    NotificationType? notificationType,
+    int? notificationTime,
   }) {
-    taskManager.createTask(
+    final task = taskManager.createTask(
       title,
       priority,
       estimatedTime,
@@ -46,6 +49,18 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       realisticTime: realisticTime,
       pessimisticTime: pessimisticTime,
     );
+
+    // Set notification settings
+    if (notificationType != null) {
+      task.notificationType = notificationType;
+    }
+    if (notificationTime != null) {
+      task.notificationTime = notificationTime;
+    }
+
+    // Save the task with notification settings
+    taskManager.tasksDB.put(task.id, task);
+
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
@@ -145,7 +160,10 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     int? optimisticTime,
     int? realisticTime,
     int? pessimisticTime,
+    NotificationType? notificationType,
+    int? notificationTime,
   }) {
+    // Update task properties
     // Update task properties
     taskManager.editTask(
       task,
@@ -163,7 +181,14 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       pessimisticTime: pessimisticTime,
     );
 
-    // No need to update notes, color, and frequency separately as they're now part of the TaskManager.editTask method
+    // Set notification settings
+    if (notificationType != null) {
+      task.notificationType = notificationType;
+    }
+    if (notificationTime != null) {
+      task.notificationTime = notificationTime;
+    }
+
     taskManager.tasksDB.put(task.id, task);
 
     // Recalculate scheduling after edit
@@ -223,11 +248,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       color: color,
     );
 
-    taskManager.scheduler.scheduleEvent(
-      task: task,
-      start: start,
-      end: end,
-    );
+    taskManager.scheduler.scheduleEvent(task: task, start: start, end: end);
     taskManager.tasksDB.put(task.id, task);
 
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));

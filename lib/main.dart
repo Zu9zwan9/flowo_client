@@ -7,9 +7,9 @@ import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient_service.dart';
 import 'package:flowo_client/services/analytics_service.dart';
+import 'package:flowo_client/services/firebase_messaging_service.dart';
 import 'package:flowo_client/services/onboarding_service.dart';
 import 'package:flowo_client/services/security_service.dart';
-import 'package:flowo_client/services/test_notification_service.dart';
 import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
@@ -42,7 +42,111 @@ import 'utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotiService().initNotification();
+
+  // Initialize Firebase Messaging Service
+  final firebaseMessagingService = FirebaseMessagingService();
+  try {
+    await firebaseMessagingService.initialize();
+    final bool permissionsGranted =
+        await firebaseMessagingService.requestPermissions();
+    if (permissionsGranted) {
+      appLogger.info('Notification permissions granted', 'App');
+    } else {
+      appLogger.warning('Notification permissions denied', 'App');
+    }
+
+    // Get and log the FCM token
+    final String? token = await firebaseMessagingService.getToken();
+    if (token != null) {
+      appLogger.info('FCM Token: $token', 'App');
+    } else {
+      appLogger.warning('Failed to get FCM token', 'App');
+    }
+
+    // Set up foreground message handler
+    firebaseMessagingService.onForegroundMessage((Map<String, dynamic> data) {
+      appLogger.info('Received foreground message: $data', 'App');
+      // Handle foreground message based on type
+      final String messageType = data['type'] ?? 'default';
+      switch (messageType) {
+        case 'task':
+          appLogger.info('Handling task notification', 'App');
+          // Add task-specific handling here
+          break;
+        case 'event':
+          appLogger.info('Handling event notification', 'App');
+          // Add event-specific handling here
+          break;
+        case 'habit':
+          appLogger.info('Handling habit notification', 'App');
+          // Add habit-specific handling here
+          break;
+        case 'deeplink':
+          appLogger.info('Handling deeplink notification', 'App');
+          // Add deeplink-specific handling here
+          final String url = data['url'] ?? '';
+          if (url.isNotEmpty) {
+            appLogger.info('Processing deeplink: $url', 'App');
+            // Handle the deeplink
+          }
+          break;
+        default:
+          appLogger.info('Handling default notification', 'App');
+        // Add default handling here
+      }
+    });
+
+    // Set up notification tap handler
+    firebaseMessagingService.onNotificationTap((Map<String, dynamic> data) {
+      appLogger.info('Notification tapped: $data', 'App');
+      // Handle notification tap based on payload
+      final String payload = data['payload'] ?? '{}';
+      final String actionId = data['actionId'] ?? '';
+
+      if (actionId.isNotEmpty) {
+        // Handle notification action
+        appLogger.info('Handling notification action: $actionId', 'App');
+        switch (actionId) {
+          case 'mark_complete':
+          case 'mark_done':
+            appLogger.info('Marking task/habit as complete', 'App');
+            // Add code to mark task/habit as complete
+            break;
+          case 'snooze':
+            appLogger.info('Snoozing notification', 'App');
+            // Add code to snooze notification
+            break;
+          case 'view_details':
+            appLogger.info('Viewing details', 'App');
+            // Add code to view details
+            break;
+          case 'dismiss':
+            appLogger.info('Dismissing notification', 'App');
+            // Add code to dismiss notification
+            break;
+          case 'skip':
+            appLogger.info('Skipping habit for today', 'App');
+            // Add code to skip habit
+            break;
+          case 'open':
+            appLogger.info('Opening notification content', 'App');
+            // Add code to open notification content
+            break;
+          default:
+            appLogger.info('Unknown action: $actionId', 'App');
+        }
+      } else {
+        // Handle notification tap without action
+        appLogger.info('Notification tapped without action', 'App');
+        // Add code to handle notification tap
+      }
+    });
+  } catch (e) {
+    appLogger.error(
+      'Failed to initialize Firebase Messaging Service: $e',
+      'App',
+    );
+  }
   // Initialize security service to protect against reverse engineering
   if (!kIsWeb) {
     final securityService = SecurityService(
@@ -244,6 +348,9 @@ void main() async {
         Provider<Box<PomodoroSession>>.value(value: pomodoroSessionsDB),
         Provider<Box<AmbientScene>>.value(value: ambientScenesDB),
         Provider<WebThemeBridge>.value(value: webThemeBridge),
+        Provider<FirebaseMessagingService>.value(
+          value: firebaseMessagingService,
+        ),
         ChangeNotifierProvider<AmbientService>.value(value: ambientService),
         ChangeNotifierProvider(
           create:
