@@ -197,29 +197,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                     onPressed: () => _showScheduleDialog(context),
                     icon: CupertinoIcons.calendar,
                     label: 'Schedule',
-                  ),
-                  const SizedBox(height: 8),
-                  TaskActionButton(
-                    onPressed:
-                        () => NotiService().showTestNotification(
-                          title: "Title",
-                          body: "Body",
-                        ),
-                    icon: CupertinoIcons.calendar,
-                    label: 'Show Notification',
-                  ),
-                  const SizedBox(height: 8),
-                  TaskActionButton(
-                    onPressed:
-                        () => NotiService().scheduleNotification(
-                          title: "Title",
-                          body: "Body",
-                          hour: 22,
-                          minute: 3,
-                        ),
-                    icon: CupertinoIcons.calendar,
-                    label: 'Schedule Notification',
-                  ),
+                  )
                 ],
               ),
             ),
