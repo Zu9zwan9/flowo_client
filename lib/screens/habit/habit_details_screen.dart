@@ -44,7 +44,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
       );
 
       // For this example, we'll consider the parent task's isDone status
-      // In a real implementation, you might want to track completion per instance
+      // TODO: track completion per instance
       _completionData[date] = _habit.isDone;
 
       if (_habit.isDone) {

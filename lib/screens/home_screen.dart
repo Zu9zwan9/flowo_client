@@ -14,7 +14,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../widgets/gradient_theme.dart';
 import 'calendar/calendar_screen.dart';
-import 'notification_test_screen.dart';
+import 'notifications/notification_test_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -116,10 +116,10 @@ class _HomeScreenState extends State<HomeScreen>
       accentColor: CupertinoColors.systemGrey,
     ),
     (
-    page: NotificationTestScreen(),
-    icon: CupertinoIcons.bell,
-    label: 'Test Notifications',
-    accentColor: CupertinoColors.systemTeal,
+      page: NotificationTestScreen(),
+      icon: CupertinoIcons.bell,
+      label: 'Test Notifications',
+      accentColor: CupertinoColors.systemTeal,
     ),
   ];
 

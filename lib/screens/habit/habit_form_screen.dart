@@ -15,7 +15,6 @@ import '../../design/cupertino_form_widgets.dart';
 import '../../models/task.dart';
 import '../../models/user_settings.dart';
 import '../../services/category_service.dart';
-import '../../services/notification_service.dart';
 import '../../utils/formatter/date_time_formatter.dart';
 
 extension StringExtension on String {
@@ -67,7 +66,6 @@ class HabitFormScreenState extends State<HabitFormScreen>
   // Notification settings
   NotificationType selectedNotificationType = NotificationType.push;
   int notificationTime = 5; // Default: 30 minutes before habit
-  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
@@ -75,7 +73,6 @@ class HabitFormScreenState extends State<HabitFormScreen>
     _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
 
     // Initialize notification service
-    _notificationService.initNotification();
 
     if (widget.habit != null) {
       final habit = widget.habit!;
