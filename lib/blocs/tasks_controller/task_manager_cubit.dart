@@ -9,14 +9,17 @@ import '../../models/notification_type.dart';
 import '../../models/repeat_rule.dart';
 import '../../models/task.dart';
 import '../../models/user_settings.dart';
+import '../../services/notification_service.dart';
 import '../../utils/task_manager.dart';
 import 'task_manager_state.dart';
 
 class TaskManagerCubit extends Cubit<TaskManagerState> {
   final TaskManager taskManager;
+  final NotificationService _notificationService = NotificationService();
 
   TaskManagerCubit(this.taskManager) : super(TaskManagerState.initial()) {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    _notificationService.initNotification();
   }
 
   void createTask({
@@ -72,6 +75,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     String? notes,
     int? color,
     int? travelingTime,
+    NotificationType? notificationType,
+    int? notificationTime,
   }) {
     logInfo('Creating event: title - $title, start - $start, end - $end');
 
@@ -92,7 +97,25 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       color: color,
     );
 
+    // Set notification settings
+    if (notificationType != null) {
+      task.notificationType = notificationType;
+    }
+    if (notificationTime != null) {
+      task.notificationTime = notificationTime;
+    }
+
     taskManager.scheduler.scheduleEvent(task: task, start: start, end: end);
+
+    // Schedule notification if enabled
+    if (notificationType != NotificationType.disabled &&
+        notificationTime != null) {
+      _notificationService.scheduleEventNotification(
+        task,
+        minutesBefore: notificationTime,
+      );
+      logInfo('Notification scheduled for event: ${task.title}');
+    }
 
     // Update the state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
@@ -208,6 +231,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     String? notes,
     int? color,
     int? travelingTime,
+    NotificationType? notificationType,
+    int? notificationTime,
   }) {
     logInfo(
       'Editing event: ${task.title} to new title - $title, start - $start, end - $end',
@@ -247,6 +272,14 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       notes: notes,
       color: color,
     );
+
+    // Set notification settings
+    if (notificationType != null) {
+      task.notificationType = notificationType;
+    }
+    if (notificationTime != null) {
+      task.notificationTime = notificationTime;
+    }
 
     taskManager.scheduler.scheduleEvent(task: task, start: start, end: end);
     taskManager.tasksDB.put(task.id, task);

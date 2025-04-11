@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/design/cupertino_form_theme.dart';
 import 'package:flowo_client/design/cupertino_form_widgets.dart';
@@ -8,7 +10,9 @@ import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../models/notification_type.dart';
 import '../../models/user_settings.dart';
+import '../../services/test_notification_service.dart';
 
 class EventFormScreen extends StatefulWidget {
   final DateTime? selectedDate;
@@ -26,12 +30,17 @@ class EventFormScreenState extends State<EventFormScreen>
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
   final _locationController = TextEditingController();
+  final NotiService _notiService = NotiService();
 
   late DateTime _startTime;
   late DateTime _endTime;
   late UserSettings _userSettings;
   int? _selectedColor;
   int _travelingTime = 0;
+
+  // Notification settings
+  late NotificationType _selectedNotificationType;
+  late int _notificationTime; // Time in minutes before the event start
   final List<Color> _colorOptions = [
     const Color(0xFF4CAF50),
     const Color(0xFF2196F3),
@@ -68,9 +77,26 @@ class EventFormScreenState extends State<EventFormScreen>
           event.scheduledTasks.isNotEmpty
               ? event.scheduledTasks.first.travelingTime ?? 0
               : 0;
+
+      // Initialize notification settings from event if available
+      if (event.notificationType != null) {
+        _selectedNotificationType = event.notificationType!;
+      } else {
+        _selectedNotificationType = _userSettings.defaultNotificationType;
+      }
+
+      if (event.notificationTime != null) {
+        _notificationTime = event.notificationTime!;
+      } else {
+        _notificationTime = 30; // Default: 30 minutes before event start
+      }
     } else {
       _startTime = widget.selectedDate ?? DateTime.now();
       _endTime = _startTime.add(const Duration(hours: 1));
+
+      // Initialize with default notification settings
+      _selectedNotificationType = _userSettings.defaultNotificationType;
+      _notificationTime = 30; // Default: 30 minutes before event start
     }
 
     _animationController = AnimationController(
@@ -265,6 +291,32 @@ class EventFormScreenState extends State<EventFormScreen>
                     ),
                   ],
                 ),
+                SizedBox(height: CupertinoFormTheme.sectionSpacing),
+                CupertinoFormWidgets.formGroup(
+                  context: context,
+                  title: 'Notification Settings',
+                  children: [
+                    CupertinoFormWidgets.selectionButton(
+                      context: context,
+                      label: 'Notification Type',
+                      value: _getNotificationTypeLabel(
+                        _selectedNotificationType,
+                      ),
+                      onTap: () => _showNotificationTypePicker(context),
+                      color: theme.primaryColor,
+                      icon: CupertinoIcons.bell,
+                    ),
+                    SizedBox(height: CupertinoFormTheme.elementSpacing),
+                    CupertinoFormWidgets.selectionButton(
+                      context: context,
+                      label: 'Notification Time',
+                      value: _formatNotificationTime(_notificationTime),
+                      onTap: () => _showNotificationTimePicker(context),
+                      color: theme.accentColor,
+                      icon: CupertinoIcons.time,
+                    ),
+                  ],
+                ),
                 SizedBox(height: CupertinoFormTheme.largeSpacing),
                 ScaleTransition(
                   scale: _buttonScaleAnimation,
@@ -375,6 +427,161 @@ class EventFormScreenState extends State<EventFormScreen>
   }
 
   // Saves the event after validation
+  // Helper methods for notification settings
+  String _getNotificationTypeLabel(NotificationType type) {
+    switch (type) {
+      case NotificationType.push:
+        return 'Push Notification';
+      case NotificationType.disabled:
+        return 'Disabled';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  String _formatNotificationTime(int minutes) {
+    if (minutes < 60) {
+      return '$minutes minutes before';
+    } else if (minutes == 60) {
+      return '1 hour before';
+    } else if (minutes % 60 == 0) {
+      return '${minutes ~/ 60} hours before';
+    } else {
+      final hours = minutes ~/ 60;
+      final mins = minutes % 60;
+      return '$hours hours $mins minutes before';
+    }
+  }
+
+  Future<void> _showNotificationTypePicker(BuildContext context) async {
+    final pickedType = await showCupertinoModalPopup<NotificationType>(
+      context: context,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed:
+                          () =>
+                              Navigator.pop(context, _selectedNotificationType),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: NotificationType.values.indexOf(
+                        _selectedNotificationType,
+                      ),
+                    ),
+                    onSelectedItemChanged: (index) {
+                      if (mounted) {
+                        setState(() {
+                          _selectedNotificationType =
+                              NotificationType.values[index];
+                        });
+                      }
+                    },
+                    children:
+                        NotificationType.values
+                            .map(
+                              (type) => Text(_getNotificationTypeLabel(type)),
+                            )
+                            .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+
+    if (pickedType != null && mounted) {
+      setState(() {
+        _selectedNotificationType = pickedType;
+      });
+    }
+  }
+
+  Future<void> _showNotificationTimePicker(BuildContext context) async {
+    // Define common notification time options in minutes
+    final List<int> timeOptions = [5, 15, 30, 60, 120, 180, 360, 720, 1440];
+
+    // Find the closest option to the current notification time
+    int initialIndex = 0;
+    int minDifference = (timeOptions[0] - _notificationTime).abs();
+
+    for (int i = 1; i < timeOptions.length; i++) {
+      final difference = (timeOptions[i] - _notificationTime).abs();
+      if (difference < minDifference) {
+        minDifference = difference;
+        initialIndex = i;
+      }
+    }
+
+    final pickedTime = await showCupertinoModalPopup<int>(
+      context: context,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed:
+                          () => Navigator.pop(context, _notificationTime),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: initialIndex,
+                    ),
+                    onSelectedItemChanged: (index) {
+                      if (mounted) {
+                        setState(() {
+                          _notificationTime = timeOptions[index];
+                        });
+                      }
+                    },
+                    children:
+                        timeOptions
+                            .map((time) => Text(_formatNotificationTime(time)))
+                            .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+
+    if (pickedTime != null && mounted) {
+      setState(() {
+        _notificationTime = pickedTime;
+      });
+    }
+  }
+
   void _saveEvent(BuildContext context) {
     final validationError = _validateForm();
 
@@ -413,6 +620,8 @@ class EventFormScreenState extends State<EventFormScreen>
                 : null,
         color: _selectedColor,
         travelingTime: _travelingTime,
+        notificationType: _selectedNotificationType,
+        notificationTime: _notificationTime,
       );
       logInfo('Event updated: ${_titleController.text}');
     } else {
@@ -430,7 +639,21 @@ class EventFormScreenState extends State<EventFormScreen>
                 : null,
         color: _selectedColor,
         travelingTime: _travelingTime,
+        notificationType: _selectedNotificationType,
+        notificationTime: _notificationTime,
       );
+
+      _notiService.scheduleNotification(
+        id: Random().nextInt(2147483647),
+        title: _titleController.text,
+        body: 'Test Notification',
+        hour: _startTime.hour,
+        minute: _startTime.minute - (_notificationTime),
+      );
+      logInfo(
+        'Scheduled Notification: ${_titleController.text} for hour: ${_startTime.hour}, minute: ${_startTime.minute - _notificationTime}',
+      );
+
       logInfo('Saved Event: ${_titleController.text}');
     }
 

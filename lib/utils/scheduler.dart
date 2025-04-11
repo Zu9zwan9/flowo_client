@@ -399,7 +399,7 @@ class Scheduler {
         type: ScheduledTaskType.defaultType,
         travelingTime: 0,
         breakTime: 0,
-        notification: NotificationType.none,
+        notification: NotificationType.disabled,
       );
 
   List<ScheduledTask> _findDisplaceableSlots(
@@ -665,7 +665,8 @@ class Scheduler {
       type: type ?? ScheduledTaskType.defaultType,
       travelingTime: _getTravelTime(task.location),
       breakTime: userSettings.breakTime ?? 5 * 60 * 1000,
-      notification: NotificationType.none,
+      notification:
+          task.notificationType ?? userSettings.defaultNotificationType,
     );
 
     task.scheduledTasks.add(scheduledTask);

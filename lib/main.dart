@@ -168,7 +168,7 @@ void main() async {
               'Saturday': true,
               'Sunday': true,
             },
-            defaultNotificationType: NotificationType.sound,
+            defaultNotificationType: NotificationType.push,
           );
 
   // Save the default settings to the Hive box if it's the first launch

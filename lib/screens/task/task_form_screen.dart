@@ -33,7 +33,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
   final _notesController = TextEditingController();
 
   // Notification settings
-  NotificationType _selectedNotificationType = NotificationType.sound;
+  NotificationType _selectedNotificationType = NotificationType.push;
   int _notificationTime = 30; // Default: 30 minutes before deadline
 
   // Task data model
@@ -355,20 +355,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
 
   String _getNotificationTypeLabel(NotificationType type) {
     switch (type) {
-      case NotificationType.none:
-        return 'None';
-      case NotificationType.vibration:
-        return 'Vibration Only';
-      case NotificationType.sound:
-        return 'Sound Only';
-      case NotificationType.both:
-        return 'Sound & Vibration';
       case NotificationType.push:
         return 'Push Notification';
-      case NotificationType.email:
-        return 'Email';
-      case NotificationType.pushAndEmail:
-        return 'Push & Email';
       case NotificationType.disabled:
         return 'Disabled';
       default:
