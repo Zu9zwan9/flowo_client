@@ -1,42 +1,26 @@
 import Flutter
 import UIKit
-import Firebase
-import FirebaseMessaging
+
 import UserNotifications
 import Darwin
 import MachO
 import ObjectiveC
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, MessagingDelegate {
+@objc class AppDelegate: FlutterAppDelegate {
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // Initialize Firebase using our helper method
-    if initializeFirebase() {
-      // Set up Firebase Messaging
-      Messaging.messaging().delegate = self
+  // Set up notification center delegate
+UNUserNotificationCenter.current().delegate = self
 
-      // Set up notification center delegate
-      UNUserNotificationCenter.current().delegate = self
-
-      // Request permission for notifications
-      let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-      UNUserNotificationCenter.current().requestAuthorization(
-        options: authOptions,
-        completionHandler: { _, _ in }
-      )
-
-      // Register for remote notifications
-      application.registerForRemoteNotifications()
-    } else {
-      // Firebase initialization failed, but we can still set up the notification center delegate
-      // so that local notifications will work
-      UNUserNotificationCenter.current().delegate = self
-      print("Firebase initialization failed, continuing without Firebase features")
-    }
-
+// Request permission for local notifications
+let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+UNUserNotificationCenter.current().requestAuthorization(
+  options: authOptions,
+  completionHandler: { _, _ in }
+)
     // Register Flutter plugins
     GeneratedPluginRegistrant.register(with: self)
 
@@ -75,63 +59,11 @@ import ObjectiveC
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  // Flag to track if Firebase is initialized
-  private var isFirebaseInitialized: Bool = false
 
   // Security channel for handling security checks
   private var securityChannel: FlutterMethodChannel?
 
-  // Initialize Firebase safely and return whether initialization was successful
-  private func initializeFirebase() -> Bool {
-    // If we've already checked, return the cached result
-    if isFirebaseInitialized {
-      return true
-    }
 
-    // Check if the GoogleService-Info.plist file exists
-    if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
-      do {
-        // If Firebase is already configured, this is a no-op
-        if FirebaseApp.app() == nil {
-          FirebaseApp.configure()
-        }
-        isFirebaseInitialized = true
-        return true
-      } catch {
-        print("Error initializing Firebase: \(error.localizedDescription)")
-        isFirebaseInitialized = false
-        return false
-      }
-    } else {
-      print("GoogleService-Info.plist not found, Firebase not initialized")
-      isFirebaseInitialized = false
-      return false
-    }
-  }
-
-  // Handle receiving a device token for APNs
-  override func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-    if initializeFirebase() {
-      Messaging.messaging().apnsToken = deviceToken
-    }
-    super.application(application, didRegisterForRemoteNotificationsWithDeviceToken: deviceToken)
-  }
-
-  // Handle Firebase Messaging token refresh
-  func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
-    if initializeFirebase() && fcmToken != nil {
-      let token = fcmToken!
-      print("Firebase registration token: \(token)")
-
-      // Send the token to your server for sending push notifications
-      let dataDict: [String: String] = ["token": token]
-      NotificationCenter.default.post(
-        name: Notification.Name("FCMToken"),
-        object: nil,
-        userInfo: dataDict
-      )
-    }
-  }
 
   // Handle receiving a notification when the app is in the foreground
   override func userNotificationCenter(

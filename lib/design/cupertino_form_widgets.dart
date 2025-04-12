@@ -64,23 +64,37 @@ class CupertinoFormWidgets {
     final content = Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            if (icon != null) ...[
-              Icon(
-                icon,
-                color: effectiveColor,
-                size: CupertinoFormTheme.smallIconSize,
+        Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  color: effectiveColor,
+                  size: CupertinoFormTheme.smallIconSize,
+                ),
+                SizedBox(width: CupertinoFormTheme.smallSpacing),
+              ],
+              Flexible(
+                child: Text(
+                  label,
+                  style: theme.labelTextStyle.copyWith(color: effectiveColor),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              SizedBox(width: CupertinoFormTheme.smallSpacing),
             ],
-            Text(
-              label,
-              style: theme.labelTextStyle.copyWith(color: effectiveColor),
-            ),
-          ],
+          ),
         ),
-        Text(value, style: theme.valueTextStyle),
+        SizedBox(width: CupertinoFormTheme.smallSpacing),
+        Flexible(
+          child: Text(
+            value,
+            style: theme.valueTextStyle,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+          ),
+        ),
       ],
     );
     // Act
