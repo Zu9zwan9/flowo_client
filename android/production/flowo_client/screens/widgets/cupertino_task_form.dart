@@ -156,16 +156,33 @@ class CupertinoTaskForm {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                if (icon != null) ...[
-                  Icon(icon, color: buttonColor, size: 18),
-                  const SizedBox(width: 8),
+            Flexible(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, color: buttonColor, size: 18),
+                    const SizedBox(width: 8),
+                  ],
+                  Flexible(
+                    child: Text(
+                      label,
+                      style: labelTextStyle(color: buttonColor),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
-                Text(label, style: labelTextStyle(color: buttonColor)),
-              ],
+              ),
             ),
-            Text(value, style: valueTextStyle),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                value,
+                style: valueTextStyle,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+              ),
+            ),
           ],
         ),
       ),

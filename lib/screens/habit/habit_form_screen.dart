@@ -14,7 +14,7 @@ import '../../design/cupertino_form_theme.dart';
 import '../../design/cupertino_form_widgets.dart';
 import '../../models/task.dart';
 import '../../models/user_settings.dart';
-import '../../services/category_service.dart';
+import '../../services/category/category_service.dart';
 import '../../utils/formatter/date_time_formatter.dart';
 
 extension StringExtension on String {

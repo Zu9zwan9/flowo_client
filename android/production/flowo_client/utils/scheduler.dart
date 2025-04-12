@@ -13,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 import '../models/time_frame.dart';
-import '../services/notification_manager.dart';
 
 class Scheduler {
   final Box<Day> daysDB;
@@ -21,14 +20,8 @@ class Scheduler {
   UserSettings userSettings;
   late final Task freeTimeManager;
   final Map<String, Day> _dayCache = {};
-  final NotificationManager? notificationManager;
 
-  Scheduler(
-    this.daysDB,
-    this.tasksDB,
-    this.userSettings, {
-    this.notificationManager,
-  }) {
+  Scheduler(this.daysDB, this.tasksDB, this.userSettings) {
     _initializeFreeTimeManager();
   }
 
@@ -187,6 +180,7 @@ class Scheduler {
       }
     }
 
+    logDebug('Scheduling event: ${task.title} from $start to $end');
     _createScheduledTask(
       task: task,
       start: start,
@@ -405,7 +399,7 @@ class Scheduler {
         type: ScheduledTaskType.defaultType,
         travelingTime: 0,
         breakTime: 0,
-        notification: NotificationType.none,
+        notification: NotificationType.disabled,
       );
 
   List<ScheduledTask> _findDisplaceableSlots(
@@ -671,7 +665,8 @@ class Scheduler {
       type: type ?? ScheduledTaskType.defaultType,
       travelingTime: _getTravelTime(task.location),
       breakTime: userSettings.breakTime ?? 5 * 60 * 1000,
-      notification: NotificationType.none,
+      notification:
+          task.notificationType ?? userSettings.defaultNotificationType,
     );
 
     task.scheduledTasks.add(scheduledTask);

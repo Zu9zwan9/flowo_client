@@ -158,10 +158,12 @@ class CalendarHeader extends StatelessWidget {
           Flexible(
             child: Text(
               '$month $year',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: CupertinoColors.label,
+                color:
+                    CupertinoTheme.of(context).textTheme.textStyle.color ??
+                    CupertinoColors.label,
               ),
               overflow: TextOverflow.ellipsis,
             ),

@@ -5,9 +5,9 @@ import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/repeat_rule_instance.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
-import 'package:flowo_client/services/ambient_service.dart';
-import 'package:flowo_client/services/analytics_service.dart';
-import 'package:flowo_client/services/onboarding_service.dart';
+import 'package:flowo_client/services/ambient/ambient_service.dart';
+import 'package:flowo_client/services/analytics/analytics_service.dart';
+import 'package:flowo_client/services/onboarding/onboarding_service.dart';
 import 'package:flowo_client/services/security_service.dart';
 import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/utils/task_manager.dart';
@@ -87,6 +87,13 @@ void main() async {
   Hive.registerAdapter(AmbientSceneAdapter());
   Hive.registerAdapter(RepeatRuleInstanceAdapter());
   Hive.registerAdapter(AppThemeAdapter());
+
+  // TODO: Run the following command to generate the TaskNotification adapters:
+  // flutter pub run build_runner build --delete-conflicting-outputs
+  // Then uncomment these lines:
+  // Hive.registerAdapter(TaskNotificationTypeAdapter());
+  // Hive.registerAdapter(NotificationStatusAdapter());
+  // Hive.registerAdapter(TaskNotificationAdapter());
   await Hive.initFlutter();
 
   Box<Task> tasksDB;

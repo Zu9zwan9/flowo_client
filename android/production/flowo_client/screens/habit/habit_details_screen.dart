@@ -5,7 +5,7 @@ import 'package:flowo_client/utils/category_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'add_habit_page.dart';
+import 'habit_form_screen.dart';
 
 class HabitDetailsScreen extends StatefulWidget {
   final Task habit;
@@ -44,7 +44,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
       );
 
       // For this example, we'll consider the parent task's isDone status
-      // In a real implementation, you might want to track completion per instance
+      // TODO: track completion per instance
       _completionData[date] = _habit.isDone;
 
       if (_habit.isDone) {
@@ -92,7 +92,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
   void _editHabit() {
     Navigator.push(
       context,
-      CupertinoPageRoute(builder: (context) => AddHabitPage(habit: _habit)),
+      CupertinoPageRoute(builder: (context) => HabitFormScreen(habit: _habit)),
     ).then((_) {
       setState(() {
         _habit = widget.habit;

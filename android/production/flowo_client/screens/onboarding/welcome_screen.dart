@@ -1,6 +1,6 @@
 import 'package:flowo_client/models/user_profile.dart';
 import 'package:flowo_client/screens/home_screen.dart';
-import 'package:flowo_client/services/onboarding_service.dart';
+import 'package:flowo_client/services/onboarding/onboarding_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';

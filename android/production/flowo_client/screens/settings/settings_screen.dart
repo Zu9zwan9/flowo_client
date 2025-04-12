@@ -210,30 +210,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _loadSettings() {
-    final currentSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
+    final currentSettings =
+        context.read<TaskManagerCubit>().taskManager.userSettings;
     setState(() {
       // Sleep Time (unchanged - works correctly)
-      _sleepTime = currentSettings.sleepTime.isNotEmpty
-          ? currentSettings.sleepTime.first.startTime
-          : const TimeOfDay(hour: 22, minute: 0);
-      _wakeupTime = currentSettings.sleepTime.isNotEmpty
-          ? currentSettings.sleepTime.first.endTime
-          : const TimeOfDay(hour: 7, minute: 0);
+      _sleepTime =
+          currentSettings.sleepTime.isNotEmpty
+              ? currentSettings.sleepTime.first.startTime
+              : const TimeOfDay(hour: 22, minute: 0);
+      _wakeupTime =
+          currentSettings.sleepTime.isNotEmpty
+              ? currentSettings.sleepTime.first.endTime
+              : const TimeOfDay(hour: 7, minute: 0);
 
       // Break and Session Duration (unchanged)
-      _breakDuration = (currentSettings.breakTime ?? 15 * 60 * 1000) ~/ (60 * 1000);
+      _breakDuration =
+          (currentSettings.breakTime ?? 15 * 60 * 1000) ~/ (60 * 1000);
       _minSessionDuration = currentSettings.minSession ~/ (60 * 1000);
       _mealTimes = List.from(currentSettings.mealBreaks);
       _freeTimes = List.from(currentSettings.freeTime);
-      _activeDays = Map.from(currentSettings.activeDays ?? {
-        'Monday': true,
-        'Tuesday': true,
-        'Wednesday': true,
-        'Thursday': true,
-        'Friday': true,
-        'Saturday': true,
-        'Sunday': true,
-      });
+      _activeDays = Map.from(
+        currentSettings.activeDays ??
+            {
+              'Monday': true,
+              'Tuesday': true,
+              'Wednesday': true,
+              'Thursday': true,
+              'Friday': true,
+              'Saturday': true,
+              'Sunday': true,
+            },
+      );
       _dateFormat = currentSettings.dateFormat;
       _monthFormat = currentSettings.monthFormat;
       _is24HourFormat = currentSettings.is24HourFormat;
@@ -368,11 +375,63 @@ class _SettingsScreenState extends State<SettingsScreen> {
         'error': e.toString(),
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to show log file location: $e')),
-        );
+        _showErrorNotification('Failed to show log file location: $e');
       }
     }
+  }
+
+  /// Shows a Cupertino-style error notification at the bottom of the screen.
+  void _showErrorNotification(String message) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final overlayEntry = OverlayEntry(
+      builder: (context) {
+        return Positioned(
+          bottom: 16.0,
+          left: 16.0,
+          right: 16.0,
+          child: SafeArea(
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemRed.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(10.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: CupertinoColors.black.withOpacity(0.1),
+                    blurRadius: 10.0,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    CupertinoIcons.exclamationmark_triangle,
+                    color: CupertinoColors.white,
+                  ),
+                  const SizedBox(width: 8.0),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: const TextStyle(color: CupertinoColors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    Overlay.of(context).insert(overlayEntry);
+
+    Future.delayed(const Duration(seconds: 3), () {
+      overlayEntry.remove();
+    });
   }
 
   Future<void> _showTimePicker({

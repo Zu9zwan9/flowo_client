@@ -1,3 +1,5 @@
+import 'package:flowo_client/models/notification_type.dart';
+import 'package:flowo_client/screens/task/task_list_screen.dart';
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
@@ -10,26 +12,29 @@ import '../../models/category.dart';
 import '../../models/task.dart';
 import '../../models/task_form_data.dart';
 import '../../models/user_settings.dart';
-import '../../services/category_service.dart';
+import '../../services/category/category_service.dart';
 import '../../utils/logger.dart';
-import '../home_screen.dart';
 
-class AddTaskPage extends StatefulWidget {
+class TaskFormScreen extends StatefulWidget {
   final DateTime? selectedDate;
   final Task? task;
 
-  const AddTaskPage({super.key, this.selectedDate, this.task});
+  const TaskFormScreen({super.key, this.selectedDate, this.task});
 
   @override
-  State<AddTaskPage> createState() => _AddTaskPageState();
+  State<TaskFormScreen> createState() => _TaskFormScreenState();
 }
 
-class _AddTaskPageState extends State<AddTaskPage>
+class _TaskFormScreenState extends State<TaskFormScreen>
     with SingleTickerProviderStateMixin {
   // MARK: - Form data and controllers
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
+
+  // Notification settings
+  NotificationType _selectedNotificationType = NotificationType.push;
+  int _notificationTime = 30; // Default: 30 minutes before deadline
 
   // Task data model
   late final TaskFormData _formData;
@@ -70,6 +75,17 @@ class _AddTaskPageState extends State<AddTaskPage>
       _titleController.text = widget.task!.title;
       _notesController.text = widget.task!.notes ?? '';
       _selectedCategory = widget.task!.category.name;
+
+      // Initialize notification settings from task if available
+      if (widget.task!.notificationType != null) {
+        _selectedNotificationType = widget.task!.notificationType!;
+      } else {
+        _selectedNotificationType = _userSettings.defaultNotificationType;
+      }
+
+      if (widget.task!.notificationTime != null) {
+        _notificationTime = widget.task!.notificationTime!;
+      }
     } else {
       _formData = TaskFormData(
         selectedDateTime:
@@ -81,6 +97,9 @@ class _AddTaskPageState extends State<AddTaskPage>
         realisticTime: 0,
         pessimisticTime: 0,
       );
+
+      // Use default notification settings from user settings
+      _selectedNotificationType = _userSettings.defaultNotificationType;
     }
 
     _animationController = AnimationController(
@@ -117,9 +136,11 @@ class _AddTaskPageState extends State<AddTaskPage>
     final form = CupertinoTaskForm(context);
     return CupertinoPageScaffold(
       navigationBar:
-          widget.task == null
-              ? null
-              : CupertinoNavigationBar(middle: Text('Edit Task')),
+          widget.task != null
+              ? CupertinoNavigationBar(middle: Text('Edit Task'))
+              : Navigator.canPop(context)
+              ? CupertinoNavigationBar(middle: Text('Create Task'))
+              : null,
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
@@ -278,6 +299,30 @@ class _AddTaskPageState extends State<AddTaskPage>
                   ],
                 ),
 
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
+
+                // Notification Settings Section
+                form.sectionTitle('Notification Settings'),
+                form.formGroup(
+                  children: [
+                    form.selectionButton(
+                      label: 'Notification Type',
+                      value: _getNotificationTypeLabel(
+                        _selectedNotificationType,
+                      ),
+                      onTap: () => _showNotificationTypePicker(context),
+                      icon: CupertinoIcons.bell,
+                    ),
+                    form.divider(),
+                    form.selectionButton(
+                      label: 'Notification Time',
+                      value: _formatNotificationTime(_notificationTime),
+                      onTap: () => _showNotificationTimePicker(context),
+                      icon: CupertinoIcons.time,
+                    ),
+                  ],
+                ),
+
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing * 2),
 
                 // Save Button
@@ -308,6 +353,160 @@ class _AddTaskPageState extends State<AddTaskPage>
     return '${hours.toString().padLeft(2, '0')}h ${minutes.toString().padLeft(2, '0')}m';
   }
 
+  String _getNotificationTypeLabel(NotificationType type) {
+    switch (type) {
+      case NotificationType.push:
+        return 'Push Notification';
+      case NotificationType.disabled:
+        return 'Disabled';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  String _formatNotificationTime(int minutes) {
+    if (minutes < 60) {
+      return '$minutes minutes before';
+    } else if (minutes == 60) {
+      return '1 hour before';
+    } else if (minutes % 60 == 0) {
+      return '${minutes ~/ 60} hours before';
+    } else {
+      final hours = minutes ~/ 60;
+      final mins = minutes % 60;
+      return '$hours hours $mins minutes before';
+    }
+  }
+
+  Future<void> _showNotificationTypePicker(BuildContext context) async {
+    final pickedType = await showCupertinoModalPopup<NotificationType>(
+      context: context,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed:
+                          () =>
+                              Navigator.pop(context, _selectedNotificationType),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: NotificationType.values.indexOf(
+                        _selectedNotificationType,
+                      ),
+                    ),
+                    onSelectedItemChanged: (index) {
+                      if (mounted) {
+                        setState(() {
+                          _selectedNotificationType =
+                              NotificationType.values[index];
+                        });
+                      }
+                    },
+                    children:
+                        NotificationType.values
+                            .map(
+                              (type) => Text(_getNotificationTypeLabel(type)),
+                            )
+                            .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+
+    if (pickedType != null && mounted) {
+      setState(() {
+        _selectedNotificationType = pickedType;
+      });
+    }
+  }
+
+  Future<void> _showNotificationTimePicker(BuildContext context) async {
+    // Define common notification time options in minutes
+    final List<int> timeOptions = [5, 15, 30, 60, 120, 180, 360, 720, 1440];
+
+    // Find the closest option to the current notification time
+    int initialIndex = 0;
+    int minDifference = (timeOptions[0] - _notificationTime).abs();
+
+    for (int i = 1; i < timeOptions.length; i++) {
+      final difference = (timeOptions[i] - _notificationTime).abs();
+      if (difference < minDifference) {
+        minDifference = difference;
+        initialIndex = i;
+      }
+    }
+
+    final pickedTime = await showCupertinoModalPopup<int>(
+      context: context,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed:
+                          () => Navigator.pop(context, _notificationTime),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: initialIndex,
+                    ),
+                    onSelectedItemChanged: (index) {
+                      if (mounted) {
+                        setState(() {
+                          _notificationTime = timeOptions[index];
+                        });
+                      }
+                    },
+                    children:
+                        timeOptions
+                            .map((time) => Text(_formatNotificationTime(time)))
+                            .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+
+    if (pickedTime != null && mounted) {
+      setState(() {
+        _notificationTime = pickedTime;
+      });
+    }
+  }
+
   String _getPriorityLabel(int priority) {
     if (priority <= 3) return 'Low';
     if (priority <= 7) return 'Medium';
@@ -323,8 +522,6 @@ class _AddTaskPageState extends State<AddTaskPage>
       return CupertinoColors.systemRed.resolveFrom(context);
     }
   }
-
-  // MARK: - Action Methods
 
   void _saveTaskWithAnimation(BuildContext context) {
     // Play button animation
@@ -387,6 +584,27 @@ class _AddTaskPageState extends State<AddTaskPage>
     if (pickedDateTime != null && mounted) {
       setState(() {
         _formData.selectedDateTime = pickedDateTime;
+
+        final dateError = _validateForm();
+        if (dateError != null && dateError.contains('Deadline')) {
+          showCupertinoDialog(
+            context: context,
+            builder:
+                (context) => CupertinoAlertDialog(
+                  title: const Text('Date Error'),
+                  content: Text(dateError),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('OK'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+          );
+          _formData.selectedDateTime = _roundToNearestFiveMinutes(
+            DateTime.now(),
+          );
+        }
       });
     }
   }
@@ -441,11 +659,7 @@ class _AddTaskPageState extends State<AddTaskPage>
           case 'pessimistic':
             _formData.pessimisticTime = duration;
             break;
-          default:
-            _formData.estimatedTime = duration;
         }
-
-        // Calculate the estimated time using the PERT formula
         _formData.calculateEstimatedTime();
       });
     }
@@ -773,32 +987,48 @@ class _AddTaskPageState extends State<AddTaskPage>
     return icons[category] ?? CupertinoIcons.tag;
   }
 
-  void _saveTask(BuildContext context) {
-    if (!_formKey.currentState!.validate()) {
-      showCupertinoDialog(
-        context: context,
-        builder:
-            (context) => CupertinoAlertDialog(
-              title: const Text('Validation Error'),
-              content: const Text('Please fill in all required fields.'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('OK'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-      );
-      return;
+  String? _validateForm() {
+    if (_titleController.text.trim().isEmpty) {
+      return 'Task name is required';
     }
 
     if (_categoryOptions.isEmpty || _selectedCategory.isEmpty) {
+      return 'Please select or add a category';
+    }
+
+    if (_formData.optimisticTime > _formData.realisticTime) {
+      return 'Optimistic time should not exceed realistic time';
+    }
+    if (_formData.realisticTime > _formData.pessimisticTime) {
+      return 'Realistic time should not exceed pessimistic time';
+    }
+    if (_formData.optimisticTime <= 0) {
+      return 'Optimistic time must be greater than zero';
+    }
+
+    final now = DateTime.now();
+    if (_formData.selectedDateTime.isBefore(now)) {
+      return 'Deadline cannot be in the past';
+    }
+
+    if (_formData.selectedDateTime.difference(now).inMilliseconds <
+        _formData.estimatedTime) {
+      return 'Deadline is too close to accommodate the estimated time';
+    }
+
+    return null;
+  }
+
+  void _saveTask(BuildContext context) {
+    final validationError = _validateForm();
+
+    if (validationError != null) {
       showCupertinoDialog(
         context: context,
         builder:
             (context) => CupertinoAlertDialog(
               title: const Text('Validation Error'),
-              content: const Text('Please select or add a category.'),
+              content: Text(validationError),
               actions: [
                 CupertinoDialogAction(
                   child: const Text('OK'),
@@ -813,7 +1043,6 @@ class _AddTaskPageState extends State<AddTaskPage>
     final taskManagerCubit = context.read<TaskManagerCubit>();
 
     if (widget.task == null) {
-      // Створення нового завдання
       taskManagerCubit.createTask(
         title: _titleController.text,
         priority: _formData.priority,
@@ -825,9 +1054,10 @@ class _AddTaskPageState extends State<AddTaskPage>
         optimisticTime: _formData.optimisticTime,
         realisticTime: _formData.realisticTime,
         pessimisticTime: _formData.pessimisticTime,
+        notificationType: _selectedNotificationType,
+        notificationTime: _notificationTime,
       );
     } else {
-      // Редагування існуючого завдання
       taskManagerCubit.editTask(
         task: widget.task!,
         title: _titleController.text,
@@ -840,16 +1070,23 @@ class _AddTaskPageState extends State<AddTaskPage>
         optimisticTime: _formData.optimisticTime,
         realisticTime: _formData.realisticTime,
         pessimisticTime: _formData.pessimisticTime,
+        notificationType: _selectedNotificationType,
+        notificationTime: _notificationTime,
       );
     }
 
     logInfo(
       'Task ${widget.task == null ? "Created" : "Updated"}: ${_titleController.text}',
     );
-    Navigator.pushReplacement(
-      context,
-      CupertinoPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)),
-    );
+
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacement(
+        context,
+        CupertinoPageRoute(builder: (_) => const TaskListScreen()),
+      );
+    }
   }
 
   DateTime _roundToNearestFiveMinutes(DateTime dateTime) {

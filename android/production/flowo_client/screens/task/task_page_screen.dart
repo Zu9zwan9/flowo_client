@@ -7,7 +7,7 @@ import '../../models/task.dart';
 import '../../utils/category_utils.dart';
 import '../../utils/logger.dart';
 import '../calendar/calendar_screen.dart';
-import 'add_task_page.dart';
+import 'task_form_screen.dart';
 
 // Constants for styling adhering to HIG
 class TaskPageConstants {
@@ -163,9 +163,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   void _navigateToEditScreen(BuildContext context) {
     Navigator.push(
       context,
-      CupertinoPageRoute(
-        builder: (context) => AddTaskPage(task: _task), // Переходимо на AddTaskPage
-      ),
+      CupertinoPageRoute(builder: (context) => TaskFormScreen(task: _task)),
     ).then((_) {
       setState(() {
         _task = widget.task;

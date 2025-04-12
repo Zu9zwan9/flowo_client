@@ -67,7 +67,7 @@ class UserSettings extends HiveObject {
     this.sleepTime = const [],
     this.freeTime = const [],
     this.activeDays,
-    this.defaultNotificationType = NotificationType.sound,
+    this.defaultNotificationType = NotificationType.push,
     this.dateFormat = "DD-MM-YYYY",
     this.monthFormat = "numeric",
     this.is24HourFormat = true,

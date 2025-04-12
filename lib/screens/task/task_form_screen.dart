@@ -12,7 +12,7 @@ import '../../models/category.dart';
 import '../../models/task.dart';
 import '../../models/task_form_data.dart';
 import '../../models/user_settings.dart';
-import '../../services/category_service.dart';
+import '../../services/category/category_service.dart';
 import '../../utils/logger.dart';
 
 class TaskFormScreen extends StatefulWidget {

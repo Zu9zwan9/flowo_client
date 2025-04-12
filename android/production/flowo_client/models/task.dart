@@ -2,6 +2,7 @@ import 'package:hive/hive.dart';
 
 import 'category.dart';
 import 'coordinates.dart';
+import 'notification_type.dart';
 import 'repeat_rule.dart';
 import 'scheduled_task.dart';
 
@@ -76,6 +77,12 @@ class Task extends HiveObject {
   @HiveField(16)
   int? color;
 
+  @HiveField(20)
+  NotificationType? notificationType;
+
+  @HiveField(21)
+  int? notificationTime; // Time in minutes before the deadline to send notification
+
   DateTime get startDate => DateTime.now();
 
   DateTime get endDate => DateTime.now().add(Duration(days: 1));
@@ -113,6 +120,8 @@ class Task extends HiveObject {
     this.optimisticTime,
     this.realisticTime,
     this.pessimisticTime,
+    this.notificationType,
+    this.notificationTime,
   }) : parentTaskId = parentTask?.id,
        subtasks = subtasks ?? [],
        scheduledTasks = scheduledTasks ?? [];

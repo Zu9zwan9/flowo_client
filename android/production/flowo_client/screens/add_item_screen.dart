@@ -5,8 +5,8 @@ import 'package:flutter/services.dart'; // Added for HapticFeedback
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/tasks_controller/task_manager_cubit.dart';
-import 'habit/add_habit_page.dart';
-import 'task/add_task_page.dart';
+import 'habit/habit_form_screen.dart';
+import 'task/task_form_screen.dart';
 
 class AddItemScreen extends StatefulWidget {
   final DateTime? selectedDate;
@@ -47,7 +47,7 @@ class _AddItemScreenState extends State<AddItemScreen>
         return BlocProvider.value(
           key: const ValueKey('Task'),
           value: context.read<TaskManagerCubit>(),
-          child: AddTaskPage(selectedDate: widget.selectedDate),
+          child: TaskFormScreen(selectedDate: widget.selectedDate),
         );
       case 1:
         return BlocProvider.value(
@@ -59,7 +59,7 @@ class _AddItemScreenState extends State<AddItemScreen>
         return BlocProvider.value(
           key: const ValueKey('Habit'),
           value: context.read<TaskManagerCubit>(),
-          child: AddHabitPage(selectedDate: widget.selectedDate),
+          child: HabitFormScreen(selectedDate: widget.selectedDate),
         );
       default:
         return Container();
@@ -71,6 +71,7 @@ class _AddItemScreenState extends State<AddItemScreen>
     return CupertinoPageScaffold(
       child: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildTabSelector(context),
             Expanded(
@@ -78,18 +79,24 @@ class _AddItemScreenState extends State<AddItemScreen>
                 duration: const Duration(milliseconds: 250),
                 switchInCurve: Curves.easeInOut,
                 switchOutCurve: Curves.easeInOut,
-                transitionBuilder:
-                    (child, animation) => FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0.05, 0),
-                          end: Offset.zero,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                    ),
-                child: _buildTabContent(_tabController.index),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.05, 0),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  key: ValueKey('Scroll_${_tabController.index}'),                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildTabContent(_tabController.index),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -99,14 +106,13 @@ class _AddItemScreenState extends State<AddItemScreen>
   }
 
   Widget _buildTabSelector(BuildContext context) {
-    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
     final primaryColor = CupertinoTheme.of(context).primaryColor;
     final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: Container(
-        height: 44, // iOS Human Interface Guidelines minimum touch target size
+        height: 44,
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(10),
@@ -157,10 +163,9 @@ class _AddItemScreenState extends State<AddItemScreen>
           duration: const Duration(milliseconds: 200),
           height: double.infinity,
           decoration: BoxDecoration(
-            color:
-                isSelected
-                    ? CupertinoColors.systemBackground.resolveFrom(context)
-                    : Colors.transparent,
+            color: isSelected
+                ? CupertinoColors.systemBackground.resolveFrom(context)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
           ),
           margin: const EdgeInsets.all(2),
@@ -171,23 +176,20 @@ class _AddItemScreenState extends State<AddItemScreen>
                 Icon(
                   icon,
                   size: 18,
-                  color:
-                      isSelected
-                          ? primaryColor
-                          : CupertinoColors.systemGrey.resolveFrom(context),
+                  color: isSelected
+                      ? primaryColor
+                      : CupertinoColors.systemGrey.resolveFrom(context),
                   semanticLabel: text,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   text,
                   style: TextStyle(
-                    color:
-                        isSelected
-                            ? primaryColor
-                            : CupertinoColors.systemGrey.resolveFrom(context),
+                    color: isSelected
+                        ? primaryColor
+                        : CupertinoColors.systemGrey.resolveFrom(context),
                     fontSize: 14,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                   semanticsLabel: '$text tab',
                 ),

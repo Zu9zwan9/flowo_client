@@ -1,5 +1,5 @@
 import 'package:flowo_client/screens/onboarding/welcome_screen.dart';
-import 'package:flowo_client/services/onboarding_service.dart';
+import 'package:flowo_client/services/onboarding/onboarding_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';

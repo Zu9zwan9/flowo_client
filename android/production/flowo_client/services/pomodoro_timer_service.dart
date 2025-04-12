@@ -6,6 +6,8 @@ import 'package:hive/hive.dart';
 
 import '../models/pomodoro_session.dart';
 import '../models/pomodoro_settings.dart';
+import '../models/pomodoro_statistics.dart';
+import '../models/scheduled_task.dart';
 import '../models/task.dart';
 
 /// A service class that manages the Pomodoro timer logic.
@@ -20,13 +22,17 @@ class PomodoroTimerService extends ChangeNotifier {
   final PomodoroSettings _settings;
 
   // Statistics
+  final PomodoroStatistics _statistics;
   int _completedSessions = 0;
   int _totalFocusTime = 0;
   DateTime? _sessionStartTime;
 
   // Constructor
-  PomodoroTimerService({required PomodoroSettings settings})
-    : _settings = settings {
+  PomodoroTimerService({
+    required PomodoroSettings settings,
+    required PomodoroStatistics statistics,
+  }) : _settings = settings,
+       _statistics = statistics {
     // Listen for settings changes
     _settings.addListener(() {
       notifyListeners();

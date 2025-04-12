@@ -1,10 +1,10 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/screens/task/task_page_screen.dart'; // For reused widgets
+import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'event_form_screen.dart';
-import '../calendar/calendar_screen.dart'; // Ensure correct import for CalendarScreen
 
 // Constants from TaskPageScreen (assumed available)
 class TaskPageConstants {
@@ -106,7 +106,7 @@ class _EventScreenState extends State<EventScreen> {
             EventDetails(event: _event),
             const SizedBox(height: 24),
             TaskDescription(task: _event, controller: _notesController),
-            const SizedBox(height: 24)
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -117,35 +117,37 @@ class _EventScreenState extends State<EventScreen> {
     Navigator.push(
       context,
       CupertinoPageRoute(builder: (context) => EventFormScreen(event: _event)),
-    ).then((_) => setState(() {
-      _event = widget.event;
-      _notesController.text = _event.notes ?? '';
-    }));
+    ).then(
+      (_) => setState(() {
+        _event = widget.event;
+        _notesController.text = _event.notes ?? '';
+      }),
+    );
   }
-
 
   void _confirmDelete(BuildContext context) {
     showCupertinoDialog(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Delete Event'),
-        content: Text('Delete "${_event.title}"?'),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(context),
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Delete Event'),
+            content: Text('Delete "${_event.title}"?'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                onPressed: () {
+                  context.read<TaskManagerCubit>().deleteTask(_event);
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: const Text('Delete'),
+              ),
+            ],
           ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            onPressed: () {
-              context.read<TaskManagerCubit>().deleteTask(_event);
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -159,10 +161,15 @@ class EventHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = CupertinoTheme.of(context);
-    final scheduledTask = event.scheduledTasks.isNotEmpty ? event.scheduledTasks.first : null;
-    final startTime = scheduledTask?.startTime ?? DateTime.fromMillisecondsSinceEpoch(event.deadline);
-    final endTime = scheduledTask?.endTime ?? startTime.add(const Duration(hours: 1));
-    final eventColor = event.color != null ? Color(event.color!) : CupertinoColors.activeBlue;
+    final scheduledTask =
+        event.scheduledTasks.isNotEmpty ? event.scheduledTasks.first : null;
+    final startTime =
+        scheduledTask?.startTime ??
+        DateTime.fromMillisecondsSinceEpoch(event.deadline);
+    final endTime =
+        scheduledTask?.endTime ?? startTime.add(const Duration(hours: 1));
+    final eventColor =
+        event.color != null ? Color(event.color!) : CupertinoColors.activeBlue;
 
     return Container(
       padding: const EdgeInsets.all(TaskPageConstants.padding),
@@ -186,14 +193,19 @@ class EventHeader extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: eventColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     EventDateTimeFormatter.formatDuration(startTime, endTime),
-                    style: theme.textTheme.textStyle.copyWith(color: eventColor),
+                    style: theme.textTheme.textStyle.copyWith(
+                      color: eventColor,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -203,22 +215,34 @@ class EventHeader extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(CupertinoIcons.calendar, size: 14, color: CupertinoColors.systemGrey),
+              const Icon(
+                CupertinoIcons.calendar,
+                size: 14,
+                color: CupertinoColors.systemGrey,
+              ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   EventDateTimeFormatter.formatDate(startTime),
-                  style: theme.textTheme.textStyle.copyWith(color: CupertinoColors.systemGrey),
+                  style: theme.textTheme.textStyle.copyWith(
+                    color: CupertinoColors.systemGrey,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 8),
-              const Icon(CupertinoIcons.time, size: 14, color: CupertinoColors.systemGrey),
+              const Icon(
+                CupertinoIcons.time,
+                size: 14,
+                color: CupertinoColors.systemGrey,
+              ),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   '${EventDateTimeFormatter.formatTime(startTime)} - ${EventDateTimeFormatter.formatTime(endTime)}',
-                  style: theme.textTheme.textStyle.copyWith(color: CupertinoColors.systemGrey),
+                  style: theme.textTheme.textStyle.copyWith(
+                    color: CupertinoColors.systemGrey,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -240,7 +264,10 @@ class EventDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = CupertinoTheme.of(context);
     // Assume Coordinates has toString() or properties like latitude/longitude
-    final locationString = event.location != null ? event.location.toString() : "1200 Main St, City, Country";
+    final locationString =
+        event.location != null
+            ? event.location.toString()
+            : "1200 Main St, City, Country";
 
     return Container(
       padding: const EdgeInsets.all(TaskPageConstants.padding),
@@ -266,12 +293,18 @@ class EventDetails extends StatelessWidget {
           if (locationString.isNotEmpty)
             Row(
               children: [
-                const Icon(CupertinoIcons.location, size: 14, color: CupertinoColors.systemGrey),
+                const Icon(
+                  CupertinoIcons.location,
+                  size: 14,
+                  color: CupertinoColors.systemGrey,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     locationString,
-                    style: theme.textTheme.textStyle.copyWith(color: CupertinoColors.systemGrey),
+                    style: theme.textTheme.textStyle.copyWith(
+                      color: CupertinoColors.systemGrey,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -281,11 +314,17 @@ class EventDetails extends StatelessWidget {
           if (event.color != null)
             Row(
               children: [
-                Icon(CupertinoIcons.circle_fill, size: 14, color: Color(event.color!)),
+                Icon(
+                  CupertinoIcons.circle_fill,
+                  size: 14,
+                  color: Color(event.color!),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   'Color',
-                  style: theme.textTheme.textStyle.copyWith(color: CupertinoColors.systemGrey),
+                  style: theme.textTheme.textStyle.copyWith(
+                    color: CupertinoColors.systemGrey,
+                  ),
                 ),
               ],
             ),

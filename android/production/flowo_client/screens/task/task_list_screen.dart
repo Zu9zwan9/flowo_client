@@ -11,12 +11,12 @@ import '../../utils/category_utils.dart';
 import '../../utils/debouncer.dart';
 import '../event/event_form_screen.dart';
 import '../event/event_screen.dart';
-import '../habit/add_habit_page.dart';
+import '../habit/habit_form_screen.dart';
 import '../home_screen.dart';
 import '../widgets/cupertino_divider.dart';
 import '../widgets/task_list_components.dart';
 import '../widgets/task_list_item.dart';
-import 'add_task_page.dart';
+import 'task_form_screen.dart';
 import 'task_page_screen.dart';
 
 class TaskListScreen extends StatefulWidget {
@@ -175,7 +175,19 @@ class _TaskListScreenState extends State<TaskListScreen>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   TaskActionButton(
-                    onPressed: () => _showAddTaskDialog(context),
+                    onPressed: () {
+                      HapticFeedback.mediumImpact();
+                      Navigator.pushReplacement(
+                        context,
+                        CupertinoPageRoute(
+                          builder:
+                              (context) => const HomeScreen(
+                                initialIndex: 3,
+                                initialExpanded: false,
+                              ),
+                        ),
+                      );
+                    },
                     icon: CupertinoIcons.add,
                     label: 'Add Task',
                   ),
@@ -194,19 +206,8 @@ class _TaskListScreenState extends State<TaskListScreen>
     );
   }
 
-  void _showAddTaskDialog(BuildContext context) {
-    HapticFeedback.mediumImpact();
-    Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder:
-            (context) =>
-                const HomeScreen(initialIndex: 2, initialExpanded: false),
-      ),
-    );
-  }
-
   void _showScheduleDialog(BuildContext context) {
+    // TODO: Implement the schedule dialog, add ability to choose what to schedule
     HapticFeedback.mediumImpact();
     final tasksCubit = context.read<TaskManagerCubit>();
     tasksCubit.scheduleHabits();
@@ -361,7 +362,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                               ).textTheme.navTitleTextStyle.copyWith(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
-                                overflow: TextOverflow.ellipsis,
+                                overflow: TextOverflow.visible,
                               ),
                               semanticsLabel: '$category category',
                             ),
@@ -519,9 +520,9 @@ class _TaskListScreenState extends State<TaskListScreen>
           if (task.category.name.toLowerCase().contains('event')) {
             return EventFormScreen(event: task);
           } else if (task.frequency != null) {
-            return AddHabitPage(habit: task);
+            return HabitFormScreen(habit: task);
           } else {
-            return AddTaskPage(task: task);
+            return TaskFormScreen(task: task);
           }
         },
       ),
@@ -751,6 +752,7 @@ enum TaskFilterType { all, task, event, habit }
 
 extension TaskFilterTypeExtension on TaskFilterType {
   String get displayName => _getFilterNameForType(this);
+
   IconData get icon => _getIconForType(this);
 
   static String _getFilterNameForType(TaskFilterType type) {

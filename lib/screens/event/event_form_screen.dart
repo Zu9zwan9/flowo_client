@@ -12,7 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../models/notification_type.dart';
 import '../../models/user_settings.dart';
-import '../../services/notification/test_notification_service.dart';
+import '../../services/notification/notification_service.dart';
 
 class EventFormScreen extends StatefulWidget {
   final DateTime? selectedDate;

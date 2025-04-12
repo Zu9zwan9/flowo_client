@@ -1,6 +1,6 @@
 import 'package:flowo_client/blocs/analytics/analytics_state.dart';
 import 'package:flowo_client/models/analytics_data.dart';
-import 'package:flowo_client/services/analytics_service.dart';
+import 'package:flowo_client/services/analytics/analytics_service.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

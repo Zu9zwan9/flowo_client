@@ -1,4 +1,3 @@
-import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:hive/hive.dart';
@@ -132,15 +131,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                     fontWeight: FontWeight.bold,
                     color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: _navigateToCalendar,
-                child: Icon(
-                  CupertinoIcons.calendar,
-                  color: CupertinoTheme.of(context).primaryColor,
+                  overflow: TextOverflow.visible,
                 ),
               ),
             ],
@@ -551,7 +542,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
       case 'weekly':
         final scheduledDay = _getWeekdayName(scheduledTask.startTime.weekday);
         final weeklyInstance = task.frequency!.byDay?.firstWhere(
-              (instance) => instance.selectedDay == scheduledDay,
+          (instance) => instance.selectedDay == scheduledDay,
         );
         return weeklyInstance != null ? weeklyInstance.name : 'Weekly Habit';
 
@@ -561,7 +552,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
           // Handle specific day of month
           final scheduledDay = scheduledTask.startTime.day;
           final monthlyInstance = task.frequency!.byMonthDay?.firstWhere(
-                (instance) => int.parse(instance.selectedDay) == scheduledDay,
+            (instance) => int.parse(instance.selectedDay) == scheduledDay,
           );
           return monthlyInstance != null
               ? monthlyInstance.name
@@ -571,7 +562,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
           // Handle pattern (e.g., "first Monday")
           final scheduledDay = _getWeekdayName(scheduledTask.startTime.weekday);
           final patternInstance = task.frequency!.byDay?.firstWhere(
-                (instance) => instance.selectedDay == scheduledDay,
+            (instance) => instance.selectedDay == scheduledDay,
           );
           return patternInstance != null
               ? patternInstance.name

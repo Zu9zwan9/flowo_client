@@ -1,7 +1,5 @@
 import 'dart:developer';
 
-import 'package:flowo_client/models/category.dart';
-import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
 import 'package:flowo_client/utils/ai_model/task_estimator_api.dart';
@@ -11,9 +9,11 @@ import 'package:flowo_client/utils/task_urgency_calculator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
+import '../models/category.dart';
 import '../models/day.dart';
 import '../models/repeat_rule.dart';
 import '../models/repeat_rule_instance.dart';
+import '../models/scheduled_task.dart';
 import '../models/scheduled_task_type.dart';
 import '../models/task.dart';
 
@@ -456,11 +456,10 @@ class TaskManager {
     logInfo('Removed scheduled tasks after ${now.toIso8601String()}');
   }
 
-  void removeScheduledTasksFor(Task task){
+  void removeScheduledTasksFor(Task task) {
     for (var day in daysDB.values) {
-      final toRemove = day.scheduledTasks
-          .where((st) => st.parentTaskId == task.id)
-          .toList();
+      final toRemove =
+          day.scheduledTasks.where((st) => st.parentTaskId == task.id).toList();
       for (var scheduledTask in toRemove) {
         day.scheduledTasks.remove(scheduledTask);
         task.scheduledTasks.remove(scheduledTask);
@@ -483,7 +482,6 @@ class TaskManager {
       'sunday': 7,
     };
     return dayMap[dayName.toLowerCase()] ?? 1;
-
   }
 
   Future<List<Task>> breakdownAndScheduleTask(Task task) async {
