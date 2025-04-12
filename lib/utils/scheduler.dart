@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/coordinates.dart';
 import 'package:flowo_client/models/day.dart';
-import 'package:flowo_client/models/notification_type.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
@@ -13,12 +12,14 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 import '../models/time_frame.dart';
+import '../services/notification/notification_service.dart';
 
 class Scheduler {
   final Box<Day> daysDB;
   final Box<Task> tasksDB;
   UserSettings userSettings;
   late final Task freeTimeManager;
+  final NotiService _notiService = NotiService();
   final Map<String, Day> _dayCache = {};
 
   Scheduler(this.daysDB, this.tasksDB, this.userSettings) {
@@ -399,7 +400,6 @@ class Scheduler {
         type: ScheduledTaskType.defaultType,
         travelingTime: 0,
         breakTime: 0,
-        notification: NotificationType.disabled,
       );
 
   List<ScheduledTask> _findDisplaceableSlots(
@@ -665,12 +665,52 @@ class Scheduler {
       type: type ?? ScheduledTaskType.defaultType,
       travelingTime: _getTravelTime(task.location),
       breakTime: userSettings.breakTime ?? 5 * 60 * 1000,
-      notification:
-          task.notificationType ?? userSettings.defaultNotificationType,
     );
 
     task.scheduledTasks.add(scheduledTask);
     tasksDB.put(task.id, task);
+
+    if (task.firstNotification != null) {
+      DateTime notificationDate = start.subtract(
+        Duration(minutes: task.firstNotification!),
+      );
+
+      var notificationKey = UniqueKey().hashCode;
+
+      _notiService.scheduleNotification(
+        id: notificationKey,
+        title: task.title,
+        body: 'Scheduled task: ${task.title}',
+        year: notificationDate.year,
+        month: notificationDate.month,
+        day: notificationDate.day,
+        hour: notificationDate.hour,
+        minute: notificationDate.minute,
+      );
+
+      scheduledTask.addNotificationId(notificationKey);
+    }
+
+    if (task.secondNotification != null) {
+      DateTime notificationDate = start.subtract(
+        Duration(minutes: task.secondNotification!),
+      );
+
+      var notificationKey = UniqueKey().hashCode;
+
+      _notiService.scheduleNotification(
+        id: notificationKey,
+        title: task.title,
+        body: 'Scheduled task: ${task.title}',
+        year: notificationDate.year,
+        month: notificationDate.month,
+        day: notificationDate.day,
+        hour: notificationDate.hour,
+        minute: notificationDate.minute,
+      );
+
+      scheduledTask.addNotificationId(notificationKey);
+    }
 
     final day = _getOrCreateDay(dateKey);
     day.scheduledTasks.add(scheduledTask);

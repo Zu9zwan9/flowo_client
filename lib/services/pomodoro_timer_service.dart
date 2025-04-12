@@ -7,7 +7,6 @@ import 'package:hive/hive.dart';
 import '../models/pomodoro_session.dart';
 import '../models/pomodoro_settings.dart';
 import '../models/pomodoro_statistics.dart';
-import '../models/scheduled_task.dart';
 import '../models/task.dart';
 
 /// A service class that manages the Pomodoro timer logic.

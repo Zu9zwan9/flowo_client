@@ -134,7 +134,7 @@ class PomodoroStatisticsScreen extends StatelessWidget {
                 sessions: sessions,
                 focusTime: focusTime,
               );
-            }).toList(),
+            }),
 
             const SizedBox(height: 24),
 

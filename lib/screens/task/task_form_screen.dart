@@ -1,4 +1,3 @@
-import 'package:flowo_client/models/notification_type.dart';
 import 'package:flowo_client/screens/task/task_list_screen.dart';
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
@@ -33,8 +32,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
   final _notesController = TextEditingController();
 
   // Notification settings
-  NotificationType _selectedNotificationType = NotificationType.push;
-  int _notificationTime = 30; // Default: 30 minutes before deadline
+  int? _firstNotification = 5;
+  int? _secondNotification = 0;
 
   // Task data model
   late final TaskFormData _formData;
@@ -75,17 +74,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       _titleController.text = widget.task!.title;
       _notesController.text = widget.task!.notes ?? '';
       _selectedCategory = widget.task!.category.name;
-
-      // Initialize notification settings from task if available
-      if (widget.task!.notificationType != null) {
-        _selectedNotificationType = widget.task!.notificationType!;
-      } else {
-        _selectedNotificationType = _userSettings.defaultNotificationType;
-      }
-
-      if (widget.task!.notificationTime != null) {
-        _notificationTime = widget.task!.notificationTime!;
-      }
+      _firstNotification = widget.task!.firstNotification;
+      _secondNotification = widget.task!.secondNotification;
     } else {
       _formData = TaskFormData(
         selectedDateTime:
@@ -97,9 +87,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
         realisticTime: 0,
         pessimisticTime: 0,
       );
-
-      // Use default notification settings from user settings
-      _selectedNotificationType = _userSettings.defaultNotificationType;
     }
 
     _animationController = AnimationController(
@@ -306,18 +293,16 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 form.formGroup(
                   children: [
                     form.selectionButton(
-                      label: 'Notification Type',
-                      value: _getNotificationTypeLabel(
-                        _selectedNotificationType,
-                      ),
-                      onTap: () => _showNotificationTypePicker(context),
-                      icon: CupertinoIcons.bell,
+                      label: 'Alert',
+                      value: _formatNotificationTime(_firstNotification),
+                      onTap: () => _showNotificationTimePicker(context, true),
+                      icon: CupertinoIcons.time,
                     ),
                     form.divider(),
                     form.selectionButton(
-                      label: 'Notification Time',
-                      value: _formatNotificationTime(_notificationTime),
-                      onTap: () => _showNotificationTimePicker(context),
+                      label: 'Second Alert',
+                      value: _formatNotificationTime(_secondNotification),
+                      onTap: () => _showNotificationTimePicker(context, false),
                       icon: CupertinoIcons.time,
                     ),
                   ],
@@ -353,33 +338,78 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     return '${hours.toString().padLeft(2, '0')}h ${minutes.toString().padLeft(2, '0')}m';
   }
 
-  String _getNotificationTypeLabel(NotificationType type) {
-    switch (type) {
-      case NotificationType.push:
-        return 'Push Notification';
-      case NotificationType.disabled:
-        return 'Disabled';
+  String _formatNotificationTime(int? minutes) {
+    if (minutes == null) {
+      return 'None';
+    }
+
+    switch (minutes) {
+      case 0:
+        return 'At event time';
+      case 1:
+        return '1 minute before';
+      case 5:
+        return '5 minutes before';
+      case 15:
+        return '15 minutes before';
+      case 30:
+        return '30 minutes before';
+      case 60:
+        return '1 hour before';
+      case 120:
+        return '2 hours before';
+      case 1440:
+        return '1 day before';
+      case 2880:
+        return '2 days before';
+      case 10080:
+        return '1 week before';
       default:
-        return 'Unknown';
+        if (minutes < 60) {
+          return '$minutes minutes before';
+        } else if (minutes < 1440) {
+          final hours = minutes ~/ 60;
+          final mins = minutes % 60;
+
+          if (mins == 0) {
+            return '$hours hours before';
+          } else {
+            return '$hours hours $mins minutes before';
+          }
+        } else {
+          final days = minutes ~/ 1440;
+          return '$days days before';
+        }
     }
   }
 
-  String _formatNotificationTime(int minutes) {
-    if (minutes < 60) {
-      return '$minutes minutes before';
-    } else if (minutes == 60) {
-      return '1 hour before';
-    } else if (minutes % 60 == 0) {
-      return '${minutes ~/ 60} hours before';
-    } else {
-      final hours = minutes ~/ 60;
-      final mins = minutes % 60;
-      return '$hours hours $mins minutes before';
-    }
-  }
+  Future<void> _showNotificationTimePicker(
+    BuildContext context,
+    bool isFirstNotification,
+  ) async {
+    // Define different notification time options for first and second alerts
+    final List<int?> timeOptions = [
+      null,
+      0,
+      5,
+      15,
+      30,
+      60,
+      120,
+      1440,
+      2880,
+      10080,
+    ];
 
-  Future<void> _showNotificationTypePicker(BuildContext context) async {
-    final pickedType = await showCupertinoModalPopup<NotificationType>(
+    // Get current value and find its index
+    final int? currentValue =
+        isFirstNotification ? _firstNotification : _secondNotification;
+    final int initialIndex =
+        timeOptions.contains(currentValue)
+            ? timeOptions.indexOf(currentValue)
+            : 0;
+
+    await showCupertinoModalPopup<void>(
       context: context,
       builder:
           (context) => Container(
@@ -392,83 +422,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                   children: [
                     CupertinoButton(
                       child: const Text('Cancel'),
-                      onPressed:
-                          () =>
-                              Navigator.pop(context, _selectedNotificationType),
-                    ),
-                    CupertinoButton(
-                      child: const Text('Done'),
                       onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: CupertinoPicker(
-                    itemExtent: 32,
-                    scrollController: FixedExtentScrollController(
-                      initialItem: NotificationType.values.indexOf(
-                        _selectedNotificationType,
-                      ),
-                    ),
-                    onSelectedItemChanged: (index) {
-                      if (mounted) {
-                        setState(() {
-                          _selectedNotificationType =
-                              NotificationType.values[index];
-                        });
-                      }
-                    },
-                    children:
-                        NotificationType.values
-                            .map(
-                              (type) => Text(_getNotificationTypeLabel(type)),
-                            )
-                            .toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-    );
-
-    if (pickedType != null && mounted) {
-      setState(() {
-        _selectedNotificationType = pickedType;
-      });
-    }
-  }
-
-  Future<void> _showNotificationTimePicker(BuildContext context) async {
-    // Define common notification time options in minutes
-    final List<int> timeOptions = [5, 15, 30, 60, 120, 180, 360, 720, 1440];
-
-    // Find the closest option to the current notification time
-    int initialIndex = 0;
-    int minDifference = (timeOptions[0] - _notificationTime).abs();
-
-    for (int i = 1; i < timeOptions.length; i++) {
-      final difference = (timeOptions[i] - _notificationTime).abs();
-      if (difference < minDifference) {
-        minDifference = difference;
-        initialIndex = i;
-      }
-    }
-
-    final pickedTime = await showCupertinoModalPopup<int>(
-      context: context,
-      builder:
-          (context) => Container(
-            height: 300,
-            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      child: const Text('Cancel'),
-                      onPressed:
-                          () => Navigator.pop(context, _notificationTime),
                     ),
                     CupertinoButton(
                       child: const Text('Done'),
@@ -485,7 +439,11 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                     onSelectedItemChanged: (index) {
                       if (mounted) {
                         setState(() {
-                          _notificationTime = timeOptions[index];
+                          if (isFirstNotification) {
+                            _firstNotification = timeOptions[index];
+                          } else {
+                            _secondNotification = timeOptions[index];
+                          }
                         });
                       }
                     },
@@ -499,12 +457,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
             ),
           ),
     );
-
-    if (pickedTime != null && mounted) {
-      setState(() {
-        _notificationTime = pickedTime;
-      });
-    }
   }
 
   String _getPriorityLabel(int priority) {
@@ -1054,8 +1006,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
         optimisticTime: _formData.optimisticTime,
         realisticTime: _formData.realisticTime,
         pessimisticTime: _formData.pessimisticTime,
-        notificationType: _selectedNotificationType,
-        notificationTime: _notificationTime,
+        firstNotification: _firstNotification,
+        secondNotification: _secondNotification,
       );
     } else {
       taskManagerCubit.editTask(
@@ -1070,8 +1022,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
         optimisticTime: _formData.optimisticTime,
         realisticTime: _formData.realisticTime,
         pessimisticTime: _formData.pessimisticTime,
-        notificationType: _selectedNotificationType,
-        notificationTime: _notificationTime,
+        firstNotification: _firstNotification,
+        secondNotification: _secondNotification,
       );
     }
 

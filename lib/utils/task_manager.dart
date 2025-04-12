@@ -59,6 +59,8 @@ class TaskManager {
     int? optimisticTime,
     int? realisticTime,
     int? pessimisticTime,
+    int? firstNotification,
+    int? secondNotification,
   }) {
     final task = Task(
       id: UniqueKey().toString(),
@@ -73,6 +75,8 @@ class TaskManager {
       optimisticTime: optimisticTime,
       realisticTime: realisticTime,
       pessimisticTime: pessimisticTime,
+      firstNotification: firstNotification,
+      secondNotification: secondNotification,
     );
     tasksDB.put(task.id, task);
     if (parentTask != null) {
@@ -124,6 +128,8 @@ class TaskManager {
     int? optimisticTime,
     int? realisticTime,
     int? pessimisticTime,
+    int? firstNotification,
+    int? secondNotification,
   }) {
     task.title = title;
     task.priority = priority;
@@ -149,6 +155,8 @@ class TaskManager {
     if (pessimisticTime != null) {
       task.pessimisticTime = pessimisticTime;
     }
+    task.firstNotification = firstNotification;
+    task.secondNotification = secondNotification;
     tasksDB.put(task.id, task);
     logInfo('Edited task: ${task.title}');
   }

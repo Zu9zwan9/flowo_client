@@ -96,6 +96,9 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
             id: _nextId++,
             title: _titleController.text,
             body: _bodyController.text,
+            year: _selectedDateTime.year,
+            month: _selectedDateTime.month,
+            day: _selectedDateTime.day,
             hour: _selectedDateTime.hour,
             minute: _selectedDateTime.minute,
           )
@@ -107,9 +110,8 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                   (context) => CupertinoAlertDialog(
                     title: Text(error == null ? 'Success' : 'Error'),
                     content: Text(
-                      error == null
-                          ? 'Notification scheduled for ${_selectedDateTime.toString().substring(0, 16)}'
-                          : error,
+                      error ??
+                          'Notification scheduled for ${_selectedDateTime.toString().substring(0, 16)}',
                     ),
                     actions: [
                       CupertinoDialogAction(

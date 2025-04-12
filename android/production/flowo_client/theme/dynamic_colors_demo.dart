@@ -8,7 +8,7 @@ import 'dynamic_colors.dart';
 /// A demo widget that showcases the dynamic colors in action.
 /// This widget can be used to test the dynamic colors and as an example for how to use them.
 class DynamicColorsDemo extends StatelessWidget {
-  const DynamicColorsDemo({Key? key}) : super(key: key);
+  const DynamicColorsDemo({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +174,7 @@ class DynamicColorsDemo extends StatelessWidget {
                     value ? Brightness.dark : Brightness.light,
                   );
                 },
-                activeColor: DynamicColors.getPrimaryColor(context),
+                activeTrackColor: DynamicColors.getPrimaryColor(context),
               ),
             ],
           ),

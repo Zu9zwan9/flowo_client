@@ -1,5 +1,4 @@
 import 'package:flowo_client/models/task.dart';
-import 'package:flowo_client/utils/logger.dart';
 
 class TaskFormData {
   DateTime selectedDateTime;
@@ -37,7 +36,8 @@ class TaskFormData {
 
   void calculateEstimatedTime() {
     if (optimisticTime > 0 && realisticTime > 0 && pessimisticTime > 0) {
-      estimatedTime = ((optimisticTime + 4 * realisticTime + pessimisticTime) ~/ 6);
+      estimatedTime =
+          ((optimisticTime + 4 * realisticTime + pessimisticTime) ~/ 6);
     }
   }
 }

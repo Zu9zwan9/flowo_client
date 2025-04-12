@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'notification_type.dart';
+
 import 'scheduled_task_type.dart';
 import 'task.dart';
 
@@ -32,10 +32,16 @@ class ScheduledTask extends HiveObject {
   int breakTime;
 
   @HiveField(8)
-  NotificationType notification;
+  List<int> notificationIds;
 
   Task? get parentTask =>
       Hive.box<Task>('tasks').get(parentTaskId); // Avoid null check operator
+
+  void addNotificationId(notificationId) {
+    if (!notificationIds.contains(notificationId)) {
+      notificationIds.add(notificationId);
+    }
+  }
 
   ScheduledTask({
     required this.scheduledTaskId,
@@ -46,6 +52,6 @@ class ScheduledTask extends HiveObject {
     required this.type,
     required this.travelingTime,
     required this.breakTime,
-    required this.notification,
-  });
+    List<int>? notificationIds,
+  }) : notificationIds = notificationIds ?? [];
 }

@@ -250,18 +250,6 @@ class HabitFormScreenState extends State<HabitFormScreen>
                       selectedTime =
                           [5, 10, 15, 30, 45, 60, 120, 180, 240, 1440][index];
                     },
-                    children: [
-                      Text('5 minutes before'),
-                      Text('10 minutes before'),
-                      Text('15 minutes before'),
-                      Text('30 minutes before'),
-                      Text('45 minutes before'),
-                      Text('1 hour before'),
-                      Text('2 hours before'),
-                      Text('3 hours before'),
-                      Text('4 hours before'),
-                      Text('1 day before'),
-                    ],
                     scrollController: FixedExtentScrollController(
                       initialItem:
                           [
@@ -275,8 +263,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
                                     180,
                                     240,
                                     1440,
-                                  ].indexOf(notificationTime) !=
-                                  -1
+                                  ].contains(notificationTime)
                               ? [
                                 5,
                                 10,
@@ -291,6 +278,18 @@ class HabitFormScreenState extends State<HabitFormScreen>
                               ].indexOf(notificationTime)
                               : 3, // Default to 30 minutes
                     ),
+                    children: [
+                      Text('5 minutes before'),
+                      Text('10 minutes before'),
+                      Text('15 minutes before'),
+                      Text('30 minutes before'),
+                      Text('45 minutes before'),
+                      Text('1 hour before'),
+                      Text('2 hours before'),
+                      Text('3 hours before'),
+                      Text('4 hours before'),
+                      Text('1 day before'),
+                    ],
                   ),
                 ),
               ],
@@ -334,17 +333,17 @@ class HabitFormScreenState extends State<HabitFormScreen>
                     onSelectedItemChanged: (index) {
                       selectedType = NotificationType.values[index];
                     },
+                    scrollController: FixedExtentScrollController(
+                      initialItem: NotificationType.values.indexOf(
+                        selectedNotificationType,
+                      ),
+                    ),
                     children:
                         NotificationType.values
                             .map(
                               (type) => Text(type.toString().split('.').last),
                             )
                             .toList(),
-                    scrollController: FixedExtentScrollController(
-                      initialItem: NotificationType.values.indexOf(
-                        selectedNotificationType,
-                      ),
-                    ),
                   ),
                 ),
               ],

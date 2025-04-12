@@ -408,7 +408,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                       ),
                     ),
                   )
-                  .toList(),
+                  ,
             ],
           ),
           const SizedBox(height: 8),
@@ -453,7 +453,7 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
                             ),
                           ),
                         );
-                      }).toList(),
+                      }),
                       // Fill empty days for incomplete weeks
                       ...List.generate(
                         7 - week.length,

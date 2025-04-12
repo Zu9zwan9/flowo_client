@@ -2,7 +2,7 @@ import 'package:hive/hive.dart';
 
 part 'notification_type.g.dart';
 
-@HiveType(typeId: 7) // Unique ID for the NotificationType enum
+@HiveType(typeId: 7)
 enum NotificationType {
   @HiveField(0)
   disabled,

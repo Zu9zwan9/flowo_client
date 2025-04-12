@@ -107,9 +107,7 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
                   (context) => CupertinoAlertDialog(
                     title: Text(error == null ? 'Success' : 'Error'),
                     content: Text(
-                      error == null
-                          ? 'Notification scheduled for ${_selectedDateTime.toString().substring(0, 16)}'
-                          : error,
+                      error ?? 'Notification scheduled for ${_selectedDateTime.toString().substring(0, 16)}',
                     ),
                     actions: [
                       CupertinoDialogAction(

@@ -5,7 +5,6 @@ import 'package:hive/hive.dart';
 
 import '../../models/category.dart';
 import '../../models/day.dart';
-import '../../models/notification_type.dart';
 import '../../models/repeat_rule.dart';
 import '../../models/task.dart';
 import '../../models/user_settings.dart';
@@ -32,8 +31,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     int? optimisticTime,
     int? realisticTime,
     int? pessimisticTime,
-    NotificationType? notificationType,
-    int? notificationTime,
+    int? firstNotification,
+    int? secondNotification,
   }) {
     final task = taskManager.createTask(
       title,
@@ -48,15 +47,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       optimisticTime: optimisticTime,
       realisticTime: realisticTime,
       pessimisticTime: pessimisticTime,
+      firstNotification: firstNotification,
+      secondNotification: secondNotification,
     );
-
-    // Set notification settings
-    if (notificationType != null) {
-      task.notificationType = notificationType;
-    }
-    if (notificationTime != null) {
-      task.notificationTime = notificationTime;
-    }
 
     // Save the task with notification settings
     taskManager.tasksDB.put(task.id, task);
@@ -72,8 +65,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     String? notes,
     int? color,
     int? travelingTime,
-    NotificationType? notificationType,
-    int? notificationTime,
+    int? firstNotification,
+    int? secondNotification,
   }) {
     logInfo('Creating event: title - $title, start - $start, end - $end');
 
@@ -92,15 +85,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       category,
       notes: notes,
       color: color,
+      firstNotification: firstNotification,
+      secondNotification: secondNotification,
     );
-
-    // Set notification settings
-    if (notificationType != null) {
-      task.notificationType = notificationType;
-    }
-    if (notificationTime != null) {
-      task.notificationTime = notificationTime;
-    }
 
     taskManager.scheduler.scheduleEvent(task: task, start: start, end: end);
     // TODO: Save the event in the database
@@ -171,8 +158,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     int? optimisticTime,
     int? realisticTime,
     int? pessimisticTime,
-    NotificationType? notificationType,
-    int? notificationTime,
+    int? firstNotification,
+    int? secondNotification,
   }) {
     // Update task properties
     taskManager.editTask(
@@ -189,15 +176,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       optimisticTime: optimisticTime,
       realisticTime: realisticTime,
       pessimisticTime: pessimisticTime,
+      firstNotification: firstNotification,
+      secondNotification: secondNotification,
     );
-
-    // Set notification settings
-    if (notificationType != null) {
-      task.notificationType = notificationType;
-    }
-    if (notificationTime != null) {
-      task.notificationTime = notificationTime;
-    }
 
     taskManager.tasksDB.put(task.id, task);
 
@@ -218,8 +199,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     String? notes,
     int? color,
     int? travelingTime,
-    NotificationType? notificationType,
-    int? notificationTime,
+    int? firstNotification,
+    int? secondNotification,
   }) {
     logInfo(
       'Editing event: ${task.title} to new title - $title, start - $start, end - $end',
@@ -258,15 +239,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       null,
       notes: notes,
       color: color,
+      firstNotification: firstNotification,
+      secondNotification: secondNotification,
     );
-
-    // Set notification settings
-    if (notificationType != null) {
-      task.notificationType = notificationType;
-    }
-    if (notificationTime != null) {
-      task.notificationTime = notificationTime;
-    }
 
     taskManager.scheduler.scheduleEvent(task: task, start: start, end: end);
     taskManager.tasksDB.put(task.id, task);
@@ -461,46 +436,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     } catch (e) {
       logError('Error toggling task completion: $e');
       return task.isDone; // Return the current status in case of error
-    }
-  }
-
-  /// Send a reminder to check if a task is completed
-  Future<void> sendCompletionCheckReminder(Task task) async {
-    if (task.isDone) {
-      // Task is already completed, no need to send a reminder
-      return;
-    }
-
-    try {
-      // Create a notification for the task completion check
-      // This would typically use a notification service, but for simplicity,
-      // we'll just log it for now
-      logInfo('Would send completion check reminder for task "${task.title}"');
-
-      // In a real implementation, you would use a notification service:
-      // await _notificationService.sendCompletionCheckReminder(task);
-    } catch (e) {
-      logError('Error sending completion check reminder: $e');
-    }
-  }
-
-  /// Schedule a reminder to check if a task is completed
-  Future<void> scheduleCompletionCheckReminder(
-    Task task,
-    DateTime scheduledTime,
-  ) async {
-    try {
-      // Schedule a notification for the task completion check
-      // This would typically use a notification service, but for simplicity,
-      // we'll just log it for now
-      logInfo(
-        'Would schedule completion check reminder for task "${task.title}" at $scheduledTime',
-      );
-
-      // In a real implementation, you would use a notification service:
-      // await _notificationService.scheduleCompletionCheckReminder(task, scheduledTime);
-    } catch (e) {
-      logError('Error scheduling completion check reminder: $e');
     }
   }
 }
