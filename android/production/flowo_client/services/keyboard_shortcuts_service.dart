@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 
-import '../theme_notifier.dart';
+import '../theme/theme_notifier.dart';
 import 'web_theme_bridge.dart';
 
 /// A service that handles keyboard shortcuts for the web platform.

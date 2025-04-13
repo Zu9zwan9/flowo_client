@@ -2,7 +2,6 @@ import 'package:hive/hive.dart';
 
 import 'category.dart';
 import 'coordinates.dart';
-import 'notification_type.dart';
 import 'repeat_rule.dart';
 import 'scheduled_task.dart';
 
@@ -55,13 +54,6 @@ class Task extends HiveObject {
   @HiveField(11)
   String? parentTaskId;
 
-  Task? get parentTask =>
-      parentTaskId != null ? Hive.box<Task>('tasks').get(parentTaskId) : null;
-
-  set parentTask(Task? value) {
-    parentTaskId = value?.id;
-  }
-
   @HiveField(12)
   List<ScheduledTask> scheduledTasks; // Changed from const [] to mutable
 
@@ -78,10 +70,17 @@ class Task extends HiveObject {
   int? color;
 
   @HiveField(20)
-  NotificationType? notificationType;
+  int? firstNotification; //time in minutes before schduled task
 
   @HiveField(21)
-  int? notificationTime; // Time in minutes before the deadline to send notification
+  int? secondNotification;
+
+  Task? get parentTask =>
+      parentTaskId != null ? Hive.box<Task>('tasks').get(parentTaskId) : null;
+
+  set parentTask(Task? value) {
+    parentTaskId = value?.id;
+  }
 
   DateTime get startDate => DateTime.now();
 
@@ -120,8 +119,8 @@ class Task extends HiveObject {
     this.optimisticTime,
     this.realisticTime,
     this.pessimisticTime,
-    this.notificationType,
-    this.notificationTime,
+    this.firstNotification,
+    this.secondNotification,
   }) : parentTaskId = parentTask?.id,
        subtasks = subtasks ?? [],
        scheduledTasks = scheduledTasks ?? [];

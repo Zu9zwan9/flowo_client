@@ -9,7 +9,6 @@ import '../../utils/logger.dart';
 import '../calendar/calendar_screen.dart';
 import 'task_form_screen.dart';
 
-// Constants for styling adhering to HIG
 class TaskPageConstants {
   static const double padding = 16.0;
   static const double cornerRadius = 12.0;
@@ -437,7 +436,7 @@ class TaskHeader extends StatelessWidget {
           Row(
             children: [
               CategoryTag(categoryName: task.category.name),
-              const SizedBox(width: 8), // Add spacing
+              const SizedBox(width: 8),
               Expanded(
                 child: CompletionToggle(
                   isDone: task.isDone,
@@ -451,7 +450,7 @@ class TaskHeader extends StatelessWidget {
                   style: theme.textTheme.textStyle.copyWith(
                     color: CupertinoColors.systemGrey,
                   ),
-                  overflow: TextOverflow.ellipsis, // Prevent overflow
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

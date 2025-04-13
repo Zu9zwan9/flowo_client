@@ -59,6 +59,8 @@ class TaskManager {
     int? optimisticTime,
     int? realisticTime,
     int? pessimisticTime,
+    int? firstNotification,
+    int? secondNotification,
   }) {
     final task = Task(
       id: UniqueKey().toString(),
@@ -73,6 +75,8 @@ class TaskManager {
       optimisticTime: optimisticTime,
       realisticTime: realisticTime,
       pessimisticTime: pessimisticTime,
+      firstNotification: firstNotification,
+      secondNotification: secondNotification,
     );
     tasksDB.put(task.id, task);
     if (parentTask != null) {
@@ -124,6 +128,8 @@ class TaskManager {
     int? optimisticTime,
     int? realisticTime,
     int? pessimisticTime,
+    int? firstNotification,
+    int? secondNotification,
   }) {
     task.title = title;
     task.priority = priority;
@@ -149,6 +155,8 @@ class TaskManager {
     if (pessimisticTime != null) {
       task.pessimisticTime = pessimisticTime;
     }
+    task.firstNotification = firstNotification;
+    task.secondNotification = secondNotification;
     tasksDB.put(task.id, task);
     logInfo('Edited task: ${task.title}');
   }
@@ -209,171 +217,12 @@ class TaskManager {
   }
 
   void manageHabits() {
-    List<Task> habits =
-        tasksDB.values.where((task) => task.frequency != null).toList();
-
-    for (Task habit in habits) {
-      switch (habit.frequency!.type) {
-        case 'weekly':
-          RepeatRule repeatRule = habit.frequency!;
-          List<RepeatRuleInstance> byDay = repeatRule.byDay!;
-
-          for (var dayInstance in byDay) {
-            final selectedWeekday = _dayNameToInt(dayInstance.selectedDay);
-            final startDate = repeatRule.startRepeat;
-            final daysUntilNextSelectedDay =
-                (selectedWeekday - startDate.weekday + 7) % 7;
-
-            var nextSelectedDate = startDate.add(
-              Duration(days: daysUntilNextSelectedDay),
-            );
-
-            List<DateTime> habitDates = [];
-
-            while (nextSelectedDate.isBefore(repeatRule.endRepeat!)) {
-              habitDates.add(nextSelectedDate);
-              nextSelectedDate = nextSelectedDate.add(
-                Duration(days: 7 * habit.frequency!.interval),
-              );
-            }
-
-            scheduler.scheduleHabit(
-              habit,
-              habitDates,
-              dayInstance.start,
-              dayInstance.end,
-            );
-          }
-          break;
-
-        case 'monthly':
-          RepeatRule repeatRule = habit.frequency!;
-
-          // Проверяем, есть ли byMonthDay (specific days) или bySetPos (pattern)
-          if (repeatRule.byMonthDay != null) {
-            // Обработка для "specific days"
-            List<RepeatRuleInstance> byMonthDay = repeatRule.byMonthDay!;
-
-            for (var monthDayInstance in byMonthDay) {
-              final selectedMonthDay = int.parse(monthDayInstance.selectedDay);
-              final startDate = repeatRule.startRepeat;
-              final daysUntilNextSelectedDay =
-                  (selectedMonthDay -
-                      startDate.day +
-                      DateTime(startDate.year, startDate.month + 1, 0).day) %
-                  DateTime(startDate.year, startDate.month + 1, 0).day;
-              var nextSelectedDate = startDate.add(
-                Duration(days: daysUntilNextSelectedDay),
-              );
-
-              List<DateTime> habitDates = [];
-
-              while (nextSelectedDate.isBefore(repeatRule.endRepeat!)) {
-                habitDates.add(nextSelectedDate);
-                nextSelectedDate = DateTime(
-                  nextSelectedDate.year,
-                  nextSelectedDate.month + habit.frequency!.interval,
-                  selectedMonthDay,
-                );
-              }
-
-              scheduler.scheduleHabit(
-                habit,
-                habitDates,
-                monthDayInstance.start,
-                monthDayInstance.end,
-              );
-            }
-          } else if (repeatRule.bySetPos != null) {
-            // Обработка для "pattern"
-            final bySetPos = repeatRule.bySetPos!;
-            final byDay = repeatRule.byDay!;
-            final interval = repeatRule.interval;
-            final startDate = repeatRule.startRepeat;
-            final endDate = repeatRule.endRepeat!;
-
-            for (var dayInstance in byDay) {
-              final selectedWeekday = _dayNameToInt(dayInstance.selectedDay);
-              List<DateTime> habitDates = [];
-
-              var currentDate = DateTime(startDate.year, startDate.month, 1);
-
-              while (currentDate.isBefore(endDate)) {
-                DateTime? patternDate = _findPatternDateInMonth(
-                  currentDate.year,
-                  currentDate.month,
-                  selectedWeekday,
-                  bySetPos,
-                );
-
-                if (patternDate != null &&
-                    !patternDate.isBefore(startDate) &&
-                    patternDate.isBefore(endDate)) {
-                  habitDates.add(patternDate);
-                }
-
-                currentDate = DateTime(
-                  currentDate.year,
-                  currentDate.month + interval,
-                  1,
-                );
-              }
-
-              scheduler.scheduleHabit(
-                habit,
-                habitDates,
-                dayInstance.start,
-                dayInstance.end,
-              );
-            }
-          }
-          break;
-
-        case 'daily':
-          List<DateTime> habitDates = [];
-          DateTime startDate = habit.frequency!.startRepeat;
-
-          while (startDate.isBefore(habit.frequency!.endRepeat!)) {
-            habitDates.add(startDate);
-            startDate = startDate.add(
-              Duration(days: habit.frequency!.interval),
-            );
-          }
-
-          scheduler.scheduleHabit(
-            habit,
-            habitDates,
-            habit.frequency!.byDay!.first.start,
-            habit.frequency!.byDay!.first.end,
-          );
-          break;
-
-        case 'yearly':
-          List<DateTime> habitDates = [];
-          DateTime startDate = habit.frequency!.startRepeat;
-
-          while (startDate.isBefore(habit.frequency!.endRepeat!)) {
-            habitDates.add(startDate);
-            startDate = DateTime(
-              startDate.year + habit.frequency!.interval,
-              startDate.month,
-              startDate.day,
-            );
-          }
-
-          scheduler.scheduleHabit(
-            habit,
-            habitDates,
-            habit.frequency!.byDay!.first.start,
-            habit.frequency!.byDay!.first.end,
-          );
-          break;
-
-        default:
-          logWarning('Invalid habit frequency type: ${habit.frequency!.type}');
-          break;
-      }
-    }
+    // This method is deprecated. Use TaskManagerCubit.scheduleHabits instead.
+    // The TaskManagerCubit.scheduleHabits method handles the scheduling of habits
+    // with proper conflict resolution using BuildContext.
+    logWarning(
+      'TaskManager.manageHabits is deprecated. Use TaskManagerCubit.scheduleHabits instead.',
+    );
   }
 
   DateTime? _findPatternDateInMonth(

@@ -1,6 +1,5 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/category.dart';
-import 'package:flowo_client/models/notification_type.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/repeat_rule_instance.dart';
 import 'package:flowo_client/screens/home_screen.dart';
@@ -64,8 +63,8 @@ class HabitFormScreenState extends State<HabitFormScreen>
   final List<Map<String, dynamic>> _monthlySpecificInstances = [];
 
   // Notification settings
-  NotificationType selectedNotificationType = NotificationType.push;
-  int notificationTime = 5; // Default: 30 minutes before habit
+  int? _firstNotification = 5;
+  int? _secondNotification;
 
   @override
   void initState() {
@@ -83,17 +82,6 @@ class HabitFormScreenState extends State<HabitFormScreen>
       _selectedEndDate =
           habit.frequency?.endRepeat ??
           _selectedStartDate.add(const Duration(days: 7));
-
-      // Initialize notification settings from habit if available
-      if (habit.notificationType != null) {
-        selectedNotificationType = habit.notificationType!;
-      } else {
-        selectedNotificationType = _userSettings.defaultNotificationType;
-      }
-
-      if (habit.notificationTime != null) {
-        notificationTime = habit.notificationTime!;
-      }
 
       _nameController = TextEditingController();
 
@@ -154,9 +142,6 @@ class HabitFormScreenState extends State<HabitFormScreen>
       _intervalValue = 1;
       _selectedFrequencyType = 'weekly';
       _monthlyType = 'specific';
-
-      // Use default notification settings from user settings
-      selectedNotificationType = _userSettings.defaultNotificationType;
     }
 
     _animationController = AnimationController(
@@ -218,95 +203,78 @@ class HabitFormScreenState extends State<HabitFormScreen>
     return setPosMap[setPos] ?? 'first';
   }
 
-  // Shows a picker for notification time
-  Future<int?> _showNotificationTimePicker(BuildContext context) async {
-    int selectedTime = notificationTime;
+  String _formatNotificationTime(int? minutes) {
+    if (minutes == null) {
+      return 'None';
+    }
 
-    final result = await showCupertinoModalPopup<int>(
-      context: context,
-      builder:
-          (context) => Container(
-            height: 300,
-            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      child: const Text('Cancel'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    CupertinoButton(
-                      child: const Text('Done'),
-                      onPressed: () => Navigator.pop(context, selectedTime),
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: CupertinoPicker(
-                    itemExtent: 32,
-                    onSelectedItemChanged: (index) {
-                      selectedTime =
-                          [5, 10, 15, 30, 45, 60, 120, 180, 240, 1440][index];
-                    },
-                    scrollController: FixedExtentScrollController(
-                      initialItem:
-                          [
-                                    5,
-                                    10,
-                                    15,
-                                    30,
-                                    45,
-                                    60,
-                                    120,
-                                    180,
-                                    240,
-                                    1440,
-                                  ].contains(notificationTime)
-                              ? [
-                                5,
-                                10,
-                                15,
-                                30,
-                                45,
-                                60,
-                                120,
-                                180,
-                                240,
-                                1440,
-                              ].indexOf(notificationTime)
-                              : 3, // Default to 30 minutes
-                    ),
-                    children: [
-                      Text('5 minutes before'),
-                      Text('10 minutes before'),
-                      Text('15 minutes before'),
-                      Text('30 minutes before'),
-                      Text('45 minutes before'),
-                      Text('1 hour before'),
-                      Text('2 hours before'),
-                      Text('3 hours before'),
-                      Text('4 hours before'),
-                      Text('1 day before'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-    );
+    switch (minutes) {
+      case 0:
+        return 'At event time';
+      case 1:
+        return '1 minute before';
+      case 5:
+        return '5 minutes before';
+      case 15:
+        return '15 minutes before';
+      case 30:
+        return '30 minutes before';
+      case 60:
+        return '1 hour before';
+      case 120:
+        return '2 hours before';
+      case 1440:
+        return '1 day before';
+      case 2880:
+        return '2 days before';
+      case 10080:
+        return '1 week before';
+      default:
+        if (minutes < 60) {
+          return '$minutes minutes before';
+        } else if (minutes < 1440) {
+          final hours = minutes ~/ 60;
+          final mins = minutes % 60;
 
-    return result;
+          if (mins == 0) {
+            return '$hours hours before';
+          } else {
+            return '$hours hours $mins minutes before';
+          }
+        } else {
+          final days = minutes ~/ 1440;
+          return '$days days before';
+        }
+    }
   }
 
-  // Shows a picker for notification type
-  Future<NotificationType?> _showNotificationTypePicker(
+  Future<void> _showNotificationTimePicker(
     BuildContext context,
+    bool isFirstNotification,
   ) async {
-    NotificationType selectedType = selectedNotificationType;
+    // Define different notification time options for first and second alerts
+    final List<int?> timeOptions = [
+      null,
+      0,
+      5,
+      15,
+      30,
+      60,
+      120,
+      1440,
+      2880,
+      10080,
+    ];
 
-    final result = await showCupertinoModalPopup<NotificationType>(
+    // Get current value and find its index
+    final int? currentValue =
+        isFirstNotification ? _firstNotification : _secondNotification;
+    final int initialIndex =
+        timeOptions.contains(currentValue)
+            ? timeOptions.indexOf(currentValue)
+            : 0;
+
+    await showCupertinoModalPopup<void>(
       context: context,
       builder:
           (context) => Container(
@@ -323,26 +291,30 @@ class HabitFormScreenState extends State<HabitFormScreen>
                     ),
                     CupertinoButton(
                       child: const Text('Done'),
-                      onPressed: () => Navigator.pop(context, selectedType),
+                      onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
                 Expanded(
                   child: CupertinoPicker(
                     itemExtent: 32,
-                    onSelectedItemChanged: (index) {
-                      selectedType = NotificationType.values[index];
-                    },
                     scrollController: FixedExtentScrollController(
-                      initialItem: NotificationType.values.indexOf(
-                        selectedNotificationType,
-                      ),
+                      initialItem: initialIndex,
                     ),
+                    onSelectedItemChanged: (index) {
+                      if (mounted) {
+                        setState(() {
+                          if (isFirstNotification) {
+                            _firstNotification = timeOptions[index];
+                          } else {
+                            _secondNotification = timeOptions[index];
+                          }
+                        });
+                      }
+                    },
                     children:
-                        NotificationType.values
-                            .map(
-                              (type) => Text(type.toString().split('.').last),
-                            )
+                        timeOptions
+                            .map((time) => Text(_formatNotificationTime(time)))
                             .toList(),
                   ),
                 ),
@@ -350,8 +322,6 @@ class HabitFormScreenState extends State<HabitFormScreen>
             ),
           ),
     );
-
-    return result;
   }
 
   // Validates the entire form and returns an error message if invalid
@@ -606,9 +576,8 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 controller: _intervalController,
                 placeholder: '1',
                 keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ], // Ограничение ввода только цифрами
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                // Ограничение ввода только цифрами
                 style: theme.valueTextStyle,
                 decoration: BoxDecoration(
                   border: Border.all(color: CupertinoColors.systemGrey4),
@@ -714,18 +683,21 @@ class HabitFormScreenState extends State<HabitFormScreen>
                   semanticLabel: type.capitalize(),
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  type.capitalize(),
-                  style: TextStyle(
-                    color:
-                        isSelected
-                            ? primaryColor
-                            : CupertinoColors.systemGrey.resolveFrom(context),
-                    fontSize: 14,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                Flexible(
+                  child: Text(
+                    type.capitalize(),
+                    style: TextStyle(
+                      color:
+                          isSelected
+                              ? primaryColor
+                              : CupertinoColors.systemGrey.resolveFrom(context),
+                      fontSize: 14,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    semanticsLabel: '${type.capitalize()} frequency',
                   ),
-                  semanticsLabel: '${type.capitalize()} frequency',
                 ),
               ],
             ),
@@ -1341,37 +1313,25 @@ class HabitFormScreenState extends State<HabitFormScreen>
           'Set when you want to be notified before the habit',
           style: theme.helperTextStyle,
         ),
-        SizedBox(height: CupertinoFormTheme.smallSpacing),
+        const SizedBox(height: 12.0),
         CupertinoFormWidgets.selectionButton(
           context: context,
-          label: 'Notification Time',
-          value: '$notificationTime minutes before',
-          onTap: () async {
-            final selectedTime = await _showNotificationTimePicker(context);
-            if (selectedTime != null && mounted) {
-              setState(() {
-                notificationTime = selectedTime;
-              });
-            }
-          },
-          color: theme.accentColor,
+          label: 'Alert',
+          value: _formatNotificationTime(_firstNotification),
+          onTap: () => _showNotificationTimePicker(context, true),
+          color: theme.secondaryColor,
           icon: CupertinoIcons.bell,
+          iconSize: 20.0,
         ),
-        SizedBox(height: CupertinoFormTheme.elementSpacing),
+        const SizedBox(height: 12.0),
         CupertinoFormWidgets.selectionButton(
           context: context,
-          label: 'Notification Type',
-          value: selectedNotificationType.toString().split('.').last,
-          onTap: () async {
-            final selectedType = await _showNotificationTypePicker(context);
-            if (selectedType != null && mounted) {
-              setState(() {
-                selectedNotificationType = selectedType;
-              });
-            }
-          },
-          color: theme.primaryColor,
+          label: 'Second Alert',
+          value: _formatNotificationTime(_secondNotification),
+          onTap: () => _showNotificationTimePicker(context, false),
+          color: theme.accentColor,
           icon: CupertinoIcons.bell_fill,
+          iconSize: 20.0,
         ),
       ],
     );
@@ -2194,8 +2154,8 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 ? _notesController.text.trim()
                 : null,
         frequency: repeatRule,
-        notificationType: selectedNotificationType,
-        notificationTime: notificationTime,
+        firstNotification: _firstNotification,
+        secondNotification: _secondNotification,
       );
     } else {
       tasksCubit.createTask(
@@ -2209,8 +2169,8 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 ? _notesController.text.trim()
                 : null,
         frequency: repeatRule,
-        notificationType: selectedNotificationType,
-        notificationTime: notificationTime,
+        firstNotification: _firstNotification,
+        secondNotification: _secondNotification,
       );
     }
 

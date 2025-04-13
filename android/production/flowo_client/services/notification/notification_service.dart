@@ -1,10 +1,11 @@
 import 'dart:io';
+
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:flowo_client/utils/logger.dart';
 
 class NotificationInfo {
   final int id;
@@ -29,17 +30,19 @@ class NotificationInfo {
     'status': status,
   };
 
-  factory NotificationInfo.fromJson(Map<String, dynamic> json) => NotificationInfo(
-    id: json['id'],
-    title: json['title'],
-    body: json['body'],
-    scheduledTime: DateTime.parse(json['scheduledTime']),
-    status: json['status'],
-  );
+  factory NotificationInfo.fromJson(Map<String, dynamic> json) =>
+      NotificationInfo(
+        id: json['id'],
+        title: json['title'],
+        body: json['body'],
+        scheduledTime: DateTime.parse(json['scheduledTime']),
+        status: json['status'],
+      );
 }
 
 class NotiService {
-  final FlutterLocalNotificationsPlugin notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
   bool _isInitialized = false;
   final List<NotificationInfo> _notifications = [];
 
@@ -53,10 +56,16 @@ class NotiService {
       String currentTimeZone;
       try {
         currentTimeZone = await FlutterTimezone.getLocalTimezone();
-        appLogger.info('Local timezone retrieved: $currentTimeZone', 'NotiService');
+        appLogger.info(
+          'Local timezone retrieved: $currentTimeZone',
+          'NotiService',
+        );
       } catch (e) {
         currentTimeZone = 'Europe/Kyiv';
-        appLogger.warning('Failed to get local timezone, using Europe/Kyiv: $e', 'NotiService');
+        appLogger.warning(
+          'Failed to get local timezone, using Europe/Kyiv: $e',
+          'NotiService',
+        );
       }
       try {
         tz.setLocalLocation(tz.getLocation(currentTimeZone));
@@ -64,10 +73,15 @@ class NotiService {
       } catch (e) {
         currentTimeZone = 'UTC';
         tz.setLocalLocation(tz.getLocation(currentTimeZone));
-        appLogger.warning('Timezone $currentTimeZone not found, falling back to UTC', 'NotiService');
+        appLogger.warning(
+          'Timezone $currentTimeZone not found, falling back to UTC',
+          'NotiService',
+        );
       }
 
-      const initSettingsAndroid = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const initSettingsAndroid = AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+      );
       const initSettingsIOS = DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
@@ -86,7 +100,9 @@ class NotiService {
           importance: Importance.max,
         );
         await notificationsPlugin
-            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
             ?.createNotificationChannel(channel);
         await requestBatteryOptimizationExemption();
         await requestExactAlarmPermission();
@@ -100,7 +116,10 @@ class NotiService {
             noti.status = 'delivered';
             appLogger.info('Notification ${noti.id} delivered', 'NotiService');
           } catch (e) {
-            appLogger.warning('Notification ${response.id} not found in tracking list', 'NotiService');
+            appLogger.warning(
+              'Notification ${response.id} not found in tracking list',
+              'NotiService',
+            );
           }
         },
       );
@@ -115,20 +134,35 @@ class NotiService {
   Future<void> requestExactAlarmPermission() async {
     if (Platform.isAndroid) {
       try {
-        final androidPlugin = notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-        final canSchedule = await androidPlugin?.canScheduleExactNotifications() ?? false;
+        final androidPlugin =
+            notificationsPlugin
+                .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin
+                >();
+        final canSchedule =
+            await androidPlugin?.canScheduleExactNotifications() ?? false;
         if (!canSchedule) {
           await androidPlugin?.requestExactAlarmsPermission();
           appLogger.info('Requested exact alarm permission', 'NotiService');
-          final updatedCanSchedule = await androidPlugin?.canScheduleExactNotifications() ?? false;
+          final updatedCanSchedule =
+              await androidPlugin?.canScheduleExactNotifications() ?? false;
           if (!updatedCanSchedule) {
-            appLogger.warning('Exact alarm permission not granted by user', 'NotiService');
+            appLogger.warning(
+              'Exact alarm permission not granted by user',
+              'NotiService',
+            );
           }
         } else {
-          appLogger.info('Exact alarm permission already granted', 'NotiService');
+          appLogger.info(
+            'Exact alarm permission already granted',
+            'NotiService',
+          );
         }
       } catch (e) {
-        appLogger.error('Failed to request exact alarm permission: $e', 'NotiService');
+        appLogger.error(
+          'Failed to request exact alarm permission: $e',
+          'NotiService',
+        );
       }
     }
   }
@@ -138,9 +172,15 @@ class NotiService {
       const methodChannel = MethodChannel('flutter_local_notifications');
       try {
         await methodChannel.invokeMethod('requestBatteryOptimizationExemption');
-        appLogger.info('Requested battery optimization exemption', 'NotiService');
+        appLogger.info(
+          'Requested battery optimization exemption',
+          'NotiService',
+        );
       } catch (e) {
-        appLogger.error('Failed to request battery optimization exemption: $e', 'NotiService');
+        appLogger.error(
+          'Failed to request battery optimization exemption: $e',
+          'NotiService',
+        );
       }
     }
   }
@@ -169,22 +209,26 @@ class NotiService {
     }
     try {
       await notificationsPlugin.show(id, title, body, notificationDetails());
-      _notifications.add(NotificationInfo(
-        id: id,
-        title: title,
-        body: body,
-        scheduledTime: DateTime.now(),
-        status: 'delivered',
-      ));
+      _notifications.add(
+        NotificationInfo(
+          id: id,
+          title: title,
+          body: body,
+          scheduledTime: DateTime.now(),
+          status: 'delivered',
+        ),
+      );
       appLogger.info('Notification $id sent immediately', 'NotiService');
     } catch (e) {
-      _notifications.add(NotificationInfo(
-        id: id,
-        title: title,
-        body: body,
-        scheduledTime: DateTime.now(),
-        status: 'failed',
-      ));
+      _notifications.add(
+        NotificationInfo(
+          id: id,
+          title: title,
+          body: body,
+          scheduledTime: DateTime.now(),
+          status: 'failed',
+        ),
+      );
       appLogger.error('Failed to send notification $id: $e', 'NotiService');
     }
   }
@@ -193,6 +237,9 @@ class NotiService {
     int id = 1,
     required String title,
     required String body,
+    required int year,
+    required int month,
+    required int day,
     required int hour,
     required int minute,
   }) async {
@@ -204,25 +251,26 @@ class NotiService {
     }
 
     final now = tz.TZDateTime.now(tz.local);
-    var scheduledDate = tz.TZDateTime(
-      tz.local,
-      now.year,
-      now.month,
-      now.day,
-      hour,
-      minute,
-    );
+    var scheduledDate = tz.TZDateTime(tz.local, year, month, day, hour, minute);
 
     if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
+      logError('Notification time is in the past: $scheduledDate');
     }
 
-    appLogger.info('Scheduling notification $id for $scheduledDate (current time: $now)', 'NotiService');
+    appLogger.info(
+      'Scheduling notification $id for $scheduledDate (current time: $now)',
+      'NotiService',
+    );
 
     try {
       if (Platform.isAndroid) {
-        final androidPlugin = notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-        final canSchedule = await androidPlugin?.canScheduleExactNotifications() ?? false;
+        final androidPlugin =
+            notificationsPlugin
+                .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin
+                >();
+        final canSchedule =
+            await androidPlugin?.canScheduleExactNotifications() ?? false;
         if (!canSchedule) {
           return 'Exact alarm permission not granted';
         }
@@ -236,27 +284,38 @@ class NotiService {
         notificationDetails(),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
-      _notifications.add(NotificationInfo(
-        id: id,
-        title: title,
-        body: body,
-        scheduledTime: scheduledDate,
-      ));
-      appLogger.info('Notification $id scheduled successfully at $scheduledDate', 'NotiService');
+      _notifications.add(
+        NotificationInfo(
+          id: id,
+          title: title,
+          body: body,
+          scheduledTime: scheduledDate,
+        ),
+      );
+      appLogger.info(
+        'Notification $id scheduled successfully at $scheduledDate',
+        'NotiService',
+      );
 
       // Проверка запланированных уведомлений
-      final pendingNotifications = await notificationsPlugin.pendingNotificationRequests();
-      appLogger.info('Pending notifications: ${pendingNotifications.map((n) => n.id).toList()}', 'NotiService');
+      final pendingNotifications =
+          await notificationsPlugin.pendingNotificationRequests();
+      appLogger.info(
+        'Pending notifications: ${pendingNotifications.map((n) => n.id).toList()}',
+        'NotiService',
+      );
 
       return null;
     } catch (e) {
-      _notifications.add(NotificationInfo(
-        id: id,
-        title: title,
-        body: body,
-        scheduledTime: scheduledDate,
-        status: 'failed',
-      ));
+      _notifications.add(
+        NotificationInfo(
+          id: id,
+          title: title,
+          body: body,
+          scheduledTime: scheduledDate,
+          status: 'failed',
+        ),
+      );
       appLogger.error('Failed to schedule notification $id: $e', 'NotiService');
       return 'Failed to schedule: $e';
     }
@@ -269,7 +328,10 @@ class NotiService {
       noti.status = 'cancelled';
       appLogger.info('Notification $id cancelled', 'NotiService');
     } catch (e) {
-      appLogger.warning('Notification $id not found in tracking list', 'NotiService');
+      appLogger.warning(
+        'Notification $id not found in tracking list',
+        'NotiService',
+      );
     }
   }
 

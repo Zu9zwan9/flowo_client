@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
-import '../theme_notifier.dart';
+import 'theme_notifier.dart';
 import 'app_colors.dart';
 
 /// A utility class that provides dynamic colors that adapt to light and dark modes.

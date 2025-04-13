@@ -25,7 +25,7 @@ class ScheduledTaskAdapter extends TypeAdapter<ScheduledTask> {
       type: fields[5] as ScheduledTaskType,
       travelingTime: fields[6] as int,
       breakTime: fields[7] as int,
-      notification: fields[8] as NotificationType,
+      notificationIds: (fields[8] as List?)?.cast<int>(),
     );
   }
 
@@ -50,7 +50,7 @@ class ScheduledTaskAdapter extends TypeAdapter<ScheduledTask> {
       ..writeByte(7)
       ..write(obj.breakTime)
       ..writeByte(8)
-      ..write(obj.notification);
+      ..write(obj.notificationIds);
   }
 
   @override

@@ -79,12 +79,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 ? 'Task "${_task.title}" completed'
                 : 'Task "${_task.title}" incomplete',
       );
-      if (isCompleted) {
-        cubit.scheduleCompletionCheckReminder(
-          _task,
-          DateTime.now().add(const Duration(days: 1)),
-        );
-      }
     });
   }
 

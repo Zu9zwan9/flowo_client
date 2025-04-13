@@ -6,7 +6,7 @@ import '../../models/pomodoro_settings.dart';
 import '../../models/pomodoro_statistics.dart';
 import '../../models/scheduled_task.dart';
 import '../../models/task.dart';
-import '../../services/pomodoro_timer_service.dart';
+import '../../services/pomodoro/pomodoro_timer_service.dart';
 import '../ambient/ambient_screen.dart';
 import 'pomodoro_settings_screen.dart';
 import 'pomodoro_statistics_screen.dart';

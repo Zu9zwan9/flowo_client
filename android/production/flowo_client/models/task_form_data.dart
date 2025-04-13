@@ -36,7 +36,8 @@ class TaskFormData {
 
   void calculateEstimatedTime() {
     if (optimisticTime > 0 && realisticTime > 0 && pessimisticTime > 0) {
-      estimatedTime = ((optimisticTime + 4 * realisticTime + pessimisticTime) ~/ 6);
+      estimatedTime =
+          ((optimisticTime + 4 * realisticTime + pessimisticTime) ~/ 6);
     }
   }
 }

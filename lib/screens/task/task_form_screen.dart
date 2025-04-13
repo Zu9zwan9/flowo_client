@@ -1,3 +1,4 @@
+import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/screens/task/task_list_screen.dart';
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
@@ -26,7 +27,6 @@ class TaskFormScreen extends StatefulWidget {
 
 class _TaskFormScreenState extends State<TaskFormScreen>
     with SingleTickerProviderStateMixin {
-  // MARK: - Form data and controllers
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
@@ -329,8 +329,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       ),
     );
   }
-
-  // MARK: - UI Helpers
 
   String _formatDuration(int milliseconds) {
     final hours = milliseconds ~/ 3600000;
@@ -1036,7 +1034,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     } else {
       Navigator.pushReplacement(
         context,
-        CupertinoPageRoute(builder: (_) => const TaskListScreen()),
+        CupertinoPageRoute(builder: (_) => HomeScreen()),
       );
     }
   }

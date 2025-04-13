@@ -1,5 +1,5 @@
 import 'package:flowo_client/models/task.dart';
-import 'package:flowo_client/services/task_time_estimator.dart';
+import 'package:flowo_client/services/estimator/task_time_estimator.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/material.dart';

@@ -36,7 +36,7 @@ import 'models/time_frame.dart';
 import 'models/user_profile.dart';
 import 'models/user_settings.dart';
 import 'screens/home_screen.dart';
-import 'theme_notifier.dart';
+import 'theme/theme_notifier.dart';
 import 'utils/logger.dart';
 
 void main() async {
@@ -87,6 +87,13 @@ void main() async {
   Hive.registerAdapter(AmbientSceneAdapter());
   Hive.registerAdapter(RepeatRuleInstanceAdapter());
   Hive.registerAdapter(AppThemeAdapter());
+
+  // TODO: Run the following command to generate the TaskNotification adapters:
+  // flutter pub run build_runner build --delete-conflicting-outputs
+  // Then uncomment these lines:
+  // Hive.registerAdapter(TaskNotificationTypeAdapter());
+  // Hive.registerAdapter(NotificationStatusAdapter());
+  // Hive.registerAdapter(TaskNotificationAdapter());
   await Hive.initFlutter();
 
   Box<Task> tasksDB;

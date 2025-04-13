@@ -36,8 +36,8 @@ class TaskAdapter extends TypeAdapter<Task> {
       optimisticTime: fields[17] as int?,
       realisticTime: fields[18] as int?,
       pessimisticTime: fields[19] as int?,
-      notificationType: fields[20] as NotificationType?,
-      notificationTime: fields[21] as int?,
+      firstNotification: fields[20] as int?,
+      secondNotification: fields[21] as int?,
     )..parentTaskId = fields[11] as String?;
   }
 
@@ -86,9 +86,9 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(16)
       ..write(obj.color)
       ..writeByte(20)
-      ..write(obj.notificationType)
+      ..write(obj.firstNotification)
       ..writeByte(21)
-      ..write(obj.notificationTime);
+      ..write(obj.secondNotification);
   }
 
   @override

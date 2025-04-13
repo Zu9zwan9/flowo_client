@@ -8,7 +8,7 @@ part of 'ambient_scene.dart';
 
 class AmbientSceneAdapter extends TypeAdapter<AmbientScene> {
   @override
-  final int typeId = 16;
+  final int typeId = 19;
 
   @override
   AmbientScene read(BinaryReader reader) {
