@@ -266,7 +266,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 isDefaultAction: true,
                 child: const Text('View in Calendar'),
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.canPop(context);
                   Navigator.of(context).pushReplacement(
                     CupertinoPageRoute(builder: (_) => const CalendarScreen()),
                   );
@@ -400,7 +400,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     );
     setState(() {
       _task.subtasks.add(subtask);
-      _subtasks.add(subtask);
+      // _subtasks.add(subtask);
     });
     _task.save();
     context.read<TaskManagerCubit>().scheduleTask(subtask);
