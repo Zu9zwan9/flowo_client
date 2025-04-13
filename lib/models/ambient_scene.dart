@@ -5,7 +5,7 @@ import 'package:hive/hive.dart';
 part 'ambient_scene.g.dart';
 
 /// Represents a type of ambient scene (e.g., Cafe, Forest, Beach)
-@HiveType(typeId: 16)
+@HiveType(typeId: 19)
 class AmbientScene extends HiveObject with EquatableMixin {
   @HiveField(0)
   final String id;
