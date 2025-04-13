@@ -36,7 +36,7 @@ import 'models/time_frame.dart';
 import 'models/user_profile.dart';
 import 'models/user_settings.dart';
 import 'screens/home_screen.dart';
-import 'theme_notifier.dart';
+import 'theme/theme_notifier.dart';
 import 'utils/logger.dart';
 
 void main() async {

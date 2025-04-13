@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
-import '../theme_notifier.dart';
+import 'theme_notifier.dart';
 import 'app_colors.dart';
 import 'dynamic_colors.dart';
 

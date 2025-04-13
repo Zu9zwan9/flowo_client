@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../design/cupertino_form_theme.dart';
 import '../../models/app_theme.dart';
-import '../../theme_notifier.dart';
+import '../../theme/theme_notifier.dart';
 import '../../utils/formatter/date_time_formatter.dart';
 import '../../utils/logger.dart';
 

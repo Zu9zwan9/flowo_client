@@ -683,18 +683,21 @@ class HabitFormScreenState extends State<HabitFormScreen>
                   semanticLabel: type.capitalize(),
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  type.capitalize(),
-                  style: TextStyle(
-                    color:
-                        isSelected
-                            ? primaryColor
-                            : CupertinoColors.systemGrey.resolveFrom(context),
-                    fontSize: 14,
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
+                Flexible(
+                  child: Text(
+                    type.capitalize(),
+                    style: TextStyle(
+                      color:
+                          isSelected
+                              ? primaryColor
+                              : CupertinoColors.systemGrey.resolveFrom(context),
+                      fontSize: 14,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    semanticsLabel: '${type.capitalize()} frequency',
                   ),
-                  semanticsLabel: '${type.capitalize()} frequency',
                 ),
               ],
             ),

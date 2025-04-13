@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
-import '../theme_notifier.dart';
+import '../theme/theme_notifier.dart';
 
 /// A widget that applies a gradient background when enabled in the ThemeNotifier
 class GradientBackground extends StatelessWidget {
