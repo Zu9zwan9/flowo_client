@@ -1034,7 +1034,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     } else {
       Navigator.pushReplacement(
         context,
-        CupertinoPageRoute(builder: (_) => HomeScreen()),
+        CupertinoPageRoute(builder: (_) => const HomeScreen()),
       );
     }
   }

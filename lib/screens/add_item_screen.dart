@@ -79,22 +79,22 @@ class _AddItemScreenState extends State<AddItemScreen>
                 duration: const Duration(milliseconds: 250),
                 switchInCurve: Curves.easeInOut,
                 switchOutCurve: Curves.easeInOut,
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0.05, 0),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                ),
+                transitionBuilder:
+                    (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.05, 0),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
+                      ),
+                    ),
                 child: SingleChildScrollView(
-                  key: ValueKey('Scroll_${_tabController.index}'),                   child: Column(
+                  key: ValueKey('Scroll_${_tabController.index}'),
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _buildTabContent(_tabController.index),
-                    ],
+                    children: [_buildTabContent(_tabController.index)],
                   ),
                 ),
               ),
@@ -163,9 +163,10 @@ class _AddItemScreenState extends State<AddItemScreen>
           duration: const Duration(milliseconds: 200),
           height: double.infinity,
           decoration: BoxDecoration(
-            color: isSelected
-                ? CupertinoColors.systemBackground.resolveFrom(context)
-                : Colors.transparent,
+            color:
+                isSelected
+                    ? CupertinoColors.systemBackground.resolveFrom(context)
+                    : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
           ),
           margin: const EdgeInsets.all(2),
@@ -176,20 +177,23 @@ class _AddItemScreenState extends State<AddItemScreen>
                 Icon(
                   icon,
                   size: 18,
-                  color: isSelected
-                      ? primaryColor
-                      : CupertinoColors.systemGrey.resolveFrom(context),
+                  color:
+                      isSelected
+                          ? primaryColor
+                          : CupertinoColors.systemGrey.resolveFrom(context),
                   semanticLabel: text,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   text,
                   style: TextStyle(
-                    color: isSelected
-                        ? primaryColor
-                        : CupertinoColors.systemGrey.resolveFrom(context),
+                    color:
+                        isSelected
+                            ? primaryColor
+                            : CupertinoColors.systemGrey.resolveFrom(context),
                     fontSize: 14,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                   semanticsLabel: '$text tab',
                 ),
