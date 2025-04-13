@@ -4,10 +4,10 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
-import '../models/pomodoro_session.dart';
-import '../models/pomodoro_settings.dart';
-import '../models/pomodoro_statistics.dart';
-import '../models/task.dart';
+import '../../models/pomodoro_session.dart';
+import '../../models/pomodoro_settings.dart';
+import '../../models/pomodoro_statistics.dart';
+import '../../models/task.dart';
 
 /// A service class that manages the Pomodoro timer logic.
 /// This class follows the Single Responsibility Principle by focusing only on timer management.

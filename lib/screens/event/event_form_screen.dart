@@ -580,7 +580,7 @@ class EventFormScreenState extends State<EventFormScreen>
     }
   }
 
-  void _saveEvent(BuildContext context) {
+  Future<void> _saveEvent(BuildContext context) async {
     final validationError = _validateForm();
 
     if (validationError != null) {
@@ -602,29 +602,15 @@ class EventFormScreenState extends State<EventFormScreen>
     }
 
     final taskManagerCubit = context.read<TaskManagerCubit>();
+    bool success = false;
+
     if (widget.event != null) {
-      taskManagerCubit.editEvent(
+      success = await taskManagerCubit.editEvent(
         task: widget.event!,
         title: _titleController.text.trim(),
         start: _startTime,
         end: _endTime,
-        location:
-            _locationController.text.isNotEmpty
-                ? _locationController.text.trim()
-                : null,
-        notes:
-            _notesController.text.isNotEmpty
-                ? _notesController.text.trim()
-                : null,
-        color: _selectedColor,
-        travelingTime: _travelingTime,
-      );
-      logInfo('Event updated: ${_titleController.text}');
-    } else {
-      taskManagerCubit.createEvent(
-        title: _titleController.text.trim(),
-        start: _startTime,
-        end: _endTime,
+        context: context, // Add context parameter for conflict resolution
         location:
             _locationController.text.isNotEmpty
                 ? _locationController.text.trim()
@@ -639,20 +625,53 @@ class EventFormScreenState extends State<EventFormScreen>
         secondNotification: _secondNotification,
       );
 
-      logInfo(
-        'Scheduled Notification: ${_titleController.text} for hour: ${_startTime.hour}, minute: ${_startTime.minute - (_firstNotification ?? 0)}',
+      if (success) {
+        logInfo('Event updated: ${_titleController.text}');
+      } else {
+        logInfo('Event update canceled: ${_titleController.text}');
+        return; // Don't navigate away if the user canceled
+      }
+    } else {
+      success = await taskManagerCubit.createEvent(
+        title: _titleController.text.trim(),
+        start: _startTime,
+        end: _endTime,
+        context: context, // Add context parameter for conflict resolution
+        location:
+            _locationController.text.isNotEmpty
+                ? _locationController.text.trim()
+                : null,
+        notes:
+            _notesController.text.isNotEmpty
+                ? _notesController.text.trim()
+                : null,
+        color: _selectedColor,
+        travelingTime: _travelingTime,
+        firstNotification: _firstNotification,
+        secondNotification: _secondNotification,
       );
 
-      logInfo('Saved Event: ${_titleController.text}');
+      if (success) {
+        logInfo(
+          'Scheduled Notification: ${_titleController.text} for hour: ${_startTime.hour}, minute: ${_startTime.minute - (_firstNotification ?? 0)}',
+        );
+        logInfo('Saved Event: ${_titleController.text}');
+      } else {
+        logInfo('Event creation canceled: ${_titleController.text}');
+        return; // Don't navigate away if the user canceled
+      }
     }
 
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
-    } else {
-      Navigator.pushReplacement(
-        context,
-        CupertinoPageRoute(builder: (_) => const HomeScreen()),
-      );
+    // Only navigate away if the event was successfully saved
+    if (success) {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     }
   }
 }

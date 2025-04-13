@@ -7,12 +7,14 @@ import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/user_settings.dart';
+import 'package:flowo_client/utils/cupertino_conflict_resolver.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 import '../models/time_frame.dart';
 import '../services/notification/notification_service.dart';
+import 'cupertino_conflict_resolver.dart';
 
 class Scheduler {
   final Box<Day> daysDB;
@@ -160,24 +162,66 @@ class Scheduler {
     return lastScheduledTask;
   }
 
-  void scheduleEvent({
+  Future<bool> scheduleEvent({
     required Task task,
     required DateTime start,
     required DateTime end,
-  }) {
+    required BuildContext context,
+  }) async {
     _dayCache.clear();
     final dateKey = _formatDateKey(start);
 
     final day = _getOrCreateDay(dateKey);
     final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
+
+    // Detect conflicts
+    final conflicts = <ScheduledTask>[];
     for (ScheduledTask scheduledTask in sortedTasks) {
       if (scheduledTask.startTime.isBefore(end) &&
-          scheduledTask.endTime.isAfter(start)) {
-        logDebug(
-          // TODO: Add modal dialog to resolve overlap
-          'Event overlaps with existing task: ${scheduledTask.parentTaskId}',
-        );
-        return;
+          scheduledTask.endTime.isAfter(start) &&
+          scheduledTask.parentTaskId != task.id) {
+        conflicts.add(scheduledTask);
+      }
+    }
+
+    // If conflicts exist, show resolution dialog
+    if (conflicts.isNotEmpty) {
+      logDebug('Event overlaps with ${conflicts.length} existing tasks');
+
+      // Create a map of task IDs to tasks for the conflict resolver
+      final tasksMap = <String, Task>{};
+      for (final conflict in conflicts) {
+        final conflictTask = tasksDB.get(conflict.parentTaskId);
+        if (conflictTask != null) {
+          tasksMap[conflict.parentTaskId] = conflictTask;
+        }
+      }
+
+      // Show conflict resolution dialog
+      final resolution = await CupertinoConflictResolver.showConflictDialog(
+        context: context,
+        conflicts: conflicts,
+        tasksMap: tasksMap,
+        actionType: 'event',
+      );
+
+      // Handle user's choice
+      if (resolution == null) {
+        // User canceled
+        logInfo('User canceled event scheduling due to conflicts');
+        return false;
+      } else if (resolution) {
+        // User chose to replace conflicting tasks
+        logInfo('User chose to replace conflicting tasks');
+
+        // Remove conflicting tasks
+        for (final conflict in conflicts) {
+          _removeScheduledTask(conflict);
+        }
+      } else {
+        // User chose to adjust their schedule
+        logInfo('User chose to adjust their schedule');
+        return false;
       }
     }
 
@@ -189,15 +233,22 @@ class Scheduler {
       dateKey: dateKey,
       type: ScheduledTaskType.timeSensitive,
     );
+
+    return true;
   }
 
-  void scheduleHabit(
-    Task task,
-    List<DateTime> dates,
-    TimeOfDay start,
-    TimeOfDay end,
-  ) {
+  Future<bool> scheduleHabit({
+    required Task task,
+    required List<DateTime> dates,
+    required TimeOfDay start,
+    required TimeOfDay end,
+    required BuildContext context,
+  }) async {
     _dayCache.clear();
+
+    // Check all dates for conflicts first
+    final allConflicts = <ScheduledTask>[];
+    final Map<String, Task> tasksMap = {};
 
     for (DateTime date in dates) {
       final dateKey = _formatDateKey(date);
@@ -208,13 +259,56 @@ class Scheduler {
       final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
       for (ScheduledTask scheduledTask in sortedTasks) {
         if (scheduledTask.startTime.isBefore(endTime) &&
-            scheduledTask.endTime.isAfter(startTime)) {
-          logDebug(
-            'Habit overlaps with existing task: ${scheduledTask.parentTaskId}',
-          );
-          return;
+            scheduledTask.endTime.isAfter(startTime) &&
+            scheduledTask.parentTaskId != task.id) {
+          allConflicts.add(scheduledTask);
+
+          // Add to tasksMap for conflict resolver
+          final conflictTask = tasksDB.get(scheduledTask.parentTaskId);
+          if (conflictTask != null) {
+            tasksMap[scheduledTask.parentTaskId] = conflictTask;
+          }
         }
       }
+    }
+
+    // If conflicts exist, show resolution dialog
+    if (allConflicts.isNotEmpty) {
+      logDebug('Habit overlaps with ${allConflicts.length} existing tasks');
+
+      // Show conflict resolution dialog
+      final resolution = await CupertinoConflictResolver.showConflictDialog(
+        context: context,
+        conflicts: allConflicts,
+        tasksMap: tasksMap,
+        actionType: 'habit',
+      );
+
+      // Handle user's choice
+      if (resolution == null) {
+        // User canceled
+        logInfo('User canceled habit scheduling due to conflicts');
+        return false;
+      } else if (resolution) {
+        // User chose to replace conflicting tasks
+        logInfo('User chose to replace conflicting tasks');
+
+        // Remove conflicting tasks
+        for (final conflict in allConflicts) {
+          _removeScheduledTask(conflict);
+        }
+      } else {
+        // User chose to adjust their schedule
+        logInfo('User chose to adjust their schedule');
+        return false;
+      }
+    }
+
+    // Schedule the habit for all dates
+    for (DateTime date in dates) {
+      final dateKey = _formatDateKey(date);
+      final startTime = _combineDateKeyAndTimeOfDay(dateKey, start);
+      final endTime = _combineDateKeyAndTimeOfDay(dateKey, end);
 
       _createScheduledTask(
         task: task,
@@ -224,6 +318,8 @@ class Scheduler {
         type: ScheduledTaskType.timeSensitive,
       );
     }
+
+    return true;
   }
 
   bool _isActiveDay(String dateKey) {

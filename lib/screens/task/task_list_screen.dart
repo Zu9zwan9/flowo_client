@@ -210,7 +210,7 @@ class _TaskListScreenState extends State<TaskListScreen>
     // TODO: Implement the schedule dialog, add ability to choose what to schedule
     HapticFeedback.mediumImpact();
     final tasksCubit = context.read<TaskManagerCubit>();
-    tasksCubit.scheduleHabits();
+    tasksCubit.scheduleHabits(context); // Pass context for conflict resolution
     tasksCubit.scheduleTasks();
     _clearCache();
   }
