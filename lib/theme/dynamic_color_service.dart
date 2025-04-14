@@ -110,12 +110,14 @@ class DynamicColorService {
   }
 
   /// Get system colors based on the current platform and brightness
+  /// Enhanced to better utilize platform color schemes following Apple's Human Interface Guidelines
   Map<String, Color> getSystemColors(BuildContext context) {
     final brightness = CupertinoTheme.of(context).brightness;
     final isDark = brightness == Brightness.dark;
 
     // Base system colors from Cupertino
     final baseColors = {
+      // Primary colors
       'blue': CupertinoColors.systemBlue,
       'green': CupertinoColors.systemGreen,
       'indigo': CupertinoColors.systemIndigo,
@@ -125,14 +127,39 @@ class DynamicColorService {
       'red': CupertinoColors.systemRed,
       'teal': CupertinoColors.systemTeal,
       'yellow': CupertinoColors.systemYellow,
+
+      // Grayscale colors
       'gray': CupertinoColors.systemGrey,
+      'gray2': CupertinoColors.systemGrey2,
+      'gray3': CupertinoColors.systemGrey3,
+      'gray4': CupertinoColors.systemGrey4,
+      'gray5': CupertinoColors.systemGrey5,
+      'gray6': CupertinoColors.systemGrey6,
+
+      // Semantic colors
+      'label': CupertinoColors.label,
+      'secondaryLabel': CupertinoColors.secondaryLabel,
+      'tertiaryLabel': CupertinoColors.tertiaryLabel,
+      'quaternaryLabel': CupertinoColors.quaternaryLabel,
+      'systemBackground': CupertinoColors.systemBackground,
+      'secondarySystemBackground': CupertinoColors.secondarySystemBackground,
+      'tertiarySystemBackground': CupertinoColors.tertiarySystemBackground,
+      'systemGroupedBackground': CupertinoColors.systemGroupedBackground,
+      'secondarySystemGroupedBackground':
+          CupertinoColors.secondarySystemGroupedBackground,
+      'tertiarySystemGroupedBackground':
+          CupertinoColors.tertiarySystemGroupedBackground,
+      'separator': CupertinoColors.separator,
+      'opaqueSeparator': CupertinoColors.opaqueSeparator,
+      'link': CupertinoColors.activeBlue,
+      'placeholder': CupertinoColors.placeholderText,
     };
 
     // Resolve colors based on brightness
     final resolvedColors = <String, Color>{};
     baseColors.forEach((key, value) {
       if (value is CupertinoDynamicColor) {
-        resolvedColors[key] = isDark ? value.darkColor : value.color;
+        resolvedColors[key] = CupertinoDynamicColor.resolve(value, context);
       } else {
         resolvedColors[key] = value;
       }
@@ -141,24 +168,78 @@ class DynamicColorService {
     return resolvedColors;
   }
 
+  /// Generate a dynamic color palette based on system colors
+  /// This creates a harmonious set of colors that adapt to the system theme
+  Map<String, Color> generateSystemBasedPalette(BuildContext context) {
+    final systemColors = getSystemColors(context);
+    final brightness = CupertinoTheme.of(context).brightness;
+
+    // Create a palette that follows iOS design principles
+    return {
+      'primary': systemColors['blue']!,
+      'secondary': systemColors['green']!,
+      'accent': systemColors['orange']!,
+      'destructive': systemColors['red']!,
+      'warning': systemColors['yellow']!,
+      'success': systemColors['green']!,
+      'info': systemColors['teal']!,
+
+      // Background colors
+      'background': systemColors['systemBackground']!,
+      'secondaryBackground': systemColors['secondarySystemBackground']!,
+      'groupedBackground': systemColors['systemGroupedBackground']!,
+
+      // Text colors
+      'text': systemColors['label']!,
+      'secondaryText': systemColors['secondaryLabel']!,
+      'tertiaryText': systemColors['tertiaryLabel']!,
+      'placeholderText': systemColors['placeholder']!,
+
+      // UI element colors
+      'separator': systemColors['separator']!,
+      'opaqueSeparator': systemColors['opaqueSeparator']!,
+      'link': systemColors['link']!,
+
+      // Grayscale
+      'gray': systemColors['gray']!,
+      'lightGray': systemColors['gray4']!,
+      'ultraLightGray': systemColors['gray6']!,
+
+      // Light/dark variants for custom theming
+      'light':
+          brightness == Brightness.dark
+              ? systemColors['gray6']!
+              : systemColors['systemBackground']!,
+      'dark':
+          brightness == Brightness.dark
+              ? systemColors['systemBackground']!
+              : systemColors['gray6']!,
+    };
+  }
+
   /// Apply a noise effect to a color
   /// The noise level determines the intensity of the effect (0.0 to 1.0)
+  /// This implementation creates a grain-like effect by adding random noise to each RGB channel
   Color applyNoiseEffect(Color color, double noiseLevel) {
     if (noiseLevel <= 0.0) return color;
 
     final random = Random();
-    final noiseIntensity = noiseLevel * 0.1; // 0-10% variation
 
-    // Create a subtle noise pattern by varying RGB values
+    // Scale the noise level to create a more noticeable grain effect
+    // Higher noise level means more grain
+    final grainIntensity = noiseLevel * 30.0; // Up to 30 points of variation
+
+    // Create a grain effect by adding random noise to each RGB channel
+    // This simulates film grain or texture overlay
     return Color.fromARGB(
       color.alpha,
-      (color.red * (1 + (random.nextDouble() * 2 - 1) * noiseIntensity))
+      (color.red + (random.nextDouble() * 2 - 1) * grainIntensity)
           .round()
           .clamp(0, 255),
-      (color.green * (1 + (random.nextDouble() * 2 - 1) * noiseIntensity))
+      (color.green + (random.nextDouble() * 2 - 1) * grainIntensity)
           .round()
           .clamp(0, 255),
-      (color.blue * (1 + (random.nextDouble() * 2 - 1) * noiseIntensity))
+      (color.blue + (random.nextDouble() * 2 - 1) * grainIntensity)
           .round()
           .clamp(0, 255),
     );

@@ -234,21 +234,15 @@ class ThemeNotifier extends ChangeNotifier {
       if (_useDynamicColors && _dynamicColorPalette != null) {
         // Use dynamic color palette if enabled
         primaryColor = _dynamicColorPalette!['primary']!;
+
+        // Apply intensity as opacity to dynamic color
+        if (_colorIntensity < 1.0) {
+          primaryColor = primaryColor.withOpacity(_colorIntensity);
+        }
       } else {
-        // Apply intensity to custom color
-        final hslColor = HSLColor.fromColor(_customColor);
-        final adjustedColor =
-            hslColor
-                .withSaturation(
-                  (hslColor.saturation * _colorIntensity).clamp(0.0, 1.0),
-                )
-                .withLightness(
-                  isDark
-                      ? (hslColor.lightness * 1.2).clamp(0.0, 1.0)
-                      : (hslColor.lightness * _colorIntensity).clamp(0.0, 1.0),
-                )
-                .toColor();
-        primaryColor = adjustedColor;
+        // Apply intensity as opacity to custom color
+        // This makes color intensity work like opacity of the chosen color
+        primaryColor = _customColor.withOpacity(_colorIntensity);
       }
 
       // Apply noise effect if enabled
@@ -289,6 +283,11 @@ class ThemeNotifier extends ChangeNotifier {
                     .toColor(); // Light background
       }
 
+      // Apply color intensity as opacity to background color
+      if (_colorIntensity < 1.0) {
+        baseColor = baseColor.withOpacity(_colorIntensity);
+      }
+
       // Apply noise effect if enabled
       if (_noiseLevel > 0) {
         backgroundColor = _dynamicColorService.applyNoiseEffect(
@@ -313,19 +312,38 @@ class ThemeNotifier extends ChangeNotifier {
               : CupertinoColors.black;
 
       // Standard background colors from AppColors
-      backgroundColor = isDark ? AppColors.background : AppColors.background;
+      backgroundColor =
+          isDark
+              ? CupertinoColors.systemBackground.darkColor
+              : CupertinoColors.systemBackground.color;
     }
 
-    // Configure text style with appropriate weight for ADHD mode
+    // Configure text style with appropriate weight for ADHD mode and accessibility
+    // Apply Dynamic Type scaling following Apple's Human Interface Guidelines
+    // Base font sizes follow iOS standards
+    final double textScaleFactor =
+        WidgetsBinding.instance.platformDispatcher.textScaleFactor;
+
+    // Ensure minimum font sizes for accessibility
+    final double baseFontSize = 16 * textScaleFactor;
+    final double minFontSize = 14; // Minimum readable font size
+
     final textStyle = TextStyle(
       inherit: false,
       fontFamily: _currentFont,
       color: textColor,
-      fontSize: 16,
+      fontSize: baseFontSize.clamp(
+        minFontSize,
+        30,
+      ), // Clamp to reasonable range
       fontWeight: isADHD ? FontWeight.w500 : FontWeight.normal,
+      // Add letter spacing for better readability in ADHD mode
+      letterSpacing: isADHD ? 0.5 : 0.0,
+      // Improve text legibility with height
+      height: 1.2,
     );
 
-    // Configure Cupertino theme
+    // Configure Cupertino theme with accessibility features
     _cupertinoTheme = CupertinoThemeData(
       brightness: brightness,
       primaryColor: primaryColor,
@@ -341,15 +359,33 @@ class ThemeNotifier extends ChangeNotifier {
           fontFamily: _currentFont,
           fontWeight: FontWeight.w600,
           color: textColor,
-          fontSize: 17,
+          fontSize: (17 * textScaleFactor).clamp(minFontSize, 34),
+          letterSpacing: isADHD ? 0.5 : 0.0,
+          height: 1.2,
         ),
         navLargeTitleTextStyle: TextStyle(
           inherit: false,
           fontFamily: _currentFont,
           fontWeight: FontWeight.bold,
           color: textColor,
-          fontSize: 34,
-          letterSpacing: -0.5,
+          fontSize: (34 * textScaleFactor).clamp(20, 60),
+          letterSpacing: isADHD ? 0.0 : -0.5,
+          height: 1.1,
+        ),
+        // Add additional text styles for better accessibility
+        tabLabelTextStyle: TextStyle(
+          inherit: false,
+          fontFamily: _currentFont,
+          fontWeight: FontWeight.w500,
+          color: textColor,
+          fontSize: (10 * textScaleFactor).clamp(10, 18),
+        ),
+        actionTextStyle: TextStyle(
+          inherit: false,
+          fontFamily: _currentFont,
+          fontWeight: FontWeight.w600,
+          color: primaryColor,
+          fontSize: (16 * textScaleFactor).clamp(minFontSize, 24),
         ),
       ),
     );
@@ -473,13 +509,27 @@ class ThemeNotifier extends ChangeNotifier {
     }
   }
 
-  /// Generate a dynamic color palette from the custom color
-  void generateDynamicColorPalette() {
-    _dynamicColorPalette = _dynamicColorService.generatePalette(_customColor);
+  /// Generate a dynamic color palette from the custom color or system colors
+  void generateDynamicColorPalette([BuildContext? context]) {
+    if (context != null && _currentThemeMode == AppTheme.system) {
+      // Generate palette based on system colors for system theme mode
+      _dynamicColorPalette = _dynamicColorService.generateSystemBasedPalette(
+        context,
+      );
+    } else {
+      // Generate palette based on custom color for custom theme mode
+      _dynamicColorPalette = _dynamicColorService.generatePalette(_customColor);
+    }
 
-    if (_currentThemeMode == AppTheme.custom && _useDynamicColors) {
-      // Re-apply theme if using dynamic colors in custom mode
-      _applyTheme(brightness, isADHD: false, isCustom: true);
+    if ((_currentThemeMode == AppTheme.custom ||
+            _currentThemeMode == AppTheme.system) &&
+        _useDynamicColors) {
+      // Re-apply theme if using dynamic colors in custom or system mode
+      _applyTheme(
+        brightness,
+        isADHD: false,
+        isCustom: _currentThemeMode == AppTheme.custom,
+      );
 
       notifyListeners();
     }
