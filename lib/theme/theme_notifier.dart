@@ -2,6 +2,7 @@ import 'package:flowo_client/models/app_theme.dart'; // Import the shared AppThe
 import 'package:flowo_client/models/user_settings.dart'; // Import UserSettings
 import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/theme/app_colors.dart';
+import 'package:flowo_client/theme/dynamic_color_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -21,6 +22,13 @@ class ThemeNotifier extends ChangeNotifier {
   double _noiseLevel = 0.0; // 0.0 to 1.0
   bool _useGradient = false; // Whether to use gradient
   Color _secondaryColor = const Color(0xFF34C759); // Default to iOS green
+
+  // Dynamic color properties
+  bool _useDynamicColors = false;
+  Map<String, Color>? _dynamicColorPalette;
+
+  // Service for dynamic colors
+  final DynamicColorService _dynamicColorService = DynamicColorService();
 
   // Reference to user settings
   UserSettings? _userSettings;
@@ -42,10 +50,18 @@ class ThemeNotifier extends ChangeNotifier {
       _colorIntensity = userSettings.colorIntensity;
       _noiseLevel = userSettings.noiseLevel;
       _useGradient = userSettings.useGradient ?? false;
+      _useDynamicColors = userSettings.useDynamicColors;
       _secondaryColor =
           userSettings.secondaryColorValue != null
               ? Color(userSettings.secondaryColorValue!)
               : const Color(0xFF34C759);
+
+      // Generate dynamic color palette if dynamic colors are enabled
+      if (_useDynamicColors) {
+        _dynamicColorPalette = _dynamicColorService.generatePalette(
+          _customColor,
+        );
+      }
     } else {
       // Initialize with system theme by default
       _currentThemeMode = AppTheme.system;
@@ -77,6 +93,10 @@ class ThemeNotifier extends ChangeNotifier {
   double get noiseLevel => _noiseLevel;
   bool get useGradient => _useGradient;
   Color get secondaryColor => _secondaryColor;
+
+  // Dynamic color getters
+  bool get useDynamicColors => _useDynamicColors;
+  Map<String, Color>? get dynamicColorPalette => _dynamicColorPalette;
 
   // Theme color getters - all adaptive based on brightness
   Color get primaryColor => _cupertinoTheme.primaryColor;
@@ -211,20 +231,30 @@ class ThemeNotifier extends ChangeNotifier {
     Color primaryColor;
 
     if (isCustom) {
-      // Apply intensity to custom color
-      final hslColor = HSLColor.fromColor(_customColor);
-      final adjustedColor =
-          hslColor
-              .withSaturation(
-                (hslColor.saturation * _colorIntensity).clamp(0.0, 1.0),
-              )
-              .withLightness(
-                isDark
-                    ? (hslColor.lightness * 1.2).clamp(0.0, 1.0)
-                    : (hslColor.lightness * _colorIntensity).clamp(0.0, 1.0),
-              )
-              .toColor();
-      primaryColor = adjustedColor;
+      if (_useDynamicColors && _dynamicColorPalette != null) {
+        // Use dynamic color palette if enabled
+        primaryColor = _dynamicColorPalette!['primary']!;
+      } else {
+        // Apply intensity to custom color
+        final hslColor = HSLColor.fromColor(_customColor);
+        final adjustedColor =
+            hslColor
+                .withSaturation(
+                  (hslColor.saturation * _colorIntensity).clamp(0.0, 1.0),
+                )
+                .withLightness(
+                  isDark
+                      ? (hslColor.lightness * 1.2).clamp(0.0, 1.0)
+                      : (hslColor.lightness * _colorIntensity).clamp(0.0, 1.0),
+                )
+                .toColor();
+        primaryColor = adjustedColor;
+      }
+
+      // Apply noise effect if enabled
+      if (_noiseLevel > 0) {
+        primaryColor = applyNoiseToColor(primaryColor);
+      }
     } else {
       // Default theme colors using AppColors
       primaryColor = isADHD ? AppColors.accent : AppColors.primary;
@@ -238,42 +268,41 @@ class ThemeNotifier extends ChangeNotifier {
 
     if (isCustom) {
       // For custom theme, use the custom color as the base for background
-      // Lighten or darken it based on the brightness mode
-      final backgroundHsl = HSLColor.fromColor(_customColor);
-      final baseBackgroundColor =
-          isDark
-              ? backgroundHsl
-                  .withLightness(0.1)
-                  .toColor() // Dark background
-              : backgroundHsl.withLightness(0.95).toColor(); // Light background
+      Color baseColor;
 
+      if (_useDynamicColors && _dynamicColorPalette != null) {
+        // Use dynamic color palette for background if enabled
+        baseColor =
+            isDark
+                ? _dynamicColorPalette!['dark']!
+                : _dynamicColorPalette!['light']!;
+      } else {
+        // Lighten or darken the custom color based on the brightness mode
+        final backgroundHsl = HSLColor.fromColor(_customColor);
+        baseColor =
+            isDark
+                ? backgroundHsl
+                    .withLightness(0.1)
+                    .toColor() // Dark background
+                : backgroundHsl
+                    .withLightness(0.95)
+                    .toColor(); // Light background
+      }
+
+      // Apply noise effect if enabled
       if (_noiseLevel > 0) {
-        // Enhanced noise effect - create a more visible texture
-        final random = DateTime.now().millisecondsSinceEpoch;
-        final noiseIntensity = _noiseLevel * 0.05; // 0-5% variation
-
-        // Create a subtle noise pattern by varying RGB values
-        backgroundColor = Color.fromARGB(
-          baseBackgroundColor.a.round(),
-          (baseBackgroundColor.r *
-                  (1 + (random % 10 - 5) * noiseIntensity / 100))
-              .round()
-              .clamp(0, 255),
-          (baseBackgroundColor.g *
-                  (1 + (random % 10 - 5) * noiseIntensity / 100))
-              .round()
-              .clamp(0, 255),
-          (baseBackgroundColor.b *
-                  (1 + (random % 10 - 5) * noiseIntensity / 100))
-              .round()
-              .clamp(0, 255),
+        backgroundColor = _dynamicColorService.applyNoiseEffect(
+          baseColor,
+          _noiseLevel,
         );
       } else {
-        backgroundColor = baseBackgroundColor;
+        backgroundColor = baseColor;
       }
 
       // Dynamically determine text color based on background darkness
-      textColor = AppColors.appropriateTextColor(backgroundColor);
+      textColor = _dynamicColorService.suggestAccessibleTextColor(
+        backgroundColor,
+      );
     } else {
       // For non-custom themes, use standard text colors from AppColors
       textColor =
@@ -424,6 +453,54 @@ class ThemeNotifier extends ChangeNotifier {
     }
   }
 
+  /// Enable or disable dynamic colors
+  void setUseDynamicColors(bool useDynamicColors) {
+    _useDynamicColors = useDynamicColors;
+
+    if (_useDynamicColors && _dynamicColorPalette == null) {
+      // Generate a dynamic color palette if none exists
+      generateDynamicColorPalette();
+    }
+
+    if (_currentThemeMode == AppTheme.custom) {
+      // Re-apply theme if already in custom mode
+      _applyTheme(brightness, isADHD: false, isCustom: true);
+
+      // Save settings to UserSettings if available
+      _saveThemeSettings();
+
+      notifyListeners();
+    }
+  }
+
+  /// Generate a dynamic color palette from the custom color
+  void generateDynamicColorPalette() {
+    _dynamicColorPalette = _dynamicColorService.generatePalette(_customColor);
+
+    if (_currentThemeMode == AppTheme.custom && _useDynamicColors) {
+      // Re-apply theme if using dynamic colors in custom mode
+      _applyTheme(brightness, isADHD: false, isCustom: true);
+
+      notifyListeners();
+    }
+  }
+
+  /// Get a color from the dynamic color palette
+  /// Returns the custom color if the palette is not available or the key is not found
+  Color getDynamicColor(String key) {
+    if (_dynamicColorPalette == null ||
+        !_dynamicColorPalette!.containsKey(key)) {
+      return _customColor;
+    }
+    return _dynamicColorPalette![key]!;
+  }
+
+  /// Apply noise effect to a color
+  Color applyNoiseToColor(Color color) {
+    if (_noiseLevel <= 0.0) return color;
+    return _dynamicColorService.applyNoiseEffect(color, _noiseLevel);
+  }
+
   /// Apply custom theme with current settings
   void applyCustomTheme(Brightness brightness) {
     _currentThemeMode = AppTheme.custom;
@@ -456,6 +533,7 @@ class ThemeNotifier extends ChangeNotifier {
       _userSettings!.colorIntensity = _colorIntensity;
       _userSettings!.noiseLevel = _noiseLevel;
       _userSettings!.useGradient = _useGradient;
+      _userSettings!.useDynamicColors = _useDynamicColors;
       _userSettings!.secondaryColorValue = _secondaryColor.toARGB32();
 
       try {

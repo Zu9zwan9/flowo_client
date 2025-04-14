@@ -54,10 +54,13 @@ class UserSettings extends HiveObject {
   double noiseLevel;
 
   @HiveField(15)
-  bool? useGradient;
+  bool useGradient;
 
   @HiveField(16)
   int? secondaryColorValue;
+
+  @HiveField(17)
+  bool useDynamicColors;
 
   UserSettings({
     required this.name,
@@ -77,6 +80,7 @@ class UserSettings extends HiveObject {
     this.noiseLevel = 0.0,
     this.useGradient = false,
     this.secondaryColorValue = 0xFF34C759, // Default iOS green
+    this.useDynamicColors = false,
   }) {
     activeDays ??= {
       'Monday': true,

@@ -17,30 +17,35 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return UserSettings(
-      name: fields[0] as String,
-      minSession: fields[1] as int,
+      name: fields[0] == null ? "Default" : fields[0] as String,
+      minSession: fields[1] == null ? 30 * 60 * 1000 : fields[1] as int,
       breakTime: fields[2] as int?,
-      mealBreaks: (fields[3] as List).cast<TimeFrame>(),
-      sleepTime: (fields[4] as List).cast<TimeFrame>(),
-      freeTime: (fields[5] as List).cast<TimeFrame>(),
+      mealBreaks:
+          fields[3] == null ? [] : (fields[3] as List).cast<TimeFrame>(),
+      sleepTime: fields[4] == null ? [] : (fields[4] as List).cast<TimeFrame>(),
+      freeTime: fields[5] == null ? [] : (fields[5] as List).cast<TimeFrame>(),
       activeDays: (fields[6] as Map?)?.cast<String, bool>(),
-      defaultNotificationType: fields[7] as NotificationType,
-      dateFormat: fields[8] as String,
-      monthFormat: fields[9] as String,
-      is24HourFormat: fields[10] as bool,
-      themeMode: fields[11] as AppTheme,
-      customColorValue: fields[12] as int,
-      colorIntensity: fields[13] as double,
-      noiseLevel: fields[14] as double,
-      useGradient: fields[15] as bool?,
+      defaultNotificationType:
+          fields[7] == null
+              ? NotificationType.push
+              : fields[7] as NotificationType,
+      dateFormat: fields[8] == null ? "DD-MM-YYYY" : fields[8] as String,
+      monthFormat: fields[9] == null ? "numeric" : fields[9] as String,
+      is24HourFormat: fields[10] == null ? true : fields[10] as bool,
+      themeMode: fields[11] == null ? AppTheme.system : fields[11] as AppTheme,
+      customColorValue: fields[12] == null ? 0xFF0A84FF : fields[12] as int,
+      colorIntensity: fields[13] == null ? 1.0 : fields[13] as double,
+      noiseLevel: fields[14] == null ? 0.0 : fields[14] as double,
+      useGradient: fields[15] == null ? false : fields[15] as bool,
       secondaryColorValue: fields[16] as int?,
+      useDynamicColors: fields[17] == null ? false : fields[17] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserSettings obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -74,7 +79,9 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       ..writeByte(15)
       ..write(obj.useGradient)
       ..writeByte(16)
-      ..write(obj.secondaryColorValue);
+      ..write(obj.secondaryColorValue)
+      ..writeByte(17)
+      ..write(obj.useDynamicColors);
   }
 
   @override

@@ -1,12 +1,14 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/time_frame.dart';
 import 'package:flowo_client/models/user_settings.dart';
+import 'package:flowo_client/screens/settings/theme_settings_screen.dart';
 import 'package:flowo_client/screens/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../design/cupertino_form_theme.dart';
+import 'theme_settings_screen.dart';
 import '../../models/app_theme.dart';
 import '../../theme/theme_notifier.dart';
 import '../../utils/formatter/date_time_formatter.dart';
@@ -1178,72 +1180,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   themeNotifier,
                   (themeValue) => themeNotifier.setThemeMode(themeValue),
                 ),
-                if (themeNotifier.themeMode == AppTheme.custom) ...[
-                  const SizedBox(height: 16),
-                  SettingsItem(
-                    label: 'Theme Color',
-                    subtitle: 'Choose your custom theme color',
-                    leading: Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: themeNotifier.customColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: CupertinoColors.systemGrey3,
-                          width: 1,
-                        ),
+                const SizedBox(height: 16),
+                SettingsItem(
+                  label: 'Advanced Theme Settings',
+                  subtitle: 'Customize colors, effects, and accessibility',
+                  leading: const Icon(
+                    CupertinoIcons.paintbrush,
+                    color: CupertinoColors.systemBlue,
+                  ),
+                  trailing: const Icon(
+                    CupertinoIcons.chevron_right,
+                    color: CupertinoColors.systemGrey,
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      CupertinoPageRoute(
+                        builder: (context) => const ThemeSettingsScreen(),
                       ),
-                    ),
-                    onTap: () => _showColorPicker(themeNotifier),
-                  ),
-                  SettingsSliderItem(
-                    label: 'Color Intensity',
-                    value: themeNotifier.colorIntensity,
-                    min: 0.0,
-                    max: 1.0,
-                    divisions: 10,
-                    valueLabel:
-                        '${(themeNotifier.colorIntensity * 100).round()}%',
-                    onChanged:
-                        (value) => themeNotifier.setColorIntensity(value),
-                    subtitle: 'Adjust the intensity of your custom color',
-                  ),
-                  SettingsSliderItem(
-                    label: 'Noise Effect',
-                    value: themeNotifier.noiseLevel,
-                    min: 0.0,
-                    max: 1.0,
-                    divisions: 10,
-                    valueLabel: '${(themeNotifier.noiseLevel * 100).round()}%',
-                    onChanged: (value) => themeNotifier.setNoiseLevel(value),
-                    subtitle: 'Add subtle noise effect to the background',
-                  ),
-                  SettingsToggleItem(
-                    label: 'Use Gradient',
-                    value: themeNotifier.useGradient,
-                    onChanged: (value) => themeNotifier.setUseGradient(value),
-                    subtitle: 'Apply gradient effect to the background',
-                  ),
-                  if (themeNotifier.useGradient)
-                    SettingsItem(
-                      label: 'Secondary Color',
-                      subtitle: 'Choose the secondary color for gradient',
-                      leading: Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          color: themeNotifier.secondaryColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: CupertinoColors.systemGrey3,
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                      onTap: () => _showSecondaryColorPicker(themeNotifier),
-                    ),
-                ],
+                    );
+                  },
+                ),
               ],
             ),
             SettingsSection(
