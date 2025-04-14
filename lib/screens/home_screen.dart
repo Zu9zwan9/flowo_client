@@ -14,7 +14,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../widgets/gradient_theme.dart';
 import 'calendar/calendar_screen.dart';
-import 'notifications/notification_test_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -115,13 +114,14 @@ class _HomeScreenState extends State<HomeScreen>
       label: 'Settings',
       accentColor: CupertinoColors.systemGrey,
     ),
-    // (
-    //   page: NotificationTestScreen(),
-    //   icon: CupertinoIcons.bell,
-    //   label: 'Test Notifications',
-    //   accentColor: CupertinoColors.systemTeal,
-    // ),
   ];
+
+  // (
+  //   page: NotificationTestScreen(),
+  //   icon: CupertinoIcons.bell,
+  //   label: 'Test Notifications',
+  //   accentColor: CupertinoColors.systemTeal,
+  // ),
 
   void _navigateToPage(int index) {
     if (_selectedIndex == index) {

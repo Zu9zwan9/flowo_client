@@ -8,11 +8,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../design/cupertino_form_theme.dart';
-import 'theme_settings_screen.dart';
 import '../../models/app_theme.dart';
 import '../../theme/theme_notifier.dart';
 import '../../utils/formatter/date_time_formatter.dart';
 import '../../utils/logger.dart';
+import '../tutorial/tutorial_launcher.dart';
 
 abstract class ThemeSelectionStrategy {
   Widget buildThemeSelector(
@@ -289,51 +289,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ],
           ),
     );
-  }
-
-  Future<void> _saveLogs() async {
-    appLogger.info('Save logs button pressed', 'Settings');
-    final filePath = await appLogger.saveToFile(context);
-
-    if (!mounted || filePath == null) return;
-
-    showCupertinoDialog(
-      context: context,
-      builder:
-          (_) => CupertinoAlertDialog(
-            title: const Text('Logs Saved'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Logs have been saved successfully.'),
-                const SizedBox(height: 8),
-                Text(
-                  'Location: $filePath',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: CupertinoColors.systemGrey,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('Share'),
-                onPressed: () {
-                  Navigator.pop(context);
-                  _shareLogFile(filePath);
-                },
-              ),
-              const CupertinoDialogAction(
-                isDefaultAction: true,
-                child: Text('OK'),
-              ),
-            ],
-          ),
-    );
-
-    appLogger.info('Logs saved successfully', 'Settings', {'path': filePath});
   }
 
   Future<void> _shareLogFile(String filePath) async {
@@ -1409,18 +1364,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             SettingsSection(
-              title: 'Logs',
+              title: 'Help & Support',
               footerText:
-                  'Save and share application logs for troubleshooting.',
+                  'Access tutorials and help resources to get the most out of Flowo.',
               children: [
                 SettingsItem(
-                  label: 'Save Logs',
-                  subtitle: 'Save application logs to a file',
+                  label: 'App Tutorial',
+                  subtitle: 'Learn how to use the main features of Flowo',
                   leading: const Icon(
-                    CupertinoIcons.doc_text,
-                    color: CupertinoColors.systemBlue,
+                    CupertinoIcons.book,
+                    color: CupertinoColors.systemIndigo,
                   ),
-                  onTap: _saveLogs,
+                  trailing: const Icon(
+                    CupertinoIcons.chevron_right,
+                    color: CupertinoColors.systemGrey,
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      CupertinoPageRoute(
+                        builder: (context) => const TutorialLauncher(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

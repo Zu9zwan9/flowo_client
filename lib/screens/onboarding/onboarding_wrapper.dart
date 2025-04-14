@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 
+import '../tutorial/tutorial_screen.dart';
+
 /// A widget that checks if onboarding is completed and shows the appropriate screen
 class OnboardingWrapper extends StatefulWidget {
   const OnboardingWrapper({super.key});
@@ -20,6 +22,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper>
   late OnboardingService _onboardingService;
   bool _isOnboardingCompleted = false;
   bool _isInitialized = false;
+  bool _showTutorial = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -62,6 +65,7 @@ class _OnboardingWrapperState extends State<OnboardingWrapper>
     if (mounted) {
       setState(() {
         _isOnboardingCompleted = _onboardingService.isOnboardingCompleted();
+        _showTutorial = _isOnboardingCompleted;
         _isInitialized = true;
       });
       _animationController.forward();
@@ -101,7 +105,15 @@ class _OnboardingWrapperState extends State<OnboardingWrapper>
         opacity: _fadeAnimation,
         child:
             _isOnboardingCompleted
-                ? const HomeScreen(initialExpanded: false)
+                ? _showTutorial
+                    ? TutorialScreen(
+                      onComplete: () {
+                        setState(() {
+                          _showTutorial = false;
+                        });
+                      },
+                    )
+                    : const HomeScreen(initialExpanded: false)
                 : const NameInputScreen(),
       ),
     );
