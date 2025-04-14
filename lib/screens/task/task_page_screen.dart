@@ -283,16 +283,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       barrierDismissible: true,
       builder: (_) => CupertinoAlertDialog(content: Text(message)),
     );
-
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        Navigator.pop(context);
-        Navigator.pushReplacement(
-          context,
-          CupertinoPageRoute(builder: (_) => const CalendarScreen()),
-        );
-      }
-    });
   }
 
   void _deleteSubtask(Task subtask) {
