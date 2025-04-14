@@ -35,15 +35,15 @@ class Scheduler {
     const freeTimeManagerId = 'free_time_manager';
     freeTimeManager =
         tasksDB.get(freeTimeManagerId) ??
-            Task(
-              id: freeTimeManagerId,
-              title: 'Free Time',
-              priority: 0,
-              estimatedTime: 0,
-              deadline: 0,
-              category: Category(name: 'Free Time Manager'),
-              scheduledTasks: [],
-            );
+        Task(
+          id: freeTimeManagerId,
+          title: 'Free Time',
+          priority: 0,
+          estimatedTime: 0,
+          deadline: 0,
+          category: Category(name: 'Free Time Manager'),
+          scheduledTasks: [],
+        );
 
     if (!tasksDB.containsKey(freeTimeManagerId)) {
       tasksDB.put(freeTimeManagerId, freeTimeManager);
@@ -60,11 +60,11 @@ class Scheduler {
   }
 
   ScheduledTask? scheduleTask(
-      Task task,
-      int minSessionDuration, {
-        double? urgency,
-        List<String>? availableDates,
-      }) {
+    Task task,
+    int minSessionDuration, {
+    double? urgency,
+    List<String>? availableDates,
+  }) {
     _dayCache.clear();
 
     if (urgency != null && urgency > 0) {
@@ -160,23 +160,47 @@ class Scheduler {
     return lastScheduledTask;
   }
 
+  List<ScheduledTask> findOverlappingTasks({
+    required DateTime start,
+    required DateTime end,
+    required String dateKey,
+  }) {
+    final day = _getOrCreateDay(dateKey);
+    final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
+    final overlappingTasks = <ScheduledTask>[];
+
+    for (ScheduledTask scheduledTask in sortedTasks) {
+      if (scheduledTask.startTime.isBefore(end) &&
+          scheduledTask.endTime.isAfter(start)) {
+        overlappingTasks.add(scheduledTask);
+      }
+    }
+
+    return overlappingTasks;
+  }
+
   void scheduleEvent({
     required Task task,
     required DateTime start,
     required DateTime end,
+    bool overrideOverlaps = false,
   }) {
     _dayCache.clear();
     final dateKey = _formatDateKey(start);
 
-    final day = _getOrCreateDay(dateKey);
-    final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
-    for (ScheduledTask scheduledTask in sortedTasks) {
-      if (scheduledTask.startTime.isBefore(end) &&
-          scheduledTask.endTime.isAfter(start)) {
+    if (!overrideOverlaps) {
+      final overlappingTasks = findOverlappingTasks(
+        start: start,
+        end: end,
+        dateKey: dateKey,
+      );
+
+      if (overlappingTasks.isNotEmpty) {
         logDebug(
-          // TODO: Add modal dialog to resolve overlap
-          'Event overlaps with existing task: ${scheduledTask.parentTaskId}',
+          'Event overlaps with ${overlappingTasks.length} existing tasks',
         );
+        // Return the overlapping tasks without scheduling
+        // The caller will handle showing the modal dialog
         return;
       }
     }
@@ -192,11 +216,11 @@ class Scheduler {
   }
 
   void scheduleHabit(
-      Task task,
-      List<DateTime> dates,
-      TimeOfDay start,
-      TimeOfDay end,
-      ) {
+    Task task,
+    List<DateTime> dates,
+    TimeOfDay start,
+    TimeOfDay end,
+  ) {
     _dayCache.clear();
 
     for (DateTime date in dates) {
@@ -276,13 +300,13 @@ class Scheduler {
   }
 
   List<ScheduledTask> _findAllAvailableTimeSlots(
-      Day day,
-      DateTime start,
-      int requiredTime,
-      int minSession,
-      String taskTitle,
-      String dateKey,
-      ) {
+    Day day,
+    DateTime start,
+    int requiredTime,
+    int minSession,
+    String taskTitle,
+    String dateKey,
+  ) {
     final List<ScheduledTask> availableSlots = [];
     final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
     final dayStart = _parseStartTime(dateKey);
@@ -363,12 +387,12 @@ class Scheduler {
   }
 
   ScheduledTask? _tryCreateSlot(
-      DateTime start,
-      DateTime end,
-      int requiredTime,
-      int minSession,
-      String dateKey,
-      ) {
+    DateTime start,
+    DateTime end,
+    int requiredTime,
+    int minSession,
+    String dateKey,
+  ) {
     // Ensure start time is not before current time
     final now = DateTime.now();
     if (start.isBefore(now)) {
@@ -384,7 +408,7 @@ class Scheduler {
     DateTime slotEnd = start.add(
       Duration(
         milliseconds:
-        requiredTime > availableTime ? availableTime : requiredTime,
+            requiredTime > availableTime ? availableTime : requiredTime,
       ),
     );
 
@@ -403,25 +427,25 @@ class Scheduler {
       );
 
   List<ScheduledTask> _findDisplaceableSlots(
-      Day day,
-      DateTime start,
-      int requiredTime,
-      int minSession,
-      double urgency,
-      String taskTitle,
-      ) {
+    Day day,
+    DateTime start,
+    int requiredTime,
+    int minSession,
+    double urgency,
+    String taskTitle,
+  ) {
     final displaceable = <ScheduledTask>[];
     int timeFound = 0;
     final tasks =
-    day.scheduledTasks
-        .where(
-          (task) =>
-      task.startTime.isAfter(start) &&
-          task.type == ScheduledTaskType.defaultType &&
-          (task.urgency ?? 0) < urgency,
-    )
-        .toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+        day.scheduledTasks
+            .where(
+              (task) =>
+                  task.startTime.isAfter(start) &&
+                  task.type == ScheduledTaskType.defaultType &&
+                  (task.urgency ?? 0) < urgency,
+            )
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     for (var task in tasks) {
       final duration = _calculateDurationMs(task.startTime, task.endTime);
@@ -441,7 +465,7 @@ class Scheduler {
     final task = tasksDB.get(scheduledTask.parentTaskId);
     if (task != null) {
       task.scheduledTasks.removeWhere(
-            (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+        (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
       );
       tasksDB.put(task.id, task);
     }
@@ -450,7 +474,7 @@ class Scheduler {
     final day = _dayCache[dateKey] ?? daysDB.get(dateKey);
     if (day != null) {
       day.scheduledTasks.removeWhere(
-            (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+        (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
       );
       daysDB.put(dateKey, day);
     }
@@ -473,7 +497,7 @@ class Scheduler {
       final day = daysDB.get(entry.key);
       if (day != null) {
         day.scheduledTasks.removeWhere(
-              (st) => entry.value.contains(st.scheduledTaskId),
+          (st) => entry.value.contains(st.scheduledTaskId),
         );
         daysDB.put(entry.key, day);
       }
@@ -584,11 +608,11 @@ class Scheduler {
   }
 
   void _addTimeBlock(
-      Day day,
-      TimeFrame timeFrame,
-      ScheduledTaskType type,
-      DateTime baseDate,
-      ) {
+    Day day,
+    TimeFrame timeFrame,
+    ScheduledTaskType type,
+    DateTime baseDate,
+  ) {
     if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
         timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
       // Split overnight task
@@ -747,4 +771,3 @@ class Scheduler {
     return DateTime(year, month, day, timeOfDay.hour, timeOfDay.minute);
   }
 }
-

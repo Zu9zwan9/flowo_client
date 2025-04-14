@@ -1,14 +1,14 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/design/cupertino_form_theme.dart';
 import 'package:flowo_client/design/cupertino_form_widgets.dart';
+import 'package:flowo_client/models/scheduled_task.dart';
+import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../models/notification_type.dart';
 import '../../models/user_settings.dart';
-import '../../services/notification/notification_service.dart';
 
 class EventFormScreen extends StatefulWidget {
   final DateTime? selectedDate;
@@ -73,7 +73,7 @@ class EventFormScreenState extends State<EventFormScreen>
       _selectedColor = event.color;
       _travelingTime =
           event.scheduledTasks.isNotEmpty
-              ? event.scheduledTasks.first.travelingTime ?? 0
+              ? event.scheduledTasks.first.travelingTime
               : 0;
     } else {
       _startTime = widget.selectedDate ?? DateTime.now();
@@ -524,6 +524,104 @@ class EventFormScreenState extends State<EventFormScreen>
     );
   }
 
+  Future<bool?> _showOverlapResolutionDialog(
+    BuildContext context,
+    List<ScheduledTask> overlappingTasks,
+    bool isEdit,
+  ) async {
+    final taskManagerCubit = context.read<TaskManagerCubit>();
+
+    // Get parent tasks for all overlapping tasks
+    final overlappingParentTasks = <Task>[];
+    for (var scheduledTask in overlappingTasks) {
+      final parentTask = scheduledTask.parentTask;
+      if (parentTask != null && !overlappingParentTasks.contains(parentTask)) {
+        overlappingParentTasks.add(parentTask);
+      }
+    }
+
+    // Format the list of overlapping tasks for display
+    final overlappingTasksText = overlappingParentTasks
+        .map((task) {
+          final scheduledTask = task.scheduledTasks.firstWhere(
+            (st) => overlappingTasks.any(
+              (ot) => ot.scheduledTaskId == st.scheduledTaskId,
+            ),
+            orElse:
+                () => overlappingTasks.firstWhere(
+                  (ot) => ot.parentTaskId == task.id,
+                ),
+          );
+
+          final startTime = scheduledTask.startTime;
+          final endTime = scheduledTask.endTime;
+          final formattedStart =
+              '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+          final formattedEnd =
+              '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+
+          String taskType = 'Task';
+          if (scheduledTask.type == ScheduledTaskType.timeSensitive) {
+            taskType = 'Event';
+          } else if (scheduledTask.type == ScheduledTaskType.rest) {
+            taskType = 'Break';
+          } else if (scheduledTask.type == ScheduledTaskType.mealBreak) {
+            taskType = 'Meal Break';
+          } else if (scheduledTask.type == ScheduledTaskType.sleep) {
+            taskType = 'Sleep Time';
+          } else if (scheduledTask.type == ScheduledTaskType.freeTime) {
+            taskType = 'Free Time';
+          }
+
+          return '• ${task.title} ($taskType, $formattedStart-$formattedEnd)';
+        })
+        .join('\n');
+
+    return showCupertinoDialog<bool>(
+      context: context,
+      builder: (context) {
+        final primaryColor = CupertinoTheme.of(context).primaryColor;
+        final textColor = CupertinoTheme.of(context).textTheme.textStyle.color;
+
+        return CupertinoAlertDialog(
+          title: Text(
+            'Schedule Conflict',
+            style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This ${isEdit ? 'edit' : 'new event'} overlaps with:',
+                style: TextStyle(color: textColor),
+              ),
+              const SizedBox(height: 8),
+              Text(overlappingTasksText, style: TextStyle(color: textColor)),
+              const SizedBox(height: 12),
+              Text(
+                'What would you like to do?',
+                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(context, false),
+              isDestructiveAction: true,
+              child: const Text('Cancel'),
+            ),
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(context, true),
+              isDefaultAction: true,
+              child: const Text('Override Conflicts'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _saveEvent(BuildContext context) async {
     final validationError = _validateForm();
 
@@ -546,14 +644,15 @@ class EventFormScreenState extends State<EventFormScreen>
     }
 
     final taskManagerCubit = context.read<TaskManagerCubit>();
+    List<ScheduledTask> overlappingTasks = [];
 
     if (widget.event != null) {
-      taskManagerCubit.editEvent(
+      // Editing existing event
+      overlappingTasks = taskManagerCubit.editEvent(
         task: widget.event!,
         title: _titleController.text.trim(),
         start: _startTime,
         end: _endTime,
-        // Add context parameter for conflict resolution
         location:
             _locationController.text.isNotEmpty
                 ? _locationController.text.trim()
@@ -568,7 +667,8 @@ class EventFormScreenState extends State<EventFormScreen>
         secondNotification: _secondNotification,
       );
     } else {
-      taskManagerCubit.createEvent(
+      // Creating new event
+      overlappingTasks = taskManagerCubit.createEvent(
         title: _titleController.text.trim(),
         start: _startTime,
         end: _endTime,
@@ -585,6 +685,84 @@ class EventFormScreenState extends State<EventFormScreen>
         firstNotification: _firstNotification,
         secondNotification: _secondNotification,
       );
+    }
+
+    // If there are overlapping tasks, show the resolution dialog
+    if (overlappingTasks.isNotEmpty) {
+      final shouldOverride = await _showOverlapResolutionDialog(
+        context,
+        overlappingTasks,
+        widget.event != null,
+      );
+
+      if (shouldOverride == true) {
+        // User chose to override conflicts
+        if (widget.event != null) {
+          // Editing existing event with override
+          taskManagerCubit.editEvent(
+            task: widget.event!,
+            title: _titleController.text.trim(),
+            start: _startTime,
+            end: _endTime,
+            location:
+                _locationController.text.isNotEmpty
+                    ? _locationController.text.trim()
+                    : null,
+            notes:
+                _notesController.text.isNotEmpty
+                    ? _notesController.text.trim()
+                    : null,
+            color: _selectedColor,
+            travelingTime: _travelingTime,
+            firstNotification: _firstNotification,
+            secondNotification: _secondNotification,
+            overrideOverlaps: true,
+          );
+        } else {
+          // Creating new event with override
+          taskManagerCubit.createEvent(
+            title: _titleController.text.trim(),
+            start: _startTime,
+            end: _endTime,
+            location:
+                _locationController.text.isNotEmpty
+                    ? _locationController.text.trim()
+                    : null,
+            notes:
+                _notesController.text.isNotEmpty
+                    ? _notesController.text.trim()
+                    : null,
+            color: _selectedColor,
+            travelingTime: _travelingTime,
+            firstNotification: _firstNotification,
+            secondNotification: _secondNotification,
+            overrideOverlaps: true,
+          );
+        }
+
+        // Close the form screen after successful save with override
+        if (mounted) {
+          try {
+            // Try to navigate back
+            if (Navigator.canPop(context)) {
+              Navigator.of(context).pop();
+            } else {
+              // If can't pop, navigate to home or another screen
+              Navigator.of(context).pushReplacementNamed('/');
+            }
+          } catch (e) {
+            // If navigation fails, try a different approach
+            Navigator.of(context).pushReplacementNamed('/');
+          }
+        }
+      }
+      // If shouldOverride is false or null, do nothing (user canceled)
+      return;
+    }
+
+    // No overlaps, close the form screen after successful save
+    if (mounted) {
+      Navigator.of(context).pop();
     }
   }
 }

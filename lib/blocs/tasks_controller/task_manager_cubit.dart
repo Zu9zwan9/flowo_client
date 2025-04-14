@@ -56,7 +56,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  void createEvent({
+  List<ScheduledTask> createEvent({
     required String title,
     required DateTime start,
     required DateTime end,
@@ -66,8 +66,27 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     int? travelingTime,
     int? firstNotification,
     int? secondNotification,
+    bool overrideOverlaps = false,
   }) {
     logInfo('Creating event: title - $title, start - $start, end - $end');
+
+    final dateKey = _formatDateKey(start);
+
+    // Check for overlaps first
+    if (!overrideOverlaps) {
+      final overlappingTasks = taskManager.scheduler.findOverlappingTasks(
+        start: start,
+        end: end,
+        dateKey: dateKey,
+      );
+
+      if (overlappingTasks.isNotEmpty) {
+        logInfo(
+          'Event overlaps with ${overlappingTasks.length} existing tasks',
+        );
+        return overlappingTasks;
+      }
+    }
 
     final priority = 0; // Not required, set to default
     final estimatedTime = end.difference(start).inMilliseconds;
@@ -88,12 +107,18 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       secondNotification: secondNotification,
     );
 
-    taskManager.scheduler.scheduleEvent(task: task, start: start, end: end);
-    // TODO: Save the event in the database
+    taskManager.scheduler.scheduleEvent(
+      task: task,
+      start: start,
+      end: end,
+      overrideOverlaps: overrideOverlaps,
+    );
 
     // Update the state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
     logInfo('Event created successfully: $task.title');
+
+    return []; // Return empty list to indicate success
   }
 
   List<ScheduledTask> getScheduledTasks() {
@@ -189,7 +214,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  void editEvent({
+  List<ScheduledTask> editEvent({
     required Task task,
     required String title,
     required DateTime start,
@@ -200,25 +225,44 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     int? travelingTime,
     int? firstNotification,
     int? secondNotification,
+    bool overrideOverlaps = false,
   }) {
     logInfo(
       'Editing event: ${task.title} to new title - $title, start - $start, end - $end',
     );
 
+    final dateKey = _formatDateKey(start);
+
+    // Check for overlaps first, excluding the current task's scheduled tasks
+    if (!overrideOverlaps) {
+      final overlappingTasks =
+          taskManager.scheduler
+              .findOverlappingTasks(start: start, end: end, dateKey: dateKey)
+              .where((st) => st.parentTaskId != task.id)
+              .toList();
+
+      if (overlappingTasks.isNotEmpty) {
+        logInfo(
+          'Event overlaps with ${overlappingTasks.length} existing tasks',
+        );
+        return overlappingTasks;
+      }
+    }
+
     if (task.scheduledTasks.isNotEmpty) {
       final scheduledTask = task.scheduledTasks.first;
-      final dateKey = _formatDateKey(scheduledTask.startTime);
+      final oldDateKey = _formatDateKey(scheduledTask.startTime);
       final daysBox = Hive.box<Day>('scheduled_tasks');
-      final day = daysBox.get(dateKey);
+      final day = daysBox.get(oldDateKey);
 
       if (day != null) {
         day.scheduledTasks.removeWhere(
           (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
         );
         if (day.scheduledTasks.isEmpty) {
-          daysBox.delete(dateKey);
+          daysBox.delete(oldDateKey);
         } else {
-          daysBox.put(dateKey, day);
+          daysBox.put(oldDateKey, day);
         }
         logInfo('Removed previous scheduled task for event: ${task.title}');
       }
@@ -242,11 +286,18 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       secondNotification: secondNotification,
     );
 
-    taskManager.scheduler.scheduleEvent(task: task, start: start, end: end);
+    taskManager.scheduler.scheduleEvent(
+      task: task,
+      start: start,
+      end: end,
+      overrideOverlaps: overrideOverlaps,
+    );
     taskManager.tasksDB.put(task.id, task);
 
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
     logInfo('Event updated successfully: ${task.title}');
+
+    return []; // Return empty list to indicate success
   }
 
   void scheduleTasks() {
