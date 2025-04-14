@@ -115,12 +115,12 @@ class _HomeScreenState extends State<HomeScreen>
       label: 'Settings',
       accentColor: CupertinoColors.systemGrey,
     ),
-    (
-      page: NotificationTestScreen(),
-      icon: CupertinoIcons.bell,
-      label: 'Test Notifications',
-      accentColor: CupertinoColors.systemTeal,
-    ),
+    // (
+    //   page: NotificationTestScreen(),
+    //   icon: CupertinoIcons.bell,
+    //   label: 'Test Notifications',
+    //   accentColor: CupertinoColors.systemTeal,
+    // ),
   ];
 
   void _navigateToPage(int index) {
