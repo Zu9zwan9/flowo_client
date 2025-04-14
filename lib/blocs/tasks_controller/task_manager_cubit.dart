@@ -497,12 +497,10 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     }
 
     try {
-      // Create a notification for the task completion check
-      // This would typically use a notification service, but for simplicity,
-      // we'll just log it for now
+      // TODO: Create a notification for the task completion check
+      // TODO: This would typically use a notification service
       logInfo('Would send completion check reminder for task "${task.title}"');
 
-      // In a real implementation, you would use a notification service:
       // await _notificationService.sendCompletionCheckReminder(task);
     } catch (e) {
       logError('Error sending completion check reminder: $e');
@@ -515,15 +513,13 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     DateTime scheduledTime,
   ) async {
     try {
-      // Schedule a notification for the task completion check
-      // This would typically use a notification service, but for simplicity,
-      // we'll just log it for now
+      // TODO: Schedule a notification for the task completion check
+      // TODO: This would typically use a notification service
       logInfo(
         'Would schedule completion check reminder for task "${task.title}" at $scheduledTime',
       );
 
-      // In a real implementation, you would use a notification service:
-      // await _notificationService.scheduleCompletionCheckReminder(task, scheduledTime);
+      //TODO:  await _notificationService.scheduleCompletionCheckReminder(task, scheduledTime);
     } catch (e) {
       logError('Error scheduling completion check reminder: $e');
     }
