@@ -1,7 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/utils/logger.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
 import '../../models/category.dart';
@@ -51,25 +50,23 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       firstNotification: firstNotification,
       secondNotification: secondNotification,
     );
-
     // Save the task with notification settings
     taskManager.tasksDB.put(task.id, task);
 
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  Future<bool> createEvent({
+  void createEvent({
     required String title,
     required DateTime start,
     required DateTime end,
-    required BuildContext context,
     String? location,
     String? notes,
     int? color,
     int? travelingTime,
     int? firstNotification,
     int? secondNotification,
-  }) async {
+  }) {
     logInfo('Creating event: title - $title, start - $start, end - $end');
 
     final priority = 0; // Not required, set to default
@@ -91,25 +88,12 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       secondNotification: secondNotification,
     );
 
-    // Schedule the event with conflict resolution
-    final success = await taskManager.scheduler.scheduleEvent(
-      task: task,
-      start: start,
-      end: end,
-      context: context,
-    );
-
-    if (!success) {
-      // If scheduling failed (user canceled or chose to adjust), delete the task
-      taskManager.deleteTask(task);
-      logInfo('Event creation canceled due to conflicts: $title');
-      return false;
-    }
+    taskManager.scheduler.scheduleEvent(task: task, start: start, end: end);
+    // TODO: Save the event in the database
 
     // Update the state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
-    logInfo('Event created successfully: ${task.title}');
-    return true;
+    logInfo('Event created successfully: $task.title');
   }
 
   List<ScheduledTask> getScheduledTasks() {
@@ -175,7 +159,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     int? pessimisticTime,
     int? firstNotification,
     int? secondNotification,
-    BuildContext? context,
   }) {
     // Update task properties
     taskManager.editTask(
@@ -200,34 +183,24 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
     // Recalculate scheduling after edit
     taskManager.removeScheduledTasksFor(task);
-
-    // If context is provided and the task is a habit, schedule it with conflict resolution
-    if (context != null && frequency != null) {
-      scheduleHabits(context);
-    } else if (frequency != null) {
-      // Log a warning if context is not provided for a habit
-      logWarning(
-        'Cannot schedule habit without BuildContext. Habit scheduling skipped.',
-      );
-    }
+    taskManager.manageHabits();
 
     // Update state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  Future<bool> editEvent({
+  void editEvent({
     required Task task,
     required String title,
     required DateTime start,
     required DateTime end,
-    required BuildContext context,
     String? location,
     String? notes,
     int? color,
     int? travelingTime,
     int? firstNotification,
     int? secondNotification,
-  }) async {
+  }) {
     logInfo(
       'Editing event: ${task.title} to new title - $title, start - $start, end - $end',
     );
@@ -269,25 +242,11 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       secondNotification: secondNotification,
     );
 
-    // Schedule the event with conflict resolution
-    final success = await taskManager.scheduler.scheduleEvent(
-      task: task,
-      start: start,
-      end: end,
-      context: context,
-    );
-
-    if (!success) {
-      // If scheduling failed (user canceled or chose to adjust), revert the task changes
-      logInfo('Event update canceled due to conflicts: $title');
-      return false;
-    }
-
+    taskManager.scheduler.scheduleEvent(task: task, start: start, end: end);
     taskManager.tasksDB.put(task.id, task);
 
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
     logInfo('Event updated successfully: ${task.title}');
-    return true;
   }
 
   void scheduleTasks() {
@@ -295,78 +254,10 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  // This method now requires a BuildContext for conflict resolution
-  Future<void> scheduleHabits(BuildContext context) async {
+  void scheduleHabits() {
     logDebug('Scheduling habits');
-
-    // Since we can't modify the TaskManager.manageHabits method directly,
-    // we'll handle the scheduling of habits here
-    List<Task> habits =
-        taskManager.tasksDB.values
-            .where((task) => task.frequency != null)
-            .toList();
-
-    for (Task habit in habits) {
-      switch (habit.frequency!.type) {
-        case 'weekly':
-          final repeatRule = habit.frequency!;
-          final byDay = repeatRule.byDay!;
-
-          for (var dayInstance in byDay) {
-            final selectedWeekday = _dayNameToInt(dayInstance.selectedDay);
-            final startDate = repeatRule.startRepeat;
-            final daysUntilNextSelectedDay =
-                (selectedWeekday - startDate.weekday + 7) % 7;
-
-            var nextSelectedDate = startDate.add(
-              Duration(days: daysUntilNextSelectedDay),
-            );
-
-            List<DateTime> habitDates = [];
-
-            while (nextSelectedDate.isBefore(repeatRule.endRepeat!)) {
-              habitDates.add(nextSelectedDate);
-              nextSelectedDate = nextSelectedDate.add(
-                Duration(days: 7 * habit.frequency!.interval),
-              );
-            }
-
-            await taskManager.scheduler.scheduleHabit(
-              task: habit,
-              dates: habitDates,
-              start: dayInstance.start,
-              end: dayInstance.end,
-              context: context,
-            );
-          }
-          break;
-
-        // Handle other frequency types similarly
-        // For brevity, we'll just handle the weekly case in this example
-        // In a real implementation, you would handle all cases
-        default:
-          logWarning(
-            'Habit frequency type not handled in cubit: ${habit.frequency!.type}',
-          );
-          break;
-      }
-    }
-
+    taskManager.manageHabits();
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
-  }
-
-  // Helper method to convert day names to integers
-  int _dayNameToInt(String dayName) {
-    const dayMap = {
-      'monday': 1,
-      'tuesday': 2,
-      'wednesday': 3,
-      'thursday': 4,
-      'friday': 5,
-      'saturday': 6,
-      'sunday': 7,
-    };
-    return dayMap[dayName.toLowerCase()] ?? 1;
   }
 
   void scheduleTask(Task task) {
@@ -544,6 +435,46 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     } catch (e) {
       logError('Error toggling task completion: $e');
       return task.isDone; // Return the current status in case of error
+    }
+  }
+
+  /// Send a reminder to check if a task is completed
+  Future<void> sendCompletionCheckReminder(Task task) async {
+    if (task.isDone) {
+      // Task is already completed, no need to send a reminder
+      return;
+    }
+
+    try {
+      // Create a notification for the task completion check
+      // This would typically use a notification service, but for simplicity,
+      // we'll just log it for now
+      logInfo('Would send completion check reminder for task "${task.title}"');
+
+      // In a real implementation, you would use a notification service:
+      // await _notificationService.sendCompletionCheckReminder(task);
+    } catch (e) {
+      logError('Error sending completion check reminder: $e');
+    }
+  }
+
+  /// Schedule a reminder to check if a task is completed
+  Future<void> scheduleCompletionCheckReminder(
+    Task task,
+    DateTime scheduledTime,
+  ) async {
+    try {
+      // Schedule a notification for the task completion check
+      // This would typically use a notification service, but for simplicity,
+      // we'll just log it for now
+      logInfo(
+        'Would schedule completion check reminder for task "${task.title}" at $scheduledTime',
+      );
+
+      // In a real implementation, you would use a notification service:
+      // await _notificationService.scheduleCompletionCheckReminder(task, scheduledTime);
+    } catch (e) {
+      logError('Error scheduling completion check reminder: $e');
     }
   }
 }

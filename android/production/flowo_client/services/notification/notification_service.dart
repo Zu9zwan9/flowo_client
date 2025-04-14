@@ -61,9 +61,9 @@ class NotiService {
           'NotiService',
         );
       } catch (e) {
-        currentTimeZone = 'Europe/Kyiv';
+        currentTimeZone = 'Europe/Warsaw';
         appLogger.warning(
-          'Failed to get local timezone, using Europe/Kyiv: $e',
+          'Failed to get local timezone, using $currentTimeZone: $e',
           'NotiService',
         );
       }

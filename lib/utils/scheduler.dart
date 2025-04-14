@@ -7,14 +7,12 @@ import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/user_settings.dart';
-import 'package:flowo_client/utils/cupertino_conflict_resolver.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 import '../models/time_frame.dart';
 import '../services/notification/notification_service.dart';
-import 'cupertino_conflict_resolver.dart';
 
 class Scheduler {
   final Box<Day> daysDB;
@@ -37,15 +35,15 @@ class Scheduler {
     const freeTimeManagerId = 'free_time_manager';
     freeTimeManager =
         tasksDB.get(freeTimeManagerId) ??
-        Task(
-          id: freeTimeManagerId,
-          title: 'Free Time',
-          priority: 0,
-          estimatedTime: 0,
-          deadline: 0,
-          category: Category(name: 'Free Time Manager'),
-          scheduledTasks: [],
-        );
+            Task(
+              id: freeTimeManagerId,
+              title: 'Free Time',
+              priority: 0,
+              estimatedTime: 0,
+              deadline: 0,
+              category: Category(name: 'Free Time Manager'),
+              scheduledTasks: [],
+            );
 
     if (!tasksDB.containsKey(freeTimeManagerId)) {
       tasksDB.put(freeTimeManagerId, freeTimeManager);
@@ -62,11 +60,11 @@ class Scheduler {
   }
 
   ScheduledTask? scheduleTask(
-    Task task,
-    int minSessionDuration, {
-    double? urgency,
-    List<String>? availableDates,
-  }) {
+      Task task,
+      int minSessionDuration, {
+        double? urgency,
+        List<String>? availableDates,
+      }) {
     _dayCache.clear();
 
     if (urgency != null && urgency > 0) {
@@ -162,66 +160,24 @@ class Scheduler {
     return lastScheduledTask;
   }
 
-  Future<bool> scheduleEvent({
+  void scheduleEvent({
     required Task task,
     required DateTime start,
     required DateTime end,
-    required BuildContext context,
-  }) async {
+  }) {
     _dayCache.clear();
     final dateKey = _formatDateKey(start);
 
     final day = _getOrCreateDay(dateKey);
     final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
-
-    // Detect conflicts
-    final conflicts = <ScheduledTask>[];
     for (ScheduledTask scheduledTask in sortedTasks) {
       if (scheduledTask.startTime.isBefore(end) &&
-          scheduledTask.endTime.isAfter(start) &&
-          scheduledTask.parentTaskId != task.id) {
-        conflicts.add(scheduledTask);
-      }
-    }
-
-    // If conflicts exist, show resolution dialog
-    if (conflicts.isNotEmpty) {
-      logDebug('Event overlaps with ${conflicts.length} existing tasks');
-
-      // Create a map of task IDs to tasks for the conflict resolver
-      final tasksMap = <String, Task>{};
-      for (final conflict in conflicts) {
-        final conflictTask = tasksDB.get(conflict.parentTaskId);
-        if (conflictTask != null) {
-          tasksMap[conflict.parentTaskId] = conflictTask;
-        }
-      }
-
-      // Show conflict resolution dialog
-      final resolution = await CupertinoConflictResolver.showConflictDialog(
-        context: context,
-        conflicts: conflicts,
-        tasksMap: tasksMap,
-        actionType: 'event',
-      );
-
-      // Handle user's choice
-      if (resolution == null) {
-        // User canceled
-        logInfo('User canceled event scheduling due to conflicts');
-        return false;
-      } else if (resolution) {
-        // User chose to replace conflicting tasks
-        logInfo('User chose to replace conflicting tasks');
-
-        // Remove conflicting tasks
-        for (final conflict in conflicts) {
-          _removeScheduledTask(conflict);
-        }
-      } else {
-        // User chose to adjust their schedule
-        logInfo('User chose to adjust their schedule');
-        return false;
+          scheduledTask.endTime.isAfter(start)) {
+        logDebug(
+          // TODO: Add modal dialog to resolve overlap
+          'Event overlaps with existing task: ${scheduledTask.parentTaskId}',
+        );
+        return;
       }
     }
 
@@ -233,22 +189,15 @@ class Scheduler {
       dateKey: dateKey,
       type: ScheduledTaskType.timeSensitive,
     );
-
-    return true;
   }
 
-  Future<bool> scheduleHabit({
-    required Task task,
-    required List<DateTime> dates,
-    required TimeOfDay start,
-    required TimeOfDay end,
-    required BuildContext context,
-  }) async {
+  void scheduleHabit(
+      Task task,
+      List<DateTime> dates,
+      TimeOfDay start,
+      TimeOfDay end,
+      ) {
     _dayCache.clear();
-
-    // Check all dates for conflicts first
-    final allConflicts = <ScheduledTask>[];
-    final Map<String, Task> tasksMap = {};
 
     for (DateTime date in dates) {
       final dateKey = _formatDateKey(date);
@@ -259,56 +208,13 @@ class Scheduler {
       final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
       for (ScheduledTask scheduledTask in sortedTasks) {
         if (scheduledTask.startTime.isBefore(endTime) &&
-            scheduledTask.endTime.isAfter(startTime) &&
-            scheduledTask.parentTaskId != task.id) {
-          allConflicts.add(scheduledTask);
-
-          // Add to tasksMap for conflict resolver
-          final conflictTask = tasksDB.get(scheduledTask.parentTaskId);
-          if (conflictTask != null) {
-            tasksMap[scheduledTask.parentTaskId] = conflictTask;
-          }
+            scheduledTask.endTime.isAfter(startTime)) {
+          logDebug(
+            'Habit overlaps with existing task: ${scheduledTask.parentTaskId}',
+          );
+          return;
         }
       }
-    }
-
-    // If conflicts exist, show resolution dialog
-    if (allConflicts.isNotEmpty) {
-      logDebug('Habit overlaps with ${allConflicts.length} existing tasks');
-
-      // Show conflict resolution dialog
-      final resolution = await CupertinoConflictResolver.showConflictDialog(
-        context: context,
-        conflicts: allConflicts,
-        tasksMap: tasksMap,
-        actionType: 'habit',
-      );
-
-      // Handle user's choice
-      if (resolution == null) {
-        // User canceled
-        logInfo('User canceled habit scheduling due to conflicts');
-        return false;
-      } else if (resolution) {
-        // User chose to replace conflicting tasks
-        logInfo('User chose to replace conflicting tasks');
-
-        // Remove conflicting tasks
-        for (final conflict in allConflicts) {
-          _removeScheduledTask(conflict);
-        }
-      } else {
-        // User chose to adjust their schedule
-        logInfo('User chose to adjust their schedule');
-        return false;
-      }
-    }
-
-    // Schedule the habit for all dates
-    for (DateTime date in dates) {
-      final dateKey = _formatDateKey(date);
-      final startTime = _combineDateKeyAndTimeOfDay(dateKey, start);
-      final endTime = _combineDateKeyAndTimeOfDay(dateKey, end);
 
       _createScheduledTask(
         task: task,
@@ -318,8 +224,6 @@ class Scheduler {
         type: ScheduledTaskType.timeSensitive,
       );
     }
-
-    return true;
   }
 
   bool _isActiveDay(String dateKey) {
@@ -372,13 +276,13 @@ class Scheduler {
   }
 
   List<ScheduledTask> _findAllAvailableTimeSlots(
-    Day day,
-    DateTime start,
-    int requiredTime,
-    int minSession,
-    String taskTitle,
-    String dateKey,
-  ) {
+      Day day,
+      DateTime start,
+      int requiredTime,
+      int minSession,
+      String taskTitle,
+      String dateKey,
+      ) {
     final List<ScheduledTask> availableSlots = [];
     final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
     final dayStart = _parseStartTime(dateKey);
@@ -459,12 +363,12 @@ class Scheduler {
   }
 
   ScheduledTask? _tryCreateSlot(
-    DateTime start,
-    DateTime end,
-    int requiredTime,
-    int minSession,
-    String dateKey,
-  ) {
+      DateTime start,
+      DateTime end,
+      int requiredTime,
+      int minSession,
+      String dateKey,
+      ) {
     // Ensure start time is not before current time
     final now = DateTime.now();
     if (start.isBefore(now)) {
@@ -480,7 +384,7 @@ class Scheduler {
     DateTime slotEnd = start.add(
       Duration(
         milliseconds:
-            requiredTime > availableTime ? availableTime : requiredTime,
+        requiredTime > availableTime ? availableTime : requiredTime,
       ),
     );
 
@@ -499,25 +403,25 @@ class Scheduler {
       );
 
   List<ScheduledTask> _findDisplaceableSlots(
-    Day day,
-    DateTime start,
-    int requiredTime,
-    int minSession,
-    double urgency,
-    String taskTitle,
-  ) {
+      Day day,
+      DateTime start,
+      int requiredTime,
+      int minSession,
+      double urgency,
+      String taskTitle,
+      ) {
     final displaceable = <ScheduledTask>[];
     int timeFound = 0;
     final tasks =
-        day.scheduledTasks
-            .where(
-              (task) =>
-                  task.startTime.isAfter(start) &&
-                  task.type == ScheduledTaskType.defaultType &&
-                  (task.urgency ?? 0) < urgency,
-            )
-            .toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    day.scheduledTasks
+        .where(
+          (task) =>
+      task.startTime.isAfter(start) &&
+          task.type == ScheduledTaskType.defaultType &&
+          (task.urgency ?? 0) < urgency,
+    )
+        .toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
     for (var task in tasks) {
       final duration = _calculateDurationMs(task.startTime, task.endTime);
@@ -537,7 +441,7 @@ class Scheduler {
     final task = tasksDB.get(scheduledTask.parentTaskId);
     if (task != null) {
       task.scheduledTasks.removeWhere(
-        (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+            (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
       );
       tasksDB.put(task.id, task);
     }
@@ -546,7 +450,7 @@ class Scheduler {
     final day = _dayCache[dateKey] ?? daysDB.get(dateKey);
     if (day != null) {
       day.scheduledTasks.removeWhere(
-        (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+            (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
       );
       daysDB.put(dateKey, day);
     }
@@ -569,7 +473,7 @@ class Scheduler {
       final day = daysDB.get(entry.key);
       if (day != null) {
         day.scheduledTasks.removeWhere(
-          (st) => entry.value.contains(st.scheduledTaskId),
+              (st) => entry.value.contains(st.scheduledTaskId),
         );
         daysDB.put(entry.key, day);
       }
@@ -680,11 +584,11 @@ class Scheduler {
   }
 
   void _addTimeBlock(
-    Day day,
-    TimeFrame timeFrame,
-    ScheduledTaskType type,
-    DateTime baseDate,
-  ) {
+      Day day,
+      TimeFrame timeFrame,
+      ScheduledTaskType type,
+      DateTime baseDate,
+      ) {
     if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
         timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
       // Split overnight task
@@ -843,3 +747,4 @@ class Scheduler {
     return DateTime(year, month, day, timeOfDay.hour, timeOfDay.minute);
   }
 }
+

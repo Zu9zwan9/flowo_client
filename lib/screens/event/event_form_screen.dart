@@ -2,9 +2,7 @@ import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/design/cupertino_form_theme.dart';
 import 'package:flowo_client/design/cupertino_form_widgets.dart';
 import 'package:flowo_client/models/task.dart';
-import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
-import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -28,12 +26,10 @@ class EventFormScreenState extends State<EventFormScreen>
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
   final _locationController = TextEditingController();
-  final NotiService _notiService = NotiService();
 
   // Notification settings
   int? _firstNotification = 5;
   int? _secondNotification = 0;
-  NotificationType _selectedNotificationType = NotificationType.push;
 
   late DateTime _startTime;
   late DateTime _endTime;
@@ -41,8 +37,6 @@ class EventFormScreenState extends State<EventFormScreen>
   int? _selectedColor;
   int _travelingTime = 0;
 
-  // Notification settings
-  final int _notificationTime = 0; // Time in minutes before the event start
   final List<Color> _colorOptions = [
     const Color(0xFF4CAF50),
     const Color(0xFF2196F3),
@@ -286,7 +280,7 @@ class EventFormScreenState extends State<EventFormScreen>
                     CupertinoFormWidgets.selectionButton(
                       context: context,
                       label: 'Alert',
-                      value: _formatNotificationTime(_firstNotification ?? 0),
+                      value: _formatNotificationTime(_firstNotification),
                       onTap: () => _showNotificationTimePicker(context, true),
                       icon: CupertinoIcons.time,
                     ),
@@ -294,7 +288,7 @@ class EventFormScreenState extends State<EventFormScreen>
                     CupertinoFormWidgets.selectionButton(
                       context: context,
                       label: 'Second Alert',
-                      value: _formatNotificationTime(_secondNotification ?? 0),
+                      value: _formatNotificationTime(_secondNotification),
                       onTap: () => _showNotificationTimePicker(context, false),
                       icon: CupertinoIcons.time,
                     ),
@@ -409,86 +403,48 @@ class EventFormScreenState extends State<EventFormScreen>
     }
   }
 
-  String _getNotificationTypeLabel(NotificationType type) {
-    switch (type) {
-      case NotificationType.push:
-        return 'Push Notification';
-      case NotificationType.disabled:
-        return 'Disabled';
+  String _formatNotificationTime(int? minutes) {
+    if (minutes == null) {
+      return 'None';
     }
-  }
 
-  String _formatNotificationTime(int minutes) {
-    if (minutes < 60) {
-      return '$minutes minutes before';
-    } else if (minutes == 60) {
-      return '1 hour before';
-    } else if (minutes % 60 == 0) {
-      return '${minutes ~/ 60} hours before';
-    } else {
-      final hours = minutes ~/ 60;
-      final mins = minutes % 60;
-      return '$hours hours $mins minutes before';
-    }
-  }
+    switch (minutes) {
+      case 0:
+        return 'At event time';
+      case 1:
+        return '1 minute before';
+      case 5:
+        return '5 minutes before';
+      case 15:
+        return '15 minutes before';
+      case 30:
+        return '30 minutes before';
+      case 60:
+        return '1 hour before';
+      case 120:
+        return '2 hours before';
+      case 1440:
+        return '1 day before';
+      case 2880:
+        return '2 days before';
+      case 10080:
+        return '1 week before';
+      default:
+        if (minutes < 60) {
+          return '$minutes minutes before';
+        } else if (minutes < 1440) {
+          final hours = minutes ~/ 60;
+          final mins = minutes % 60;
 
-  Future<void> _showNotificationTypePicker(BuildContext context) async {
-    final pickedType = await showCupertinoModalPopup<NotificationType>(
-      context: context,
-      builder:
-          (context) => Container(
-            height: 300,
-            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      child: const Text('Cancel'),
-                      onPressed:
-                          () =>
-                              Navigator.pop(context, _selectedNotificationType),
-                    ),
-                    CupertinoButton(
-                      child: const Text('Done'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: CupertinoPicker(
-                    itemExtent: 32,
-                    scrollController: FixedExtentScrollController(
-                      initialItem: NotificationType.values.indexOf(
-                        _selectedNotificationType,
-                      ),
-                    ),
-                    onSelectedItemChanged: (index) {
-                      if (mounted) {
-                        setState(() {
-                          _selectedNotificationType =
-                              NotificationType.values[index];
-                        });
-                      }
-                    },
-                    children:
-                        NotificationType.values
-                            .map(
-                              (type) => Text(_getNotificationTypeLabel(type)),
-                            )
-                            .toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-    );
-
-    if (pickedType != null && mounted) {
-      setState(() {
-        _selectedNotificationType = pickedType;
-      });
+          if (mins == 0) {
+            return '$hours hours before';
+          } else {
+            return '$hours hours $mins minutes before';
+          }
+        } else {
+          final days = minutes ~/ 1440;
+          return '$days days before';
+        }
     }
   }
 
@@ -496,25 +452,29 @@ class EventFormScreenState extends State<EventFormScreen>
     BuildContext context,
     bool isFirstNotification,
   ) async {
-    final List<int> timeOptions = [5, 15, 30, 60, 120, 180, 360, 720, 1440];
+    // Define different notification time options for first and second alerts
+    final List<int?> timeOptions = [
+      null,
+      0,
+      5,
+      15,
+      30,
+      60,
+      120,
+      1440,
+      2880,
+      10080,
+    ];
 
-    // Find the closest option to the current notification time
-    int initialNotification =
-        isFirstNotification
-            ? _firstNotification ?? 0
-            : _secondNotification ?? 0;
-    int initialIndex = 0;
-    int minDifference = (timeOptions[0] - initialNotification).abs();
+    // Get current value and find its index
+    final int? currentValue =
+        isFirstNotification ? _firstNotification : _secondNotification;
+    final int initialIndex =
+        timeOptions.contains(currentValue)
+            ? timeOptions.indexOf(currentValue)
+            : 0;
 
-    for (int i = 1; i < timeOptions.length; i++) {
-      final difference = (timeOptions[i] - initialNotification).abs();
-      if (difference < minDifference) {
-        minDifference = difference;
-        initialIndex = i;
-      }
-    }
-
-    final pickedTime = await showCupertinoModalPopup<int>(
+    await showCupertinoModalPopup<void>(
       context: context,
       builder:
           (context) => Container(
@@ -527,13 +487,7 @@ class EventFormScreenState extends State<EventFormScreen>
                   children: [
                     CupertinoButton(
                       child: const Text('Cancel'),
-                      onPressed:
-                          () => Navigator.pop(
-                            context,
-                            isFirstNotification
-                                ? _firstNotification
-                                : _secondNotification,
-                          ),
+                      onPressed: () => Navigator.pop(context),
                     ),
                     CupertinoButton(
                       child: const Text('Done'),
@@ -568,16 +522,6 @@ class EventFormScreenState extends State<EventFormScreen>
             ),
           ),
     );
-
-    if (pickedTime != null && mounted) {
-      setState(() {
-        if (isFirstNotification) {
-          _firstNotification = pickedTime;
-        } else {
-          _secondNotification = pickedTime;
-        }
-      });
-    }
   }
 
   Future<void> _saveEvent(BuildContext context) async {
@@ -602,15 +546,14 @@ class EventFormScreenState extends State<EventFormScreen>
     }
 
     final taskManagerCubit = context.read<TaskManagerCubit>();
-    bool success = false;
 
     if (widget.event != null) {
-      success = await taskManagerCubit.editEvent(
+      taskManagerCubit.editEvent(
         task: widget.event!,
         title: _titleController.text.trim(),
         start: _startTime,
         end: _endTime,
-        context: context, // Add context parameter for conflict resolution
+        // Add context parameter for conflict resolution
         location:
             _locationController.text.isNotEmpty
                 ? _locationController.text.trim()
@@ -624,19 +567,11 @@ class EventFormScreenState extends State<EventFormScreen>
         firstNotification: _firstNotification,
         secondNotification: _secondNotification,
       );
-
-      if (success) {
-        logInfo('Event updated: ${_titleController.text}');
-      } else {
-        logInfo('Event update canceled: ${_titleController.text}');
-        return; // Don't navigate away if the user canceled
-      }
     } else {
-      success = await taskManagerCubit.createEvent(
+      taskManagerCubit.createEvent(
         title: _titleController.text.trim(),
         start: _startTime,
         end: _endTime,
-        context: context, // Add context parameter for conflict resolution
         location:
             _locationController.text.isNotEmpty
                 ? _locationController.text.trim()
@@ -650,28 +585,6 @@ class EventFormScreenState extends State<EventFormScreen>
         firstNotification: _firstNotification,
         secondNotification: _secondNotification,
       );
-
-      if (success) {
-        logInfo(
-          'Scheduled Notification: ${_titleController.text} for hour: ${_startTime.hour}, minute: ${_startTime.minute - (_firstNotification ?? 0)}',
-        );
-        logInfo('Saved Event: ${_titleController.text}');
-      } else {
-        logInfo('Event creation canceled: ${_titleController.text}');
-        return; // Don't navigate away if the user canceled
-      }
-    }
-
-    // Only navigate away if the event was successfully saved
-    if (success) {
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      } else {
-        Navigator.pushReplacement(
-          context,
-          CupertinoPageRoute(builder: (_) => const HomeScreen()),
-        );
-      }
     }
   }
 }

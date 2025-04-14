@@ -63,7 +63,7 @@ class NotiService {
       } catch (e) {
         currentTimeZone = 'Europe/Kyiv';
         appLogger.warning(
-          'Failed to get local timezone, using Europe/Kyiv: $e',
+          'Failed to get local timezone, using $currentTimeZone: $e',
           'NotiService',
         );
       }
@@ -71,7 +71,7 @@ class NotiService {
         tz.setLocalLocation(tz.getLocation(currentTimeZone));
         appLogger.info('Timezone set to: $currentTimeZone', 'NotiService');
       } catch (e) {
-        currentTimeZone = 'UTC';
+        currentTimeZone = 'Europe/Kyiv';
         tz.setLocalLocation(tz.getLocation(currentTimeZone));
         appLogger.warning(
           'Timezone $currentTimeZone not found, falling back to UTC',
