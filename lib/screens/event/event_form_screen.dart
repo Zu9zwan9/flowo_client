@@ -9,6 +9,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../models/user_settings.dart';
+import '../home_screen.dart';
 
 class EventFormScreen extends StatefulWidget {
   final DateTime? selectedDate;
@@ -742,17 +743,13 @@ class EventFormScreenState extends State<EventFormScreen>
 
         // Close the form screen after successful save with override
         if (mounted) {
-          try {
-            // Try to navigate back
-            if (Navigator.canPop(context)) {
-              Navigator.of(context).pop();
-            } else {
-              // If can't pop, navigate to home or another screen
-              Navigator.of(context).pushReplacementNamed('/');
-            }
-          } catch (e) {
-            // If navigation fails, try a different approach
-            Navigator.of(context).pushReplacementNamed('/');
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            Navigator.pushReplacement(
+              context,
+              CupertinoPageRoute(builder: (_) => const HomeScreen()),
+            );
           }
         }
       }

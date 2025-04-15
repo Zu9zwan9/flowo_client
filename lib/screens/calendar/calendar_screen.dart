@@ -484,7 +484,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                     child: SizedBox(
                       height:
                           MediaQuery.of(context).size.height *
-                          0.3, // 30% of screen height
+                          0.35, // 35% of screen height
                       child: _buildAgendaView(),
                     ),
                   ),

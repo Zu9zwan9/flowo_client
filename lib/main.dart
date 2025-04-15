@@ -138,8 +138,10 @@ void main() async {
           ? profiles.values.first
           : UserSettings(
             name: 'Default',
-            minSession: 15 * 60 * 1000, // Convert to milliseconds
-            breakTime: 15 * 60 * 1000, // Default break time (15 minutes)
+            minSession: 15 * 60 * 1000,
+            // Convert to milliseconds
+            breakTime: 15 * 60 * 1000,
+            // Default break time (15 minutes)
             sleepTime: [
               TimeFrame(
                 startTime: const TimeOfDay(hour: 22, minute: 0),
@@ -178,6 +180,14 @@ void main() async {
             defaultNotificationType: NotificationType.push,
           );
 
+  final taskManager = TaskManager(
+    daysDB: daysDB,
+    tasksDB: tasksDB,
+    userSettings: selectedProfile,
+    huggingFaceApiKey:
+        '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', // Default API key
+  );
+
   // Save the default settings to the Hive box if it's the first launch
   if (isFirstLaunch) {
     appLogger.info('Saving default user settings', 'App');
@@ -193,6 +203,10 @@ void main() async {
         'App',
       );
     }
+
+    taskManager.scheduler.createDaysUntil(
+      DateTime(DateTime.now().year, DateTime.now().month + 3),
+    );
   }
 
   // Create default user profile if none exists
@@ -222,14 +236,6 @@ void main() async {
       'App',
     );
   }
-
-  final taskManager = TaskManager(
-    daysDB: daysDB,
-    tasksDB: tasksDB,
-    userSettings: selectedProfile,
-    huggingFaceApiKey:
-        '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', // Default API key
-  );
 
   appLogger.info('Hive initialized and task boxes opened', 'App');
 

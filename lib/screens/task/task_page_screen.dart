@@ -6,7 +6,6 @@ import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../models/task.dart';
 import '../../utils/category_utils.dart';
 import '../../utils/logger.dart';
-import '../calendar/calendar_screen.dart';
 import 'task_form_screen.dart';
 
 class TaskPageConstants {
@@ -139,10 +138,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                   parentTask: _task,
                   onAdd: _showAddSubtaskDialog,
                   onDelete: _deleteSubtask,
-                  onEstimate: _estimateSubtaskTimes,
                 ),
-                const SizedBox(height: 24),
-                ScheduleButton(onSchedule: _scheduleSubtasks),
                 const SizedBox(height: 32),
               ],
             ),
@@ -215,23 +211,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     }
   }
 
-  void _scheduleSubtasks() {
-    if (_subtasks.isEmpty) {
-      setState(() => _isLoading = true);
-      try {
-        context.read<TaskManagerCubit>().scheduleTask(_task);
-        setState(() => _isLoading = false);
-        _showScheduledDialog(context, hasSubtasks: false);
-      } catch (e) {
-        logError('Error scheduling task: $e');
-        setState(() => _isLoading = false);
-        _showErrorDialog('Failed to schedule task');
-      }
-    } else {
-      _showScheduledDialog(context, hasSubtasks: true);
-    }
-  }
-
   void _showErrorDialog(String message) {
     showCupertinoDialog(
       context: context,
@@ -244,33 +223,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 isDefaultAction: true,
                 child: const Text('OK'),
                 onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void _showScheduledDialog(BuildContext context, {required bool hasSubtasks}) {
-    showCupertinoDialog(
-      context: context,
-      builder:
-          (_) => CupertinoAlertDialog(
-            title: Text(hasSubtasks ? 'Tasks Scheduled' : 'Task Scheduled'),
-            content: Text(
-              hasSubtasks
-                  ? 'Subtasks are scheduled. View them in the calendar.'
-                  : 'Task scheduled in the calendar.',
-            ),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('View in Calendar'),
-                onPressed: () {
-                  Navigator.canPop(context);
-                  Navigator.of(context).pushReplacement(
-                    CupertinoPageRoute(builder: (_) => const CalendarScreen()),
-                  );
-                },
               ),
             ],
           ),
@@ -315,61 +267,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     );
   }
 
-  Future<void> _estimateSubtaskTimes() async {
-    if (_subtasks.isEmpty) return _showErrorDialog('No subtasks to estimate');
-    setState(() => _isLoading = true);
-    try {
-      for (final subtask in _subtasks) {
-        final time = await context.read<TaskManagerCubit>().estimateTaskTime(
-          subtask,
-        );
-        subtask.estimatedTime = time;
-        subtask.save();
-      }
-      setState(() => _isLoading = false);
-      showCupertinoDialog(
-        context: context,
-        builder:
-            (_) => CupertinoAlertDialog(
-              title: const Text('Subtasks Estimated'),
-              content: const Text('Reschedule subtasks now?'),
-              actions: [
-                CupertinoDialogAction(
-                  child: const Text('No'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                CupertinoDialogAction(
-                  isDefaultAction: true,
-                  child: const Text('Yes'),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _rescheduleSubtasks();
-                  },
-                ),
-              ],
-            ),
-      );
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showErrorDialog('Failed to estimate times: $e');
-    }
-  }
-
-  Future<void> _rescheduleSubtasks() async {
-    setState(() => _isLoading = true);
-    try {
-      context.read<TaskManagerCubit>().removeScheduledTasks();
-      for (final subtask in _subtasks) {
-        context.read<TaskManagerCubit>().scheduleTask(subtask);
-      }
-      setState(() => _isLoading = false);
-      _showScheduledDialog(context, hasSubtasks: true);
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showErrorDialog('Failed to reschedule: $e');
-    }
-  }
-
   void _showAddSubtaskDialog() =>
       AddSubtaskDialog.show(context, _task, _addSubtask);
 
@@ -393,7 +290,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       // _subtasks.add(subtask);
     });
     _task.save();
-    context.read<TaskManagerCubit>().scheduleTask(subtask);
   }
 }
 
@@ -679,14 +575,12 @@ class SubtasksList extends StatelessWidget {
   final Task parentTask;
   final VoidCallback onAdd;
   final Function(Task) onDelete;
-  final VoidCallback onEstimate;
 
   const SubtasksList({
     required this.subtasks,
     required this.parentTask,
     required this.onAdd,
     required this.onDelete,
-    required this.onEstimate,
     super.key,
   });
 
@@ -726,22 +620,16 @@ class SubtasksList extends StatelessWidget {
                 Flexible(
                   child: CupertinoButton(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    onPressed: onEstimate,
+                    onPressed: onAdd,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(
-                          CupertinoIcons.wand_stars,
-                          size: 16,
-                          color: CupertinoColors.systemGreen,
-                        ),
+                        const Icon(CupertinoIcons.add, size: 16),
                         const SizedBox(width: 4),
                         Flexible(
                           child: Text(
-                            'Estimate',
-                            style: theme.textTheme.textStyle.copyWith(
-                              color: CupertinoColors.systemGreen,
-                            ),
+                            'Add Subtask',
+                            style: theme.textTheme.textStyle,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -749,26 +637,6 @@ class SubtasksList extends StatelessWidget {
                     ),
                   ),
                 ),
-              Flexible(
-                child: CupertinoButton(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  onPressed: onAdd,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(CupertinoIcons.add, size: 16),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          'Add Subtask',
-                          style: theme.textTheme.textStyle,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               Text(
                 '${subtasks.length}',
                 style: theme.textTheme.textStyle.copyWith(
@@ -917,22 +785,6 @@ class SubtaskItem extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// Schedule Button Widget (unchanged)
-class ScheduleButton extends StatelessWidget {
-  final VoidCallback onSchedule;
-
-  const ScheduleButton({required this.onSchedule, super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return CupertinoButton.filled(
-      padding: TaskPageConstants.buttonPadding,
-      onPressed: onSchedule,
-      child: const Text('Schedule Task'),
     );
   }
 }

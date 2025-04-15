@@ -311,12 +311,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  void scheduleTask(Task task) {
-    final minSession = state.userSettings?.minSession ?? 15 * 60 * 1000;
-    taskManager.scheduler.scheduleTask(task, minSession);
-    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
-  }
-
   void removeScheduledTasks() {
     taskManager.removeScheduledTasks();
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));

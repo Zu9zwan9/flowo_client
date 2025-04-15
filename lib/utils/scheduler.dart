@@ -29,6 +29,9 @@ class Scheduler {
   void updateUserSettings(UserSettings userSettings) {
     logInfo('Updating user settings in Scheduler');
     this.userSettings = userSettings;
+    createDaysUntil(
+      DateTime(DateTime.now().year, DateTime.now().month + 3),
+    );
   }
 
   void _initializeFreeTimeManager() {
@@ -522,6 +525,20 @@ class Scheduler {
     daysDB.put(dateKey, day);
     _addPredefinedTimeBlocks(day);
     return day;
+  }
+
+  void createDaysUntil(DateTime date){
+    logInfo('Creating days until: ${date.toIso8601String()}');
+    final now = DateTime.now();
+    final endDate = date.isBefore(now) ? now : date;
+    final daysToCreate = endDate.difference(now).inDays;
+
+    for (int i = 0; i <= daysToCreate; i++) {
+      final dateKey = _formatDateKey(now.add(Duration(days: i)));
+      if (!daysDB.containsKey(dateKey)) {
+        _getOrCreateDay(dateKey);
+      }
+    }
   }
 
   void _addPredefinedTimeBlocks(Day day) {

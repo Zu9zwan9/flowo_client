@@ -32,21 +32,29 @@ class TaskUrgencyCalculator {
       double urgency = task.priority / timeCoefficient;
 
       if (urgency < 0) {
-        _negativeUrgencyHandler(task);
+        _negativeUrgencyHandler(task, trueTimeLeft);
       } else {
         taskUrgencyMap[task] = urgency;
-        log('Task: ${task.title} has urgency $urgency');
+        logDebug('Task: ${task.title} has urgency $urgency');
       }
     }
 
     return taskUrgencyMap;
   }
 
-  void _negativeUrgencyHandler(Task task) {
+  void _negativeUrgencyHandler(Task task, int trueTimeLeft) {
     final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
     if (timeLeft - task.estimatedTime < 0) {
-      log('Task ${task.title} is impossible to complete in time');
-      // Notify user that task is impossible to complete in time and should be rescheduled
+      logWarning(
+        'Task ${task.title} is impossible to complete in time, estimated time: ${task.estimatedTime}, time left until deadline: $timeLeft',
+      );
+      // TODO: Notify user that task is impossible to complete in time and deadline should be pushed back
+    } else {
+      logWarning(
+        'Task ${task.title} is possible to complete in time if rescheduled some tasks, time needed to complete: ${Duration(milliseconds: task.estimatedTime - trueTimeLeft).inHours}h ${Duration(milliseconds: task.estimatedTime - trueTimeLeft).inMinutes.remainder(60)}m, free time left: ${Duration(milliseconds: trueTimeLeft).inHours}h ${Duration(milliseconds: trueTimeLeft).inMinutes.remainder(60)}m',
+      ); // TODO: Передавати кількість часу, скільки не вистачає до дедлайну і вказувати скільки можна зекономити завдяки зменшенню вільного часу
+      // TODO: Give a choice to user with a list of tasks that can be rescheduled(move/delete/edit (CRUD))
+      // TODO: Implement a way to notify user that task is possible to complete in time if rescheduled some tasks. And return a list of tasks that can be removed
     }
   }
 

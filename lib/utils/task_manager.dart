@@ -91,6 +91,8 @@ class TaskManager {
       logInfo('Created habit: ${task.toString()}');
     }
 
+    scheduler.createDaysUntil(DateTime.fromMillisecondsSinceEpoch(deadline));
+
     return task;
   }
 
