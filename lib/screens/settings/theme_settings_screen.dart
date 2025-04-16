@@ -34,6 +34,9 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
   // High contrast mode for accessibility
   bool _highContrastMode = false;
 
+  // Reduce motion for accessibility
+  bool _reduceMotion = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,9 +46,13 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
   void _initializeSettings() {
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
 
-    // Initialize color source based on current theme mode
+    // Initialize color source based on current theme mode and dynamic colors
     if (themeNotifier.themeMode == AppTheme.custom) {
-      _selectedColorSource = 'Custom';
+      if (themeNotifier.useDynamicColors) {
+        _selectedColorSource = 'Dynamic';
+      } else {
+        _selectedColorSource = 'Custom';
+      }
     } else if (themeNotifier.themeMode == AppTheme.system) {
       _selectedColorSource = 'System';
     } else {
@@ -63,6 +70,11 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     } else {
       _selectedNoiseLevel = 'High';
     }
+
+    // Initialize accessibility settings
+    _fontSizeAdjustment = themeNotifier.textSizeAdjustment;
+    _highContrastMode = themeNotifier.highContrastMode;
+    _reduceMotion = themeNotifier.reduceMotion;
   }
 
   // Convert noise level string to double value
@@ -93,11 +105,21 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
     } else if (_selectedColorSource == 'Dynamic') {
       // For dynamic, we use custom theme but with system-derived colors
       themeNotifier.setThemeMode(AppTheme.custom);
-      // This would be enhanced in a real implementation to use system wallpaper colors
+      themeNotifier.setUseDynamicColors(true);
+      themeNotifier.generateDynamicColorPalette(context);
     }
 
     // Apply noise level
     themeNotifier.setNoiseLevel(_getNoiseLevelValue(_selectedNoiseLevel));
+
+    // Apply text size adjustment
+    themeNotifier.setTextSizeAdjustment(_fontSizeAdjustment);
+
+    // Apply reduce motion
+    themeNotifier.setReduceMotion(_reduceMotion);
+
+    // Apply high contrast mode
+    themeNotifier.setHighContrastMode(_highContrastMode);
 
     // Show confirmation
     showCupertinoDialog(
@@ -637,195 +659,243 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
           (_) => Container(
             height: 400,
             color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CupertinoButton(
-                        child: const Text('Cancel'),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      Text(
-                        'Color Source',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        CupertinoButton(
+                          child: const Text('Cancel'),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        Text(
+                          'Color Source',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        CupertinoButton(
+                          child: const Text('Done'),
+                          onPressed: () {
+                            // Apply the selected color source immediately
+                            if (_selectedColorSource == 'System') {
+                              themeNotifier.setThemeMode(AppTheme.system);
+                            } else if (_selectedColorSource == 'Custom') {
+                              themeNotifier.setThemeMode(AppTheme.custom);
+                              themeNotifier.setUseDynamicColors(false);
+                            } else if (_selectedColorSource == 'Dynamic') {
+                              themeNotifier.setThemeMode(AppTheme.custom);
+                              themeNotifier.setUseDynamicColors(true);
+                              themeNotifier.generateDynamicColorPalette(
+                                context,
+                              );
+                            }
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Description text
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: Text(
+                      'Choose where your app colors come from. System uses iOS standard colors, Custom lets you pick your own, and Dynamic creates a palette based on your selection.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
                         ),
                       ),
-                      CupertinoButton(
-                        child: const Text('Done'),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Description text
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  child: Text(
-                    'Choose where your app colors come from. System uses iOS standard colors, Custom lets you pick your own, and Dynamic creates a palette based on your selection.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: CupertinoColors.secondaryLabel.resolveFrom(
-                        context,
-                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                ),
 
-                // Visual examples of color sources
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children:
-                        _colorSources.map((source) {
-                          final isSelected = _selectedColorSource == source;
+                  // Visual examples of color sources
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children:
+                          _colorSources.map((source) {
+                            final isSelected = _selectedColorSource == source;
 
-                          // Get appropriate icon and description for each source
-                          IconData icon;
-                          String description;
-                          Color iconColor;
+                            // Get appropriate icon and description for each source
+                            IconData icon;
+                            String description;
+                            Color iconColor;
 
-                          switch (source) {
-                            case 'System':
-                              icon = CupertinoIcons.device_phone_portrait;
-                              description = 'Use standard iOS system colors';
-                              iconColor = CupertinoColors.systemBlue;
-                              break;
-                            case 'Custom':
-                              icon = CupertinoIcons.color_filter;
-                              description = 'Choose your own custom colors';
-                              iconColor = themeNotifier.customColor;
-                              break;
-                            case 'Dynamic':
-                              icon = CupertinoIcons.wand_stars;
-                              description =
-                                  'Generate a palette from your selection';
-                              iconColor = CupertinoColors.systemPurple;
-                              break;
-                            default:
-                              icon = CupertinoIcons.circle;
-                              description = '';
-                              iconColor = CupertinoColors.systemGrey;
-                          }
+                            switch (source) {
+                              case 'System':
+                                icon = CupertinoIcons.device_phone_portrait;
+                                description = 'Use standard iOS system colors';
+                                iconColor = CupertinoColors.systemBlue;
+                                break;
+                              case 'Custom':
+                                icon = CupertinoIcons.color_filter;
+                                description = 'Choose your own custom colors';
+                                iconColor = themeNotifier.customColor;
+                                break;
+                              case 'Dynamic':
+                                icon = CupertinoIcons.wand_stars;
+                                description =
+                                    'Generate a palette from your selection';
+                                iconColor = CupertinoColors.systemPurple;
+                                break;
+                              default:
+                                icon = CupertinoIcons.circle;
+                                description = '';
+                                iconColor = CupertinoColors.systemGrey;
+                            }
 
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedColorSource = source;
-                              });
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 8.0),
-                              padding: const EdgeInsets.all(12.0),
-                              decoration: BoxDecoration(
-                                color:
-                                    isSelected
-                                        ? themeNotifier.primaryColor
-                                            .withOpacity(0.1)
-                                        : CupertinoColors.systemGrey6
-                                            .resolveFrom(context),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedColorSource = source;
+                                });
+
+                                // Apply the change immediately for preview
+                                if (source == 'System') {
+                                  themeNotifier.setThemeMode(AppTheme.system);
+                                } else if (source == 'Custom') {
+                                  themeNotifier.setThemeMode(AppTheme.custom);
+                                  themeNotifier.setUseDynamicColors(false);
+                                } else if (source == 'Dynamic') {
+                                  themeNotifier.setThemeMode(AppTheme.custom);
+                                  themeNotifier.setUseDynamicColors(true);
+                                  themeNotifier.generateDynamicColorPalette(
+                                    context,
+                                  );
+                                }
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.only(bottom: 8.0),
+                                padding: const EdgeInsets.all(12.0),
+                                decoration: BoxDecoration(
                                   color:
                                       isSelected
                                           ? themeNotifier.primaryColor
-                                          : Colors.transparent,
-                                  width: 1.5,
+                                              .withOpacity(0.1)
+                                          : CupertinoColors.systemGrey6
+                                              .resolveFrom(context),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color:
+                                        isSelected
+                                            ? themeNotifier.primaryColor
+                                            : Colors.transparent,
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: iconColor.withOpacity(0.2),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        icon,
+                                        color: iconColor,
+                                        size: 22,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            source,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight:
+                                                  isSelected
+                                                      ? FontWeight.bold
+                                                      : FontWeight.normal,
+                                              color:
+                                                  isSelected
+                                                      ? themeNotifier
+                                                          .primaryColor
+                                                      : CupertinoTheme.of(
+                                                            context,
+                                                          )
+                                                          .textTheme
+                                                          .textStyle
+                                                          .color,
+                                            ),
+                                          ),
+                                          Text(
+                                            description,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: CupertinoColors
+                                                  .secondaryLabel
+                                                  .resolveFrom(context),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (isSelected)
+                                      Icon(
+                                        CupertinoIcons.checkmark_circle_fill,
+                                        color: themeNotifier.primaryColor,
+                                        size: 22,
+                                      ),
+                                  ],
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: iconColor.withOpacity(0.2),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      icon,
-                                      color: iconColor,
-                                      size: 22,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          source,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight:
-                                                isSelected
-                                                    ? FontWeight.bold
-                                                    : FontWeight.normal,
-                                            color:
-                                                isSelected
-                                                    ? themeNotifier.primaryColor
-                                                    : CupertinoTheme.of(
-                                                      context,
-                                                    ).textTheme.textStyle.color,
-                                          ),
-                                        ),
-                                        Text(
-                                          description,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: CupertinoColors
-                                                .secondaryLabel
-                                                .resolveFrom(context),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (isSelected)
-                                    Icon(
-                                      CupertinoIcons.checkmark_circle_fill,
-                                      color: themeNotifier.primaryColor,
-                                      size: 22,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                  ),
-                ),
-
-                // Standard picker as fallback
-                Expanded(
-                  child: CupertinoPicker(
-                    scrollController: FixedExtentScrollController(
-                      initialItem: _colorSources.indexOf(_selectedColorSource),
+                            );
+                          }).toList(),
                     ),
-                    itemExtent: 32.0,
-                    onSelectedItemChanged: (index) {
-                      setState(() {
-                        _selectedColorSource = _colorSources[index];
-                      });
-                    },
-                    children:
-                        _colorSources
-                            .map((source) => Center(child: Text(source)))
-                            .toList(),
                   ),
-                ),
-              ],
+
+                  // Standard picker as fallback
+                  Expanded(
+                    child: CupertinoPicker(
+                      scrollController: FixedExtentScrollController(
+                        initialItem: _colorSources.indexOf(
+                          _selectedColorSource,
+                        ),
+                      ),
+                      itemExtent: 32.0,
+                      onSelectedItemChanged: (index) {
+                        setState(() {
+                          _selectedColorSource = _colorSources[index];
+                        });
+
+                        // Apply the change immediately for preview
+                        final source = _colorSources[index];
+                        if (source == 'System') {
+                          themeNotifier.setThemeMode(AppTheme.system);
+                        } else if (source == 'Custom') {
+                          themeNotifier.setThemeMode(AppTheme.custom);
+                          themeNotifier.setUseDynamicColors(false);
+                        } else if (source == 'Dynamic') {
+                          themeNotifier.setThemeMode(AppTheme.custom);
+                          themeNotifier.setUseDynamicColors(true);
+                          themeNotifier.generateDynamicColorPalette(context);
+                        }
+                      },
+                      children:
+                          _colorSources
+                              .map((source) => Center(child: Text(source)))
+                              .toList(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
     );
@@ -841,154 +911,156 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
           (_) => Container(
             height: 400,
             color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CupertinoButton(
-                        child: const Text('Cancel'),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      Text(
-                        'Noise Effect',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        CupertinoButton(
+                          child: const Text('Cancel'),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        Text(
+                          'Noise Effect',
+                          style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        CupertinoButton(
+                          child: const Text('Done'),
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Description text
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: Text(
+                      'Noise adds a subtle grain texture to your theme colors, similar to film grain or paper texture.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
                         ),
                       ),
-                      CupertinoButton(
-                        child: const Text('Done'),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Description text
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  child: Text(
-                    'Noise adds a subtle grain texture to your theme colors, similar to film grain or paper texture.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: CupertinoColors.secondaryLabel.resolveFrom(
-                        context,
-                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                ),
 
-                // Visual examples of noise levels
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children:
-                        _noiseLevels.map((level) {
-                          final isSelected = _selectedNoiseLevel == level;
-                          final noiseValue = _getNoiseLevelValue(level);
+                  // Visual examples of noise levels
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children:
+                          _noiseLevels.map((level) {
+                            final isSelected = _selectedNoiseLevel == level;
+                            final noiseValue = _getNoiseLevelValue(level);
 
-                          // Apply the noise effect to the primary color for preview
-                          final Color previewColor =
-                              noiseValue > 0
-                                  ? themeNotifier.applyNoiseToColor(
-                                    themeNotifier.customColor,
-                                  )
-                                  : themeNotifier.customColor;
+                            // Apply the noise effect to the primary color for preview
+                            final Color previewColor =
+                                noiseValue > 0
+                                    ? themeNotifier.applyNoiseToColor(
+                                      themeNotifier.customColor,
+                                    )
+                                    : themeNotifier.customColor;
 
-                          return Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedNoiseLevel = level;
-                                });
-                              },
-                              child: Column(
-                                children: [
-                                  Container(
-                                    height: 60,
-                                    margin: const EdgeInsets.all(4.0),
-                                    decoration: BoxDecoration(
-                                      color: previewColor,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedNoiseLevel = level;
+                                  });
+                                },
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      height: 60,
+                                      margin: const EdgeInsets.all(4.0),
+                                      decoration: BoxDecoration(
+                                        color: previewColor,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color:
+                                              isSelected
+                                                  ? themeNotifier.primaryColor
+                                                  : Colors.transparent,
+                                          width: 2,
+                                        ),
+                                        boxShadow:
+                                            isSelected
+                                                ? [
+                                                  BoxShadow(
+                                                    color: themeNotifier
+                                                        .primaryColor
+                                                        .withOpacity(0.3),
+                                                    blurRadius: 8,
+                                                    spreadRadius: 1,
+                                                  ),
+                                                ]
+                                                : null,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      level,
+                                      style: TextStyle(
+                                        fontWeight:
+                                            isSelected
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
                                         color:
                                             isSelected
                                                 ? themeNotifier.primaryColor
-                                                : Colors.transparent,
-                                        width: 2,
+                                                : CupertinoTheme.of(
+                                                  context,
+                                                ).textTheme.textStyle.color,
                                       ),
-                                      boxShadow:
-                                          isSelected
-                                              ? [
-                                                BoxShadow(
-                                                  color: themeNotifier
-                                                      .primaryColor
-                                                      .withOpacity(0.3),
-                                                  blurRadius: 8,
-                                                  spreadRadius: 1,
-                                                ),
-                                              ]
-                                              : null,
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    level,
-                                    style: TextStyle(
-                                      fontWeight:
-                                          isSelected
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                      color:
-                                          isSelected
-                                              ? themeNotifier.primaryColor
-                                              : CupertinoTheme.of(
-                                                context,
-                                              ).textTheme.textStyle.color,
-                                    ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        }).toList(),
-                  ),
-                ),
-
-                // Divider
-                Divider(
-                  height: 1,
-                  color: CupertinoColors.separator.resolveFrom(context),
-                ),
-
-                // Standard picker as fallback
-                Expanded(
-                  child: CupertinoPicker(
-                    scrollController: FixedExtentScrollController(
-                      initialItem: _noiseLevels.indexOf(_selectedNoiseLevel),
+                            );
+                          }).toList(),
                     ),
-                    itemExtent: 32.0,
-                    onSelectedItemChanged: (index) {
-                      setState(() {
-                        _selectedNoiseLevel = _noiseLevels[index];
-                      });
-                    },
-                    children:
-                        _noiseLevels
-                            .map((level) => Center(child: Text(level)))
-                            .toList(),
                   ),
-                ),
-              ],
+
+                  // Divider
+                  Divider(
+                    height: 1,
+                    color: CupertinoColors.separator.resolveFrom(context),
+                  ),
+
+                  // Standard picker as fallback
+                  Expanded(
+                    child: CupertinoPicker(
+                      scrollController: FixedExtentScrollController(
+                        initialItem: _noiseLevels.indexOf(_selectedNoiseLevel),
+                      ),
+                      itemExtent: 32.0,
+                      onSelectedItemChanged: (index) {
+                        setState(() {
+                          _selectedNoiseLevel = _noiseLevels[index];
+                        });
+                      },
+                      children:
+                          _noiseLevels
+                              .map((level) => Center(child: Text(level)))
+                              .toList(),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
     );
@@ -1099,7 +1171,12 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                     setState(() {
                       _fontSizeAdjustment = value;
                     });
-                    // In a real implementation, this would adjust text scaling
+                    // Apply the change immediately for preview
+                    final themeNotifier = Provider.of<ThemeNotifier>(
+                      context,
+                      listen: false,
+                    );
+                    themeNotifier.setTextSizeAdjustment(value);
                   },
                   subtitle: 'Adjust the size of text throughout the app',
                 ),
@@ -1110,15 +1187,28 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                     setState(() {
                       _highContrastMode = value;
                     });
-                    // In a real implementation, this would adjust contrast
+                    // Apply the change immediately for preview
+                    final themeNotifier = Provider.of<ThemeNotifier>(
+                      context,
+                      listen: false,
+                    );
+                    themeNotifier.setHighContrastMode(value);
                   },
                   subtitle: 'Increase contrast for better readability',
                 ),
                 SettingsToggleItem(
                   label: 'Reduce Motion',
-                  value: false,
+                  value: _reduceMotion,
                   onChanged: (value) {
-                    // In a real implementation, this would adjust animations
+                    setState(() {
+                      _reduceMotion = value;
+                    });
+                    // Apply the change immediately for preview
+                    final themeNotifier = Provider.of<ThemeNotifier>(
+                      context,
+                      listen: false,
+                    );
+                    themeNotifier.setReduceMotion(value);
                   },
                   subtitle: 'Minimize animations throughout the app',
                 ),
@@ -1133,6 +1223,17 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                   margin: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: themeNotifier.backgroundColor,
+                    gradient:
+                        themeNotifier.useGradient
+                            ? LinearGradient(
+                              colors: [
+                                themeNotifier.customColor,
+                                themeNotifier.secondaryColor,
+                              ],
+                              begin: themeNotifier.gradientStartAlignment,
+                              end: themeNotifier.gradientEndAlignment,
+                            )
+                            : null,
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -1152,7 +1253,22 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                           horizontal: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: themeNotifier.backgroundColor,
+                          color: themeNotifier.backgroundColor.withOpacity(0.9),
+                          gradient:
+                              themeNotifier.useGradient
+                                  ? LinearGradient(
+                                    colors: [
+                                      themeNotifier.customColor.withOpacity(
+                                        0.9,
+                                      ),
+                                      themeNotifier.secondaryColor.withOpacity(
+                                        0.9,
+                                      ),
+                                    ],
+                                    begin: themeNotifier.gradientStartAlignment,
+                                    end: themeNotifier.gradientEndAlignment,
+                                  )
+                                  : null,
                           border: Border(
                             bottom: BorderSide(
                               color: CupertinoColors.separator.resolveFrom(
@@ -1169,7 +1285,10 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                               'Theme Preview',
                               style: TextStyle(
                                 fontSize: 17,
-                                fontWeight: FontWeight.bold,
+                                fontWeight:
+                                    themeNotifier.highContrastMode
+                                        ? FontWeight.w700
+                                        : FontWeight.bold,
                                 color: themeNotifier.textColor,
                               ),
                             ),
@@ -1185,119 +1304,186 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // List item
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: CupertinoColors
-                                      .secondarySystemBackground
-                                      .resolveFrom(context),
-                                  borderRadius: BorderRadius.circular(10),
+                          child: SingleChildScrollView(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // List item
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: CupertinoColors
+                                        .secondarySystemBackground
+                                        .resolveFrom(context),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40,
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          color: themeNotifier.primaryColor,
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          CupertinoIcons.check_mark,
+                                          color: CupertinoColors.white,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Task Item',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                                color: themeNotifier.textColor,
+                                              ),
+                                            ),
+                                            Text(
+                                              'This is a sample task with your theme',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: CupertinoColors
+                                                    .secondaryLabel
+                                                    .resolveFrom(context),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                child: Row(
+
+                                const SizedBox(height: 16),
+
+                                // Buttons row
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
                                   children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: themeNotifier.primaryColor,
-                                        borderRadius: BorderRadius.circular(8),
+                                    CupertinoButton(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
                                       ),
-                                      child: Icon(
-                                        CupertinoIcons.check_mark,
-                                        color: CupertinoColors.white,
-                                        size: 20,
-                                      ),
+                                      color: themeNotifier.primaryColor,
+                                      child: const Text('Primary'),
+                                      onPressed: () {},
                                     ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Task Item',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: themeNotifier.textColor,
-                                            ),
-                                          ),
-                                          Text(
-                                            'This is a sample task with your theme',
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: CupertinoColors
-                                                  .secondaryLabel
-                                                  .resolveFrom(context),
-                                            ),
-                                          ),
-                                        ],
+                                    CupertinoButton(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 8,
                                       ),
+                                      child: Text(
+                                        'Secondary',
+                                        style: TextStyle(
+                                          color: themeNotifier.primaryColor,
+                                        ),
+                                      ),
+                                      onPressed: () {},
                                     ),
                                   ],
                                 ),
-                              ),
 
-                              const SizedBox(height: 16),
+                                const SizedBox(height: 16),
 
-                              // Buttons row
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  CupertinoButton(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    color: themeNotifier.primaryColor,
-                                    child: const Text('Primary'),
-                                    onPressed: () {},
-                                  ),
-                                  CupertinoButton(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8,
-                                    ),
-                                    child: Text(
-                                      'Secondary',
+                                // Toggle
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Dark Mode',
                                       style: TextStyle(
-                                        color: themeNotifier.primaryColor,
+                                        fontSize: 16,
+                                        color: themeNotifier.textColor,
+                                        fontWeight:
+                                            themeNotifier.highContrastMode
+                                                ? FontWeight.w600
+                                                : FontWeight.normal,
                                       ),
                                     ),
-                                    onPressed: () {},
-                                  ),
-                                ],
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // Toggle
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Dark Mode',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: themeNotifier.textColor,
+                                    CupertinoSwitch(
+                                      value:
+                                          themeNotifier.brightness ==
+                                          Brightness.dark,
+                                      activeColor: themeNotifier.primaryColor,
+                                      onChanged: (_) {},
                                     ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // Text size adjustment demonstration
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: CupertinoColors.systemGrey6
+                                        .resolveFrom(context),
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
-                                  CupertinoSwitch(
-                                    value:
-                                        themeNotifier.brightness ==
-                                        Brightness.dark,
-                                    activeColor: themeNotifier.primaryColor,
-                                    onChanged: (_) {},
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Text Size Adjustment',
+                                        style: TextStyle(
+                                          fontSize:
+                                              16 *
+                                              (1.0 +
+                                                  themeNotifier
+                                                      .textSizeAdjustment),
+                                          fontWeight:
+                                              themeNotifier.highContrastMode
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w500,
+                                          color: themeNotifier.textColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'This text demonstrates the current text size setting.',
+                                        style: TextStyle(
+                                          fontSize:
+                                              14 *
+                                              (1.0 +
+                                                  themeNotifier
+                                                      .textSizeAdjustment),
+                                          color: themeNotifier.textColor,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Accessibility features: ${themeNotifier.highContrastMode ? "High Contrast, " : ""}${themeNotifier.reduceMotion ? "Reduced Motion" : ""}',
+                                        style: TextStyle(
+                                          fontSize:
+                                              12 *
+                                              (1.0 +
+                                                  themeNotifier
+                                                      .textSizeAdjustment),
+                                          color: CupertinoColors.secondaryLabel
+                                              .resolveFrom(context),
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -1314,6 +1500,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                     CupertinoButton.filled(
                       padding: const EdgeInsets.symmetric(vertical: 14.0),
                       borderRadius: BorderRadius.circular(10),
+                      onPressed: _applyThemeSettings,
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -1332,7 +1519,6 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                           ),
                         ],
                       ),
-                      onPressed: _applyThemeSettings,
                     ),
                     const SizedBox(height: 8),
                     Text(

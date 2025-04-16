@@ -68,6 +68,21 @@ class UserSettings extends HiveObject {
   @HiveField(17)
   bool useDynamicColors;
 
+  @HiveField(19)
+  double? textSizeAdjustment;
+
+  @HiveField(20)
+  bool? reduceMotion;
+
+  @HiveField(21)
+  bool? highContrastMode;
+
+  @HiveField(22)
+  String? gradientStartAlignment;
+
+  @HiveField(23)
+  String? gradientEndAlignment;
+
   UserSettings({
     required this.name,
     required this.minSession,
@@ -88,6 +103,11 @@ class UserSettings extends HiveObject {
     this.useGradient = false,
     this.secondaryColorValue = 0xFF34C759, // Default iOS green
     this.useDynamicColors = false,
+    this.textSizeAdjustment = 0.0,
+    this.reduceMotion = false,
+    this.highContrastMode = false,
+    this.gradientStartAlignment = "topLeft",
+    this.gradientEndAlignment = "bottomRight",
   }) : daySchedules = daySchedules ?? {} {
     activeDays ??= {
       'Monday': true,
