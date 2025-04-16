@@ -62,9 +62,7 @@ class CalendarCubit extends Cubit<CalendarState> {
     if (tasksForSelectedDate.isEmpty) {
       logDebug('No tasks found for $date');
     } else {
-      logDebug(
-        'Found ${tasksForSelectedDate.length} tasks for $date',
-      );
+      logDebug('Found ${tasksForSelectedDate.length} tasks for $date');
     }
     return tasksForSelectedDate;
   }

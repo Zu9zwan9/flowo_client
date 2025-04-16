@@ -17,14 +17,14 @@ class PomodoroSessionAdapter extends TypeAdapter<PomodoroSession> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return PomodoroSession(
-      id: fields[0] as String,
-      taskId: fields[1] as String?,
-      totalDuration: fields[2] as int,
-      breakDuration: fields[4] as int,
-      completedPomodoros: fields[6] as int,
-      targetPomodoros: fields[7] as int,
-      startTime: fields[8] as DateTime?,
-    )
+        id: fields[0] as String,
+        taskId: fields[1] as String?,
+        totalDuration: fields[2] as int,
+        breakDuration: fields[4] as int,
+        completedPomodoros: fields[6] as int,
+        targetPomodoros: fields[7] as int,
+        startTime: fields[8] as DateTime?,
+      )
       ..remainingDuration = fields[3] as int
       ..remainingBreakDuration = fields[5] as int
       ..endTime = fields[9] as DateTime?;

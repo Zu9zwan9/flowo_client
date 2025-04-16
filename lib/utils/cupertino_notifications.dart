@@ -17,8 +17,9 @@ void showCupertinoNotification({
   final overlayState = Overlay.of(context);
   final overlayEntry = OverlayEntry(
     builder: (context) {
-      final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
-      
+      final isDarkMode =
+          CupertinoTheme.of(context).brightness == Brightness.dark;
+
       return Positioned(
         bottom: 16.0,
         left: 16.0,
@@ -27,11 +28,16 @@ void showCupertinoNotification({
           child: GestureDetector(
             onTap: onTap,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 12.0,
+              ),
               decoration: BoxDecoration(
-                color: backgroundColor ?? (isDarkMode 
-                  ? CupertinoColors.systemGrey6.darkColor.withOpacity(0.9)
-                  : CupertinoColors.systemGrey6.withOpacity(0.9)),
+                color:
+                    backgroundColor ??
+                    (isDarkMode
+                        ? CupertinoColors.systemGrey6.darkColor.withOpacity(0.9)
+                        : CupertinoColors.systemGrey6.withOpacity(0.9)),
                 borderRadius: BorderRadius.circular(10.0),
                 boxShadow: [
                   BoxShadow(
@@ -47,9 +53,11 @@ void showCupertinoNotification({
                     child: Text(
                       message,
                       style: TextStyle(
-                        color: textColor ?? (isDarkMode 
-                          ? CupertinoColors.white 
-                          : CupertinoColors.black),
+                        color:
+                            textColor ??
+                            (isDarkMode
+                                ? CupertinoColors.white
+                                : CupertinoColors.black),
                       ),
                     ),
                   ),

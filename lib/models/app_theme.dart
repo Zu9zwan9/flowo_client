@@ -17,5 +17,5 @@ enum AppTheme {
   adhd,
 
   @HiveField(4)
-  custom
+  custom,
 }

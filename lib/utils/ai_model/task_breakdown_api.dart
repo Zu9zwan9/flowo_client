@@ -204,8 +204,6 @@ class TaskBreakdownAPI {
     return parseSubtasks(response);
   }
 
-
-
   Map<String, dynamic>? _parseSubtaskLine(String line) {
     final regex = RegExp(r'^\d+\.\s*(.+?)\s*\((\d+)\s*minutes?\)$');
     final match = regex.firstMatch(line);
