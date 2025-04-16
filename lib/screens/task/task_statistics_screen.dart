@@ -11,6 +11,9 @@ import 'package:flowo_client/models/day.dart';
 import 'package:hive/hive.dart';
 import 'package:flutter/services.dart';
 import 'task_reschedule_screen.dart';
+import 'task_form_screen.dart';
+import '../event/event_form_screen.dart';
+import '../habit/habit_form_screen.dart';
 
 /// Screen for displaying task execution statistics and scheduling information
 class TaskStatisticsScreen extends StatefulWidget {
@@ -50,13 +53,37 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
             .where(
               (task) =>
                   !task.isDone &&
-                  task.deadline < DateTime.now().millisecondsSinceEpoch,
+                  task.deadline < DateTime.now().millisecondsSinceEpoch &&
+                  _canTaskBeOverdue(task),
             )
             .length;
     _upcomingTasks = _totalScheduledTasks - _completedTasks - _overdueTasks;
 
-    //TODO: Find tasks that are impossible to complete or need rescheduling
+    // Find tasks that are impossible to complete or need rescheduling
     _analyzeTaskUrgency(tasks, scheduledTasks);
+  }
+
+  // Helper method to determine if a task can be overdue
+  // Only tasks with subtasks or without can be overdue
+  // Events, habits, and free time tasks can't be overdue
+  bool _canTaskBeOverdue(Task task) {
+    // Check if it's an event (category name contains "event")
+    if (task.category.name.toLowerCase().contains('event')) {
+      return false;
+    }
+
+    // Check if it's a habit (has frequency)
+    if (task.frequency != null) {
+      return false;
+    }
+
+    // Check if it's a free time task (category name is "Free Time Manager")
+    if (task.category.name == 'Free Time Manager') {
+      return false;
+    }
+
+    // Regular tasks can be overdue
+    return true;
   }
 
   void _analyzeTaskUrgency(
@@ -68,6 +95,8 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
 
     for (var task in tasks) {
       if (task.isDone) continue;
+      if (!_canTaskBeOverdue(task))
+        continue; // Skip tasks that can't be overdue
 
       final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
       if (timeLeft <= 0) continue; // Already overdue
@@ -375,7 +404,7 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
                             ),
                       ),
                     ).then((_) {
-                      //TODO: Refresh the statistics when returning from the reschedule screen
+                      // Refresh the statistics when returning from the reschedule screen
                       setState(() {
                         _loadStatistics();
                       });
@@ -393,10 +422,21 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
   }
 
   void _editTask(Task task) {
-    // Navigate to task edit screen
-    //TODO: This would typically use a navigation service or route
-    //TODO: For now, we'll just print a message
-    print('Would navigate to edit screen for task: ${task.title}');
+    HapticFeedback.mediumImpact();
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) {
+          if (task.category.name.toLowerCase().contains('event')) {
+            return EventFormScreen(event: task);
+          } else if (task.frequency != null) {
+            return HabitFormScreen(habit: task);
+          } else {
+            return TaskFormScreen(task: task);
+          }
+        },
+      ),
+    );
   }
 
   void _extendDeadline(Task task, Duration additionalTime) {
