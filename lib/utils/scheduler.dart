@@ -29,9 +29,7 @@ class Scheduler {
   void updateUserSettings(UserSettings userSettings) {
     logInfo('Updating user settings in Scheduler');
     this.userSettings = userSettings;
-    createDaysUntil(
-      DateTime(DateTime.now().year, DateTime.now().month + 3),
-    );
+    createDaysUntil(DateTime(DateTime.now().year, DateTime.now().month + 3));
   }
 
   void _initializeFreeTimeManager() {
@@ -265,6 +263,14 @@ class Scheduler {
       'Sunday',
     ];
     final dayName = weekdayNames[date.weekday - 1];
+
+    // Check day-specific schedule first
+    final daySchedule = userSettings.daySchedules[dayName];
+    if (daySchedule != null) {
+      return daySchedule.isActive;
+    }
+
+    // Fall back to global active days
     return userSettings.activeDays?[dayName] ?? true;
   }
 
@@ -527,7 +533,7 @@ class Scheduler {
     return day;
   }
 
-  void createDaysUntil(DateTime date){
+  void createDaysUntil(DateTime date) {
     logInfo('Creating days until: ${date.toIso8601String()}');
     final now = DateTime.now();
     final endDate = date.isBefore(now) ? now : date;
@@ -545,65 +551,87 @@ class Scheduler {
     logDebug('Adding predefined blocks for ${day.day}');
     final date = DateTime.parse('${day.day} 00:00:00');
 
-    for (var timeFrame in userSettings.mealBreaks) {
-      if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-          timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-        _addTimeBlock(
-          day,
-          TimeFrame(
-            startTime: timeFrame.startTime,
-            endTime: const TimeOfDay(hour: 23, minute: 59),
-          ),
-          ScheduledTaskType.mealBreak,
-          date,
-        );
-        _addTimeBlock(
-          day,
-          TimeFrame(
-            startTime: const TimeOfDay(hour: 0, minute: 0),
-            endTime: timeFrame.endTime,
-          ),
-          ScheduledTaskType.mealBreak,
-          date,
-        );
-      } else {
-        _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
-      }
-    }
+    // Get the day of the week (Monday, Tuesday, etc.)
+    final weekdayNames = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    final dayName = weekdayNames[date.weekday - 1];
 
-    for (var timeFrame in userSettings.freeTime) {
-      if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-          timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-        _addTimeBlock(
-          day,
-          TimeFrame(
-            startTime: timeFrame.startTime,
-            endTime: const TimeOfDay(hour: 23, minute: 59),
-          ),
-          ScheduledTaskType.rest,
-          date,
-        );
-        _addTimeBlock(
-          day,
-          TimeFrame(
-            startTime: const TimeOfDay(hour: 0, minute: 0),
-            endTime: timeFrame.endTime,
-          ),
-          ScheduledTaskType.rest,
-          date,
-        );
-      } else {
-        _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
-      }
-    }
+    // Check if we have a day-specific schedule
+    final daySchedule = userSettings.daySchedules[dayName];
 
-    for (var timeFrame in userSettings.sleepTime) {
-      if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-          timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+    if (daySchedule != null && daySchedule.isActive) {
+      // Use day-specific schedule
+      logDebug('Using day-specific schedule for $dayName');
+
+      // Add meal breaks
+      for (var timeFrame in daySchedule.mealBreaks) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.mealBreak,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.mealBreak,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
+        }
+      }
+
+      // Add free times
+      for (var timeFrame in daySchedule.freeTimes) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.rest,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.rest,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
+        }
+      }
+
+      // Add sleep time
+      final sleepTime = daySchedule.sleepTime;
+      if (sleepTime.endTime.hour * 60 + sleepTime.endTime.minute <
+          sleepTime.startTime.hour * 60 + sleepTime.startTime.minute) {
         _addTimeBlock(
           day,
           TimeFrame(
-            startTime: timeFrame.startTime,
+            startTime: sleepTime.startTime,
             endTime: const TimeOfDay(hour: 23, minute: 59),
           ),
           ScheduledTaskType.sleep,
@@ -613,13 +641,97 @@ class Scheduler {
           day,
           TimeFrame(
             startTime: const TimeOfDay(hour: 0, minute: 0),
-            endTime: timeFrame.endTime,
+            endTime: sleepTime.endTime,
           ),
           ScheduledTaskType.sleep,
           date,
         );
       } else {
-        _addTimeBlock(day, timeFrame, ScheduledTaskType.sleep, date);
+        _addTimeBlock(day, sleepTime, ScheduledTaskType.sleep, date);
+      }
+    } else {
+      // Use global schedule
+      logDebug('Using global schedule for $dayName');
+
+      // Add meal breaks
+      for (var timeFrame in userSettings.mealBreaks) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.mealBreak,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.mealBreak,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
+        }
+      }
+
+      // Add free times
+      for (var timeFrame in userSettings.freeTime) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.rest,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.rest,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
+        }
+      }
+
+      // Add sleep time
+      for (var timeFrame in userSettings.sleepTime) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.sleep,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.sleep,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.sleep, date);
+        }
       }
     }
   }

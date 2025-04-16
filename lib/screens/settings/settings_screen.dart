@@ -1,6 +1,7 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/time_frame.dart';
 import 'package:flowo_client/models/user_settings.dart';
+import 'package:flowo_client/screens/settings/day_schedule_screen.dart';
 import 'package:flowo_client/screens/settings/theme_settings_screen.dart';
 import 'package:flowo_client/screens/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
@@ -1217,6 +1218,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             )
                             .toList(),
                   ),
+                ),
+              ],
+            ),
+            SettingsSection(
+              title: 'Day-Specific Schedules',
+              footerText:
+                  'Configure different schedules for different days of the week.',
+              children: [
+                SettingsItem(
+                  label: 'Day Schedules',
+                  subtitle:
+                      'Set different sleep, meal, and free times for each day',
+                  leading: const Icon(
+                    CupertinoIcons.calendar,
+                    color: CupertinoColors.systemBlue,
+                  ),
+                  trailing: const Icon(
+                    CupertinoIcons.chevron_right,
+                    color: CupertinoColors.systemGrey,
+                  ),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      CupertinoPageRoute(
+                        builder: (context) => const DayScheduleScreen(),
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

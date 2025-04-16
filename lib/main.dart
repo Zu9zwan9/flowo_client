@@ -29,6 +29,7 @@ import 'models/app_theme.dart';
 import 'models/category.dart';
 import 'models/coordinates.dart';
 import 'models/day.dart';
+import 'models/day_schedule.dart';
 import 'models/notification_type.dart';
 import 'models/pomodoro_session.dart';
 import 'models/scheduled_task.dart';
@@ -89,6 +90,7 @@ void main() async {
   Hive.registerAdapter(RepeatRuleInstanceAdapter());
   Hive.registerAdapter(AppThemeAdapter());
   Hive.registerAdapter(TaskSessionAdapter());
+  Hive.registerAdapter(DayScheduleAdapter());
 
   await Hive.initFlutter();
 
@@ -172,6 +174,64 @@ void main() async {
               'Friday': true,
               'Saturday': true,
               'Sunday': true,
+            },
+            daySchedules: {
+              'Monday': DaySchedule(
+                day: 'Monday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+              ),
+              'Tuesday': DaySchedule(
+                day: 'Tuesday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+              ),
+              'Wednesday': DaySchedule(
+                day: 'Wednesday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+              ),
+              'Thursday': DaySchedule(
+                day: 'Thursday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+              ),
+              'Friday': DaySchedule(
+                day: 'Friday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+              ),
+              'Saturday': DaySchedule(
+                day: 'Saturday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 23, minute: 0),
+                  endTime: const TimeOfDay(hour: 8, minute: 0),
+                ),
+              ),
+              'Sunday': DaySchedule(
+                day: 'Sunday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 23, minute: 0),
+                  endTime: const TimeOfDay(hour: 8, minute: 0),
+                ),
+              ),
             },
             defaultNotificationType: NotificationType.push,
           );
