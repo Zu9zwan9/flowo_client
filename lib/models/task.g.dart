@@ -38,13 +38,16 @@ class TaskAdapter extends TypeAdapter<Task> {
       pessimisticTime: fields[19] as int?,
       firstNotification: fields[20] as int?,
       secondNotification: fields[21] as int?,
+      status: fields[22] as String,
+      totalDuration: fields[23] as int,
+      sessions: (fields[24] as List?)?.cast<TaskSession>(),
     )..parentTaskId = fields[11] as String?;
   }
 
   @override
   void write(BinaryWriter writer, Task obj) {
     writer
-      ..writeByte(22)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -88,7 +91,13 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(20)
       ..write(obj.firstNotification)
       ..writeByte(21)
-      ..write(obj.secondNotification);
+      ..write(obj.secondNotification)
+      ..writeByte(22)
+      ..write(obj.status)
+      ..writeByte(23)
+      ..write(obj.totalDuration)
+      ..writeByte(24)
+      ..write(obj.sessions);
   }
 
   @override

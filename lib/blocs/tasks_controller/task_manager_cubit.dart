@@ -7,6 +7,7 @@ import '../../models/category.dart';
 import '../../models/day.dart';
 import '../../models/repeat_rule.dart';
 import '../../models/task.dart';
+import '../../models/task_session.dart';
 import '../../models/user_settings.dart';
 import '../../utils/task_manager.dart';
 import 'task_manager_state.dart';
@@ -499,6 +500,65 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     } catch (e) {
       logError('Error sending completion check reminder: $e');
     }
+  }
+
+  /// Starts a task or subtask
+  /// If the task has subtasks and they're not all completed, it can't be started
+  /// Returns true if the task was started successfully, false otherwise
+  bool startTask(Task task) {
+    logInfo('Starting task: ${task.title}');
+    final result = taskManager.startTask(task);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    return result;
+  }
+
+  /// Pauses a task that's in progress
+  /// Returns true if the task was paused successfully, false otherwise
+  bool pauseTask(Task task) {
+    logInfo('Pausing task: ${task.title}');
+    final result = taskManager.pauseTask(task);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    return result;
+  }
+
+  /// Stops a task that's in progress or paused
+  /// Returns true if the task was stopped successfully, false otherwise
+  bool stopTask(Task task) {
+    logInfo('Stopping task: ${task.title}');
+    final result = taskManager.stopTask(task);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    return result;
+  }
+
+  /// Completes a task
+  /// If the task has a parent task, it checks if all siblings are completed
+  /// and if so, it marks the parent task as completed too
+  /// Returns true if the task was completed successfully, false otherwise
+  bool completeTask(Task task) {
+    logInfo('Completing task: ${task.title}');
+    final result = taskManager.completeTask(task);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    return result;
+  }
+
+  /// Gets all task sessions for a task and its subtasks
+  List<TaskSession> getTaskSessions(Task task) {
+    return taskManager.getTaskSessions(task);
+  }
+
+  /// Gets the total duration for a task and its subtasks
+  int getTotalDuration(Task task) {
+    return taskManager.getTotalDuration(task);
+  }
+
+  /// Gets all tasks that are currently in progress
+  List<Task> getTasksInProgress() {
+    return taskManager.getTasksInProgress();
+  }
+
+  /// Gets all tasks that are currently paused
+  List<Task> getPausedTasks() {
+    return taskManager.getPausedTasks();
   }
 
   /// Schedule a reminder to check if a task is completed

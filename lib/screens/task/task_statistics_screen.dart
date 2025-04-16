@@ -6,6 +6,7 @@ import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/blocs/tasks_controller/task_manager_state.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
+import 'package:flowo_client/models/task_session.dart';
 import 'package:flowo_client/utils/task_urgency_calculator.dart';
 import 'package:flowo_client/models/day.dart';
 import 'package:hive/hive.dart';
@@ -31,6 +32,13 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
   int _completedTasks = 0;
   int _overdueTasks = 0;
   int _upcomingTasks = 0;
+
+  // Duration statistics
+  int _totalDuration = 0;
+  int _tasksWithDuration = 0;
+  int _averageDuration = 0;
+  int _longestTaskDuration = 0;
+  String _longestTaskTitle = '';
 
   @override
   void initState() {
@@ -61,6 +69,35 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
 
     // Find tasks that are impossible to complete or need rescheduling
     _analyzeTaskUrgency(tasks, scheduledTasks);
+
+    // Calculate duration statistics
+    _calculateDurationStatistics(tasks, tasksCubit);
+  }
+
+  void _calculateDurationStatistics(
+    List<Task> tasks,
+    TaskManagerCubit tasksCubit,
+  ) {
+    _totalDuration = 0;
+    _tasksWithDuration = 0;
+    _longestTaskDuration = 0;
+    _longestTaskTitle = '';
+
+    for (var task in tasks) {
+      final duration = tasksCubit.getTotalDuration(task);
+      if (duration > 0) {
+        _totalDuration += duration;
+        _tasksWithDuration++;
+
+        if (duration > _longestTaskDuration) {
+          _longestTaskDuration = duration;
+          _longestTaskTitle = task.title;
+        }
+      }
+    }
+
+    _averageDuration =
+        _tasksWithDuration > 0 ? (_totalDuration ~/ _tasksWithDuration) : 0;
   }
 
   // Helper method to determine if a task can be overdue
@@ -153,6 +190,8 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
               const SizedBox(height: 16),
               _buildTaskStatusCard(),
               const SizedBox(height: 16),
+              _buildDurationStatisticsCard(),
+              const SizedBox(height: 16),
               if (_impossibleTasks.isNotEmpty) ...[
                 _buildImpossibleTasksCard(),
                 const SizedBox(height: 16),
@@ -165,6 +204,87 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDurationStatisticsCard() {
+    return _StatisticsCard(
+      title: 'Time Tracking',
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _StatItem(
+                icon: CupertinoIcons.time,
+                value:
+                    Duration(milliseconds: _totalDuration).inHours > 0
+                        ? '${Duration(milliseconds: _totalDuration).inHours}h ${Duration(milliseconds: _totalDuration).inMinutes.remainder(60)}m'
+                        : '${Duration(milliseconds: _totalDuration).inMinutes}m',
+                label: 'Total Time',
+                color: CupertinoColors.activeBlue,
+              ),
+              _StatItem(
+                icon: CupertinoIcons.timer,
+                value:
+                    Duration(milliseconds: _averageDuration).inHours > 0
+                        ? '${Duration(milliseconds: _averageDuration).inHours}h ${Duration(milliseconds: _averageDuration).inMinutes.remainder(60)}m'
+                        : '${Duration(milliseconds: _averageDuration).inMinutes}m',
+                label: 'Average Time',
+                color: CupertinoColors.systemPurple,
+              ),
+              _StatItem(
+                icon: CupertinoIcons.number,
+                value: _tasksWithDuration.toString(),
+                label: 'Tasks Tracked',
+                color: CupertinoColors.systemTeal,
+              ),
+            ],
+          ),
+          if (_longestTaskDuration > 0) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemGrey6.resolveFrom(context),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Longest Task:',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color:
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _longestTaskTitle,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color:
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Duration: ${Duration(milliseconds: _longestTaskDuration).inHours > 0 ? '${Duration(milliseconds: _longestTaskDuration).inHours}h ${Duration(milliseconds: _longestTaskDuration).inMinutes.remainder(60)}m' : '${Duration(milliseconds: _longestTaskDuration).inMinutes}m'}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: CupertinoColors.systemBlue,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

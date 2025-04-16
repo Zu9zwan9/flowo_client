@@ -4,6 +4,7 @@ import 'category.dart';
 import 'coordinates.dart';
 import 'repeat_rule.dart';
 import 'scheduled_task.dart';
+import 'task_session.dart';
 
 part 'task.g.dart';
 
@@ -70,10 +71,41 @@ class Task extends HiveObject {
   int? color;
 
   @HiveField(20)
-  int? firstNotification; //time in minutes before schduled task
+  int? firstNotification; //time in minutes before scheduled task
 
   @HiveField(21)
   int? secondNotification;
+
+  /// Task execution status
+  @HiveField(22)
+  String status = 'not_started'; // not_started, in_progress, paused, completed
+
+  /// Total duration spent on this task in milliseconds
+  @HiveField(23)
+  int totalDuration = 0;
+
+  /// List of sessions for this task
+  @HiveField(24)
+  List<TaskSession> sessions = [];
+
+  /// Current active session (null if no active session)
+  TaskSession? get activeSession {
+    if (sessions.isEmpty) return null;
+    for (var session in sessions) {
+      if (session.isActive) return session;
+    }
+    return null;
+  }
+
+  /// Whether the task is currently in progress
+  bool get isInProgress => status == 'in_progress';
+
+  /// Whether the task is currently paused
+  bool get isPaused => status == 'paused';
+
+  /// Whether the task can be started (either it has no subtasks or all subtasks are completed)
+  bool get canStart =>
+      subtasks.isEmpty || subtasks.every((subtask) => subtask.isDone);
 
   Task? get parentTask =>
       parentTaskId != null ? Hive.box<Task>('tasks').get(parentTaskId) : null;
@@ -96,6 +128,95 @@ class Task extends HiveObject {
         'notes: $notes, location: $location, image: $image, frequency: ${frequency.toString()}, '
         'subtasks: $subtasks, parentTaskId: $parentTaskId, scheduledTasks: $scheduledTasks, '
         'isDone: $isDone, order: $order, overdue: $overdue, color: $color}';
+  }
+
+  /// Starts the task
+  /// Creates a new session and updates the task status
+  void start() {
+    if (isDone) return; // Can't start a completed task
+
+    // If there's an active session, end it first
+    final currentSession = activeSession;
+    if (currentSession != null) {
+      currentSession.end();
+    }
+
+    // Create a new session
+    final session = TaskSession(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      taskId: id,
+      startTime: DateTime.now(),
+    );
+    sessions.add(session);
+
+    // Update status
+    status = 'in_progress';
+    save();
+  }
+
+  /// Pauses the task
+  /// Ends the current session and updates the task status
+  void pause() {
+    if (!isInProgress) return; // Can only pause a task that's in progress
+
+    // End the current session
+    final currentSession = activeSession;
+    if (currentSession != null) {
+      currentSession.end();
+      totalDuration += currentSession.duration;
+    }
+
+    // Update status
+    status = 'paused';
+    save();
+  }
+
+  /// Stops the task
+  /// Ends the current session and updates the task status
+  void stop() {
+    if (!isInProgress && !isPaused) {
+      return; // Can only stop a task that's in progress or paused
+    }
+
+    // End the current session if in progress
+    final currentSession = activeSession;
+    if (currentSession != null) {
+      currentSession.end();
+      totalDuration += currentSession.duration;
+    }
+
+    // Update status
+    status = 'not_started';
+    save();
+  }
+
+  /// Completes the task
+  /// Ends the current session, updates the task status, and marks the task as done
+  void complete() {
+    // End the current session if in progress
+    final currentSession = activeSession;
+    if (currentSession != null) {
+      currentSession.end();
+      totalDuration += currentSession.duration;
+    }
+
+    // Update status
+    status = 'completed';
+    isDone = true;
+    save();
+  }
+
+  /// Gets the total duration of all sessions for this task
+  int getTotalDuration() {
+    int total = totalDuration;
+
+    // Add duration of active session if there is one
+    final currentSession = activeSession;
+    if (currentSession != null) {
+      total += currentSession.duration;
+    }
+
+    return total;
   }
 
   Task({
@@ -121,7 +242,11 @@ class Task extends HiveObject {
     this.pessimisticTime,
     this.firstNotification,
     this.secondNotification,
+    this.status = 'not_started',
+    this.totalDuration = 0,
+    List<TaskSession>? sessions,
   }) : parentTaskId = parentTask?.id,
        subtasks = subtasks ?? [],
-       scheduledTasks = scheduledTasks ?? [];
+       scheduledTasks = scheduledTasks ?? [],
+       sessions = sessions ?? [];
 }

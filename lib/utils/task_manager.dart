@@ -16,6 +16,7 @@ import '../models/repeat_rule_instance.dart';
 import '../models/scheduled_task.dart';
 import '../models/scheduled_task_type.dart';
 import '../models/task.dart';
+import '../models/task_session.dart';
 
 class TaskManager {
   final Scheduler scheduler;
@@ -542,5 +543,108 @@ class TaskManager {
       scheduler.scheduleTask(subtask, userSettings.minSession, urgency: null);
       logInfo('Scheduled subtask: ${subtask.title}');
     }
+  }
+
+  /// Starts a task or subtask
+  /// If the task has subtasks and they're not all completed, it can't be started
+  /// Returns true if the task was started successfully, false otherwise
+  bool startTask(Task task) {
+    if (!task.canStart) {
+      logWarning(
+        'Cannot start task ${task.title} because it has incomplete subtasks',
+      );
+      return false;
+    }
+
+    task.start();
+    tasksDB.put(task.id, task);
+    logInfo('Started task: ${task.title}');
+    return true;
+  }
+
+  /// Pauses a task that's in progress
+  /// Returns true if the task was paused successfully, false otherwise
+  bool pauseTask(Task task) {
+    if (!task.isInProgress) {
+      logWarning(
+        'Cannot pause task ${task.title} because it is not in progress',
+      );
+      return false;
+    }
+
+    task.pause();
+    tasksDB.put(task.id, task);
+    logInfo('Paused task: ${task.title}');
+    return true;
+  }
+
+  /// Stops a task that's in progress or paused
+  /// Returns true if the task was stopped successfully, false otherwise
+  bool stopTask(Task task) {
+    if (!task.isInProgress && !task.isPaused) {
+      logWarning(
+        'Cannot stop task ${task.title} because it is not in progress or paused',
+      );
+      return false;
+    }
+
+    task.stop();
+    tasksDB.put(task.id, task);
+    logInfo('Stopped task: ${task.title}');
+    return true;
+  }
+
+  /// Completes a task
+  /// If the task has a parent task, it checks if all siblings are completed
+  /// and if so, it marks the parent task as completed too
+  /// Returns true if the task was completed successfully, false otherwise
+  bool completeTask(Task task) {
+    task.complete();
+    tasksDB.put(task.id, task);
+    logInfo('Completed task: ${task.title}');
+
+    // Check if parent task should be completed too
+    final parentTask = task.parentTask;
+    if (parentTask != null) {
+      if (parentTask.subtasks.every((subtask) => subtask.isDone)) {
+        completeTask(parentTask);
+      }
+    }
+
+    return true;
+  }
+
+  /// Gets all task sessions for a task and its subtasks
+  List<TaskSession> getTaskSessions(Task task) {
+    List<TaskSession> allSessions = List.from(task.sessions);
+
+    // Add sessions from subtasks
+    for (var subtask in task.subtasks) {
+      allSessions.addAll(getTaskSessions(subtask));
+    }
+
+    return allSessions;
+  }
+
+  /// Gets the total duration for a task and its subtasks
+  int getTotalDuration(Task task) {
+    int total = task.getTotalDuration();
+
+    // Add duration from subtasks
+    for (var subtask in task.subtasks) {
+      total += getTotalDuration(subtask);
+    }
+
+    return total;
+  }
+
+  /// Gets all tasks that are currently in progress
+  List<Task> getTasksInProgress() {
+    return tasksDB.values.where((task) => task.isInProgress).toList();
+  }
+
+  /// Gets all tasks that are currently paused
+  List<Task> getPausedTasks() {
+    return tasksDB.values.where((task) => task.isPaused).toList();
   }
 }
