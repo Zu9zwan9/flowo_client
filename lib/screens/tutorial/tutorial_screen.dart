@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 
-import '../../theme/dynamic_color_service.dart';
+import '../../theme/services/dynamic_color_service.dart';
 import '../../theme/theme_notifier.dart';
 import 'tutorial_content.dart';
 

@@ -2,7 +2,7 @@ import 'package:flowo_client/models/app_theme.dart'; // Import the shared AppThe
 import 'package:flowo_client/models/user_settings.dart'; // Import UserSettings
 import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/theme/app_colors.dart';
-import 'package:flowo_client/theme/dynamic_color_service.dart';
+import 'package:flowo_client/theme/services/dynamic_color_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';

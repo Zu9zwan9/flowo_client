@@ -19,6 +19,7 @@ import '../widgets/cupertino_divider.dart';
 import '../widgets/task_list_components.dart';
 import '../widgets/task_list_item.dart';
 import '../widgets/aurora_sphere_button.dart';
+import '../widgets/add_task_aurora_sphere_button.dart';
 import 'task_form_screen.dart';
 import 'task_page_screen.dart';
 import 'task_statistics_screen.dart';
@@ -214,7 +215,7 @@ class _TaskListScreenState extends State<TaskListScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TaskActionButton(
+                  AddTaskAuroraSphereButton(
                     onPressed: () {
                       HapticFeedback.mediumImpact();
                       Navigator.pushReplacement(
@@ -228,8 +229,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                         ),
                       );
                     },
-                    icon: CupertinoIcons.add,
-                    label: 'Add Task',
+                    size: 50.0,
                   ),
                   const SizedBox(height: 8),
                   AuroraSphereButton(

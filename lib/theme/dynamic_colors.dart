@@ -23,7 +23,6 @@ class DynamicColors {
     // Otherwise for custom colors, we can adjust brightness/opacity as needed
     if (isDark) {
       // For dark mode, you might want to lighten some colors
-      // This is a simple example - adjust the logic based on your needs
       return color.withOpacity(0.9);
     }
 

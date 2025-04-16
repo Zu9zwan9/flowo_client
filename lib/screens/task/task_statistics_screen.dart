@@ -95,8 +95,9 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
 
     for (var task in tasks) {
       if (task.isDone) continue;
-      if (!_canTaskBeOverdue(task))
+      if (!_canTaskBeOverdue(task)) {
         continue; // Skip tasks that can't be overdue
+      }
 
       final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
       if (timeLeft <= 0) continue; // Already overdue
