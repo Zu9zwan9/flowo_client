@@ -19,7 +19,7 @@ class Scheduler {
   final Box<Task> tasksDB;
   UserSettings userSettings;
   late final Task freeTimeManager;
-  final NotiService _notiService = NotiService();
+  final NotiService notiService = NotiService();
   final Map<String, Day> _dayCache = {};
 
   Scheduler(this.daysDB, this.tasksDB, this.userSettings) {
@@ -718,7 +718,7 @@ class Scheduler {
 
       var notificationKey = UniqueKey().hashCode;
 
-      _notiService.scheduleNotification(
+      notiService.scheduleNotification(
         id: notificationKey,
         title: task.title,
         body: 'Scheduled task: ${task.title}',
@@ -739,7 +739,7 @@ class Scheduler {
 
       var notificationKey = UniqueKey().hashCode;
 
-      _notiService.scheduleNotification(
+      notiService.scheduleNotification(
         id: notificationKey,
         title: task.title,
         body: 'Scheduled task: ${task.title}',

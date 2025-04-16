@@ -110,8 +110,12 @@ class TaskManager {
       for (var day in daysDB.values) {
         if (day.scheduledTasks.contains(scheduledTask)) {
           day.scheduledTasks.remove(scheduledTask);
-          daysDB.put(day.day, day); // Ensure day is saved
+          daysDB.put(day.day, day);
         }
+      }
+
+      for (var notificationId in scheduledTask.notificationIds) {
+        scheduler.notiService.cancelNotification(notificationId);
       }
     }
     logInfo('Deleted task: ${task.title}');
