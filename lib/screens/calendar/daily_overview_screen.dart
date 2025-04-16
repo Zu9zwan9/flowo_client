@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show TimeOfDay, Divider;
+import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +13,6 @@ import '../../models/user_profile.dart';
 import '../../models/user_settings.dart';
 import '../../utils/formatter/date_time_formatter.dart';
 import '../widgets/task_timer_controls.dart';
-import 'calendar_screen.dart';
 
 class DailyOverviewScreen extends StatefulWidget {
   const DailyOverviewScreen({super.key});
@@ -23,7 +22,7 @@ class DailyOverviewScreen extends StatefulWidget {
 }
 
 class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
-  late DateTime _today;
+  late DateTime _selectedDate;
   late UserSettings _userSettings;
   String _greeting = '';
   String _userName = '';
@@ -32,7 +31,13 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   void initState() {
     super.initState();
     _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
-    _today = DateTime.now();
+    _selectedDate = DateTime.now();
+    // Initialize the CalendarCubit with the selected date
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<CalendarCubit>().selectDate(_selectedDate);
+      }
+    });
     _updateGreeting();
     _loadUserProfile();
   }
@@ -63,11 +68,25 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     });
   }
 
-  void _navigateToCalendar() {
-    Navigator.push(
-      context,
-      CupertinoPageRoute(builder: (context) => const CalendarScreen()),
-    );
+  void _navigateToPreviousDay() {
+    setState(() {
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+    });
+    context.read<CalendarCubit>().selectDate(_selectedDate);
+  }
+
+  void _navigateToNextDay() {
+    setState(() {
+      _selectedDate = _selectedDate.add(const Duration(days: 1));
+    });
+    context.read<CalendarCubit>().selectDate(_selectedDate);
+  }
+
+  bool _isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year &&
+        date.month == now.month &&
+        date.day == now.day;
   }
 
   @override
@@ -113,8 +132,9 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }
 
   Widget _buildHeader() {
-    final formattedDate = DateFormat('EEEE, MMMM d').format(_today);
+    final formattedDate = DateFormat('EEEE, MMMM d').format(_selectedDate);
     final textTheme = CupertinoTheme.of(context);
+    final isToday = _isToday(_selectedDate);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
@@ -138,17 +158,45 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            formattedDate,
-            style: TextStyle(
-              fontSize: 18,
-              color:
-                  CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _navigateToPreviousDay,
+                child: Icon(
+                  CupertinoIcons.chevron_left,
+                  color: CupertinoTheme.of(context).primaryColor,
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  formattedDate,
+                  style: TextStyle(
+                    fontSize: 18,
+                    color:
+                        CupertinoTheme.of(
+                          context,
+                        ).textTheme.tabLabelTextStyle.color,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _navigateToNextDay,
+                child: Icon(
+                  CupertinoIcons.chevron_right,
+                  color: CupertinoTheme.of(context).primaryColor,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Text(
-            'For today, we have the following tasks:',
+            isToday
+                ? 'For today, we have the following tasks:'
+                : 'For this day, we have the following tasks:',
             style: TextStyle(
               fontSize: 16,
               color:
