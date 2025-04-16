@@ -394,21 +394,19 @@ class _HabitDetailsScreenState extends State<HabitDetailsScreen> {
           Row(
             children: [
               const SizedBox(width: 24), // Space for week labels
-              ...['M', 'T', 'W', 'T', 'F', 'S', 'S']
-                  .map(
-                    (day) => Expanded(
-                      child: Center(
-                        child: Text(
-                          day,
-                          style: theme.textTheme.textStyle.copyWith(
-                            color: CupertinoColors.systemGrey,
-                            fontSize: 12,
-                          ),
-                        ),
+              ...['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(
+                (day) => Expanded(
+                  child: Center(
+                    child: Text(
+                      day,
+                      style: theme.textTheme.textStyle.copyWith(
+                        color: CupertinoColors.systemGrey,
+                        fontSize: 12,
                       ),
                     ),
-                  )
-                  ,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 8),

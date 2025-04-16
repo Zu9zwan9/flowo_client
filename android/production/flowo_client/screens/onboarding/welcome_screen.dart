@@ -5,6 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../tutorial/tutorial_screen.dart';
+
 /// Final screen of the onboarding process that shows a personalized welcome message
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -56,10 +58,21 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       await onboardingService.completeOnboarding();
 
       if (mounted) {
-        // Navigate to the home screen and remove all previous screens from the stack
+        // Navigate to the tutorial screen and remove all previous screens from the stack
         Navigator.of(context).pushAndRemoveUntil(
           CupertinoPageRoute(
-            builder: (context) => const HomeScreen(initialExpanded: false),
+            builder:
+                (context) => TutorialScreen(
+                  onComplete: () {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      CupertinoPageRoute(
+                        builder:
+                            (context) => HomeScreen(initialExpanded: false),
+                      ),
+                      (route) => false,
+                    );
+                  },
+                ),
           ),
           (route) => false,
         );

@@ -7,21 +7,19 @@ import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/user_settings.dart';
-import 'package:flowo_client/utils/cupertino_conflict_resolver.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 import '../models/time_frame.dart';
 import '../services/notification/notification_service.dart';
-import 'cupertino_conflict_resolver.dart';
 
 class Scheduler {
   final Box<Day> daysDB;
   final Box<Task> tasksDB;
   UserSettings userSettings;
   late final Task freeTimeManager;
-  final NotiService _notiService = NotiService();
+  final NotiService notiService = NotiService();
   final Map<String, Day> _dayCache = {};
 
   Scheduler(this.daysDB, this.tasksDB, this.userSettings) {
@@ -31,6 +29,7 @@ class Scheduler {
   void updateUserSettings(UserSettings userSettings) {
     logInfo('Updating user settings in Scheduler');
     this.userSettings = userSettings;
+    createDaysUntil(DateTime(DateTime.now().year, DateTime.now().month + 3));
   }
 
   void _initializeFreeTimeManager() {
@@ -162,66 +161,48 @@ class Scheduler {
     return lastScheduledTask;
   }
 
-  Future<bool> scheduleEvent({
-    required Task task,
+  List<ScheduledTask> findOverlappingTasks({
     required DateTime start,
     required DateTime end,
-    required BuildContext context,
-  }) async {
-    _dayCache.clear();
-    final dateKey = _formatDateKey(start);
-
+    required String dateKey,
+  }) {
     final day = _getOrCreateDay(dateKey);
     final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
+    final overlappingTasks = <ScheduledTask>[];
 
-    // Detect conflicts
-    final conflicts = <ScheduledTask>[];
     for (ScheduledTask scheduledTask in sortedTasks) {
       if (scheduledTask.startTime.isBefore(end) &&
-          scheduledTask.endTime.isAfter(start) &&
-          scheduledTask.parentTaskId != task.id) {
-        conflicts.add(scheduledTask);
+          scheduledTask.endTime.isAfter(start)) {
+        overlappingTasks.add(scheduledTask);
       }
     }
 
-    // If conflicts exist, show resolution dialog
-    if (conflicts.isNotEmpty) {
-      logDebug('Event overlaps with ${conflicts.length} existing tasks');
+    return overlappingTasks;
+  }
 
-      // Create a map of task IDs to tasks for the conflict resolver
-      final tasksMap = <String, Task>{};
-      for (final conflict in conflicts) {
-        final conflictTask = tasksDB.get(conflict.parentTaskId);
-        if (conflictTask != null) {
-          tasksMap[conflict.parentTaskId] = conflictTask;
-        }
-      }
+  void scheduleEvent({
+    required Task task,
+    required DateTime start,
+    required DateTime end,
+    bool overrideOverlaps = false,
+  }) {
+    _dayCache.clear();
+    final dateKey = _formatDateKey(start);
 
-      // Show conflict resolution dialog
-      final resolution = await CupertinoConflictResolver.showConflictDialog(
-        context: context,
-        conflicts: conflicts,
-        tasksMap: tasksMap,
-        actionType: 'event',
+    if (!overrideOverlaps) {
+      final overlappingTasks = findOverlappingTasks(
+        start: start,
+        end: end,
+        dateKey: dateKey,
       );
 
-      // Handle user's choice
-      if (resolution == null) {
-        // User canceled
-        logInfo('User canceled event scheduling due to conflicts');
-        return false;
-      } else if (resolution) {
-        // User chose to replace conflicting tasks
-        logInfo('User chose to replace conflicting tasks');
-
-        // Remove conflicting tasks
-        for (final conflict in conflicts) {
-          _removeScheduledTask(conflict);
-        }
-      } else {
-        // User chose to adjust their schedule
-        logInfo('User chose to adjust their schedule');
-        return false;
+      if (overlappingTasks.isNotEmpty) {
+        logDebug(
+          'Event overlaps with ${overlappingTasks.length} existing tasks',
+        );
+        // Return the overlapping tasks without scheduling
+        // The caller will handle showing the modal dialog
+        return;
       }
     }
 
@@ -233,22 +214,15 @@ class Scheduler {
       dateKey: dateKey,
       type: ScheduledTaskType.timeSensitive,
     );
-
-    return true;
   }
 
-  Future<bool> scheduleHabit({
-    required Task task,
-    required List<DateTime> dates,
-    required TimeOfDay start,
-    required TimeOfDay end,
-    required BuildContext context,
-  }) async {
+  void scheduleHabit(
+    Task task,
+    List<DateTime> dates,
+    TimeOfDay start,
+    TimeOfDay end,
+  ) {
     _dayCache.clear();
-
-    // Check all dates for conflicts first
-    final allConflicts = <ScheduledTask>[];
-    final Map<String, Task> tasksMap = {};
 
     for (DateTime date in dates) {
       final dateKey = _formatDateKey(date);
@@ -259,56 +233,13 @@ class Scheduler {
       final sortedTasks = _sortScheduledTasksByTime(day.scheduledTasks);
       for (ScheduledTask scheduledTask in sortedTasks) {
         if (scheduledTask.startTime.isBefore(endTime) &&
-            scheduledTask.endTime.isAfter(startTime) &&
-            scheduledTask.parentTaskId != task.id) {
-          allConflicts.add(scheduledTask);
-
-          // Add to tasksMap for conflict resolver
-          final conflictTask = tasksDB.get(scheduledTask.parentTaskId);
-          if (conflictTask != null) {
-            tasksMap[scheduledTask.parentTaskId] = conflictTask;
-          }
+            scheduledTask.endTime.isAfter(startTime)) {
+          logDebug(
+            'Habit overlaps with existing task: ${scheduledTask.parentTaskId}',
+          );
+          return;
         }
       }
-    }
-
-    // If conflicts exist, show resolution dialog
-    if (allConflicts.isNotEmpty) {
-      logDebug('Habit overlaps with ${allConflicts.length} existing tasks');
-
-      // Show conflict resolution dialog
-      final resolution = await CupertinoConflictResolver.showConflictDialog(
-        context: context,
-        conflicts: allConflicts,
-        tasksMap: tasksMap,
-        actionType: 'habit',
-      );
-
-      // Handle user's choice
-      if (resolution == null) {
-        // User canceled
-        logInfo('User canceled habit scheduling due to conflicts');
-        return false;
-      } else if (resolution) {
-        // User chose to replace conflicting tasks
-        logInfo('User chose to replace conflicting tasks');
-
-        // Remove conflicting tasks
-        for (final conflict in allConflicts) {
-          _removeScheduledTask(conflict);
-        }
-      } else {
-        // User chose to adjust their schedule
-        logInfo('User chose to adjust their schedule');
-        return false;
-      }
-    }
-
-    // Schedule the habit for all dates
-    for (DateTime date in dates) {
-      final dateKey = _formatDateKey(date);
-      final startTime = _combineDateKeyAndTimeOfDay(dateKey, start);
-      final endTime = _combineDateKeyAndTimeOfDay(dateKey, end);
 
       _createScheduledTask(
         task: task,
@@ -318,8 +249,6 @@ class Scheduler {
         type: ScheduledTaskType.timeSensitive,
       );
     }
-
-    return true;
   }
 
   bool _isActiveDay(String dateKey) {
@@ -334,6 +263,14 @@ class Scheduler {
       'Sunday',
     ];
     final dayName = weekdayNames[date.weekday - 1];
+
+    // Check day-specific schedule first
+    final daySchedule = userSettings.daySchedules[dayName];
+    if (daySchedule != null) {
+      return daySchedule.isActive;
+    }
+
+    // Fall back to global active days
     return userSettings.activeDays?[dayName] ?? true;
   }
 
@@ -596,69 +533,105 @@ class Scheduler {
     return day;
   }
 
+  void createDaysUntil(DateTime date) {
+    logInfo('Creating days until: ${date.toIso8601String()}');
+    final now = DateTime.now();
+    final endDate = date.isBefore(now) ? now : date;
+    final daysToCreate = endDate.difference(now).inDays;
+
+    for (int i = 0; i <= daysToCreate; i++) {
+      final dateKey = _formatDateKey(now.add(Duration(days: i)));
+      if (!daysDB.containsKey(dateKey)) {
+        _getOrCreateDay(dateKey);
+      }
+    }
+  }
+
   void _addPredefinedTimeBlocks(Day day) {
     logDebug('Adding predefined blocks for ${day.day}');
     final date = DateTime.parse('${day.day} 00:00:00');
 
-    for (var timeFrame in userSettings.mealBreaks) {
-      if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-          timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-        _addTimeBlock(
-          day,
-          TimeFrame(
-            startTime: timeFrame.startTime,
-            endTime: const TimeOfDay(hour: 23, minute: 59),
-          ),
-          ScheduledTaskType.mealBreak,
-          date,
-        );
-        _addTimeBlock(
-          day,
-          TimeFrame(
-            startTime: const TimeOfDay(hour: 0, minute: 0),
-            endTime: timeFrame.endTime,
-          ),
-          ScheduledTaskType.mealBreak,
-          date,
-        );
-      } else {
-        _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
-      }
-    }
+    // Get the day of the week (Monday, Tuesday, etc.)
+    final weekdayNames = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+    final dayName = weekdayNames[date.weekday - 1];
 
-    for (var timeFrame in userSettings.freeTime) {
-      if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-          timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-        _addTimeBlock(
-          day,
-          TimeFrame(
-            startTime: timeFrame.startTime,
-            endTime: const TimeOfDay(hour: 23, minute: 59),
-          ),
-          ScheduledTaskType.rest,
-          date,
-        );
-        _addTimeBlock(
-          day,
-          TimeFrame(
-            startTime: const TimeOfDay(hour: 0, minute: 0),
-            endTime: timeFrame.endTime,
-          ),
-          ScheduledTaskType.rest,
-          date,
-        );
-      } else {
-        _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
-      }
-    }
+    // Check if we have a day-specific schedule
+    final daySchedule = userSettings.daySchedules[dayName];
 
-    for (var timeFrame in userSettings.sleepTime) {
-      if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-          timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+    if (daySchedule != null && daySchedule.isActive) {
+      // Use day-specific schedule
+      logDebug('Using day-specific schedule for $dayName');
+
+      // Add meal breaks
+      for (var timeFrame in daySchedule.mealBreaks) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.mealBreak,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.mealBreak,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
+        }
+      }
+
+      // Add free times
+      for (var timeFrame in daySchedule.freeTimes) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.rest,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.rest,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
+        }
+      }
+
+      // Add sleep time
+      final sleepTime = daySchedule.sleepTime;
+      if (sleepTime.endTime.hour * 60 + sleepTime.endTime.minute <
+          sleepTime.startTime.hour * 60 + sleepTime.startTime.minute) {
         _addTimeBlock(
           day,
           TimeFrame(
-            startTime: timeFrame.startTime,
+            startTime: sleepTime.startTime,
             endTime: const TimeOfDay(hour: 23, minute: 59),
           ),
           ScheduledTaskType.sleep,
@@ -668,13 +641,97 @@ class Scheduler {
           day,
           TimeFrame(
             startTime: const TimeOfDay(hour: 0, minute: 0),
-            endTime: timeFrame.endTime,
+            endTime: sleepTime.endTime,
           ),
           ScheduledTaskType.sleep,
           date,
         );
       } else {
-        _addTimeBlock(day, timeFrame, ScheduledTaskType.sleep, date);
+        _addTimeBlock(day, sleepTime, ScheduledTaskType.sleep, date);
+      }
+    } else {
+      // Use global schedule
+      logDebug('Using global schedule for $dayName');
+
+      // Add meal breaks
+      for (var timeFrame in userSettings.mealBreaks) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.mealBreak,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.mealBreak,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
+        }
+      }
+
+      // Add free times
+      for (var timeFrame in userSettings.freeTime) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.rest,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.rest,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
+        }
+      }
+
+      // Add sleep time
+      for (var timeFrame in userSettings.sleepTime) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.sleep,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.sleep,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.sleep, date);
+        }
       }
     }
   }
@@ -773,7 +830,7 @@ class Scheduler {
 
       var notificationKey = UniqueKey().hashCode;
 
-      _notiService.scheduleNotification(
+      notiService.scheduleNotification(
         id: notificationKey,
         title: task.title,
         body: 'Scheduled task: ${task.title}',
@@ -794,7 +851,7 @@ class Scheduler {
 
       var notificationKey = UniqueKey().hashCode;
 
-      _notiService.scheduleNotification(
+      notiService.scheduleNotification(
         id: notificationKey,
         title: task.title,
         body: 'Scheduled task: ${task.title}',

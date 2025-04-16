@@ -4,6 +4,7 @@ import 'package:flowo_client/models/ambient_scene.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/repeat_rule_instance.dart';
 import 'package:flowo_client/models/task.dart';
+import 'package:flowo_client/models/task_session.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient/ambient_service.dart';
 import 'package:flowo_client/services/analytics/analytics_service.dart';
@@ -28,6 +29,7 @@ import 'models/app_theme.dart';
 import 'models/category.dart';
 import 'models/coordinates.dart';
 import 'models/day.dart';
+import 'models/day_schedule.dart';
 import 'models/notification_type.dart';
 import 'models/pomodoro_session.dart';
 import 'models/scheduled_task.dart';
@@ -87,13 +89,9 @@ void main() async {
   Hive.registerAdapter(AmbientSceneAdapter());
   Hive.registerAdapter(RepeatRuleInstanceAdapter());
   Hive.registerAdapter(AppThemeAdapter());
+  Hive.registerAdapter(TaskSessionAdapter());
+  Hive.registerAdapter(DayScheduleAdapter());
 
-  // TODO: Run the following command to generate the TaskNotification adapters:
-  // flutter pub run build_runner build --delete-conflicting-outputs
-  // Then uncomment these lines:
-  // Hive.registerAdapter(TaskNotificationTypeAdapter());
-  // Hive.registerAdapter(NotificationStatusAdapter());
-  // Hive.registerAdapter(TaskNotificationAdapter());
   await Hive.initFlutter();
 
   Box<Task> tasksDB;
@@ -138,8 +136,10 @@ void main() async {
           ? profiles.values.first
           : UserSettings(
             name: 'Default',
-            minSession: 15 * 60 * 1000, // Convert to milliseconds
-            breakTime: 15 * 60 * 1000, // Default break time (15 minutes)
+            minSession: 15 * 60 * 1000,
+            // Convert to milliseconds
+            breakTime: 15 * 60 * 1000,
+            // Default break time (15 minutes)
             sleepTime: [
               TimeFrame(
                 startTime: const TimeOfDay(hour: 22, minute: 0),
@@ -175,8 +175,74 @@ void main() async {
               'Saturday': true,
               'Sunday': true,
             },
+            daySchedules: {
+              'Monday': DaySchedule(
+                day: 'Monday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+              ),
+              'Tuesday': DaySchedule(
+                day: 'Tuesday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+              ),
+              'Wednesday': DaySchedule(
+                day: 'Wednesday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+              ),
+              'Thursday': DaySchedule(
+                day: 'Thursday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+              ),
+              'Friday': DaySchedule(
+                day: 'Friday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+              ),
+              'Saturday': DaySchedule(
+                day: 'Saturday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 23, minute: 0),
+                  endTime: const TimeOfDay(hour: 8, minute: 0),
+                ),
+              ),
+              'Sunday': DaySchedule(
+                day: 'Sunday',
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 23, minute: 0),
+                  endTime: const TimeOfDay(hour: 8, minute: 0),
+                ),
+              ),
+            },
             defaultNotificationType: NotificationType.push,
           );
+
+  final taskManager = TaskManager(
+    daysDB: daysDB,
+    tasksDB: tasksDB,
+    userSettings: selectedProfile,
+    huggingFaceApiKey:
+        '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', // Default API key
+  );
 
   // Save the default settings to the Hive box if it's the first launch
   if (isFirstLaunch) {
@@ -193,6 +259,10 @@ void main() async {
         'App',
       );
     }
+
+    taskManager.scheduler.createDaysUntil(
+      DateTime(DateTime.now().year, DateTime.now().month + 3),
+    );
   }
 
   // Create default user profile if none exists
@@ -222,14 +292,6 @@ void main() async {
       'App',
     );
   }
-
-  final taskManager = TaskManager(
-    daysDB: daysDB,
-    tasksDB: tasksDB,
-    userSettings: selectedProfile,
-    huggingFaceApiKey:
-        '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', // Default API key
-  );
 
   appLogger.info('Hive initialized and task boxes opened', 'App');
 

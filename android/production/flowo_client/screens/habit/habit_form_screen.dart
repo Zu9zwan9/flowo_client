@@ -2,6 +2,8 @@ import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/category.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/repeat_rule_instance.dart';
+import 'package:flowo_client/models/scheduled_task.dart';
+import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
@@ -2042,6 +2044,103 @@ class HabitFormScreenState extends State<HabitFormScreen>
       'Workout': CupertinoIcons.heart,
     };
     return icons[category] ?? CupertinoIcons.tag;
+  }
+
+  Future<bool?> _showOverlapResolutionDialog(
+    BuildContext context,
+    List<ScheduledTask> overlappingTasks,
+    bool isEdit,
+  ) async {
+    // Get parent tasks for all overlapping tasks
+    final overlappingParentTasks = <Task>[];
+    for (var scheduledTask in overlappingTasks) {
+      final parentTask = scheduledTask.parentTask;
+      if (parentTask != null && !overlappingParentTasks.contains(parentTask)) {
+        overlappingParentTasks.add(parentTask);
+      }
+    }
+
+    // Format the list of overlapping tasks for display
+    final overlappingTasksText = overlappingParentTasks
+        .map((task) {
+          final scheduledTask = task.scheduledTasks.firstWhere(
+            (st) => overlappingTasks.any(
+              (ot) => ot.scheduledTaskId == st.scheduledTaskId,
+            ),
+            orElse:
+                () => overlappingTasks.firstWhere(
+                  (ot) => ot.parentTaskId == task.id,
+                ),
+          );
+
+          final startTime = scheduledTask.startTime;
+          final endTime = scheduledTask.endTime;
+          final formattedStart =
+              '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+          final formattedEnd =
+              '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+
+          String taskType = 'Task';
+          if (scheduledTask.type == ScheduledTaskType.timeSensitive) {
+            taskType = 'Event';
+          } else if (scheduledTask.type == ScheduledTaskType.rest) {
+            taskType = 'Break';
+          } else if (scheduledTask.type == ScheduledTaskType.mealBreak) {
+            taskType = 'Meal Break';
+          } else if (scheduledTask.type == ScheduledTaskType.sleep) {
+            taskType = 'Sleep Time';
+          } else if (scheduledTask.type == ScheduledTaskType.freeTime) {
+            taskType = 'Free Time';
+          }
+
+          return '• ${task.title} ($taskType, $formattedStart-$formattedEnd)';
+        })
+        .join('\n');
+
+    return showCupertinoDialog<bool>(
+      context: context,
+      builder: (context) {
+        // Use dynamic colors based on system color
+        final primaryColor = CupertinoTheme.of(context).primaryColor;
+        final textColor = CupertinoTheme.of(context).textTheme.textStyle.color;
+
+        return CupertinoAlertDialog(
+          title: Text(
+            'Schedule Conflict',
+            style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This ${isEdit ? 'edit' : 'new habit'} overlaps with:',
+                style: TextStyle(color: textColor),
+              ),
+              const SizedBox(height: 8),
+              Text(overlappingTasksText, style: TextStyle(color: textColor)),
+              const SizedBox(height: 12),
+              Text(
+                'What would you like to do?',
+                style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(context, false),
+              isDestructiveAction: true,
+              child: const Text('Cancel'),
+            ),
+            CupertinoDialogAction(
+              onPressed: () => Navigator.pop(context, true),
+              isDefaultAction: true,
+              child: const Text('Override Conflicts'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // Saves the habit after performing validation

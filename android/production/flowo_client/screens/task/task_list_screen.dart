@@ -9,6 +9,8 @@ import '../../blocs/tasks_controller/task_manager_state.dart';
 import '../../models/task.dart';
 import '../../utils/category_utils.dart';
 import '../../utils/debouncer.dart';
+import '../../utils/task_urgency_calculator.dart';
+import '../../models/day.dart';
 import '../event/event_form_screen.dart';
 import '../event/event_screen.dart';
 import '../habit/habit_form_screen.dart';
@@ -16,8 +18,12 @@ import '../home_screen.dart';
 import '../widgets/cupertino_divider.dart';
 import '../widgets/task_list_components.dart';
 import '../widgets/task_list_item.dart';
+import '../widgets/aurora_sphere_button.dart';
+import '../widgets/add_task_aurora_sphere_button.dart';
 import 'task_form_screen.dart';
 import 'task_page_screen.dart';
+import 'task_statistics_screen.dart';
+import 'package:hive/hive.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -35,6 +41,9 @@ class _TaskListScreenState extends State<TaskListScreen>
   final Map<String, bool> _expandedTasks = {};
   String _searchQuery = '';
   late final ScrollController _scrollController;
+  late TaskUrgencyCalculator _urgencyCalculator;
+  bool _schedulingStatus = true; // true = all good, false = needs attention
+  int _tasksToSchedule = 0; // Number of tasks that need scheduling
 
   // Caching to improve performance
   Map<String, List<Task>>? _filteredTasksCache;
@@ -46,7 +55,38 @@ class _TaskListScreenState extends State<TaskListScreen>
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _scrollController = ScrollController();
+    _urgencyCalculator = TaskUrgencyCalculator(
+      Hive.box<Day>('scheduled_tasks'),
+    );
     WidgetsBinding.instance.addObserver(this);
+
+    // Check scheduling status after a short delay to allow the UI to build
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _checkSchedulingStatus();
+    });
+  }
+
+  void _checkSchedulingStatus() {
+    if (!mounted) return;
+
+    final tasksCubit = context.read<TaskManagerCubit>();
+    final tasks = tasksCubit.state.tasks;
+    final scheduledTasks = tasksCubit.getScheduledTasks();
+
+    // Calculate urgency for all tasks to populate the impossible and needs rescheduling lists
+    _urgencyCalculator.clearTaskLists();
+    _urgencyCalculator.calculateUrgency(tasks, scheduledTasks);
+
+    final impossibleTasks = _urgencyCalculator.getImpossibleTasks();
+    final tasksNeedingRescheduling =
+        _urgencyCalculator.getTasksNeedingRescheduling();
+
+    setState(() {
+      _schedulingStatus =
+          impossibleTasks.isEmpty && tasksNeedingRescheduling.isEmpty;
+      _tasksToSchedule =
+          impossibleTasks.length + tasksNeedingRescheduling.length;
+    });
   }
 
   void _onSearchChanged() {
@@ -65,6 +105,8 @@ class _TaskListScreenState extends State<TaskListScreen>
     super.didChangeDependencies();
     // Clear cache when dependencies change (e.g., when screen becomes visible again)
     _clearCache();
+    // Check scheduling status when screen becomes visible again
+    _checkSchedulingStatus();
   }
 
   @override
@@ -146,6 +188,8 @@ class _TaskListScreenState extends State<TaskListScreen>
       listener: (context, state) {
         // Clear cache when tasks are added or removed
         _clearCache();
+        // Check scheduling status when tasks list changes
+        _checkSchedulingStatus();
       },
       child: SafeArea(
         child: Stack(
@@ -174,7 +218,7 @@ class _TaskListScreenState extends State<TaskListScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  TaskActionButton(
+                  AddTaskAuroraSphereButton(
                     onPressed: () {
                       HapticFeedback.mediumImpact();
                       Navigator.pushReplacement(
@@ -188,14 +232,15 @@ class _TaskListScreenState extends State<TaskListScreen>
                         ),
                       );
                     },
-                    icon: CupertinoIcons.add,
-                    label: 'Add Task',
+                    size: 50.0,
                   ),
                   const SizedBox(height: 8),
-                  TaskActionButton(
+                  AuroraSphereButton(
                     onPressed: () => _showScheduleDialog(context),
-                    icon: CupertinoIcons.calendar,
-                    label: 'Schedule',
+                    status: _schedulingStatus,
+                    size: 50.0,
+                    label: 'Tasks',
+                    tasksToSchedule: _tasksToSchedule,
                   ),
                 ],
               ),
@@ -207,12 +252,25 @@ class _TaskListScreenState extends State<TaskListScreen>
   }
 
   void _showScheduleDialog(BuildContext context) {
-    // TODO: Implement the schedule dialog, add ability to choose what to schedule
     HapticFeedback.mediumImpact();
+
+    // Schedule tasks first to ensure the statistics are up-to-date
     final tasksCubit = context.read<TaskManagerCubit>();
-    tasksCubit.scheduleHabits(context); // Pass context for conflict resolution
+    tasksCubit.scheduleHabits();
     tasksCubit.scheduleTasks();
     _clearCache();
+
+    // Update the scheduling status
+    _checkSchedulingStatus();
+
+    // Navigate to the task statistics screen
+    Navigator.push(
+      context,
+      CupertinoPageRoute(builder: (context) => const TaskStatisticsScreen()),
+    ).then((_) {
+      // Refresh the scheduling status when returning from the statistics screen
+      _checkSchedulingStatus();
+    });
   }
 
   Widget _buildTaskList(BuildContext context) =>

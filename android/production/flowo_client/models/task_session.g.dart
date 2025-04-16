@@ -1,30 +1,41 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'category.dart';
+part of 'task_session.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class CategoryAdapter extends TypeAdapter<Category> {
+class TaskSessionAdapter extends TypeAdapter<TaskSession> {
   @override
-  final int typeId = 2;
+  final int typeId = 21;
 
   @override
-  Category read(BinaryReader reader) {
+  TaskSession read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Category(name: fields[0] as String);
+    return TaskSession(
+      id: fields[0] as String,
+      taskId: fields[1] as String,
+      startTime: fields[2] as DateTime,
+      endTime: fields[3] as DateTime?,
+    );
   }
 
   @override
-  void write(BinaryWriter writer, Category obj) {
+  void write(BinaryWriter writer, TaskSession obj) {
     writer
-      ..writeByte(1)
+      ..writeByte(4)
       ..writeByte(0)
-      ..write(obj.name);
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.taskId)
+      ..writeByte(2)
+      ..write(obj.startTime)
+      ..writeByte(3)
+      ..write(obj.endTime);
   }
 
   @override
@@ -33,7 +44,7 @@ class CategoryAdapter extends TypeAdapter<Category> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is CategoryAdapter &&
+      other is TaskSessionAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

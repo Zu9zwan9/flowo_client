@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show TimeOfDay;
+import 'package:flutter/material.dart' show TimeOfDay, Divider;
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +12,7 @@ import '../../models/task.dart';
 import '../../models/user_profile.dart';
 import '../../models/user_settings.dart';
 import '../../utils/formatter/date_time_formatter.dart';
+import '../widgets/task_timer_controls.dart';
 import 'calendar_screen.dart';
 
 class DailyOverviewScreen extends StatefulWidget {
@@ -704,6 +705,14 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                           ).textTheme.tabLabelTextStyle.color,
                     ),
                   ),
+                ],
+
+                // Add timer controls for regular tasks (not free time)
+                if (!isFreeTimeTask) ...[
+                  const SizedBox(height: 16),
+                  Container(height: 1, color: CupertinoColors.separator),
+                  const SizedBox(height: 16),
+                  TaskTimerControls(task: task, isDarkMode: isDark),
                 ],
               ],
             ),

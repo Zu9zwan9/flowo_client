@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 import 'app_theme.dart';
+import 'day_schedule.dart';
 import 'notification_type.dart';
 import 'time_frame.dart';
 
@@ -29,6 +31,10 @@ class UserSettings extends HiveObject {
   @HiveField(6)
   Map<String, bool>? activeDays;
 
+  /// Day-specific schedules
+  @HiveField(18)
+  Map<String, DaySchedule> daySchedules;
+
   @HiveField(7)
   NotificationType defaultNotificationType;
 
@@ -54,10 +60,28 @@ class UserSettings extends HiveObject {
   double noiseLevel;
 
   @HiveField(15)
-  bool? useGradient;
+  bool useGradient;
 
   @HiveField(16)
   int? secondaryColorValue;
+
+  @HiveField(17)
+  bool useDynamicColors;
+
+  @HiveField(19)
+  double? textSizeAdjustment;
+
+  @HiveField(20)
+  bool? reduceMotion;
+
+  @HiveField(21)
+  bool? highContrastMode;
+
+  @HiveField(22)
+  String? gradientStartAlignment;
+
+  @HiveField(23)
+  String? gradientEndAlignment;
 
   UserSettings({
     required this.name,
@@ -67,6 +91,7 @@ class UserSettings extends HiveObject {
     this.sleepTime = const [],
     this.freeTime = const [],
     this.activeDays,
+    Map<String, DaySchedule>? daySchedules,
     this.defaultNotificationType = NotificationType.push,
     this.dateFormat = "DD-MM-YYYY",
     this.monthFormat = "numeric",
@@ -77,7 +102,13 @@ class UserSettings extends HiveObject {
     this.noiseLevel = 0.0,
     this.useGradient = false,
     this.secondaryColorValue = 0xFF34C759, // Default iOS green
-  }) {
+    this.useDynamicColors = false,
+    this.textSizeAdjustment = 0.0,
+    this.reduceMotion = false,
+    this.highContrastMode = false,
+    this.gradientStartAlignment = "topLeft",
+    this.gradientEndAlignment = "bottomRight",
+  }) : daySchedules = daySchedules ?? {} {
     activeDays ??= {
       'Monday': true,
       'Tuesday': true,
@@ -87,5 +118,43 @@ class UserSettings extends HiveObject {
       'Saturday': true,
       'Sunday': true,
     };
+
+    // Initialize day schedules if empty
+    if (this.daySchedules.isEmpty) {
+      _initializeDefaultDaySchedules();
+    }
+  }
+
+  /// Initializes default day schedules based on the existing settings
+  void _initializeDefaultDaySchedules() {
+    final days = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
+
+    // Default sleep time (use the first one from sleepTime list or create a default)
+    final defaultSleepTime =
+        sleepTime.isNotEmpty
+            ? sleepTime.first
+            : TimeFrame(
+              startTime: const TimeOfDay(hour: 22, minute: 0),
+              endTime: const TimeOfDay(hour: 7, minute: 0),
+            );
+
+    // Create a schedule for each day
+    for (final day in days) {
+      daySchedules[day] = DaySchedule(
+        day: day,
+        isActive: activeDays?[day] ?? true,
+        sleepTime: defaultSleepTime,
+        mealBreaks: List.from(mealBreaks),
+        freeTimes: List.from(freeTime),
+      );
+    }
   }
 }

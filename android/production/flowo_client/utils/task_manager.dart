@@ -16,6 +16,7 @@ import '../models/repeat_rule_instance.dart';
 import '../models/scheduled_task.dart';
 import '../models/scheduled_task_type.dart';
 import '../models/task.dart';
+import '../models/task_session.dart';
 
 class TaskManager {
   final Scheduler scheduler;
@@ -78,6 +79,7 @@ class TaskManager {
       firstNotification: firstNotification,
       secondNotification: secondNotification,
     );
+
     tasksDB.put(task.id, task);
     if (parentTask != null) {
       task.parentTask = parentTask;
@@ -89,6 +91,8 @@ class TaskManager {
     if (task.frequency != null) {
       logInfo('Created habit: ${task.toString()}');
     }
+
+    scheduler.createDaysUntil(DateTime.fromMillisecondsSinceEpoch(deadline));
 
     return task;
   }
@@ -107,8 +111,12 @@ class TaskManager {
       for (var day in daysDB.values) {
         if (day.scheduledTasks.contains(scheduledTask)) {
           day.scheduledTasks.remove(scheduledTask);
-          daysDB.put(day.day, day); // Ensure day is saved
+          daysDB.put(day.day, day);
         }
+      }
+
+      for (var notificationId in scheduledTask.notificationIds) {
+        scheduler.notiService.cancelNotification(notificationId);
       }
     }
     logInfo('Deleted task: ${task.title}');
@@ -217,31 +225,182 @@ class TaskManager {
   }
 
   void manageHabits() {
-    // This method is deprecated. Use TaskManagerCubit.scheduleHabits instead.
-    // The TaskManagerCubit.scheduleHabits method handles the scheduling of habits
-    // with proper conflict resolution using BuildContext.
-    logWarning(
-      'TaskManager.manageHabits is deprecated. Use TaskManagerCubit.scheduleHabits instead.',
-    );
+    List<Task> habits =
+        tasksDB.values.where((task) => task.frequency != null).toList();
+
+    for (Task habit in habits) {
+      switch (habit.frequency!.type) {
+        case 'weekly':
+          RepeatRule repeatRule = habit.frequency!;
+          List<RepeatRuleInstance> byDay = repeatRule.byDay!;
+
+          for (var dayInstance in byDay) {
+            final selectedWeekday = _dayNameToInt(dayInstance.selectedDay);
+            final startDate = repeatRule.startRepeat;
+            final daysUntilNextSelectedDay =
+                (selectedWeekday - startDate.weekday + 7) % 7;
+
+            var nextSelectedDate = startDate.add(
+              Duration(days: daysUntilNextSelectedDay),
+            );
+
+            List<DateTime> habitDates = [];
+
+            while (nextSelectedDate.isBefore(repeatRule.endRepeat!)) {
+              habitDates.add(nextSelectedDate);
+              nextSelectedDate = nextSelectedDate.add(
+                Duration(days: 7 * habit.frequency!.interval),
+              );
+            }
+
+            scheduler.scheduleHabit(
+              habit,
+              habitDates,
+              dayInstance.start,
+              dayInstance.end,
+            );
+          }
+          break;
+
+        case 'monthly':
+          RepeatRule repeatRule = habit.frequency!;
+
+          // Проверяем, есть ли byMonthDay (specific days) или bySetPos (pattern)
+          if (repeatRule.byMonthDay != null) {
+            // Обработка для "specific days"
+            List<RepeatRuleInstance> byMonthDay = repeatRule.byMonthDay!;
+
+            for (var monthDayInstance in byMonthDay) {
+              final selectedMonthDay = int.parse(monthDayInstance.selectedDay);
+              final startDate = repeatRule.startRepeat;
+              final daysUntilNextSelectedDay =
+                  (selectedMonthDay -
+                      startDate.day +
+                      DateTime(startDate.year, startDate.month + 1, 0).day) %
+                  DateTime(startDate.year, startDate.month + 1, 0).day;
+              var nextSelectedDate = startDate.add(
+                Duration(days: daysUntilNextSelectedDay),
+              );
+
+              List<DateTime> habitDates = [];
+
+              while (nextSelectedDate.isBefore(repeatRule.endRepeat!)) {
+                habitDates.add(nextSelectedDate);
+                nextSelectedDate = DateTime(
+                  nextSelectedDate.year,
+                  nextSelectedDate.month + habit.frequency!.interval,
+                  selectedMonthDay,
+                );
+              }
+
+              scheduler.scheduleHabit(
+                habit,
+                habitDates,
+                monthDayInstance.start,
+                monthDayInstance.end,
+              );
+            }
+          } else if (repeatRule.bySetPos != null) {
+            // Обработка для "pattern"
+            final bySetPos = repeatRule.bySetPos!;
+            final byDay = repeatRule.byDay!;
+            final interval = repeatRule.interval;
+            final startDate = repeatRule.startRepeat;
+            final endDate = repeatRule.endRepeat!;
+
+            for (var dayInstance in byDay) {
+              final selectedWeekday = _dayNameToInt(dayInstance.selectedDay);
+              List<DateTime> habitDates = [];
+
+              var currentDate = DateTime(startDate.year, startDate.month, 1);
+
+              while (currentDate.isBefore(endDate)) {
+                DateTime? patternDate = _findPatternDateInMonth(
+                  currentDate.year,
+                  currentDate.month,
+                  selectedWeekday,
+                  bySetPos,
+                );
+
+                if (patternDate != null &&
+                    !patternDate.isBefore(startDate) &&
+                    patternDate.isBefore(endDate)) {
+                  habitDates.add(patternDate);
+                }
+
+                currentDate = DateTime(
+                  currentDate.year,
+                  currentDate.month + interval,
+                  1,
+                );
+              }
+
+              scheduler.scheduleHabit(
+                habit,
+                habitDates,
+                dayInstance.start,
+                dayInstance.end,
+              );
+            }
+          }
+          break;
+
+        case 'daily':
+          List<DateTime> habitDates = [];
+          DateTime startDate = habit.frequency!.startRepeat;
+
+          while (startDate.isBefore(habit.frequency!.endRepeat!)) {
+            habitDates.add(startDate);
+            startDate = startDate.add(
+              Duration(days: habit.frequency!.interval),
+            );
+          }
+
+          scheduler.scheduleHabit(
+            habit,
+            habitDates,
+            habit.frequency!.byDay!.first.start,
+            habit.frequency!.byDay!.first.end,
+          );
+          break;
+
+        case 'yearly':
+          List<DateTime> habitDates = [];
+          DateTime startDate = habit.frequency!.startRepeat;
+
+          while (startDate.isBefore(habit.frequency!.endRepeat!)) {
+            habitDates.add(startDate);
+            startDate = DateTime(
+              startDate.year + habit.frequency!.interval,
+              startDate.month,
+              startDate.day,
+            );
+          }
+
+          scheduler.scheduleHabit(
+            habit,
+            habitDates,
+            habit.frequency!.byDay!.first.start,
+            habit.frequency!.byDay!.first.end,
+          );
+          break;
+
+        default:
+          logWarning('Invalid habit frequency type: ${habit.frequency!.type}');
+          break;
+      }
+    }
   }
 
   DateTime? _findPatternDateInMonth(
     int year,
     int month,
     int targetWeekday,
-    // Числовое представление дня недели (1 = понедельник, ..., 7 = воскресенье)
     int bySetPos,
-    // Позиция недели (1 = первая, 2 = вторая, ..., -1 = последняя)
   ) {
-    // Создаём дату для первого дня месяца
     DateTime firstDayOfMonth = DateTime(year, month, 1);
-    DateTime lastDayOfMonth = DateTime(
-      year,
-      month + 1,
-      0,
-    ); // Последний день месяца
+    DateTime lastDayOfMonth = DateTime(year, month + 1, 0);
 
-    // Находим первый день, соответствующий targetWeekday
     int daysUntilFirstTargetDay =
         (targetWeekday - firstDayOfMonth.weekday + 7) % 7;
     DateTime firstTargetDay = firstDayOfMonth.add(
@@ -249,7 +408,6 @@ class TaskManager {
     );
 
     if (bySetPos == -1) {
-      // Для "последнего" дня недели в месяце
       DateTime lastTargetDay = firstTargetDay;
       while (lastTargetDay.month == month) {
         DateTime nextTargetDay = lastTargetDay.add(Duration(days: 7));
@@ -258,15 +416,13 @@ class TaskManager {
       }
       return lastTargetDay;
     } else {
-      // Для "первой", "второй", "третьей" или "четвёртой" недели
-      int targetWeek = bySetPos - 1; // bySetPos начинается с 1, а нам нужно с 0
+      int targetWeek = bySetPos - 1;
       DateTime targetDate = firstTargetDay.add(Duration(days: 7 * targetWeek));
 
-      // Проверяем, что дата всё ещё в пределах месяца
       if (targetDate.month == month && targetDate.day <= lastDayOfMonth.day) {
         return targetDate;
       }
-      return null; // Если паттерн не применим (например, "пятая пятница" в месяце, где только 4 пятницы)
+      return null;
     }
   }
 
@@ -387,5 +543,108 @@ class TaskManager {
       scheduler.scheduleTask(subtask, userSettings.minSession, urgency: null);
       logInfo('Scheduled subtask: ${subtask.title}');
     }
+  }
+
+  /// Starts a task or subtask
+  /// If the task has subtasks and they're not all completed, it can't be started
+  /// Returns true if the task was started successfully, false otherwise
+  bool startTask(Task task) {
+    if (!task.canStart) {
+      logWarning(
+        'Cannot start task ${task.title} because it has incomplete subtasks',
+      );
+      return false;
+    }
+
+    task.start();
+    tasksDB.put(task.id, task);
+    logInfo('Started task: ${task.title}');
+    return true;
+  }
+
+  /// Pauses a task that's in progress
+  /// Returns true if the task was paused successfully, false otherwise
+  bool pauseTask(Task task) {
+    if (!task.isInProgress) {
+      logWarning(
+        'Cannot pause task ${task.title} because it is not in progress',
+      );
+      return false;
+    }
+
+    task.pause();
+    tasksDB.put(task.id, task);
+    logInfo('Paused task: ${task.title}');
+    return true;
+  }
+
+  /// Stops a task that's in progress or paused
+  /// Returns true if the task was stopped successfully, false otherwise
+  bool stopTask(Task task) {
+    if (!task.isInProgress && !task.isPaused) {
+      logWarning(
+        'Cannot stop task ${task.title} because it is not in progress or paused',
+      );
+      return false;
+    }
+
+    task.stop();
+    tasksDB.put(task.id, task);
+    logInfo('Stopped task: ${task.title}');
+    return true;
+  }
+
+  /// Completes a task
+  /// If the task has a parent task, it checks if all siblings are completed
+  /// and if so, it marks the parent task as completed too
+  /// Returns true if the task was completed successfully, false otherwise
+  bool completeTask(Task task) {
+    task.complete();
+    tasksDB.put(task.id, task);
+    logInfo('Completed task: ${task.title}');
+
+    // Check if parent task should be completed too
+    final parentTask = task.parentTask;
+    if (parentTask != null) {
+      if (parentTask.subtasks.every((subtask) => subtask.isDone)) {
+        completeTask(parentTask);
+      }
+    }
+
+    return true;
+  }
+
+  /// Gets all task sessions for a task and its subtasks
+  List<TaskSession> getTaskSessions(Task task) {
+    List<TaskSession> allSessions = List.from(task.sessions);
+
+    // Add sessions from subtasks
+    for (var subtask in task.subtasks) {
+      allSessions.addAll(getTaskSessions(subtask));
+    }
+
+    return allSessions;
+  }
+
+  /// Gets the total duration for a task and its subtasks
+  int getTotalDuration(Task task) {
+    int total = task.getTotalDuration();
+
+    // Add duration from subtasks
+    for (var subtask in task.subtasks) {
+      total += getTotalDuration(subtask);
+    }
+
+    return total;
+  }
+
+  /// Gets all tasks that are currently in progress
+  List<Task> getTasksInProgress() {
+    return tasksDB.values.where((task) => task.isInProgress).toList();
+  }
+
+  /// Gets all tasks that are currently paused
+  List<Task> getPausedTasks() {
+    return tasksDB.values.where((task) => task.isPaused).toList();
   }
 }

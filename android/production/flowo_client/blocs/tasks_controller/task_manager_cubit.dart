@@ -1,13 +1,13 @@
 import 'package:bloc/bloc.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/utils/logger.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
 import '../../models/category.dart';
 import '../../models/day.dart';
 import '../../models/repeat_rule.dart';
 import '../../models/task.dart';
+import '../../models/task_session.dart';
 import '../../models/user_settings.dart';
 import '../../utils/task_manager.dart';
 import 'task_manager_state.dart';
@@ -51,26 +51,43 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       firstNotification: firstNotification,
       secondNotification: secondNotification,
     );
-
     // Save the task with notification settings
     taskManager.tasksDB.put(task.id, task);
 
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  Future<bool> createEvent({
+  List<ScheduledTask> createEvent({
     required String title,
     required DateTime start,
     required DateTime end,
-    required BuildContext context,
     String? location,
     String? notes,
     int? color,
     int? travelingTime,
     int? firstNotification,
     int? secondNotification,
-  }) async {
+    bool overrideOverlaps = false,
+  }) {
     logInfo('Creating event: title - $title, start - $start, end - $end');
+
+    final dateKey = _formatDateKey(start);
+
+    // Check for overlaps first
+    if (!overrideOverlaps) {
+      final overlappingTasks = taskManager.scheduler.findOverlappingTasks(
+        start: start,
+        end: end,
+        dateKey: dateKey,
+      );
+
+      if (overlappingTasks.isNotEmpty) {
+        logInfo(
+          'Event overlaps with ${overlappingTasks.length} existing tasks',
+        );
+        return overlappingTasks;
+      }
+    }
 
     final priority = 0; // Not required, set to default
     final estimatedTime = end.difference(start).inMilliseconds;
@@ -91,25 +108,18 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       secondNotification: secondNotification,
     );
 
-    // Schedule the event with conflict resolution
-    final success = await taskManager.scheduler.scheduleEvent(
+    taskManager.scheduler.scheduleEvent(
       task: task,
       start: start,
       end: end,
-      context: context,
+      overrideOverlaps: overrideOverlaps,
     );
-
-    if (!success) {
-      // If scheduling failed (user canceled or chose to adjust), delete the task
-      taskManager.deleteTask(task);
-      logInfo('Event creation canceled due to conflicts: $title');
-      return false;
-    }
 
     // Update the state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
-    logInfo('Event created successfully: ${task.title}');
-    return true;
+    logInfo('Event created successfully: $task.title');
+
+    return []; // Return empty list to indicate success
   }
 
   List<ScheduledTask> getScheduledTasks() {
@@ -175,7 +185,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     int? pessimisticTime,
     int? firstNotification,
     int? secondNotification,
-    BuildContext? context,
   }) {
     // Update task properties
     taskManager.editTask(
@@ -200,52 +209,61 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
     // Recalculate scheduling after edit
     taskManager.removeScheduledTasksFor(task);
-
-    // If context is provided and the task is a habit, schedule it with conflict resolution
-    if (context != null && frequency != null) {
-      scheduleHabits(context);
-    } else if (frequency != null) {
-      // Log a warning if context is not provided for a habit
-      logWarning(
-        'Cannot schedule habit without BuildContext. Habit scheduling skipped.',
-      );
-    }
+    taskManager.manageHabits();
 
     // Update state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  Future<bool> editEvent({
+  List<ScheduledTask> editEvent({
     required Task task,
     required String title,
     required DateTime start,
     required DateTime end,
-    required BuildContext context,
     String? location,
     String? notes,
     int? color,
     int? travelingTime,
     int? firstNotification,
     int? secondNotification,
-  }) async {
+    bool overrideOverlaps = false,
+  }) {
     logInfo(
       'Editing event: ${task.title} to new title - $title, start - $start, end - $end',
     );
 
+    final dateKey = _formatDateKey(start);
+
+    // Check for overlaps first, excluding the current task's scheduled tasks
+    if (!overrideOverlaps) {
+      final overlappingTasks =
+          taskManager.scheduler
+              .findOverlappingTasks(start: start, end: end, dateKey: dateKey)
+              .where((st) => st.parentTaskId != task.id)
+              .toList();
+
+      if (overlappingTasks.isNotEmpty) {
+        logInfo(
+          'Event overlaps with ${overlappingTasks.length} existing tasks',
+        );
+        return overlappingTasks;
+      }
+    }
+
     if (task.scheduledTasks.isNotEmpty) {
       final scheduledTask = task.scheduledTasks.first;
-      final dateKey = _formatDateKey(scheduledTask.startTime);
+      final oldDateKey = _formatDateKey(scheduledTask.startTime);
       final daysBox = Hive.box<Day>('scheduled_tasks');
-      final day = daysBox.get(dateKey);
+      final day = daysBox.get(oldDateKey);
 
       if (day != null) {
         day.scheduledTasks.removeWhere(
           (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
         );
         if (day.scheduledTasks.isEmpty) {
-          daysBox.delete(dateKey);
+          daysBox.delete(oldDateKey);
         } else {
-          daysBox.put(dateKey, day);
+          daysBox.put(oldDateKey, day);
         }
         logInfo('Removed previous scheduled task for event: ${task.title}');
       }
@@ -269,25 +287,18 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       secondNotification: secondNotification,
     );
 
-    // Schedule the event with conflict resolution
-    final success = await taskManager.scheduler.scheduleEvent(
+    taskManager.scheduler.scheduleEvent(
       task: task,
       start: start,
       end: end,
-      context: context,
+      overrideOverlaps: overrideOverlaps,
     );
-
-    if (!success) {
-      // If scheduling failed (user canceled or chose to adjust), revert the task changes
-      logInfo('Event update canceled due to conflicts: $title');
-      return false;
-    }
-
     taskManager.tasksDB.put(task.id, task);
 
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
     logInfo('Event updated successfully: ${task.title}');
-    return true;
+
+    return []; // Return empty list to indicate success
   }
 
   void scheduleTasks() {
@@ -295,83 +306,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  // This method now requires a BuildContext for conflict resolution
-  Future<void> scheduleHabits(BuildContext context) async {
+  void scheduleHabits() {
     logDebug('Scheduling habits');
-
-    // Since we can't modify the TaskManager.manageHabits method directly,
-    // we'll handle the scheduling of habits here
-    List<Task> habits =
-        taskManager.tasksDB.values
-            .where((task) => task.frequency != null)
-            .toList();
-
-    for (Task habit in habits) {
-      switch (habit.frequency!.type) {
-        case 'weekly':
-          final repeatRule = habit.frequency!;
-          final byDay = repeatRule.byDay!;
-
-          for (var dayInstance in byDay) {
-            final selectedWeekday = _dayNameToInt(dayInstance.selectedDay);
-            final startDate = repeatRule.startRepeat;
-            final daysUntilNextSelectedDay =
-                (selectedWeekday - startDate.weekday + 7) % 7;
-
-            var nextSelectedDate = startDate.add(
-              Duration(days: daysUntilNextSelectedDay),
-            );
-
-            List<DateTime> habitDates = [];
-
-            while (nextSelectedDate.isBefore(repeatRule.endRepeat!)) {
-              habitDates.add(nextSelectedDate);
-              nextSelectedDate = nextSelectedDate.add(
-                Duration(days: 7 * habit.frequency!.interval),
-              );
-            }
-
-            await taskManager.scheduler.scheduleHabit(
-              task: habit,
-              dates: habitDates,
-              start: dayInstance.start,
-              end: dayInstance.end,
-              context: context,
-            );
-          }
-          break;
-
-        // Handle other frequency types similarly
-        // For brevity, we'll just handle the weekly case in this example
-        // In a real implementation, you would handle all cases
-        default:
-          logWarning(
-            'Habit frequency type not handled in cubit: ${habit.frequency!.type}',
-          );
-          break;
-      }
-    }
-
-    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
-  }
-
-  // Helper method to convert day names to integers
-  int _dayNameToInt(String dayName) {
-    const dayMap = {
-      'monday': 1,
-      'tuesday': 2,
-      'wednesday': 3,
-      'thursday': 4,
-      'friday': 5,
-      'saturday': 6,
-      'sunday': 7,
-    };
-    return dayMap[dayName.toLowerCase()] ?? 1;
-  }
-
-  void scheduleTask(Task task) {
-    final minSession = state.userSettings?.minSession ?? 15 * 60 * 1000;
-    taskManager.scheduler.scheduleTask(task, minSession);
+    taskManager.manageHabits();
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
@@ -544,6 +481,101 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     } catch (e) {
       logError('Error toggling task completion: $e');
       return task.isDone; // Return the current status in case of error
+    }
+  }
+
+  /// Send a reminder to check if a task is completed
+  Future<void> sendCompletionCheckReminder(Task task) async {
+    if (task.isDone) {
+      // Task is already completed, no need to send a reminder
+      return;
+    }
+
+    try {
+      // TODO: Create a notification for the task completion check
+      // TODO: This would typically use a notification service
+      logInfo('Would send completion check reminder for task "${task.title}"');
+
+      // await _notificationService.sendCompletionCheckReminder(task);
+    } catch (e) {
+      logError('Error sending completion check reminder: $e');
+    }
+  }
+
+  /// Starts a task or subtask
+  /// If the task has subtasks and they're not all completed, it can't be started
+  /// Returns true if the task was started successfully, false otherwise
+  bool startTask(Task task) {
+    logInfo('Starting task: ${task.title}');
+    final result = taskManager.startTask(task);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    return result;
+  }
+
+  /// Pauses a task that's in progress
+  /// Returns true if the task was paused successfully, false otherwise
+  bool pauseTask(Task task) {
+    logInfo('Pausing task: ${task.title}');
+    final result = taskManager.pauseTask(task);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    return result;
+  }
+
+  /// Stops a task that's in progress or paused
+  /// Returns true if the task was stopped successfully, false otherwise
+  bool stopTask(Task task) {
+    logInfo('Stopping task: ${task.title}');
+    final result = taskManager.stopTask(task);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    return result;
+  }
+
+  /// Completes a task
+  /// If the task has a parent task, it checks if all siblings are completed
+  /// and if so, it marks the parent task as completed too
+  /// Returns true if the task was completed successfully, false otherwise
+  bool completeTask(Task task) {
+    logInfo('Completing task: ${task.title}');
+    final result = taskManager.completeTask(task);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+    return result;
+  }
+
+  /// Gets all task sessions for a task and its subtasks
+  List<TaskSession> getTaskSessions(Task task) {
+    return taskManager.getTaskSessions(task);
+  }
+
+  /// Gets the total duration for a task and its subtasks
+  int getTotalDuration(Task task) {
+    return taskManager.getTotalDuration(task);
+  }
+
+  /// Gets all tasks that are currently in progress
+  List<Task> getTasksInProgress() {
+    return taskManager.getTasksInProgress();
+  }
+
+  /// Gets all tasks that are currently paused
+  List<Task> getPausedTasks() {
+    return taskManager.getPausedTasks();
+  }
+
+  /// Schedule a reminder to check if a task is completed
+  Future<void> scheduleCompletionCheckReminder(
+    Task task,
+    DateTime scheduledTime,
+  ) async {
+    try {
+      // TODO: Schedule a notification for the task completion check
+      // TODO: This would typically use a notification service
+      logInfo(
+        'Would schedule completion check reminder for task "${task.title}" at $scheduledTime',
+      );
+
+      //TODO:  await _notificationService.scheduleCompletionCheckReminder(task, scheduledTime);
+    } catch (e) {
+      logError('Error scheduling completion check reminder: $e');
     }
   }
 }

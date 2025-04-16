@@ -1,8 +1,6 @@
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
-import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/utils/logger.dart';
-import 'package:flutter/foundation.dart';
 
 /// A class that detects conflicts between scheduled tasks
 class ConflictDetector {

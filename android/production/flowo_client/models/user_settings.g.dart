@@ -24,6 +24,7 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       sleepTime: (fields[4] as List).cast<TimeFrame>(),
       freeTime: (fields[5] as List).cast<TimeFrame>(),
       activeDays: (fields[6] as Map?)?.cast<String, bool>(),
+      daySchedules: (fields[18] as Map?)?.cast<String, DaySchedule>(),
       defaultNotificationType: fields[7] as NotificationType,
       dateFormat: fields[8] as String,
       monthFormat: fields[9] as String,
@@ -32,15 +33,16 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       customColorValue: fields[12] as int,
       colorIntensity: fields[13] as double,
       noiseLevel: fields[14] as double,
-      useGradient: fields[15] as bool?,
+      useGradient: fields[15] as bool,
       secondaryColorValue: fields[16] as int?,
+      useDynamicColors: fields[17] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserSettings obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(19)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -55,6 +57,8 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       ..write(obj.freeTime)
       ..writeByte(6)
       ..write(obj.activeDays)
+      ..writeByte(18)
+      ..write(obj.daySchedules)
       ..writeByte(7)
       ..write(obj.defaultNotificationType)
       ..writeByte(8)
@@ -74,7 +78,9 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       ..writeByte(15)
       ..write(obj.useGradient)
       ..writeByte(16)
-      ..write(obj.secondaryColorValue);
+      ..write(obj.secondaryColorValue)
+      ..writeByte(17)
+      ..write(obj.useDynamicColors);
   }
 
   @override
