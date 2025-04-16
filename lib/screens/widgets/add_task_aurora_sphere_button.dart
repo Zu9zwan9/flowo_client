@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import '../../theme/app_colors.dart';
 
 /// A floating aurora sphere button with a "+" icon inside, designed for adding tasks
-/// Following Apple's Human Interface Guidelines with a glass-like appearance
+/// Matching the design of the AuroraSphereButton without glass effect
 class AddTaskAuroraSphereButton extends StatefulWidget {
   /// Callback when the button is pressed
   final VoidCallback onPressed;
@@ -97,32 +97,43 @@ class _AddTaskAuroraSphereButtonState extends State<AddTaskAuroraSphereButton>
                         spreadRadius: 2,
                       ),
                     ],
-                    gradient: RadialGradient(
-                      colors: [
-                        resolvedBaseColor.withOpacity(0.9),
-                        secondaryColor.withOpacity(0.7),
-                        resolvedBaseColor.withOpacity(0.5),
-                      ],
-                      stops: const [0.0, 0.5, 1.0],
-                      center: Alignment(
-                        math.sin(_animationController.value * math.pi) * 0.2,
-                        math.cos(_animationController.value * math.pi) * 0.2,
-                      ),
-                    ),
                   ),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Aurora effect
-                      CustomPaint(
-                        painter: AddTaskAuroraPainter(
-                          color: resolvedBaseColor,
-                          animationValue: _animationController.value,
-                          isDarkMode: isDarkMode,
+                      // Rotating aurora sphere
+                      Transform.rotate(
+                        angle: _rotationAnimation.value,
+                        child: Container(
+                          width: widget.size,
+                          height: widget.size,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: RadialGradient(
+                              colors: [
+                                resolvedBaseColor.withOpacity(0.9),
+                                secondaryColor.withOpacity(0.7),
+                                resolvedBaseColor.withOpacity(0.5),
+                              ],
+                              stops: const [0.0, 0.5, 1.0],
+                              center: Alignment(
+                                math.sin(_animationController.value * math.pi) *
+                                    0.2,
+                                math.cos(_animationController.value * math.pi) *
+                                    0.2,
+                              ),
+                            ),
+                          ),
+                          child: CustomPaint(
+                            painter: AddTaskAuroraPainter(
+                              color: resolvedBaseColor,
+                              animationValue: _animationController.value,
+                              isDarkMode: isDarkMode,
+                            ),
+                          ),
                         ),
-                        size: Size(widget.size, widget.size),
                       ),
-                      // Plus icon
+                      // Non-rotating plus icon
                       Icon(
                         CupertinoIcons.add,
                         color: CupertinoColors.white,
@@ -151,7 +162,7 @@ class _AddTaskAuroraSphereButtonState extends State<AddTaskAuroraSphereButton>
   }
 }
 
-/// Custom painter for the aurora effect with glass-like appearance
+/// Custom painter for the aurora effect without glass-like appearance
 class AddTaskAuroraPainter extends CustomPainter {
   final Color color;
   final double animationValue;
@@ -168,26 +179,6 @@ class AddTaskAuroraPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    // Create a glass-like effect with inner highlight
-    final glassGradient = RadialGradient(
-      colors: [
-        Colors.white.withOpacity(isDarkMode ? 0.3 : 0.7),
-        color.withOpacity(0.2),
-        color.withOpacity(0.1),
-      ],
-      stops: const [0.0, 0.6, 1.0],
-      center: const Alignment(-0.3, -0.3),
-      radius: 0.8,
-    );
-
-    // Draw the glass sphere base
-    final glassPaint =
-        Paint()
-          ..shader = glassGradient.createShader(
-            Rect.fromCircle(center: center, radius: radius),
-          );
-    canvas.drawCircle(center, radius * 0.9, glassPaint);
-
     // Create a shimmer effect
     for (int i = 0; i < 3; i++) {
       final offset = i * 0.2;
@@ -197,7 +188,7 @@ class AddTaskAuroraPainter extends CustomPainter {
           Paint()
             ..color = color.withOpacity(0.3 - (i * 0.1))
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.0 + (adjustedValue * 1.5);
+            ..strokeWidth = 2.0 + (adjustedValue * 2.0);
 
       final waveRadius = radius * (0.7 + (adjustedValue * 0.3));
 
@@ -212,7 +203,7 @@ class AddTaskAuroraPainter extends CustomPainter {
           Paint()
             ..color = color.withOpacity(0.1 + (random.nextDouble() * 0.2))
             ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.0 + (random.nextDouble() * 1.5);
+            ..strokeWidth = 1.0 + (random.nextDouble() * 2.0);
 
       final startAngle = random.nextDouble() * 2 * math.pi;
       final sweepAngle = (random.nextDouble() * math.pi / 2) + (math.pi / 4);
@@ -227,22 +218,6 @@ class AddTaskAuroraPainter extends CustomPainter {
         paint,
       );
     }
-
-    // Add highlight to create glass effect
-    final highlightPaint =
-        Paint()
-          ..color = Colors.white.withOpacity(isDarkMode ? 0.4 : 0.7)
-          ..style = PaintingStyle.fill;
-
-    final highlightPath = Path();
-    highlightPath.addOval(
-      Rect.fromCenter(
-        center: Offset(center.dx - (radius * 0.3), center.dy - (radius * 0.3)),
-        width: radius * 0.6,
-        height: radius * 0.3,
-      ),
-    );
-    canvas.drawPath(highlightPath, highlightPaint);
   }
 
   @override

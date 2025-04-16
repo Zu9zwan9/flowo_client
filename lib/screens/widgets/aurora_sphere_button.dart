@@ -89,18 +89,19 @@ class _AuroraSphereButtonState extends State<AuroraSphereButton>
           builder: (context, child) {
             return Transform.scale(
               scale: _pulseAnimation.value,
-              child: Transform.rotate(
-                angle: _rotationAnimation.value,
-                child: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: () {
-                    HapticFeedback.mediumImpact();
-                    widget.onPressed();
-                  },
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
+              child: CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  widget.onPressed();
+                },
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Rotating aurora sphere
+                    Transform.rotate(
+                      angle: _rotationAnimation.value,
+                      child: Container(
                         width: widget.size,
                         height: widget.size,
                         decoration: BoxDecoration(
@@ -135,18 +136,16 @@ class _AuroraSphereButtonState extends State<AuroraSphereButton>
                           ),
                         ),
                       ),
-                      if (widget.tasksToSchedule != null &&
-                          widget.tasksToSchedule! > 0)
-                        Text(
-                          '${widget.tasksToSchedule}',
-                          style: TextStyle(
-                            color: CupertinoColors.white,
-                            fontSize: widget.size * 0.4,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                    ],
-                  ),
+                    ),
+                    // Non-rotating icon
+                    Icon(
+                      widget.status
+                          ? CupertinoIcons.checkmark
+                          : CupertinoIcons.exclamationmark,
+                      color: CupertinoColors.white,
+                      size: widget.size * 0.4,
+                    ),
+                  ],
                 ),
               ),
             );
