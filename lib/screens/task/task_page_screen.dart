@@ -616,27 +616,26 @@ class SubtasksList extends StatelessWidget {
                 style: theme.textTheme.navTitleTextStyle.copyWith(fontSize: 18),
               ),
               const Spacer(),
-              if (subtasks.isNotEmpty)
-                Flexible(
-                  child: CupertinoButton(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    onPressed: onAdd,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(CupertinoIcons.add, size: 16),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            'Add Subtask',
-                            style: theme.textTheme.textStyle,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+              Flexible(
+                child: CupertinoButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  onPressed: onAdd,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(CupertinoIcons.add, size: 16),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          'Add Subtask',
+                          style: theme.textTheme.textStyle,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
+              ),
               Text(
                 '${subtasks.length}',
                 style: theme.textTheme.textStyle.copyWith(

@@ -43,6 +43,7 @@ class _TaskListScreenState extends State<TaskListScreen>
   late final ScrollController _scrollController;
   late TaskUrgencyCalculator _urgencyCalculator;
   bool _schedulingStatus = true; // true = all good, false = needs attention
+  int _tasksToSchedule = 0; // Number of tasks that need scheduling
 
   // Caching to improve performance
   Map<String, List<Task>>? _filteredTasksCache;
@@ -83,6 +84,8 @@ class _TaskListScreenState extends State<TaskListScreen>
     setState(() {
       _schedulingStatus =
           impossibleTasks.isEmpty && tasksNeedingRescheduling.isEmpty;
+      _tasksToSchedule =
+          impossibleTasks.length + tasksNeedingRescheduling.length;
     });
   }
 
@@ -237,6 +240,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                     status: _schedulingStatus,
                     size: 50.0,
                     label: 'Tasks',
+                    tasksToSchedule: _tasksToSchedule,
                   ),
                 ],
               ),

@@ -28,10 +28,12 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
   late TaskUrgencyCalculator _urgencyCalculator;
   List<Task> _impossibleTasks = [];
   List<Task> _needsReschedulingTasks = [];
+  List<Task> _unscheduledTasksList = []; // List of unscheduled tasks
   int _totalScheduledTasks = 0;
   int _completedTasks = 0;
   int _overdueTasks = 0;
   int _upcomingTasks = 0;
+  int _unscheduledTasks = 0;
 
   // Duration statistics
   int _totalDuration = 0;
@@ -66,6 +68,10 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
             )
             .length;
     _upcomingTasks = _totalScheduledTasks - _completedTasks - _overdueTasks;
+
+    // Find unscheduled tasks
+    _unscheduledTasksList = _findUnscheduledTasks(tasks);
+    _unscheduledTasks = _unscheduledTasksList.length;
 
     // Find tasks that are impossible to complete or need rescheduling
     _analyzeTaskUrgency(tasks, scheduledTasks);
@@ -170,6 +176,23 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
     }
 
     return busyTime;
+  }
+
+  // Find tasks that are not scheduled yet
+  List<Task> _findUnscheduledTasks(List<Task> tasks) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    return tasks
+        .where(
+          (task) =>
+              !task.isDone &&
+              task.scheduledTasks.isEmpty &&
+              task.deadline > now &&
+              _canTaskBeOverdue(
+                task,
+              ), // Only include tasks that can be scheduled (not events, habits, etc.)
+        )
+        .toList();
   }
 
   @override
@@ -444,6 +467,16 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
             child: const Text('Reschedule All Tasks'),
           ),
           const SizedBox(height: 12),
+          if (_unscheduledTasks > 0) ...[
+            CupertinoButton.filled(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                _scheduleUnscheduledTasks();
+              },
+              child: Text('Schedule Unscheduled Tasks (${_unscheduledTasks})'),
+            ),
+            const SizedBox(height: 12),
+          ],
           CupertinoButton(
             onPressed: () {
               HapticFeedback.mediumImpact();
@@ -599,6 +632,39 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
             content: Text(
               'The deadline for "${task.title}" has been extended by '
               '${additionalTime.inHours}h ${additionalTime.inMinutes.remainder(60)}m.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  // Schedule unscheduled tasks
+  void _scheduleUnscheduledTasks() {
+    if (_unscheduledTasksList.isEmpty) return;
+
+    final tasksCubit = context.read<TaskManagerCubit>();
+
+    // Schedule all tasks (including unscheduled ones)
+    tasksCubit.scheduleTasks();
+
+    // Refresh the statistics
+    setState(() {
+      _loadStatistics();
+    });
+
+    // Show confirmation
+    showCupertinoDialog(
+      context: context,
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Tasks Scheduled'),
+            content: Text(
+              '${_unscheduledTasksList.length} unscheduled tasks have been scheduled.',
             ),
             actions: [
               CupertinoDialogAction(

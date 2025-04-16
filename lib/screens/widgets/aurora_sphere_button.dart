@@ -20,12 +20,16 @@ class AuroraSphereButton extends StatefulWidget {
   /// Optional label to display below the sphere
   final String? label;
 
+  /// Number of tasks that need scheduling (displayed inside the sphere)
+  final int? tasksToSchedule;
+
   const AuroraSphereButton({
     super.key,
     required this.onPressed,
     required this.status,
     this.size = 50.0,
     this.label,
+    this.tasksToSchedule,
   });
 
   @override
@@ -93,38 +97,55 @@ class _AuroraSphereButtonState extends State<AuroraSphereButton>
                     HapticFeedback.mediumImpact();
                     widget.onPressed();
                   },
-                  child: Container(
-                    width: widget.size,
-                    height: widget.size,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: resolvedBaseColor.withOpacity(0.5),
-                          blurRadius: 15,
-                          spreadRadius: 2,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: widget.size,
+                        height: widget.size,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: resolvedBaseColor.withOpacity(0.5),
+                              blurRadius: 15,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                          gradient: RadialGradient(
+                            colors: [
+                              resolvedBaseColor.withOpacity(0.9),
+                              secondaryColor.withOpacity(0.7),
+                              resolvedBaseColor.withOpacity(0.5),
+                            ],
+                            stops: const [0.0, 0.5, 1.0],
+                            center: Alignment(
+                              math.sin(_animationController.value * math.pi) *
+                                  0.2,
+                              math.cos(_animationController.value * math.pi) *
+                                  0.2,
+                            ),
+                          ),
                         ),
-                      ],
-                      gradient: RadialGradient(
-                        colors: [
-                          resolvedBaseColor.withOpacity(0.9),
-                          secondaryColor.withOpacity(0.7),
-                          resolvedBaseColor.withOpacity(0.5),
-                        ],
-                        stops: const [0.0, 0.5, 1.0],
-                        center: Alignment(
-                          math.sin(_animationController.value * math.pi) * 0.2,
-                          math.cos(_animationController.value * math.pi) * 0.2,
+                        child: CustomPaint(
+                          painter: AuroraPainter(
+                            color: resolvedBaseColor,
+                            animationValue: _animationController.value,
+                            isDarkMode: isDarkMode,
+                          ),
                         ),
                       ),
-                    ),
-                    child: CustomPaint(
-                      painter: AuroraPainter(
-                        color: resolvedBaseColor,
-                        animationValue: _animationController.value,
-                        isDarkMode: isDarkMode,
-                      ),
-                    ),
+                      if (widget.tasksToSchedule != null &&
+                          widget.tasksToSchedule! > 0)
+                        Text(
+                          '${widget.tasksToSchedule}',
+                          style: TextStyle(
+                            color: CupertinoColors.white,
+                            fontSize: widget.size * 0.4,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
