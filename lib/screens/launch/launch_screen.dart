@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flowo_client/theme/theme_notifier.dart';
 
+///DEPRECATED
 /// A launch screen widget that displays an animated logo during app initialization.
 /// This follows Apple's Human Interface Guidelines for iOS and Material Design for Android.
 class LaunchScreen extends StatefulWidget {

@@ -370,24 +370,22 @@ class MyApp extends StatelessWidget {
         final brightness = themeNotifier.currentTheme.brightness;
         return Provider<OnboardingService>.value(
           value: onboardingService,
-          child: LaunchScreen(
-            child: CupertinoApp(
-              debugShowCheckedModeBanner: false,
-              // Use the theme from ThemeNotifier to ensure custom colors, noise, and gradient are applied
-              theme: themeNotifier.currentTheme,
-              // Add these two lines to support localization:
-              localizationsDelegates: const [
-                DefaultCupertinoLocalizations.delegate,
-                DefaultWidgetsLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-              ],
-              supportedLocales: const [Locale('en', 'US')],
-              home:
-                  isOnboardingCompleted
-                      ? const HomeScreen(initialExpanded: false)
-                      : const NameInputScreen(),
-            ),
+          child: CupertinoApp(
+            debugShowCheckedModeBanner: false,
+            // Use the theme from ThemeNotifier to ensure custom colors, noise, and gradient are applied
+            theme: themeNotifier.currentTheme,
+            // Add these two lines to support localization:
+            localizationsDelegates: const [
+              DefaultCupertinoLocalizations.delegate,
+              DefaultWidgetsLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+            ],
+            supportedLocales: const [Locale('en', 'US')],
+            home:
+                isOnboardingCompleted
+                    ? const HomeScreen(initialExpanded: false)
+                    : const NameInputScreen(),
           ),
         );
       },
