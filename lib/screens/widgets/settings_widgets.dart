@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay, Divider;
-import 'package:flowo_client/design/platform_aware_slider.dart';
 
 class SettingsSection extends StatelessWidget {
   final String title;
@@ -720,7 +719,7 @@ class _SettingsSliderItemState extends State<SettingsSliderItem>
               width: double.infinity,
               child: Opacity(
                 opacity: widget.enabled ? 1.0 : 0.5,
-                child: PlatformAwareSlider(
+                child: CupertinoSlider(
                   value: widget.value,
                   min: widget.min,
                   max: widget.max,
@@ -728,7 +727,6 @@ class _SettingsSliderItemState extends State<SettingsSliderItem>
                   onChanged: widget.enabled ? widget.onChanged : null,
                   activeColor: effectiveActiveColor,
                   thumbColor: widget.thumbColor ?? CupertinoColors.white,
-                  inactiveColor: CupertinoColors.systemGrey4,
                 ),
               ),
             ),

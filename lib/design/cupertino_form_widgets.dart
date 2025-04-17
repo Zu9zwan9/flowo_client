@@ -1,12 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Colors;
 import 'package:image_picker/image_picker.dart';
 
 import '../utils/logger.dart';
 import 'cupertino_form_theme.dart';
-import 'platform_aware_slider.dart';
 
 class CupertinoFormWidgets {
   const CupertinoFormWidgets._(); // Private constructor for static-only class
@@ -429,7 +427,7 @@ class CupertinoFormWidgets {
   }) {
     final theme = CupertinoFormTheme(context);
     // Arrange & Act
-    final slider = PlatformAwareSlider(
+    final slider = CupertinoSlider(
       min: 1,
       max: 10,
       divisions: 9,
@@ -437,7 +435,6 @@ class CupertinoFormWidgets {
       onChanged: (val) => onChanged(val.toInt()),
       activeColor: theme.getPriorityColor(value),
       thumbColor: CupertinoColors.white,
-      inactiveColor: CupertinoColors.systemGrey4,
     );
     // Assert
     return slider;

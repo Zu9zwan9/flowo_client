@@ -3,7 +3,6 @@ import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/screens/settings/day_schedule_screen.dart';
 import 'package:flowo_client/screens/settings/theme_settings_screen.dart';
 import 'package:flowo_client/screens/widgets/settings_widgets.dart';
-import 'package:flowo_client/design/platform_aware_slider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -496,24 +495,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
           ),
-    );
-  }
-
-  // Helper method to create a platform-aware slider for color adjustments
-  Widget _buildPlatformAwareColorSlider({
-    required double value,
-    required ValueChanged<double> onChanged,
-    required Color activeColor,
-    String? label,
-  }) {
-    return PlatformAwareSlider(
-      value: value,
-      min: 0.0,
-      max: 1.0,
-      onChanged: onChanged,
-      activeColor: label == 'Hue' ? Colors.transparent : activeColor,
-      thumbColor: CupertinoColors.white,
-      inactiveColor: CupertinoColors.systemGrey4,
     );
   }
 

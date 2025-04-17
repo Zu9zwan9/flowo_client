@@ -1,6 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Colors;
-import 'package:flowo_client/design/platform_aware_slider.dart';
 
 import '../../models/pomodoro_settings.dart';
 
@@ -253,14 +251,12 @@ class _PomodoroSettingsScreenState extends State<PomodoroSettingsScreen> {
         const SizedBox(width: 16),
         SizedBox(
           width: 150,
-          child: PlatformAwareSlider(
+          child: CupertinoSlider(
             value: value.toDouble(),
             min: min.toDouble(),
             max: max.toDouble(),
             divisions: max - min,
             onChanged: (value) => onChanged(value.round()),
-            activeColor: CupertinoColors.activeBlue,
-            inactiveColor: CupertinoColors.systemGrey4,
           ),
         ),
       ],
@@ -282,14 +278,12 @@ class _PomodoroSettingsScreenState extends State<PomodoroSettingsScreen> {
         const SizedBox(width: 16),
         SizedBox(
           width: 150,
-          child: PlatformAwareSlider(
+          child: CupertinoSlider(
             value: value.toDouble(),
             min: min.toDouble(),
             max: max.toDouble(),
             divisions: max - min,
             onChanged: (value) => onChanged(value.round()),
-            activeColor: CupertinoColors.activeBlue,
-            inactiveColor: CupertinoColors.systemGrey4,
           ),
         ),
       ],
