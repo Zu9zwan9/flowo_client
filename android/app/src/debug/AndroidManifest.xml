@@ -12,7 +12,7 @@
 
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <application
-            android:label="flowo_client"
+            android:label="Flowo"
             android:name="${applicationName}"
             android:icon="@mipmap/launcher_icon">
         <activity

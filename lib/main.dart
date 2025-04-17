@@ -5,6 +5,7 @@ import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/repeat_rule_instance.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/task_session.dart';
+import 'package:flowo_client/screens/launch/launch_screen.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient/ambient_service.dart';
 import 'package:flowo_client/services/analytics/analytics_service.dart';
@@ -369,22 +370,24 @@ class MyApp extends StatelessWidget {
         final brightness = themeNotifier.currentTheme.brightness;
         return Provider<OnboardingService>.value(
           value: onboardingService,
-          child: CupertinoApp(
-            debugShowCheckedModeBanner: false,
-            // Use the theme from ThemeNotifier to ensure custom colors, noise, and gradient are applied
-            theme: themeNotifier.currentTheme,
-            // Add these two lines to support localization:
-            localizationsDelegates: const [
-              DefaultCupertinoLocalizations.delegate,
-              DefaultWidgetsLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-            ],
-            supportedLocales: const [Locale('en', 'US')],
-            home:
-                isOnboardingCompleted
-                    ? const HomeScreen(initialExpanded: false)
-                    : const NameInputScreen(),
+          child: LaunchScreen(
+            child: CupertinoApp(
+              debugShowCheckedModeBanner: false,
+              // Use the theme from ThemeNotifier to ensure custom colors, noise, and gradient are applied
+              theme: themeNotifier.currentTheme,
+              // Add these two lines to support localization:
+              localizationsDelegates: const [
+                DefaultCupertinoLocalizations.delegate,
+                DefaultWidgetsLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+              ],
+              supportedLocales: const [Locale('en', 'US')],
+              home:
+                  isOnboardingCompleted
+                      ? const HomeScreen(initialExpanded: false)
+                      : const NameInputScreen(),
+            ),
           ),
         );
       },
