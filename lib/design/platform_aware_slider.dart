@@ -1,6 +1,7 @@
-import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 /// A platform-aware slider that uses [CupertinoSlider] on iOS and [Slider] on Android.
 /// This ensures sliders work correctly on both platforms.
@@ -45,7 +46,7 @@ class PlatformAwareSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Use CupertinoSlider on iOS and Slider on Android
-    if (Platform.isIOS) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
       return CupertinoSlider(
         value: value,
         min: min,
