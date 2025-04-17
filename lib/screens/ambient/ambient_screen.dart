@@ -8,6 +8,7 @@ import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
 import '../../models/ambient_scene.dart';
 import '../../services/ambient/ambient_service.dart';
+import '../../design/platform_aware_slider.dart';
 
 /// A screen that displays ambient videos and plays ambient sounds
 /// to create a focused and relaxing environment for work or study.
@@ -307,12 +308,16 @@ class _AmbientScreenState extends State<AmbientScreen>
                         },
                       ),
                       Expanded(
-                        child: CupertinoSlider(
+                        child: PlatformAwareSlider(
                           value: _ambientService.volume,
+                          min: 0.0,
+                          max: 1.0,
                           onChanged: (value) {
                             _ambientService.setVolume(value);
                             _showControlsTemporarily();
                           },
+                          activeColor: CupertinoColors.activeBlue,
+                          inactiveColor: CupertinoColors.systemGrey4,
                         ),
                       ),
                       CupertinoButton(

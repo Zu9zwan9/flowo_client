@@ -6,6 +6,7 @@ import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../models/task.dart';
 import '../../utils/category_utils.dart';
 import '../../utils/logger.dart';
+import '../../design/platform_aware_slider.dart';
 import 'task_form_screen.dart';
 
 class TaskPageConstants {

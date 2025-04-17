@@ -5,6 +5,7 @@ import 'package:flowo_client/models/app_theme.dart';
 import 'package:flowo_client/theme/theme_notifier.dart';
 import 'package:flowo_client/theme/app_colors.dart';
 import 'package:flowo_client/screens/widgets/settings_widgets.dart';
+import 'package:flowo_client/design/platform_aware_slider.dart';
 
 /// A dedicated screen for theme configuration with comprehensive customization options
 /// following Apple's Human Interface Guidelines.
@@ -581,11 +582,14 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                     ),
                   ),
                 ),
-              CupertinoSlider(
+              PlatformAwareSlider(
                 value: value,
+                min: 0.0,
+                max: 1.0,
                 onChanged: onChanged,
                 activeColor: label == 'Hue' ? Colors.transparent : activeColor,
                 thumbColor: CupertinoColors.white,
+                inactiveColor: CupertinoColors.systemGrey4,
                 divisions: 100,
               ),
             ],
@@ -1418,7 +1422,8 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                                       value:
                                           themeNotifier.brightness ==
                                           Brightness.dark,
-                                      activeTrackColor: themeNotifier.primaryColor,
+                                      activeTrackColor:
+                                          themeNotifier.primaryColor,
                                       onChanged: (_) {},
                                     ),
                                   ],
@@ -1707,9 +1712,11 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                             const Text('Hue', style: TextStyle(fontSize: 14)),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: CupertinoSlider(
+                              child: PlatformAwareSlider(
                                 value:
                                     HSVColor.fromColor(selectedColor).hue / 360,
+                                min: 0.0,
+                                max: 1.0,
                                 onChanged: (value) {
                                   final hsvColor = HSVColor.fromColor(
                                     selectedColor,
@@ -1720,6 +1727,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                                   });
                                 },
                                 activeColor: CupertinoColors.systemBlue,
+                                inactiveColor: CupertinoColors.systemGrey4,
                               ),
                             ),
                           ],
@@ -1734,11 +1742,13 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                             ),
                             const SizedBox(width: 16),
                             Expanded(
-                              child: CupertinoSlider(
+                              child: PlatformAwareSlider(
                                 value:
                                     HSVColor.fromColor(
                                       selectedColor,
                                     ).saturation,
+                                min: 0.0,
+                                max: 1.0,
                                 onChanged: (value) {
                                   final hsvColor = HSVColor.fromColor(
                                     selectedColor,
@@ -1751,6 +1761,7 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                                   });
                                 },
                                 activeColor: CupertinoColors.systemBlue,
+                                inactiveColor: CupertinoColors.systemGrey4,
                               ),
                             ),
                           ],
