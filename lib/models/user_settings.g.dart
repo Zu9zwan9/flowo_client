@@ -36,13 +36,18 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       useGradient: fields[15] as bool,
       secondaryColorValue: fields[16] as int?,
       useDynamicColors: fields[17] as bool,
+      textSizeAdjustment: fields[19] as double?,
+      reduceMotion: fields[20] as bool?,
+      highContrastMode: fields[21] as bool?,
+      gradientStartAlignment: fields[22] as String?,
+      gradientEndAlignment: fields[23] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserSettings obj) {
     writer
-      ..writeByte(19)
+      ..writeByte(24)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -80,7 +85,17 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       ..writeByte(16)
       ..write(obj.secondaryColorValue)
       ..writeByte(17)
-      ..write(obj.useDynamicColors);
+      ..write(obj.useDynamicColors)
+      ..writeByte(19)
+      ..write(obj.textSizeAdjustment)
+      ..writeByte(20)
+      ..write(obj.reduceMotion)
+      ..writeByte(21)
+      ..write(obj.highContrastMode)
+      ..writeByte(22)
+      ..write(obj.gradientStartAlignment)
+      ..writeByte(23)
+      ..write(obj.gradientEndAlignment);
   }
 
   @override

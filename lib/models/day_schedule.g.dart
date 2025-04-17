@@ -20,8 +20,8 @@ class DayScheduleAdapter extends TypeAdapter<DaySchedule> {
       day: fields[0] as String,
       isActive: fields[1] as bool,
       sleepTime: fields[2] as TimeFrame,
-      mealBreaks: (fields[3] as List).cast<TimeFrame>(),
-      freeTimes: (fields[4] as List).cast<TimeFrame>(),
+      mealBreaks: (fields[3] as List?)?.cast<TimeFrame>(),
+      freeTimes: (fields[4] as List?)?.cast<TimeFrame>(),
     );
   }
 

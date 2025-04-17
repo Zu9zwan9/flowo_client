@@ -31,7 +31,8 @@ class DaySchedule {
     required this.day,
     this.isActive = true,
     required this.sleepTime,
-    this.mealBreaks = const [],
-    this.freeTimes = const [],
-  });
+    List<TimeFrame>? mealBreaks,
+    List<TimeFrame>? freeTimes,
+  }) : mealBreaks = mealBreaks ?? [],
+       freeTimes = freeTimes ?? [];
 }

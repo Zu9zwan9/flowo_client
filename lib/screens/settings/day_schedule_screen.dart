@@ -25,6 +25,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+    _loadSettings();
   }
 
   void _loadSettings() {

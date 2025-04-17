@@ -312,12 +312,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  void removeScheduledTasks() {
-    taskManager.removeScheduledTasks();
-    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
-  }
-
   void updateUserSettings(UserSettings userSettings) {
+    _deleteAllDays();
     taskManager.updateUserSettings(userSettings);
     try {
       final settingsBox = Hive.box<UserSettings>('user_settings');
@@ -326,8 +322,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     } catch (e) {
       logError('Failed to save user settings: $e');
     }
-    _deleteAllDays();
-    // removeScheduledTasks();
     scheduleTasks();
     emit(
       state.copyWith(

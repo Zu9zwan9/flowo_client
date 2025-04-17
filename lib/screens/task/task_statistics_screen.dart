@@ -474,17 +474,6 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
             ),
             const SizedBox(height: 12),
           ],
-          CupertinoButton(
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              final tasksCubit = context.read<TaskManagerCubit>();
-              tasksCubit.removeScheduledTasks();
-              setState(() {
-                _loadStatistics();
-              });
-            },
-            child: const Text('Clear All Scheduled Tasks'),
-          ),
         ],
       ),
     );
