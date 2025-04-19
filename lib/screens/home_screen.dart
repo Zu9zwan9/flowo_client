@@ -140,17 +140,12 @@ class _HomeScreenState extends State<HomeScreen>
     _animationController.reset();
     _animationController.forward();
 
-    _pageController
-        .animateToPage(
-          index,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        )
-        .then((_) {
-          setState(() {
-            _isTransitioning = false;
-          });
-        });
+    _pageController.jumpToPage(index);
+    Future.microtask(() {
+      setState(() {
+        _isTransitioning = false;
+      });
+    });
   }
 
   void _toggleSidebar() {
