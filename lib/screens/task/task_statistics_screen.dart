@@ -1,12 +1,10 @@
+import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/blocs/tasks_controller/task_manager_state.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
-import 'package:flowo_client/utils/task_urgency_calculator.dart';
-import 'package:flowo_client/models/day.dart';
-import 'package:hive/hive.dart';
 import 'package:flutter/services.dart';
 import 'task_reschedule_screen.dart';
 import 'task_form_screen.dart';
@@ -22,7 +20,6 @@ class TaskStatisticsScreen extends StatefulWidget {
 }
 
 class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
-  late TaskUrgencyCalculator _urgencyCalculator;
   List<Task> _impossibleTasks = [];
   List<Task> _needsReschedulingTasks = [];
   List<Task> _unscheduledTasksList = []; // List of unscheduled tasks
@@ -42,9 +39,6 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
   @override
   void initState() {
     super.initState();
-    _urgencyCalculator = TaskUrgencyCalculator(
-      Hive.box<Day>('scheduled_tasks'),
-    );
     _loadStatistics();
   }
 
@@ -53,7 +47,14 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
     final tasks = tasksCubit.state.tasks;
     final scheduledTasks = tasksCubit.getScheduledTasks();
 
-    _totalScheduledTasks = scheduledTasks.length;
+    _totalScheduledTasks =
+        scheduledTasks
+            .where(
+              (task) =>
+                  task.type == ScheduledTaskType.defaultType ||
+                  task.type == ScheduledTaskType.timeSensitive,
+            )
+            .length;
     _completedTasks = tasks.where((task) => task.isDone).length;
     _overdueTasks =
         tasks
@@ -132,6 +133,7 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
   ) {
     _impossibleTasks = [];
     _needsReschedulingTasks = [];
+    final tasksCubit = context.read<TaskManagerCubit>();
 
     for (var task in tasks) {
       if (task.isDone) continue;
@@ -142,8 +144,7 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
       final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
       if (timeLeft <= 0) continue; // Already overdue
 
-      final trueTimeLeft =
-          timeLeft - _calculateBusyTime(task.deadline, scheduledTasks);
+      final trueTimeLeft = timeLeft - tasksCubit.getBusyTime(task.deadline);
       final timeCoefficient =
           (trueTimeLeft - task.estimatedTime) *
           (trueTimeLeft + task.estimatedTime);
@@ -156,23 +157,6 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
         }
       }
     }
-  }
-
-  int _calculateBusyTime(int deadline, List<ScheduledTask> scheduledTasks) {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    int busyTime = 0;
-
-    for (var scheduledTask in scheduledTasks) {
-      if (scheduledTask.startTime.millisecondsSinceEpoch >= now &&
-          scheduledTask.endTime.millisecondsSinceEpoch <= deadline) {
-        busyTime +=
-            scheduledTask.endTime
-                .difference(scheduledTask.startTime)
-                .inMilliseconds;
-      }
-    }
-
-    return busyTime;
   }
 
   // Find tasks that are not scheduled yet
@@ -380,12 +364,13 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
       title: 'Task Status',
       child: Column(
         children: [
+          const SizedBox(height: 10),
           _ProgressBar(
             label: 'Completion Rate',
             value: double.parse(completionRate),
             color: CupertinoColors.activeGreen,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           _ProgressBar(
             label: 'Overdue Rate',
             value: double.parse(overdueRate),
@@ -481,17 +466,13 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
 
   void _showTaskOptions(Task task, bool isImpossible) {
     final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
-    final trueTimeLeft =
-        timeLeft -
-        _calculateBusyTime(
-          task.deadline,
-          context.read<TaskManagerCubit>().getScheduledTasks(),
-        );
+    final tasksCubit = context.read<TaskManagerCubit>();
+
+    final trueTimeLeft = timeLeft - tasksCubit.getBusyTime(task.deadline);
 
     final timeNeeded = Duration(
       milliseconds: task.estimatedTime - trueTimeLeft,
     );
-    final freeTime = Duration(milliseconds: trueTimeLeft);
 
     String message;
     if (isImpossible) {
@@ -503,8 +484,7 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
       message =
           'This task is possible to complete if you reschedule some other tasks. '
           'You need ${timeNeeded.inHours}h ${timeNeeded.inMinutes.remainder(60)}m '
-          'more time, and you have ${freeTime.inHours}h ${freeTime.inMinutes.remainder(60)}m '
-          'of free time before the deadline.';
+          'more time to comlete this task before the deadline. ';
     }
 
     showCupertinoModalPopup(
@@ -521,13 +501,6 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
                 },
                 child: const Text('Edit Task'),
               ),
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _extendDeadline(task, timeNeeded);
-                },
-                child: const Text('Extend Deadline'),
-              ),
               if (!isImpossible)
                 CupertinoActionSheetAction(
                   onPressed: () {
@@ -540,7 +513,6 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
                             (context) => TaskRescheduleScreen(
                               targetTask: task,
                               timeNeeded: timeNeeded,
-                              freeTime: freeTime,
                             ),
                       ),
                     ).then((_) {
@@ -576,56 +548,6 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
           }
         },
       ),
-    );
-  }
-
-  void _extendDeadline(Task task, Duration additionalTime) {
-    final tasksCubit = context.read<TaskManagerCubit>();
-
-    // Calculate new deadline
-    final newDeadline = task.deadline + additionalTime.inMilliseconds;
-
-    // Update the task with the new deadline
-    tasksCubit.editTask(
-      task: task,
-      title: task.title,
-      priority: task.priority,
-      estimatedTime: task.estimatedTime,
-      deadline: newDeadline,
-      category: task.category,
-      parentTask:
-          task.parentTaskId != null
-              ? tasksCubit.state.tasks.firstWhere(
-                (t) => t.id == task.parentTaskId,
-              )
-              : null,
-      notes: task.notes,
-      color: task.color,
-      frequency: task.frequency,
-      optimisticTime: task.optimisticTime,
-      realisticTime: task.realisticTime,
-      pessimisticTime: task.pessimisticTime,
-      firstNotification: task.firstNotification,
-      secondNotification: task.secondNotification,
-    );
-
-    // Show confirmation
-    showCupertinoDialog(
-      context: context,
-      builder:
-          (context) => CupertinoAlertDialog(
-            title: const Text('Deadline Extended'),
-            content: Text(
-              'The deadline for "${task.title}" has been extended by '
-              '${additionalTime.inHours}h ${additionalTime.inMinutes.remainder(60)}m.',
-            ),
-            actions: [
-              CupertinoDialogAction(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
     );
   }
 
@@ -797,7 +719,6 @@ class _ProgressBar extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 8),
         Container(
           height: 8,
           decoration: BoxDecoration(

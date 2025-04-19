@@ -181,10 +181,7 @@ class _HomeScreenState extends State<HomeScreen>
                 value: context.read<CalendarCubit>(),
                 child: PageView.builder(
                   controller: _pageController,
-                  physics:
-                      _isTransitioning
-                          ? const NeverScrollableScrollPhysics()
-                          : const ClampingScrollPhysics(),
+                  physics: const NeverScrollableScrollPhysics(),
                   onPageChanged: (index) {
                     if (!_isTransitioning) {
                       setState(() {

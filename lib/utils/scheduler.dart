@@ -131,7 +131,7 @@ class Scheduler {
         );
 
         for (var taskToDisplace in displacedTasks) {
-          _removeScheduledTask(taskToDisplace);
+          removeScheduledTask(taskToDisplace);
           lastScheduledTask = _createScheduledTask(
             task: task,
             urgency: urgency,
@@ -466,7 +466,28 @@ class Scheduler {
     return displaceable;
   }
 
-  void _removeScheduledTask(ScheduledTask scheduledTask) {
+  void updateScheduledTask(ScheduledTask newScheduledTask) { // only tasks with unchanged IDs
+    final task = tasksDB.get(newScheduledTask.parentTaskId);
+    if (task != null) {
+      task.scheduledTasks.removeWhere(
+        (st) => st.scheduledTaskId == newScheduledTask.scheduledTaskId,
+      );
+      task.scheduledTasks.add(newScheduledTask);
+      tasksDB.put(task.id, task);
+    }
+
+    final dateKey = _formatDateKey(newScheduledTask.startTime);
+    final day = daysDB.get(dateKey);
+    if (day != null) {
+      day.scheduledTasks.removeWhere(
+        (st) => st.scheduledTaskId == newScheduledTask.scheduledTaskId,
+      );
+      day.scheduledTasks.add(newScheduledTask);
+      daysDB.put(dateKey, day);
+    }
+  }
+
+  void removeScheduledTask(ScheduledTask scheduledTask) {
     final task = tasksDB.get(scheduledTask.parentTaskId);
     if (task != null) {
       task.scheduledTasks.removeWhere(
@@ -519,31 +540,6 @@ class Scheduler {
 
   Day _getOrCreateDay(String dateKey) {
     return daysDB.get(dateKey) ?? _createDay(dateKey);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   }
 
   Day _createDay(String dateKey) {

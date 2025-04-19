@@ -888,10 +888,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     CupertinoIcons.paintbrush,
                     color: CupertinoColors.systemBlue,
                   ),
-                  trailing: const Icon(
-                    CupertinoIcons.chevron_right,
-                    color: CupertinoColors.systemGrey,
-                  ),
                   onTap: () {
                     Navigator.of(context).push(
                       CupertinoPageRoute(
@@ -914,10 +910,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: const Icon(
                     CupertinoIcons.calendar,
                     color: CupertinoColors.systemBlue,
-                  ),
-                  trailing: const Icon(
-                    CupertinoIcons.chevron_right,
-                    color: CupertinoColors.systemGrey,
                   ),
                   onTap: () {
                     Navigator.of(context).push(
@@ -1016,10 +1008,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: const Icon(
                     CupertinoIcons.book,
                     color: CupertinoColors.systemIndigo,
-                  ),
-                  trailing: const Icon(
-                    CupertinoIcons.chevron_right,
-                    color: CupertinoColors.systemGrey,
                   ),
                   onTap: () {
                     Navigator.of(context).push(

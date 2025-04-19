@@ -25,7 +25,7 @@ class TaskUrgencyCalculator {
       );
       final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
       final trueTimeLeft =
-          timeLeft - _busyTime(task.deadline, justScheduledTasks);
+          timeLeft - busyTime(task.deadline, justScheduledTasks);
       final timeCoefficient =
           (trueTimeLeft - task.estimatedTime) *
           (trueTimeLeft + task.estimatedTime);
@@ -58,7 +58,7 @@ class TaskUrgencyCalculator {
     }
   }
 
-  int _busyTime(int deadline, List<ScheduledTask>? justScheduledTasks) {
+  int busyTime(int deadline, List<ScheduledTask>? justScheduledTasks) {
     int busyTime = 0;
 
     final now = DateTime.now().millisecondsSinceEpoch;
