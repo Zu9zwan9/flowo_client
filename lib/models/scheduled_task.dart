@@ -43,6 +43,11 @@ class ScheduledTask extends HiveObject {
     }
   }
 
+  @override
+  String toString() {
+    return 'ScheduledTask{scheduledTaskId: $scheduledTaskId, parentTaskId: $parentTaskId, startTime: $startTime, endTime: $endTime, urgency: $urgency, type: $type, travelingTime: $travelingTime, breakTime: $breakTime}';
+  }
+
   ScheduledTask({
     required this.scheduledTaskId,
     required this.parentTaskId,

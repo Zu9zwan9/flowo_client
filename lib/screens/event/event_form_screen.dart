@@ -5,6 +5,7 @@ import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -690,6 +691,8 @@ class EventFormScreenState extends State<EventFormScreen>
 
     // If there are overlapping tasks, show the resolution dialog
     if (overlappingTasks.isNotEmpty) {
+      logDebug(overlappingTasks.first.toString());
+
       final shouldOverride = await _showOverlapResolutionDialog(
         context,
         overlappingTasks,
@@ -759,7 +762,14 @@ class EventFormScreenState extends State<EventFormScreen>
 
     // No overlaps, close the form screen after successful save
     if (mounted) {
-      Navigator.of(context).pop();
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacement(
+          context,
+          CupertinoPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
     }
   }
 }
