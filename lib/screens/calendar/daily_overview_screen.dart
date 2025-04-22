@@ -153,21 +153,39 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   }
 
   Widget _buildHandle() {
-    return Container(
-      height: 32,
-      alignment: Alignment.center,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 200),
-        child: Icon(
-          _isCalendarVisible
-              ? CupertinoIcons.chevron_up
-              : CupertinoIcons.chevron_down,
-          key: ValueKey(_isCalendarVisible),
-          color: CupertinoTheme.of(
-            context,
-          ).textTheme.textStyle.color?.withOpacity(0.6),
-          size: 20,
-          semanticLabel: _isCalendarVisible ? 'Hide calendar' : 'Show calendar',
+    return GestureDetector(
+      onTap: _toggleCalendarVisibility,
+      child: Container(
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: CupertinoColors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: Icon(
+            _isCalendarVisible
+                ? CupertinoIcons.chevron_up
+                : CupertinoIcons.chevron_down,
+            key: ValueKey(_isCalendarVisible),
+            color: CupertinoTheme.of(
+              context,
+            ).textTheme.textStyle.color?.withOpacity(0.6),
+            size: 20,
+            semanticLabel:
+                _isCalendarVisible ? 'Hide calendar' : 'Show calendar',
+          ),
         ),
       ),
     );
@@ -233,7 +251,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                                 headerStyle: CalendarHeaderStyle(
                                   textStyle: TextStyle(
                                     fontSize: 20,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.bold,
                                     color: textTheme.textTheme.textStyle.color,
                                   ),
                                 ),
@@ -273,13 +291,13 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                                 ),
                               ),
                             ),
-                            _buildHandle(),
                           ],
                         ),
                       ),
                     ),
                   )
-                  : SliverToBoxAdapter(child: _buildHandle()),
+                  : SliverToBoxAdapter(child: const SizedBox()),
+              SliverToBoxAdapter(child: _buildHandle()),
               SliverPadding(padding: const EdgeInsets.only(bottom: 8)),
               SliverToBoxAdapter(child: _buildHeader()),
               SliverToBoxAdapter(
@@ -340,18 +358,23 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: _navigateToPreviousDay,
-                child: Icon(
-                  CupertinoIcons.chevron_left,
-                  color: textTheme.primaryColor,
-                  semanticLabel: 'Previous day',
-                ),
-              ),
+              // Conditionally hide previous day button when calendar is visible
+              if (!_isCalendarVisible)
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: _navigateToPreviousDay,
+                  child: Icon(
+                    CupertinoIcons.chevron_left,
+                    color: textTheme.primaryColor,
+                    semanticLabel: 'Previous day',
+                  ),
+                )
+              else
+                const Spacer(flex: 1), // Maintain layout alignment
               // Conditionally hide formattedDate when calendar is visible
               if (!_isCalendarVisible)
                 Expanded(
+                  flex: 3,
                   child: Text(
                     formattedDate,
                     style: TextStyle(
@@ -363,16 +386,20 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                   ),
                 )
               else
-                const Spacer(), // Maintain layout when date is hidden
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: _navigateToNextDay,
-                child: Icon(
-                  CupertinoIcons.chevron_right,
-                  color: textTheme.primaryColor,
-                  semanticLabel: 'Next day',
-                ),
-              ),
+                const Spacer(flex: 3), // Maintain layout alignment
+              // Conditionally hide next day button when calendar is visible
+              if (!_isCalendarVisible)
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: _navigateToNextDay,
+                  child: Icon(
+                    CupertinoIcons.chevron_right,
+                    color: textTheme.primaryColor,
+                    semanticLabel: 'Next day',
+                  ),
+                )
+              else
+                const Spacer(flex: 1), // Maintain layout alignment
             ],
           ),
           const SizedBox(height: 16),
