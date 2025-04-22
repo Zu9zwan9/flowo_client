@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/screens/add_item_screen.dart';
 import 'package:flowo_client/screens/analytics/analytics_screen.dart';
+import 'package:flowo_client/screens/cupertino_refresh_page.dart';
 import 'package:flowo_client/screens/calendar/daily_overview_screen.dart';
 import 'package:flowo_client/screens/profile/profile_screen.dart';
 import 'package:flowo_client/screens/settings/settings_screen.dart';
@@ -114,14 +115,13 @@ class _HomeScreenState extends State<HomeScreen>
       label: 'Settings',
       accentColor: CupertinoColors.systemGrey,
     ),
+    (
+      page: AnimatedCalendarPage(),
+      icon: CupertinoIcons.news,
+      label: 'Articles',
+      accentColor: CupertinoColors.systemTeal,
+    ),
   ];
-
-  // (
-  //   page: NotificationTestScreen(),
-  //   icon: CupertinoIcons.bell,
-  //   label: 'Test Notifications',
-  //   accentColor: CupertinoColors.systemTeal,
-  // ),
 
   void _navigateToPage(int index) {
     if (_selectedIndex == index) {
@@ -171,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen>
         child: Stack(
           children: [
             Positioned.fill(
-              top: 0, // Adjust for navigation bar height
+              top: 0,
               child: BlocProvider.value(
                 value: context.read<CalendarCubit>(),
                 child: PageView.builder(
