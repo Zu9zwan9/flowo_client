@@ -4,6 +4,7 @@ import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
@@ -14,6 +15,7 @@ import '../../models/user_profile.dart';
 import '../../models/user_settings.dart';
 import '../../utils/formatter/date_time_formatter.dart';
 import '../widgets/calendar_widgets.dart';
+import '../widgets/refresh_indicators.dart';
 import '../widgets/task_timer_controls.dart';
 
 class DailyOverviewScreen extends StatefulWidget {
@@ -33,6 +35,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   late AnimationController _calendarAnimationController;
   late Animation<Offset> _slideAnimation;
   late CalendarController _calendarController;
+  late ScrollController _scrollController;
   final double _calendarHeight = 350.0;
 
   @override
@@ -59,6 +62,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     // Initialize calendar controller
     _calendarController = CalendarController();
 
+    // Initialize scroll controller with listener to hide calendar when scrolling down
+    _scrollController = ScrollController();
+    _scrollController.addListener(_handleScroll);
+
     // Set initial date in CalendarCubit
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -73,10 +80,22 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     _loadUserProfile();
   }
 
+  void _handleScroll() {
+    // Hide calendar when scrolling down (if visible)
+    if (_isCalendarVisible && _scrollController.offset > 20) {
+      setState(() {
+        _isCalendarVisible = false;
+        _calendarAnimationController.reverse();
+      });
+    }
+  }
+
   @override
   void dispose() {
     _calendarAnimationController.dispose();
     _calendarController.dispose();
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -135,57 +154,88 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   void _toggleCalendarVisibility() {
     setState(() {
       _isCalendarVisible = !_isCalendarVisible;
-      _isCalendarVisible
-          ? _calendarAnimationController.forward()
-          : _calendarAnimationController.reverse();
+      if (_isCalendarVisible) {
+        _calendarAnimationController.forward();
+      } else {
+        _calendarAnimationController.reverse();
+      }
     });
   }
 
-  void _handleSwipe(DragUpdateDetails details) {
-    final delta = details.primaryDelta ?? 0;
-    if (delta.abs() > 5) {
-      if (delta > 0 && !_isCalendarVisible) {
-        _toggleCalendarVisibility();
-      } else if (delta < 0 && _isCalendarVisible) {
-        _toggleCalendarVisibility();
-      }
+  void _handlePull(double offset) {
+    // Show calendar when pulling down far enough
+    if (offset > 120 && !_isCalendarVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _isCalendarVisible = true;
+          _calendarAnimationController.forward();
+        });
+      });
+    }
+  }
+
+  Future<void> _onRefresh() async {
+    // Simulate a refresh operation
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    // Refresh tasks data if needed
+    if (mounted) {
+      context.read<CalendarCubit>().selectDate(_selectedDate);
     }
   }
 
   Widget _buildHandle() {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: _toggleCalendarVisibility,
+      onVerticalDragUpdate: (details) {
+        // Allow swiping down on the handle to show calendar
+        if (details.primaryDelta != null &&
+            details.primaryDelta! > 0 &&
+            !_isCalendarVisible) {
+          _toggleCalendarVisibility();
+        }
+        // Allow swiping up on the handle to hide calendar
+        else if (details.primaryDelta != null &&
+            details.primaryDelta! < 0 &&
+            _isCalendarVisible) {
+          _toggleCalendarVisibility();
+        }
+      },
       child: Container(
-        height: 32,
+        height: 36,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-          borderRadius: BorderRadius.only(
+          borderRadius: const BorderRadius.only(
             bottomLeft: Radius.circular(12),
             bottomRight: Radius.circular(12),
           ),
           boxShadow: [
             BoxShadow(
-              color: CupertinoColors.black.withOpacity(0.05),
+              color: CupertinoColors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
           ],
         ),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 200),
-          child: Icon(
-            _isCalendarVisible
-                ? CupertinoIcons.chevron_up
-                : CupertinoIcons.chevron_down,
-            key: ValueKey(_isCalendarVisible),
-            color: CupertinoTheme.of(
-              context,
-            ).textTheme.textStyle.color?.withOpacity(0.6),
-            size: 20,
-            semanticLabel:
-                _isCalendarVisible ? 'Hide calendar' : 'Show calendar',
-          ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Small handle indicator
+            Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 6),
+              decoration: BoxDecoration(
+                color: CupertinoTheme.of(
+                  context,
+                ).textTheme.textStyle.color?.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -196,9 +246,76 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     final textTheme = CupertinoTheme.of(context);
     return CupertinoPageScaffold(
       child: SafeArea(
-        child: GestureDetector(
-          onVerticalDragUpdate: _handleSwipe,
+        child: EasyRefresh(
+          header: BuilderHeader(
+            triggerOffset: 150.0,
+            clamping: false,
+            position: IndicatorPosition.above,
+            processedDuration: const Duration(milliseconds: 300),
+            springRebound: true,
+            hapticFeedback: true,
+            builder: (context, state) {
+              // Handle pull to show calendar
+              _handlePull(state.offset);
+
+              final theme = CupertinoTheme.of(context);
+              final fgColor = CupertinoColors.activeBlue;
+
+              // Determine the appropriate icon and text based on state
+              Widget icon;
+              String text;
+
+              if (state.mode == IndicatorMode.drag ||
+                  state.mode == IndicatorMode.armed) {
+                // Calculate rotation based on offset
+                final progress = state.offset / state.indicator.triggerOffset;
+                icon = Transform.rotate(
+                  angle: progress * 2 * 3.14159, // Full rotation
+                  child: Icon(
+                    CupertinoIcons.calendar,
+                    color: fgColor,
+                    size: 24 + (progress * 4), // Grow slightly with progress
+                  ),
+                );
+                text = 'Pull to show calendar';
+                if (state.mode == IndicatorMode.armed) {
+                  text = 'Release to show calendar';
+                }
+              } else if (state.mode == IndicatorMode.processing ||
+                  state.mode == IndicatorMode.ready) {
+                icon = CupertinoActivityIndicator(color: fgColor, radius: 12);
+                text = 'Loading...';
+              } else if (state.mode == IndicatorMode.processed) {
+                icon = Icon(CupertinoIcons.calendar, color: fgColor, size: 24);
+                text = 'Calendar shown';
+              } else {
+                icon = const SizedBox(width: 24, height: 24);
+                text = '';
+              }
+
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    icon,
+                    const SizedBox(width: 12),
+                    Text(
+                      text,
+                      style: TextStyle(
+                        color: theme.textTheme.textStyle.color,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          onRefresh: _onRefresh,
           child: CustomScrollView(
+            controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             slivers: [
               _isCalendarVisible
