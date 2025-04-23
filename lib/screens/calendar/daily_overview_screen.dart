@@ -1,3 +1,4 @@
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:hive/hive.dart';
@@ -82,10 +83,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
 
   void _handleScroll() {
     // Hide calendar when scrolling down (if visible)
-    if (_isCalendarVisible && _scrollController.offset > 20) {
+    if (_isCalendarVisible && _scrollController.offset > 350) {
       setState(() {
         _isCalendarVisible = false;
-        _calendarAnimationController.reverse();
+        _scrollController.jumpTo(0.0);
       });
     }
   }
@@ -164,6 +165,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
 
   void _handlePull(double offset) {
     // Show calendar when pulling down far enough
+    logWarning('Handle pull');
     if (offset > 120 && !_isCalendarVisible) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {
@@ -248,63 +250,35 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
       child: SafeArea(
         child: EasyRefresh(
           header: BuilderHeader(
-            triggerOffset: 150.0,
+            triggerOffset: 80.0,
             clamping: false,
             position: IndicatorPosition.above,
-            processedDuration: const Duration(milliseconds: 300),
-            springRebound: true,
-            hapticFeedback: true,
             builder: (context, state) {
-              // Handle pull to show calendar
+              print('Refresh offset: ${state.offset}');
               _handlePull(state.offset);
-
-              final theme = CupertinoTheme.of(context);
-              final fgColor = CupertinoColors.activeBlue;
-
-              // Determine the appropriate icon and text based on state
-              Widget icon;
-              String text;
-
-              if (state.mode == IndicatorMode.drag ||
-                  state.mode == IndicatorMode.armed) {
-                // Calculate rotation based on offset
-                final progress = state.offset / state.indicator.triggerOffset;
-                icon = Transform.rotate(
-                  angle: progress * 2 * 3.14159, // Full rotation
-                  child: Icon(
-                    CupertinoIcons.calendar,
-                    color: fgColor,
-                    size: 24 + (progress * 4), // Grow slightly with progress
-                  ),
-                );
-                text = 'Pull to show calendar';
-                if (state.mode == IndicatorMode.armed) {
-                  text = 'Release to show calendar';
-                }
-              } else if (state.mode == IndicatorMode.processing ||
-                  state.mode == IndicatorMode.ready) {
-                icon = CupertinoActivityIndicator(color: fgColor, radius: 12);
-                text = 'Loading...';
-              } else if (state.mode == IndicatorMode.processed) {
-                icon = Icon(CupertinoIcons.calendar, color: fgColor, size: 24);
-                text = 'Calendar shown';
-              } else {
-                icon = const SizedBox(width: 24, height: 24);
-                text = '';
-              }
-
               return Container(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
+                decoration: BoxDecoration(
+                  color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    icon,
+                    Icon(
+                      CupertinoIcons.calendar,
+                      color: CupertinoColors.activeBlue,
+                      size: 24,
+                    ),
                     const SizedBox(width: 12),
                     Text(
-                      text,
+                      state.offset > 120
+                          ? 'Release to show calendar'
+                          : 'Pull to show calendar',
                       style: TextStyle(
-                        color: theme.textTheme.textStyle.color,
+                        color:
+                            CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle.color,
                         fontSize: 14,
                       ),
                     ),
@@ -476,7 +450,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               // Conditionally hide previous day button when calendar is visible
-              if (!_isCalendarVisible)
+              if (true) ...[
                 CupertinoButton(
                   padding: EdgeInsets.zero,
                   onPressed: _navigateToPreviousDay,
@@ -485,11 +459,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                     color: textTheme.primaryColor,
                     semanticLabel: 'Previous day',
                   ),
-                )
-              else
-                const Spacer(flex: 1), // Maintain layout alignment
-              // Conditionally hide formattedDate when calendar is visible
-              if (!_isCalendarVisible)
+                ),
                 Expanded(
                   flex: 3,
                   child: Text(
@@ -501,11 +471,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                     textAlign: TextAlign.center,
                     semanticsLabel: formattedDate,
                   ),
-                )
-              else
-                const Spacer(flex: 3), // Maintain layout alignment
-              // Conditionally hide next day button when calendar is visible
-              if (!_isCalendarVisible)
+                ),
                 CupertinoButton(
                   padding: EdgeInsets.zero,
                   onPressed: _navigateToNextDay,
@@ -514,9 +480,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                     color: textTheme.primaryColor,
                     semanticLabel: 'Next day',
                   ),
-                )
-              else
+                ),
+              ] else ...[
                 const Spacer(flex: 1), // Maintain layout alignment
+              ],
             ],
           ),
           const SizedBox(height: 16),

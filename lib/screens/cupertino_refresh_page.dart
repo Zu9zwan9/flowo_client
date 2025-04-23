@@ -33,7 +33,6 @@ class _AnimatedCalendarPageState extends State<AnimatedCalendarPage> {
         });
       });
     }
-
   }
 
   void _toggleCalendarVisibility() {
