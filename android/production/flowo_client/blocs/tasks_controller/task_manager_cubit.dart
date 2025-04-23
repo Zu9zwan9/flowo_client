@@ -215,6 +215,11 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
+  void deleteScheduledTask(ScheduledTask scheduledTask) {
+    taskManager.scheduler.removeScheduledTask(scheduledTask);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+  }
+
   List<ScheduledTask> editEvent({
     required Task task,
     required String title,
@@ -312,12 +317,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-  void removeScheduledTasks() {
-    taskManager.removeScheduledTasks();
-    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
-  }
-
   void updateUserSettings(UserSettings userSettings) {
+    _deleteAllDays();
     taskManager.updateUserSettings(userSettings);
     try {
       final settingsBox = Hive.box<UserSettings>('user_settings');
@@ -326,8 +327,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     } catch (e) {
       logError('Failed to save user settings: $e');
     }
-    _deleteAllDays();
-    // removeScheduledTasks();
     scheduleTasks();
     emit(
       state.copyWith(
@@ -337,6 +336,11 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     );
   }
 
+  void updateScheduledTask(ScheduledTask scheduledTask) {
+    taskManager.scheduler.updateScheduledTask(scheduledTask);
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+  }
+
   void _deleteAllDays() {
     final existingDayKeys = taskManager.daysDB.keys.cast<String>().toList();
     for (var dateKey in existingDayKeys) {
@@ -344,6 +348,10 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       logDebug('Deleted day: $dateKey');
     }
     logInfo('All days deleted');
+  }
+
+  int getBusyTime(int deadline) {
+    return taskManager.taskUrgencyCalculator.busyTime(deadline, null);
   }
 
   /// Breaks down a task into subtasks using AI and schedules them

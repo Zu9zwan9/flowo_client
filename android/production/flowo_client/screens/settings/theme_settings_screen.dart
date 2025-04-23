@@ -1418,7 +1418,8 @@ class _ThemeSettingsScreenState extends State<ThemeSettingsScreen> {
                                       value:
                                           themeNotifier.brightness ==
                                           Brightness.dark,
-                                      activeTrackColor: themeNotifier.primaryColor,
+                                      activeTrackColor:
+                                          themeNotifier.primaryColor,
                                       onChanged: (_) {},
                                     ),
                                   ],

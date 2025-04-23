@@ -25,7 +25,7 @@ class TaskUrgencyCalculator {
       );
       final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
       final trueTimeLeft =
-          timeLeft - _busyTime(task.deadline, justScheduledTasks);
+          timeLeft - busyTime(task.deadline, justScheduledTasks);
       final timeCoefficient =
           (trueTimeLeft - task.estimatedTime) *
           (trueTimeLeft + task.estimatedTime);
@@ -48,66 +48,17 @@ class TaskUrgencyCalculator {
       logWarning(
         'Task ${task.title} is impossible to complete in time, estimated time: ${task.estimatedTime}, time left until deadline: $timeLeft',
       );
-
-      // Add task to the list of impossible tasks
-      _addImpossibleTask(task, timeLeft);
+      // TODO: Notify user that task is impossible to complete in time and deadline should be pushed back
     } else {
-      final timeNeeded = Duration(
-        milliseconds: task.estimatedTime - trueTimeLeft,
-      );
-      final freeTime = Duration(milliseconds: trueTimeLeft);
-
       logWarning(
-        'Task ${task.title} is possible to complete in time if rescheduled some tasks, time needed to complete: ${timeNeeded.inHours}h ${timeNeeded.inMinutes.remainder(60)}m, free time left: ${freeTime.inHours}h ${freeTime.inMinutes.remainder(60)}m',
-      );
-
-      // Add task to the list of tasks that need rescheduling
-      _addTaskNeedingRescheduling(task, trueTimeLeft, timeNeeded, freeTime);
+        'Task ${task.title} is possible to complete in time if rescheduled some tasks, time needed to complete: ${Duration(milliseconds: task.estimatedTime - trueTimeLeft).inHours}h ${Duration(milliseconds: task.estimatedTime - trueTimeLeft).inMinutes.remainder(60)}m, free time left: ${Duration(milliseconds: trueTimeLeft).inHours}h ${Duration(milliseconds: trueTimeLeft).inMinutes.remainder(60)}m',
+      ); // TODO: Передавати кількість часу, скільки не вистачає до дедлайну і вказувати скільки можна зекономити завдяки зменшенню вільного часу
+      // TODO: Give a choice to user with a list of tasks that can be rescheduled(move/delete/edit (CRUD))
+      // TODO: Implement a way to notify user that task is possible to complete in time if rescheduled some tasks. And return a list of tasks that can be removed
     }
   }
 
-  // List of tasks that are impossible to complete in time
-  final List<Task> _impossibleTasks = [];
-
-  // List of tasks that need rescheduling
-  final List<Task> _tasksNeedingRescheduling = [];
-
-  // Get the list of tasks that are impossible to complete in time
-  List<Task> getImpossibleTasks() {
-    return List.unmodifiable(_impossibleTasks);
-  }
-
-  // Get the list of tasks that need rescheduling
-  List<Task> getTasksNeedingRescheduling() {
-    return List.unmodifiable(_tasksNeedingRescheduling);
-  }
-
-  // Clear the lists of tasks
-  void clearTaskLists() {
-    _impossibleTasks.clear();
-    _tasksNeedingRescheduling.clear();
-  }
-
-  // Add a task to the list of impossible tasks
-  void _addImpossibleTask(Task task, int timeLeft) {
-    if (!_impossibleTasks.contains(task)) {
-      _impossibleTasks.add(task);
-    }
-  }
-
-  // Add a task to the list of tasks that need rescheduling
-  void _addTaskNeedingRescheduling(
-    Task task,
-    int trueTimeLeft,
-    Duration timeNeeded,
-    Duration freeTime,
-  ) {
-    if (!_tasksNeedingRescheduling.contains(task)) {
-      _tasksNeedingRescheduling.add(task);
-    }
-  }
-
-  int _busyTime(int deadline, List<ScheduledTask>? justScheduledTasks) {
+  int busyTime(int deadline, List<ScheduledTask>? justScheduledTasks) {
     int busyTime = 0;
 
     final now = DateTime.now().millisecondsSinceEpoch;

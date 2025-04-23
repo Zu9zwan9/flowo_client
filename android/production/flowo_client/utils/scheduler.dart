@@ -20,16 +20,17 @@ class Scheduler {
   UserSettings userSettings;
   late final Task freeTimeManager;
   final NotiService notiService = NotiService();
-  final Map<String, Day> _dayCache = {};
 
   Scheduler(this.daysDB, this.tasksDB, this.userSettings) {
     _initializeFreeTimeManager();
   }
 
   void updateUserSettings(UserSettings userSettings) {
+    logInfo('Days in database: ${daysDB.keys.length}');
     logInfo('Updating user settings in Scheduler');
     this.userSettings = userSettings;
     createDaysUntil(DateTime(DateTime.now().year, DateTime.now().month + 3));
+    logInfo('Days in database: ${daysDB.keys.length}');
   }
 
   void _initializeFreeTimeManager() {
@@ -66,8 +67,6 @@ class Scheduler {
     double? urgency,
     List<String>? availableDates,
   }) {
-    _dayCache.clear();
-
     if (urgency != null && urgency > 0) {
       _replaceTasksWithLowerPriority(task);
     }
@@ -132,7 +131,7 @@ class Scheduler {
         );
 
         for (var taskToDisplace in displacedTasks) {
-          _removeScheduledTask(taskToDisplace);
+          removeScheduledTask(taskToDisplace);
           lastScheduledTask = _createScheduledTask(
             task: task,
             urgency: urgency,
@@ -186,7 +185,6 @@ class Scheduler {
     required DateTime end,
     bool overrideOverlaps = false,
   }) {
-    _dayCache.clear();
     final dateKey = _formatDateKey(start);
 
     if (!overrideOverlaps) {
@@ -222,8 +220,6 @@ class Scheduler {
     TimeOfDay start,
     TimeOfDay end,
   ) {
-    _dayCache.clear();
-
     for (DateTime date in dates) {
       final dateKey = _formatDateKey(date);
       final day = _getOrCreateDay(dateKey);
@@ -470,7 +466,28 @@ class Scheduler {
     return displaceable;
   }
 
-  void _removeScheduledTask(ScheduledTask scheduledTask) {
+  void updateScheduledTask(ScheduledTask newScheduledTask) { // only tasks with unchanged IDs
+    final task = tasksDB.get(newScheduledTask.parentTaskId);
+    if (task != null) {
+      task.scheduledTasks.removeWhere(
+        (st) => st.scheduledTaskId == newScheduledTask.scheduledTaskId,
+      );
+      task.scheduledTasks.add(newScheduledTask);
+      tasksDB.put(task.id, task);
+    }
+
+    final dateKey = _formatDateKey(newScheduledTask.startTime);
+    final day = daysDB.get(dateKey);
+    if (day != null) {
+      day.scheduledTasks.removeWhere(
+        (st) => st.scheduledTaskId == newScheduledTask.scheduledTaskId,
+      );
+      day.scheduledTasks.add(newScheduledTask);
+      daysDB.put(dateKey, day);
+    }
+  }
+
+  void removeScheduledTask(ScheduledTask scheduledTask) {
     final task = tasksDB.get(scheduledTask.parentTaskId);
     if (task != null) {
       task.scheduledTasks.removeWhere(
@@ -480,7 +497,7 @@ class Scheduler {
     }
 
     final dateKey = _formatDateKey(scheduledTask.startTime);
-    final day = _dayCache[dateKey] ?? daysDB.get(dateKey);
+    final day = daysDB.get(dateKey);
     if (day != null) {
       day.scheduledTasks.removeWhere(
         (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
@@ -522,7 +539,7 @@ class Scheduler {
         ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
   Day _getOrCreateDay(String dateKey) {
-    return _dayCache[dateKey] ??= daysDB.get(dateKey) ?? _createDay(dateKey);
+    return daysDB.get(dateKey) ?? _createDay(dateKey);
   }
 
   Day _createDay(String dateKey) {

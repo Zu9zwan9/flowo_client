@@ -5,6 +5,7 @@ import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/repeat_rule_instance.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/task_session.dart';
+import 'package:flowo_client/screens/launch/launch_screen.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/ambient/ambient_service.dart';
 import 'package:flowo_client/services/analytics/analytics_service.dart';
@@ -130,6 +131,21 @@ void main() async {
   var isFirstLaunch = profiles.isEmpty;
   appLogger.info('Is first app launch: $isFirstLaunch', 'App');
 
+  DaySchedule createDaySchedule({
+    required String day,
+    required TimeFrame sleepTime,
+    required List<TimeFrame> mealBreaks,
+    required List<TimeFrame> freeTimes,
+  }) {
+    return DaySchedule(
+      day: day,
+      isActive: true,
+      sleepTime: sleepTime,
+      mealBreaks: mealBreaks,
+      freeTimes: freeTimes,
+    );
+  }
+
   // Create and save default UserSettings if it's the first launch
   var selectedProfile =
       profiles.values.isNotEmpty
@@ -146,26 +162,7 @@ void main() async {
                 endTime: const TimeOfDay(hour: 7, minute: 0),
               ),
             ],
-            mealBreaks: [
-              TimeFrame(
-                startTime: const TimeOfDay(hour: 8, minute: 0),
-                endTime: const TimeOfDay(hour: 8, minute: 30),
-              ),
-              TimeFrame(
-                startTime: const TimeOfDay(hour: 12, minute: 0),
-                endTime: const TimeOfDay(hour: 13, minute: 0),
-              ),
-              TimeFrame(
-                startTime: const TimeOfDay(hour: 18, minute: 0),
-                endTime: const TimeOfDay(hour: 19, minute: 0),
-              ),
-            ],
-            freeTime: [
-              TimeFrame(
-                startTime: const TimeOfDay(hour: 19, minute: 0),
-                endTime: const TimeOfDay(hour: 22, minute: 0),
-              ),
-            ],
+
             activeDays: {
               'Monday': true,
               'Tuesday': true,
@@ -176,62 +173,48 @@ void main() async {
               'Sunday': true,
             },
             daySchedules: {
-              'Monday': DaySchedule(
-                day: 'Monday',
-                isActive: true,
-                sleepTime: TimeFrame(
-                  startTime: const TimeOfDay(hour: 22, minute: 0),
-                  endTime: const TimeOfDay(hour: 7, minute: 0),
+              for (var day in [
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday',
+                'Sunday',
+              ])
+                day: createDaySchedule(
+                  day: day,
+                  sleepTime:
+                      day == 'Saturday' || day == 'Sunday'
+                          ? TimeFrame(
+                            startTime: const TimeOfDay(hour: 23, minute: 0),
+                            endTime: const TimeOfDay(hour: 9, minute: 0),
+                          )
+                          : TimeFrame(
+                            startTime: const TimeOfDay(hour: 22, minute: 0),
+                            endTime: const TimeOfDay(hour: 7, minute: 0),
+                          ),
+                  mealBreaks: [
+                    TimeFrame(
+                      startTime: const TimeOfDay(hour: 8, minute: 0),
+                      endTime: const TimeOfDay(hour: 8, minute: 30),
+                    ),
+                    TimeFrame(
+                      startTime: const TimeOfDay(hour: 12, minute: 0),
+                      endTime: const TimeOfDay(hour: 13, minute: 0),
+                    ),
+                    TimeFrame(
+                      startTime: const TimeOfDay(hour: 18, minute: 0),
+                      endTime: const TimeOfDay(hour: 19, minute: 0),
+                    ),
+                  ],
+                  freeTimes: [
+                    TimeFrame(
+                      startTime: const TimeOfDay(hour: 19, minute: 0),
+                      endTime: const TimeOfDay(hour: 22, minute: 0),
+                    ),
+                  ],
                 ),
-              ),
-              'Tuesday': DaySchedule(
-                day: 'Tuesday',
-                isActive: true,
-                sleepTime: TimeFrame(
-                  startTime: const TimeOfDay(hour: 22, minute: 0),
-                  endTime: const TimeOfDay(hour: 7, minute: 0),
-                ),
-              ),
-              'Wednesday': DaySchedule(
-                day: 'Wednesday',
-                isActive: true,
-                sleepTime: TimeFrame(
-                  startTime: const TimeOfDay(hour: 22, minute: 0),
-                  endTime: const TimeOfDay(hour: 7, minute: 0),
-                ),
-              ),
-              'Thursday': DaySchedule(
-                day: 'Thursday',
-                isActive: true,
-                sleepTime: TimeFrame(
-                  startTime: const TimeOfDay(hour: 22, minute: 0),
-                  endTime: const TimeOfDay(hour: 7, minute: 0),
-                ),
-              ),
-              'Friday': DaySchedule(
-                day: 'Friday',
-                isActive: true,
-                sleepTime: TimeFrame(
-                  startTime: const TimeOfDay(hour: 22, minute: 0),
-                  endTime: const TimeOfDay(hour: 7, minute: 0),
-                ),
-              ),
-              'Saturday': DaySchedule(
-                day: 'Saturday',
-                isActive: true,
-                sleepTime: TimeFrame(
-                  startTime: const TimeOfDay(hour: 23, minute: 0),
-                  endTime: const TimeOfDay(hour: 8, minute: 0),
-                ),
-              ),
-              'Sunday': DaySchedule(
-                day: 'Sunday',
-                isActive: true,
-                sleepTime: TimeFrame(
-                  startTime: const TimeOfDay(hour: 23, minute: 0),
-                  endTime: const TimeOfDay(hour: 8, minute: 0),
-                ),
-              ),
             },
             defaultNotificationType: NotificationType.push,
           );

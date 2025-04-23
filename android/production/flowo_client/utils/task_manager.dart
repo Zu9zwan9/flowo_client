@@ -45,6 +45,10 @@ class TaskManager {
     logInfo('Updating TaskManager user settings');
     this.userSettings = userSettings;
     scheduler.updateUserSettings(userSettings);
+    scheduler.createDaysUntil(
+      DateTime(DateTime.now().year, DateTime.now().month + 3),
+    );
+    logDebug('User settings updated');
   }
 
   Task createTask(

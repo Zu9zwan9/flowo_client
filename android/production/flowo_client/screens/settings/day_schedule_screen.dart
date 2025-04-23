@@ -25,6 +25,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
   void initState() {
     super.initState();
     _loadSettings();
+    _loadSettings();
   }
 
   void _loadSettings() {
@@ -201,7 +202,13 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
       iconColor: CupertinoColors.systemOrange,
       onAdd:
           (startTime, endTime) => setState(() {
-            _daySchedules[_selectedDay]!.mealBreaks.add(
+            final daySchedule = _daySchedules[_selectedDay]!;
+            // Create a mutable copy of the list if it's a const list
+            if (daySchedule.mealBreaks.isEmpty &&
+                identical(daySchedule.mealBreaks, const [])) {
+              daySchedule.mealBreaks = [];
+            }
+            daySchedule.mealBreaks.add(
               TimeFrame(startTime: startTime, endTime: endTime),
             );
           }),
@@ -214,7 +221,13 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
       iconColor: CupertinoColors.systemGreen,
       onAdd:
           (startTime, endTime) => setState(() {
-            _daySchedules[_selectedDay]!.freeTimes.add(
+            final daySchedule = _daySchedules[_selectedDay]!;
+            // Create a mutable copy of the list if it's a const list
+            if (daySchedule.freeTimes.isEmpty &&
+                identical(daySchedule.freeTimes, const [])) {
+              daySchedule.freeTimes = [];
+            }
+            daySchedule.freeTimes.add(
               TimeFrame(startTime: startTime, endTime: endTime),
             );
           }),

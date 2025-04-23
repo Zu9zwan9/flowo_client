@@ -701,7 +701,7 @@ class CalendarScreenState extends State<CalendarScreen> {
                           startTime: scheduledTask.startTime,
                           endTime: scheduledTask.endTime,
                           categoryColor: _getCategoryColor(task.category.name),
-                          onTap: () => _showEventDetails(task, scheduledTask),
+                          //onTap: () => _showEventDetails(task, scheduledTask),
                         );
                       },
                     ),

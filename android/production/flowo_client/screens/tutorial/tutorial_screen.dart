@@ -276,9 +276,4 @@ class _TutorialScreenState extends State<TutorialScreen> {
       ),
     );
   }
-
-  // This method is no longer used but kept for reference
-  Widget _buildVideoPlayer(String videoPath) {
-    return const SizedBox.shrink();
-  }
 }

@@ -74,19 +74,21 @@ class _TaskListScreenState extends State<TaskListScreen>
     final scheduledTasks = tasksCubit.getScheduledTasks();
 
     // Calculate urgency for all tasks to populate the impossible and needs rescheduling lists
-    _urgencyCalculator.clearTaskLists();
+
     _urgencyCalculator.calculateUrgency(tasks, scheduledTasks);
+    final impossibleTasks =
+        tasks.where((task) {
+          final timeLeft =
+              task.deadline - DateTime.now().millisecondsSinceEpoch;
+          return timeLeft < 0 && task.estimatedTime > timeLeft;
+        }).toList();
 
-    final impossibleTasks = _urgencyCalculator.getImpossibleTasks();
-    final tasksNeedingRescheduling =
-        _urgencyCalculator.getTasksNeedingRescheduling();
-
-    setState(() {
-      _schedulingStatus =
-          impossibleTasks.isEmpty && tasksNeedingRescheduling.isEmpty;
-      _tasksToSchedule =
-          impossibleTasks.length + tasksNeedingRescheduling.length;
-    });
+    final needsReschedulingTasks =
+        tasks.where((task) {
+          final timeLeft =
+              task.deadline - DateTime.now().millisecondsSinceEpoch;
+          return timeLeft < 0 && task.estimatedTime <= timeLeft;
+        }).toList();
   }
 
   void _onSearchChanged() {

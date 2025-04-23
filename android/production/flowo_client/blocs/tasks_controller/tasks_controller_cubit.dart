@@ -51,7 +51,7 @@ class CalendarCubit extends Cubit<CalendarState> {
   }
 
   Future<List<ScheduledTask>> getScheduledTasksForSelectedDate() async {
-    final date = _formatDateKey(DateTime.now());
+    final date = _formatDateKey(state.selectedDate);
     List<ScheduledTask> tasksForSelectedDate = [];
     for (Day day in daysDB.values) {
       if (day.day == date) {

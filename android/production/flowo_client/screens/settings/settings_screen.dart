@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../../design/cupertino_form_theme.dart';
 import '../../models/app_theme.dart';
+import '../../models/time_frame.dart';
 import '../../theme/theme_notifier.dart';
 import '../../utils/logger.dart';
 import '../tutorial/tutorial_launcher.dart';
@@ -193,8 +194,13 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  late TimeOfDay _sleepTime;
+  late TimeOfDay _wakeupTime;
   late int _breakDuration;
   late int _minSessionDuration;
+  late List<TimeFrame> _mealTimes;
+  late List<TimeFrame> _freeTimes;
+  late Map<String, bool> _activeDays;
   late String _dateFormat;
   late String _monthFormat;
   late bool _is24HourFormat;
@@ -882,10 +888,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     CupertinoIcons.paintbrush,
                     color: CupertinoColors.systemBlue,
                   ),
-                  trailing: const Icon(
-                    CupertinoIcons.chevron_right,
-                    color: CupertinoColors.systemGrey,
-                  ),
                   onTap: () {
                     Navigator.of(context).push(
                       CupertinoPageRoute(
@@ -908,10 +910,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: const Icon(
                     CupertinoIcons.calendar,
                     color: CupertinoColors.systemBlue,
-                  ),
-                  trailing: const Icon(
-                    CupertinoIcons.chevron_right,
-                    color: CupertinoColors.systemGrey,
                   ),
                   onTap: () {
                     Navigator.of(context).push(
@@ -1010,10 +1008,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   leading: const Icon(
                     CupertinoIcons.book,
                     color: CupertinoColors.systemIndigo,
-                  ),
-                  trailing: const Icon(
-                    CupertinoIcons.chevron_right,
-                    color: CupertinoColors.systemGrey,
                   ),
                   onTap: () {
                     Navigator.of(context).push(
