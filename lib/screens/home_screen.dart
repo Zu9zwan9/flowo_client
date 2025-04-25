@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/screens/add_item_screen.dart';
 import 'package:flowo_client/screens/analytics/analytics_screen.dart';
-import 'package:flowo_client/screens/cupertino_refresh_page.dart';
 import 'package:flowo_client/screens/calendar/daily_overview_screen.dart';
 import 'package:flowo_client/screens/profile/profile_screen.dart';
 import 'package:flowo_client/screens/settings/settings_screen.dart';
@@ -79,12 +78,12 @@ class _HomeScreenState extends State<HomeScreen>
       label: 'Today',
       accentColor: CupertinoColors.systemBlue,
     ),
-    (
-      page: CalendarScreen(),
-      icon: CupertinoIcons.calendar,
-      label: 'Calendar',
-      accentColor: CupertinoColors.systemPink,
-    ),
+    // (
+    //   page: CalendarScreen(),
+    //   icon: CupertinoIcons.calendar,
+    //   label: 'Calendar',
+    //   accentColor: CupertinoColors.systemPink,
+    // ),
     (
       page: TaskListScreen(),
       icon: CupertinoIcons.list_bullet,
@@ -114,12 +113,6 @@ class _HomeScreenState extends State<HomeScreen>
       icon: CupertinoIcons.settings,
       label: 'Settings',
       accentColor: CupertinoColors.systemGrey,
-    ),
-    (
-      page: AnimatedCalendarPage(),
-      icon: CupertinoIcons.news,
-      label: 'Articles',
-      accentColor: CupertinoColors.systemTeal,
     ),
   ];
 

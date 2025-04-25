@@ -1,4 +1,3 @@
-import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:hive/hive.dart';
@@ -6,7 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:easy_refresh/easy_refresh.dart';
-
+import 'package:lottie/lottie.dart';
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../../models/scheduled_task.dart';
@@ -16,7 +15,6 @@ import '../../models/user_profile.dart';
 import '../../models/user_settings.dart';
 import '../../utils/formatter/date_time_formatter.dart';
 import '../widgets/calendar_widgets.dart';
-import '../widgets/refresh_indicators.dart';
 import '../widgets/task_timer_controls.dart';
 
 class DailyOverviewScreen extends StatefulWidget {
@@ -37,7 +35,9 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   late Animation<Offset> _slideAnimation;
   late CalendarController _calendarController;
   late ScrollController _scrollController;
+  late AnimationController _lottieController;
   final double _calendarHeight = 350.0;
+  bool isAnimationActive = false;
 
   @override
   void initState() {
@@ -63,6 +63,12 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     // Initialize calendar controller
     _calendarController = CalendarController();
 
+    // Initialize Lottie animation controller
+    _lottieController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
     // Initialize scroll controller with listener to hide calendar when scrolling down
     _scrollController = ScrollController();
     _scrollController.addListener(_handleScroll);
@@ -81,6 +87,39 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     _loadUserProfile();
   }
 
+  @override
+  void dispose() {
+    _calendarAnimationController.dispose();
+    _calendarController.dispose();
+    _lottieController.dispose();
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handlePull(double offset) {
+    if (!_isCalendarVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (offset > 20 && !isAnimationActive) {
+          _lottieController.forward();
+          isAnimationActive = true;
+        } else if (!_lottieController.isAnimating) {
+          _lottieController.reset();
+          isAnimationActive = false;
+        }
+      });
+    }
+
+    if (offset > 120 && !_isCalendarVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _isCalendarVisible = true;
+          _calendarAnimationController.forward();
+        });
+      });
+    }
+  }
+
   void _handleScroll() {
     // Hide calendar when scrolling down (if visible)
     if (_isCalendarVisible && _scrollController.offset > 350) {
@@ -89,15 +128,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
         _scrollController.jumpTo(0.0);
       });
     }
-  }
-
-  @override
-  void dispose() {
-    _calendarAnimationController.dispose();
-    _calendarController.dispose();
-    _scrollController.removeListener(_handleScroll);
-    _scrollController.dispose();
-    super.dispose();
   }
 
   void _updateGreeting() {
@@ -163,19 +193,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     });
   }
 
-  void _handlePull(double offset) {
-    // Show calendar when pulling down far enough
-    logWarning('Handle pull');
-    if (offset > 120 && !_isCalendarVisible) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _isCalendarVisible = true;
-          _calendarAnimationController.forward();
-        });
-      });
-    }
-  }
-
   Future<void> _onRefresh() async {
     // Simulate a refresh operation
     await Future.delayed(const Duration(milliseconds: 800));
@@ -190,23 +207,8 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
-      onTap: _toggleCalendarVisibility,
-      onVerticalDragUpdate: (details) {
-        // Allow swiping down on the handle to show calendar
-        if (details.primaryDelta != null &&
-            details.primaryDelta! > 0 &&
-            !_isCalendarVisible) {
-          _toggleCalendarVisibility();
-        }
-        // Allow swiping up on the handle to hide calendar
-        else if (details.primaryDelta != null &&
-            details.primaryDelta! < 0 &&
-            _isCalendarVisible) {
-          _toggleCalendarVisibility();
-        }
-      },
       child: Container(
-        height: 36,
+        height: !_isCalendarVisible ? 36 : 0,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: CupertinoTheme.of(context).scaffoldBackgroundColor,
@@ -225,18 +227,26 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Small handle indicator
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 6),
-              decoration: BoxDecoration(
-                color: CupertinoTheme.of(
-                  context,
-                ).textTheme.textStyle.color?.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(2),
+            // Lottie animation instead of Icon
+            if (!_isCalendarVisible)
+              SizedBox(
+                height: 36,
+                width: 36,
+                child: ColorFiltered(
+                  colorFilter: const ColorFilter.mode(
+                    CupertinoColors.activeBlue,
+                    BlendMode.srcIn,
+                  ),
+                  child: Lottie.asset(
+                    '../../assets/lottifile/calendarAnimation.json',
+                    frameRate: FrameRate.composition,
+                    controller: _lottieController,
+                    onLoaded: (composition) {
+                      _lottieController.duration = composition.duration;
+                    },
+                  ),
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -252,37 +262,16 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
           header: BuilderHeader(
             triggerOffset: 80.0,
             clamping: false,
-            position: IndicatorPosition.above,
+            position:
+                _isCalendarVisible
+                    ? IndicatorPosition.behind
+                    : IndicatorPosition.above,
             builder: (context, state) {
-              print('Refresh offset: ${state.offset}');
               _handlePull(state.offset);
               return Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                padding: const EdgeInsets.symmetric(vertical: 18),
                 decoration: BoxDecoration(
                   color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      CupertinoIcons.calendar,
-                      color: CupertinoColors.activeBlue,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      state.offset > 120
-                          ? 'Release to show calendar'
-                          : 'Pull to show calendar',
-                      style: TextStyle(
-                        color:
-                            CupertinoTheme.of(
-                              context,
-                            ).textTheme.textStyle.color,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
                 ),
               );
             },
@@ -290,7 +279,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
           onRefresh: _onRefresh,
           child: CustomScrollView(
             controller: _scrollController,
-            physics: const BouncingScrollPhysics(),
             slivers: [
               _isCalendarVisible
                   ? SliverToBoxAdapter(
@@ -313,6 +301,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                         ),
                         child: Column(
                           children: [
+                            const SizedBox(height: 12),
                             Expanded(
                               child: SfCalendar(
                                 view: CalendarView.month,
@@ -432,7 +421,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     final isToday = _isToday(_selectedDate);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+      padding:
+          _isCalendarVisible
+              ? const EdgeInsets.fromLTRB(20, 15, 20, 10)
+              : const EdgeInsets.fromLTRB(20, 0, 20, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -481,8 +473,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                     semanticLabel: 'Next day',
                   ),
                 ),
-              ] else ...[
-                const Spacer(flex: 1), // Maintain layout alignment
               ],
             ],
           ),
