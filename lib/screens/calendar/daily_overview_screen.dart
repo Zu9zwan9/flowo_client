@@ -150,6 +150,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
       setState(() {
         _isCalendarVisible = false;
         _scrollController.jumpTo(0.0);
+        _calendarAnimationController.reset();
         _lottieController.reset();
         isAnimationActive = false;
       });
