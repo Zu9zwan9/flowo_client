@@ -71,8 +71,9 @@ flutter:
     - assets/ambient/videos/
     - assets/ambient/audio/
     - assets/ambient/thumbnails/
-    - assets/tutorial/
-    - assets/lottifile/
+    # - assets/tutorial/
+    - lib/assets/lottifile/
+  
 
 flutter_launcher_icons:
   android: "launcher_icon"

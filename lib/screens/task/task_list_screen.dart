@@ -228,7 +228,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                         CupertinoPageRoute(
                           builder:
                               (context) => const HomeScreen(
-                                initialIndex: 3,
+                                initialIndex: 2,
                                 initialExpanded: false,
                               ),
                         ),

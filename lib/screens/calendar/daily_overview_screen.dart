@@ -48,30 +48,27 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     // Initialize animation controller
     _calendarAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 900),
     );
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -1.1),
+      begin: const Offset(0, -1),
       end: const Offset(0, 0),
     ).animate(
       CurvedAnimation(
         parent: _calendarAnimationController,
-        curve: Curves.easeInOut,
+        curve: Curves.easeOutQuart,
       ),
     );
 
     // Initialize calendar controller
     _calendarController = CalendarController();
 
-    // Initialize Lottie animation controller
     _lottieController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
 
-    // Initialize scroll controller with listener to hide calendar when scrolling down
     _scrollController = ScrollController();
-    _scrollController.addListener(_handleScroll);
 
     // Set initial date in CalendarCubit
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -92,42 +89,8 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     _calendarAnimationController.dispose();
     _calendarController.dispose();
     _lottieController.dispose();
-    _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _handlePull(double offset) {
-    if (!_isCalendarVisible) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (offset > 20 && !isAnimationActive) {
-          _lottieController.forward();
-          isAnimationActive = true;
-        } else if (!_lottieController.isAnimating) {
-          _lottieController.reset();
-          isAnimationActive = false;
-        }
-      });
-    }
-
-    if (offset > 120 && !_isCalendarVisible) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _isCalendarVisible = true;
-          _calendarAnimationController.forward();
-        });
-      });
-    }
-  }
-
-  void _handleScroll() {
-    // Hide calendar when scrolling down (if visible)
-    if (_isCalendarVisible && _scrollController.offset > 350) {
-      setState(() {
-        _isCalendarVisible = false;
-        _scrollController.jumpTo(0.0);
-      });
-    }
   }
 
   void _updateGreeting() {
@@ -175,82 +138,52 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
       ..displayDate = _selectedDate;
   }
 
-  bool _isToday(DateTime date) {
-    final now = DateTime.now();
-    return date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
-  }
-
-  void _toggleCalendarVisibility() {
-    setState(() {
-      _isCalendarVisible = !_isCalendarVisible;
-      if (_isCalendarVisible) {
-        _calendarAnimationController.forward();
-      } else {
-        _calendarAnimationController.reverse();
+  void hideCalendar() async {
+    if (_isCalendarVisible) {
+      if (_scrollController.hasClients) {
+        await _scrollController.animateTo(
+          350.0,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
       }
-    });
-  }
-
-  Future<void> _onRefresh() async {
-    // Simulate a refresh operation
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    // Refresh tasks data if needed
-    if (mounted) {
-      context.read<CalendarCubit>().selectDate(_selectedDate);
+      setState(() {
+        _isCalendarVisible = false;
+        _scrollController.jumpTo(0.0);
+        _lottieController.reset();
+        isAnimationActive = false;
+      });
     }
   }
 
-  Widget _buildHandle() {
-    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+  void _handlePull(double offset) {
+    if (!_isCalendarVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (offset > 80 && !isAnimationActive) {
+          _lottieController.forward();
+          isAnimationActive = true;
+        } else if (offset <= 20 && !_lottieController.isAnimating) {
+          _lottieController.reset();
+          isAnimationActive = false;
+        }
+      });
+    }
+  }
 
-    return GestureDetector(
-      child: Container(
-        height: !_isCalendarVisible ? 36 : 0,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(12),
-            bottomRight: Radius.circular(12),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: CupertinoColors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Lottie animation instead of Icon
-            if (!_isCalendarVisible)
-              SizedBox(
-                height: 36,
-                width: 36,
-                child: ColorFiltered(
-                  colorFilter: const ColorFilter.mode(
-                    CupertinoColors.activeBlue,
-                    BlendMode.srcIn,
-                  ),
-                  child: Lottie.asset(
-                    'lib/assets/lottifile/calendarAnimation.json',
-                    frameRate: FrameRate.composition,
-                    controller: _lottieController,
-                    onLoaded: (composition) {
-                      _lottieController.duration = composition.duration;
-                    },
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
+  Future<void> _showCalendar() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Show calendar and refresh tasks data
+    if (mounted && !_isCalendarVisible) {
+      setState(() {
+        _isCalendarVisible = true;
+        _calendarAnimationController.forward();
+        _lottieController.forward().then((_) {
+          _lottieController.reset();
+          isAnimationActive = false;
+        });
+      });
+    }
   }
 
   @override
@@ -258,158 +191,223 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     final textTheme = CupertinoTheme.of(context);
     return CupertinoPageScaffold(
       child: SafeArea(
-        child: EasyRefresh(
-          header: BuilderHeader(
-            triggerOffset: 80.0,
-            clamping: false,
-            position:
-                _isCalendarVisible
-                    ? IndicatorPosition.behind
-                    : IndicatorPosition.above,
-            builder: (context, state) {
-              _handlePull(state.offset);
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                decoration: BoxDecoration(
-                  color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: EasyRefresh(
+                spring: const SpringDescription(
+                  mass: 1.0,
+                  stiffness: 200.0,
+                  damping: 20.0,
                 ),
-              );
-            },
-          ),
-          onRefresh: _onRefresh,
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              _isCalendarVisible
-                  ? SliverToBoxAdapter(
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: Container(
-                        height: _calendarHeight,
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        clipBehavior: Clip.hardEdge,
-                        decoration: BoxDecoration(
-                          color: textTheme.scaffoldBackgroundColor,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: CupertinoColors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
+                header: BuilderHeader(
+                  triggerOffset: 80.0,
+                  clamping: false,
+                  position: IndicatorPosition.behind,
+                  builder: (context, state) {
+                    _handlePull(state.offset);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      decoration: BoxDecoration(
+                        color:
+                            CupertinoTheme.of(context).scaffoldBackgroundColor,
+                      ),
+                    );
+                  },
+                ),
+                onRefresh: _showCalendar,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: SizedBox(height: _isCalendarVisible ? 7 : 0),
+                    ),
+                    _isCalendarVisible
+                        ? SliverToBoxAdapter(
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: Column(
+                              children: [
+                                Container(
+                                  height: _calendarHeight,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  clipBehavior: Clip.hardEdge,
+                                  decoration: BoxDecoration(
+                                    color: textTheme.scaffoldBackgroundColor,
+                                    borderRadius: BorderRadius.circular(5),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: CupertinoColors.black
+                                            .withOpacity(0.1),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: SfCalendar(
+                                    view: CalendarView.month,
+                                    controller: _calendarController,
+                                    dataSource: CalendarTaskDataSource(
+                                      context
+                                          .read<TaskManagerCubit>()
+                                          .getScheduledTasks(),
+                                    ),
+                                    initialSelectedDate: _selectedDate,
+                                    initialDisplayDate: _selectedDate,
+                                    onSelectionChanged: (details) {
+                                      if (details.date != null && mounted) {
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                              setState(() {
+                                                _selectedDate = details.date!;
+                                              });
+                                              context
+                                                  .read<CalendarCubit>()
+                                                  .selectDate(_selectedDate);
+                                            });
+                                      }
+                                    },
+                                    showNavigationArrow: true,
+                                    allowViewNavigation: false,
+                                    headerStyle: CalendarHeaderStyle(
+                                      textStyle: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                            textTheme.textTheme.textStyle.color,
+                                      ),
+                                    ),
+                                    monthViewSettings: MonthViewSettings(
+                                      appointmentDisplayMode:
+                                          MonthAppointmentDisplayMode.indicator,
+                                      showAgenda: false,
+                                      monthCellStyle: MonthCellStyle(
+                                        textStyle: TextStyle(
+                                          color:
+                                              textTheme
+                                                  .textTheme
+                                                  .textStyle
+                                                  .color,
+                                          fontSize: 14,
+                                        ),
+                                        todayTextStyle: TextStyle(
+                                          color: CupertinoColors.activeBlue,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        backgroundColor:
+                                            CupertinoColors.transparent,
+                                        todayBackgroundColor: CupertinoColors
+                                            .activeBlue
+                                            .withOpacity(0.1),
+                                      ),
+                                    ),
+                                    todayHighlightColor:
+                                        CupertinoColors.activeBlue,
+                                    selectionDecoration: BoxDecoration(
+                                      shape: BoxShape.rectangle,
+                                      color: CupertinoColors.activeBlue
+                                          .withOpacity(0.2),
+                                      border: Border.all(
+                                        color: CupertinoColors.activeBlue,
+                                        width: 1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                ),
+                                CupertinoButton(
+                                  padding: const EdgeInsets.all(4),
+                                  onPressed: hideCalendar,
+                                  child: const Icon(
+                                    CupertinoIcons.chevron_up,
+                                    color: CupertinoColors.inactiveGray,
+                                    size: 16,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 12),
-                            Expanded(
-                              child: SfCalendar(
-                                view: CalendarView.month,
-                                controller: _calendarController,
-                                dataSource: CalendarTaskDataSource(
-                                  context
-                                      .read<TaskManagerCubit>()
-                                      .getScheduledTasks(),
-                                ),
-                                initialSelectedDate: _selectedDate,
-                                initialDisplayDate: _selectedDate,
-                                onSelectionChanged: (details) {
-                                  if (details.date != null && mounted) {
-                                    WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
-                                          setState(() {
-                                            _selectedDate = details.date!;
-                                          });
-                                          context
-                                              .read<CalendarCubit>()
-                                              .selectDate(_selectedDate);
-                                        });
-                                  }
-                                },
-                                showNavigationArrow: true,
-                                allowViewNavigation: false,
-                                headerStyle: CalendarHeaderStyle(
-                                  textStyle: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: textTheme.textTheme.textStyle.color,
+                          ),
+                        )
+                        : SliverToBoxAdapter(child: const SizedBox()),
+
+                    !_isCalendarVisible
+                        ? SliverToBoxAdapter(
+                          child: Transform.translate(
+                            offset: Offset(
+                              0,
+                              _scrollController.hasClients
+                                  ? _scrollController.offset - 55
+                                  : -55,
+                            ),
+                            child: Container(
+                              height: 36,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color:
+                                    CupertinoTheme.of(
+                                      context,
+                                    ).scaffoldBackgroundColor,
+                              ),
+                              child: SizedBox(
+                                height: 36,
+                                width: 36,
+                                child: ColorFiltered(
+                                  colorFilter: const ColorFilter.mode(
+                                    CupertinoColors.activeBlue,
+                                    BlendMode.srcIn,
                                   ),
-                                ),
-                                monthViewSettings: MonthViewSettings(
-                                  appointmentDisplayMode:
-                                      MonthAppointmentDisplayMode.indicator,
-                                  showAgenda: false,
-                                  monthCellStyle: MonthCellStyle(
-                                    textStyle: TextStyle(
-                                      color:
-                                          textTheme.textTheme.textStyle.color,
-                                      fontSize: 14,
-                                    ),
-                                    todayTextStyle: TextStyle(
-                                      color: CupertinoColors.activeBlue,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                    backgroundColor:
-                                        CupertinoColors.transparent,
-                                    todayBackgroundColor: CupertinoColors
-                                        .activeBlue
-                                        .withOpacity(0.1),
+                                  child: Lottie.asset(
+                                    'lib/assets/lottifile/calendarAnimation.json',
+                                    frameRate: FrameRate.composition,
+                                    controller: _lottieController,
+                                    onLoaded: (composition) {
+                                      _lottieController.duration =
+                                          composition.duration;
+                                    },
                                   ),
-                                ),
-                                todayHighlightColor: CupertinoColors.activeBlue,
-                                selectionDecoration: BoxDecoration(
-                                  shape: BoxShape.rectangle,
-                                  color: CupertinoColors.activeBlue.withOpacity(
-                                    0.2,
-                                  ),
-                                  border: Border.all(
-                                    color: CupertinoColors.activeBlue,
-                                    width: 1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        )
+                        : SliverToBoxAdapter(child: const SizedBox(height: 3)),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Night',
+                        const TimeOfDay(hour: 0, minute: 0),
+                        const TimeOfDay(hour: 5, minute: 0),
                       ),
                     ),
-                  )
-                  : SliverToBoxAdapter(child: const SizedBox()),
-              SliverToBoxAdapter(child: _buildHandle()),
-              SliverPadding(padding: const EdgeInsets.only(bottom: 8)),
-              SliverToBoxAdapter(child: _buildHeader()),
-              SliverToBoxAdapter(
-                child: _buildTimeSection(
-                  'Night',
-                  const TimeOfDay(hour: 0, minute: 0),
-                  const TimeOfDay(hour: 5, minute: 0),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Morning',
+                        const TimeOfDay(hour: 5, minute: 0),
+                        const TimeOfDay(hour: 12, minute: 0),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Afternoon',
+                        const TimeOfDay(hour: 12, minute: 0),
+                        const TimeOfDay(hour: 17, minute: 0),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Evening',
+                        const TimeOfDay(hour: 17, minute: 0),
+                        const TimeOfDay(hour: 23, minute: 59),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SliverToBoxAdapter(
-                child: _buildTimeSection(
-                  'Morning',
-                  const TimeOfDay(hour: 5, minute: 0),
-                  const TimeOfDay(hour: 12, minute: 0),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _buildTimeSection(
-                  'Afternoon',
-                  const TimeOfDay(hour: 12, minute: 0),
-                  const TimeOfDay(hour: 17, minute: 0),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _buildTimeSection(
-                  'Evening',
-                  const TimeOfDay(hour: 17, minute: 0),
-                  const TimeOfDay(hour: 23, minute: 59),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -418,13 +416,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   Widget _buildHeader() {
     final formattedDate = DateFormat('EEEE, MMMM d').format(_selectedDate);
     final textTheme = CupertinoTheme.of(context);
-    final isToday = _isToday(_selectedDate);
 
     return Container(
-      padding:
-          _isCalendarVisible
-              ? const EdgeInsets.fromLTRB(20, 15, 20, 10)
-              : const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      // Уменьшен верхний отступ
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -437,56 +432,42 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
             ),
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 15),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Conditionally hide previous day button when calendar is visible
-              if (true) ...[
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: _navigateToPreviousDay,
-                  child: Icon(
-                    CupertinoIcons.chevron_left,
-                    color: textTheme.primaryColor,
-                    semanticLabel: 'Previous day',
-                  ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _navigateToPreviousDay,
+                child: Icon(
+                  CupertinoIcons.chevron_left,
+                  color: textTheme.primaryColor,
+                  semanticLabel: 'Previous day',
                 ),
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    formattedDate,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: textTheme.textTheme.tabLabelTextStyle.color,
-                    ),
-                    textAlign: TextAlign.center,
-                    semanticsLabel: formattedDate,
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  formattedDate,
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: textTheme.textTheme.tabLabelTextStyle.color,
                   ),
+                  textAlign: TextAlign.center,
+                  semanticsLabel: formattedDate,
                 ),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: _navigateToNextDay,
-                  child: Icon(
-                    CupertinoIcons.chevron_right,
-                    color: textTheme.primaryColor,
-                    semanticLabel: 'Next day',
-                  ),
+              ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _navigateToNextDay,
+                child: Icon(
+                  CupertinoIcons.chevron_right,
+                  color: textTheme.primaryColor,
+                  semanticLabel: 'Next day',
                 ),
-              ],
+              ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            isToday
-                ? 'For today, we have the following tasks:'
-                : 'For this day, we have the following tasks:',
-            style: TextStyle(
-              fontSize: 16,
-              color: textTheme.textTheme.tabLabelTextStyle.color,
-            ),
-          ),
-          const SizedBox(height: 20),
         ],
       ),
     );
