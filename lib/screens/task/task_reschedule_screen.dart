@@ -461,11 +461,11 @@ class _ScheduledTaskSelectionItem extends StatelessWidget {
     final textColor = CupertinoTheme.of(context).textTheme.textStyle.color;
     final secondaryColor = CupertinoColors.secondaryLabel.resolveFrom(context);
 
-    TimeOfDay _toTimeOfDay(DateTime dateTime) {
+    TimeOfDay toTimeOfDay(DateTime dateTime) {
       return TimeOfDay(hour: dateTime.hour, minute: dateTime.minute);
     }
 
-    void _onStartTimeSelected(TimeOfDay newTime) {
+    void onStartTimeSelected(TimeOfDay newTime) {
       final newStartTime = DateTime(
         pendingTask.startTime.year,
         pendingTask.startTime.month,
@@ -502,7 +502,7 @@ class _ScheduledTaskSelectionItem extends StatelessWidget {
       }
     }
 
-    void _onEndTimeSelected(TimeOfDay newTime) {
+    void onEndTimeSelected(TimeOfDay newTime) {
       final newEndTime = DateTime(
         pendingTask.endTime.year,
         pendingTask.endTime.month,
@@ -539,7 +539,7 @@ class _ScheduledTaskSelectionItem extends StatelessWidget {
       }
     }
 
-    String _formatDate(DateTime date) {
+    String formatDate(DateTime date) {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
       final tomorrow = today.add(const Duration(days: 1));
@@ -620,22 +620,22 @@ class _ScheduledTaskSelectionItem extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Date: ${_formatDate(pendingTask.startTime)}',
+            'Date: ${formatDate(pendingTask.startTime)}',
             style: TextStyle(fontSize: 14, color: secondaryColor),
           ),
           const SizedBox(height: 4),
           SettingsTimePickerItem(
             label: 'Start Time',
-            time: _toTimeOfDay(pendingTask.startTime),
-            onTimeSelected: _onStartTimeSelected,
+            time: toTimeOfDay(pendingTask.startTime),
+            onTimeSelected: onStartTimeSelected,
             use24HourFormat: true,
             padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
             enabled: !isPendingDeletion,
           ),
           SettingsTimePickerItem(
             label: 'End Time',
-            time: _toTimeOfDay(pendingTask.endTime),
-            onTimeSelected: _onEndTimeSelected,
+            time: toTimeOfDay(pendingTask.endTime),
+            onTimeSelected: onEndTimeSelected,
             use24HourFormat: true,
             padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
             enabled: !isPendingDeletion,

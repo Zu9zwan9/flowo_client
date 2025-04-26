@@ -15,7 +15,6 @@ import '../../models/user_profile.dart';
 import '../../models/user_settings.dart';
 import '../../utils/formatter/date_time_formatter.dart';
 import '../widgets/calendar_widgets.dart';
-import '../widgets/refresh_indicators.dart';
 import '../widgets/task_timer_controls.dart';
 
 class DailyOverviewScreen extends StatefulWidget {

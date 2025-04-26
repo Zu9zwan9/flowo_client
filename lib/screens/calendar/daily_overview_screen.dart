@@ -238,7 +238,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                     BlendMode.srcIn,
                   ),
                   child: Lottie.asset(
-                    '../../assets/lottifile/calendarAnimation.json',
+                    'lib/assets/lottifile/calendarAnimation.json',
                     frameRate: FrameRate.composition,
                     controller: _lottieController,
                     onLoaded: (composition) {

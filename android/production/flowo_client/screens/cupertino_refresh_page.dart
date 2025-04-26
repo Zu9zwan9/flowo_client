@@ -13,7 +13,7 @@ class _AnimatedCalendarPageState extends State<AnimatedCalendarPage> {
   final _calendarController = CalendarController();
   DateTime _selectedDate = DateTime.now();
   bool _isCalendarVisible = false;
-  bool _isPullingDown = false;
+  final bool _isPullingDown = false;
 
   List<int> items = List.generate(10, (index) => index);
 

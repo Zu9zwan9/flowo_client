@@ -42,8 +42,8 @@ class _TaskListScreenState extends State<TaskListScreen>
   String _searchQuery = '';
   late final ScrollController _scrollController;
   late TaskUrgencyCalculator _urgencyCalculator;
-  bool _schedulingStatus = true; // true = all good, false = needs attention
-  int _tasksToSchedule = 0; // Number of tasks that need scheduling
+  final bool _schedulingStatus = true; // true = all good, false = needs attention
+  final int _tasksToSchedule = 0; // Number of tasks that need scheduling
 
   // Caching to improve performance
   Map<String, List<Task>>? _filteredTasksCache;
