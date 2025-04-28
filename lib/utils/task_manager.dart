@@ -175,6 +175,7 @@ class TaskManager {
     task.secondNotification = secondNotification;
     tasksDB.put(task.id, task);
     logInfo('Edited task: ${task.title}');
+
   }
 
   void scheduleTasks() {

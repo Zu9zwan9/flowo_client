@@ -1028,6 +1028,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       'Task ${widget.task == null ? "Created" : "Updated"}: ${_titleController.text}',
     );
 
+    taskManagerCubit.taskManager.scheduleTasks();
+
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {

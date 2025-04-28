@@ -2282,6 +2282,8 @@ class HabitFormScreenState extends State<HabitFormScreen>
       );
     }
 
+    tasksCubit.taskManager.manageHabits();
+
     logInfo(
       widget.habit == null
           ? 'Created Habit: ${_titleController.text}'

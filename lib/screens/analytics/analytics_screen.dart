@@ -69,6 +69,10 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+      navigationBar:
+          Navigator.of(context).canPop()
+              ? const CupertinoNavigationBar(middle: Text('Analytics'))
+              : null,
       child: SafeArea(
         child: BlocBuilder<AnalyticsCubit, AnalyticsState>(
           builder: (context, state) {

@@ -358,8 +358,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
-                  _buildNameField(),
-                  _buildEmailField(),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      bottom: 8.0,
+                    ),
+                    child: _buildNameField(),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      bottom: 8.0,
+                    ),
+                    child: _buildEmailField(),
+                  ),
+
                   const SizedBox(height: 16),
                 ],
               ),
@@ -442,7 +458,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.all(16),
                     onPressed: () {
                       HapticFeedback.selectionClick();
-                      Navigator.of(context).push(
+                      Navigator.push(
+                        context,
                         CupertinoPageRoute(
                           builder: (context) => const AnalyticsScreen(),
                         ),
