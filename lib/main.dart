@@ -223,7 +223,7 @@ void main() async {
     tasksDB: tasksDB,
     userSettings: selectedProfile,
     huggingFaceApiKey:
-        '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', // Default API key
+        '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', // Default API key
   );
 
   // Save the default settings to the Hive box if it's the first launch

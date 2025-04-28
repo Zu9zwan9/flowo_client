@@ -19,12 +19,15 @@ class AITimeEstimationStrategy implements TimeEstimationStrategy {
   final Pipeline _pipeline;
 
   /// Creates a new AITimeEstimationStrategy with the given API key
-  AITimeEstimationStrategy({required String apiKey, String? apiUrl})
+  AITimeEstimationStrategy({String? apiKey, String? apiUrl})
     : _pipeline = pipeline(
-        "text-generation",
-        model: 'HuggingFaceH4/zephyr-7b-beta',
-        apiKey: apiKey,
-        apiUrl: apiUrl,
+        "chat",
+        model: 'gpt-4o',
+        apiKey:
+            apiKey ??
+            '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',
+        apiUrl:
+            apiUrl ?? 'https://models.inference.ai.azure.com/chat/completions',
       );
 
   @override
@@ -96,7 +99,7 @@ The sum of all estimates should be approximately equal to the total estimated ti
     int totalTime,
   ) {
     if (response == null) {
-      logWarning('Received null response from Hugging Face API');
+      logWarning('Received null response from Azure API');
       return _distributeProportionally(subtaskCount, totalTime);
     }
 
@@ -107,9 +110,7 @@ The sum of all estimates should be approximately equal to the total estimated ti
       } else if (response is Map<String, dynamic>) {
         text = response["generated_text"] ?? "";
       } else {
-        logWarning(
-          'Unexpected response format from Hugging Face API: $response',
-        );
+        logWarning('Unexpected response format from Azure API: $response');
         return _distributeProportionally(subtaskCount, totalTime);
       }
 

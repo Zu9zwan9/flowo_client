@@ -4,7 +4,7 @@ import 'dart:convert';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:http/http.dart' as http;
 
-// Pipeline factory function (unchanged from original)
+// Pipeline factory function
 Pipeline pipeline(
   String task, {
   required String model,
@@ -14,7 +14,7 @@ Pipeline pipeline(
   return Pipeline(task: task, model: model, apiKey: apiKey, apiUrl: apiUrl);
 }
 
-// Pipeline class (unchanged from original)
+// Pipeline class for Azure API
 class Pipeline {
   final String task;
   final String model;
@@ -27,20 +27,36 @@ class Pipeline {
     required this.apiKey,
     String? apiUrl,
   }) : apiUrl =
-           apiUrl ?? 'https://router.huggingface.co/hf-inference/models/$model';
+           apiUrl ?? 'https://models.inference.ai.azure.com/chat/completions';
 
   Future<dynamic> call(List<Map<String, String>> messages) async {
+    // Convert the messages to the format expected by Azure API
+    final List<Map<String, String>> formattedMessages = [];
+
+    // Add system message if not present
+    bool hasSystemMessage = messages.any((msg) => msg["role"] == "system");
+    if (!hasSystemMessage) {
+      formattedMessages.add({"role": "system", "content": ""});
+    }
+
+    // Add the rest of the messages
+    formattedMessages.addAll(messages);
+
     final data = {
-      "inputs": jsonEncode(messages),
-      "parameters": {"max_new_tokens": 500, "return_full_text": false},
+      "messages": formattedMessages,
+      "model": model,
+      "temperature": 1,
+      "max_tokens": 4096,
+      "top_p": 1,
     };
+
     final headers = {
       "Authorization": "Bearer $apiKey",
       "Content-Type": "application/json",
     };
 
     try {
-      logInfo('Making request to Hugging Face API for model: $model');
+      logInfo('Making request to Azure API for model: $model');
       final client = http.Client();
       final response = await client.post(
         Uri.parse(apiUrl),
@@ -49,11 +65,26 @@ class Pipeline {
       );
 
       if (response.statusCode == 200) {
-        logInfo('Received successful response from Hugging Face API');
-        return jsonDecode(response.body);
+        logInfo('Received successful response from Azure API');
+        final responseBody = jsonDecode(response.body);
+        // Extract the generated text from the Azure API response format
+        if (responseBody.containsKey('choices') &&
+            responseBody['choices'] is List &&
+            responseBody['choices'].isNotEmpty &&
+            responseBody['choices'][0].containsKey('message') &&
+            responseBody['choices'][0]['message'].containsKey('content')) {
+          return {
+            "generated_text": responseBody['choices'][0]['message']['content'],
+          };
+        } else {
+          logWarning('Unexpected response format from Azure API');
+          return {
+            "generated_text": "1 hour", // Fallback for time estimation
+          };
+        }
       } else {
         logError(
-          'Error from Hugging Face API: ${response.statusCode} - ${response.body}',
+          'Error from Azure API: ${response.statusCode} - ${response.body}',
         );
         logWarning('Using fallback response due to API error');
         return {
@@ -61,7 +92,7 @@ class Pipeline {
         };
       }
     } catch (e) {
-      logError('Exception making request to Hugging Face API: $e');
+      logError('Exception making request to Azure API: $e');
       logWarning('Using fallback response due to exception');
       return {
         "generated_text": "1 hour", // Fallback for time estimation
@@ -70,7 +101,7 @@ class Pipeline {
   }
 }
 
-/// A service that combines task breakdown and time estimation using Hugging Face API
+/// A service that combines task breakdown and time estimation using Azure API
 class TaskProcessorAPI {
   final String apiKey;
   final String apiUrl;
@@ -78,13 +109,17 @@ class TaskProcessorAPI {
 
   /// Creates a new TaskProcessorAPI with the given API key
   TaskProcessorAPI({
-    required this.apiKey,
-    this.apiUrl =
-        'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta',
-  }) : _pipeline = pipeline(
-         "text-generation",
-         model: 'HuggingFaceH4/zephyr-7b-beta',
-         apiKey: apiKey,
+    String? apiKey,
+    this.apiUrl = 'https://models.inference.ai.azure.com/chat/completions',
+  }) : apiKey =
+           apiKey ??
+           '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',
+       _pipeline = pipeline(
+         "chat",
+         model: 'gpt-4o',
+         apiKey:
+             apiKey ??
+             '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',
          apiUrl: apiUrl,
        );
 
