@@ -1,4 +1,5 @@
 import 'package:flowo_client/models/scheduled_task_type.dart';
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
@@ -46,6 +47,10 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
     final tasksCubit = context.read<TaskManagerCubit>();
     final tasks = tasksCubit.state.tasks;
     final scheduledTasks = tasksCubit.getScheduledTasks();
+
+    for(var task in tasks){
+      logInfo(task.title);
+    }
 
     _totalScheduledTasks =
         scheduledTasks

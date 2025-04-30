@@ -82,19 +82,34 @@ class TaskListItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '${task.title} (${task.scheduledTasks.length})',
-                    style: CupertinoTheme.of(
-                      context,
-                    ).textTheme.textStyle.copyWith(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: task.isDone ? secondaryTextColor : textColor,
-                      decoration:
-                          task.isDone ? TextDecoration.lineThrough : null,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.title,
+                        style: CupertinoTheme.of(
+                          context,
+                        ).textTheme.textStyle.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: task.isDone ? secondaryTextColor : textColor,
+                          decoration:
+                              task.isDone ? TextDecoration.lineThrough : null,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${task.scheduledTasks.length} scheduled',
+                        style: CupertinoTheme.of(
+                          context,
+                        ).textTheme.textStyle.copyWith(
+                          fontSize: 12,
+                          color: secondaryTextColor,
+                        ),
+                      ),
+                    ],
                   ),
                   if (task.notes?.isNotEmpty == true) ...[
                     const SizedBox(height: 4),

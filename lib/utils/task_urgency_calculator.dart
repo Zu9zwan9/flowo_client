@@ -20,9 +20,6 @@ class TaskUrgencyCalculator {
     final Map<Task, double> taskUrgencyMap = {};
 
     for (var task in tasks) {
-      log(
-        'Title: ${task.title}, Deadline: ${task.deadline}, EstimatedTime: ${task.estimatedTime}, Priority: ${task.priority}',
-      );
       final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
       final trueTimeLeft =
           timeLeft - busyTime(task.deadline, justScheduledTasks);
@@ -35,7 +32,6 @@ class TaskUrgencyCalculator {
         _negativeUrgencyHandler(task, trueTimeLeft);
       } else {
         taskUrgencyMap[task] = urgency;
-        logDebug('Task: ${task.title} has urgency $urgency');
       }
     }
 
@@ -103,8 +99,6 @@ class TaskUrgencyCalculator {
         }
       }
     }
-
-    logDebug('busy time -> ${busyTime.toString()}');
 
     return busyTime;
   }

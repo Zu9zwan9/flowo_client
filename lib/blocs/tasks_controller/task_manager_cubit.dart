@@ -307,7 +307,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }
 
   void scheduleTasks() {
-    taskManager.scheduleTasks();
+    taskManager.manageTasks();
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
@@ -357,7 +357,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   /// Breaks down a task into subtasks using AI and schedules them
   ///
   /// Returns a list of the created subtasks
-  Future<List<Task>> breakdownAndScheduleTask(Task task) async {
+  Future<List<Task>> generateSubtasksFor(Task task) async {
     logInfo('Breaking down task using AI: ${task.title}');
     final subtasks = await taskManager.breakdownAndScheduleTask(task);
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
@@ -379,7 +379,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       final originalEstimatedTime = task.estimatedTime;
 
       // Break down the task into subtasks
-      final subtasks = await breakdownAndScheduleTask(task);
+      final subtasks = await generateSubtasksFor(task);
 
       if (subtasks.isEmpty) {
         logWarning('No subtasks generated for task: ${task.title}');

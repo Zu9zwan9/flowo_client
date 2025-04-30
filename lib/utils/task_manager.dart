@@ -175,10 +175,10 @@ class TaskManager {
     task.secondNotification = secondNotification;
     tasksDB.put(task.id, task);
     logInfo('Edited task: ${task.title}');
-
   }
 
-  void scheduleTasks() {
+  void manageTasks() {
+    removeScheduledTasks();
     final tasks =
         tasksDB.values
             .where((task) => task.frequency == null && task.subtasks.isEmpty)
@@ -187,6 +187,11 @@ class TaskManager {
               (task) => !task.category.name.toLowerCase().contains('event'),
             )
             .toList();
+
+    logInfo('Total numer of tasks ${tasks.length}');
+    for (var task in tasks) {
+      logInfo('${task.title} ${task.subtasks.length}');
+    }
 
     final justScheduledTasks = <ScheduledTask>[];
 

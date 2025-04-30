@@ -77,7 +77,6 @@ class Scheduler {
     ScheduledTask? lastScheduledTask;
 
     removePreviousScheduledTasks(task);
-    logDebug('No available dates provided for: ${task.title}');
 
     while (remainingTime > 0 ||
         (availableDates != null && availableDates.isNotEmpty)) {

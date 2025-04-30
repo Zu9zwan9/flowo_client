@@ -119,6 +119,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   }
 
   void _navigateToPreviousDay() {
+    _scrollController.jumpTo(0.0);
     setState(() {
       _selectedDate = _selectedDate.subtract(const Duration(days: 1));
     });
@@ -129,6 +130,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   }
 
   void _navigateToNextDay() {
+    _scrollController.jumpTo(0.0);
     setState(() {
       _selectedDate = _selectedDate.add(const Duration(days: 1));
     });

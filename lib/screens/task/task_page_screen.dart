@@ -46,14 +46,12 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
   late Task _task;
   late final TextEditingController _notesController;
   bool _isLoading = false;
-  List<Task> _subtasks = [];
 
   @override
   void initState() {
     super.initState();
     _task = widget.task;
     _notesController = TextEditingController(text: _task.notes ?? '');
-    _arrangeSubtasks();
   }
 
   @override
@@ -62,13 +60,11 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     super.dispose();
   }
 
-  void _arrangeSubtasks() => setState(() => _subtasks = _task.subtasks);
-
   void _toggleTaskCompletion(TaskManagerCubit cubit) {
     cubit.toggleTaskCompletion(_task).then((isCompleted) {
       setState(() {
         _task.isDone = isCompleted;
-        _arrangeSubtasks();
+        //_arrangeSubtasks();
       });
       _showAutoDismissDialog(
         context,
@@ -87,19 +83,14 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       navigationBar: CupertinoNavigationBar(
         middle: Text(_task.title, style: theme.textTheme.navTitleTextStyle),
         trailing: SizedBox(
-          width: 90, // Increased from 70 to fix overflow
+          width: 90,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               CupertinoButton(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 4,
-                ), // Add minimal padding
-                child: const Icon(
-                  CupertinoIcons.pencil,
-                  size: 20,
-                ), // Reduced size
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: const Icon(CupertinoIcons.pencil, size: 20),
                 onPressed: () => _navigateToEditScreen(context),
               ),
               CupertinoButton(
@@ -134,7 +125,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 MagicButton(onGenerate: _generateTaskBreakdown),
                 const SizedBox(height: 24),
                 SubtasksList(
-                  subtasks: _subtasks,
+                  subtasks: _task.subtasks,
                   parentTask: _task,
                   onAdd: _showAddSubtaskDialog,
                   onDelete: _deleteSubtask,
@@ -157,7 +148,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       setState(() {
         _task = widget.task;
         _notesController.text = _task.notes ?? '';
-        _arrangeSubtasks();
+        //_arrangeSubtasks();
       });
     });
   }
@@ -193,17 +184,24 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     );
   }
 
+
   Future<void> _generateTaskBreakdown() async {
     setState(() => _isLoading = true);
     try {
+
+      final subtasksCopy = List<Task>.from(_task.subtasks);
+      for (var task in subtasksCopy) {
+        context.read<TaskManagerCubit>().deleteTask(task);
+      }
+
       final subtasks = await context
           .read<TaskManagerCubit>()
-          .breakdownAndScheduleTask(_task);
+          .generateSubtasksFor(_task);
+
       setState(() {
-        _subtasks = subtasks;
         _isLoading = false;
       });
-      logInfo('Generated ${_subtasks.length} subtasks for ${_task.title}');
+      logInfo('Generated ${subtasks.length} subtasks for ${_task.title}');
     } catch (e) {
       logError('Error generating breakdown: $e');
       setState(() => _isLoading = false);
@@ -254,7 +252,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 onPressed: () {
                   context.read<TaskManagerCubit>().deleteTask(subtask);
                   setState(() {
-                    _subtasks.remove(subtask);
                     _task.subtasks.remove(subtask);
                   });
                   _task.save();
@@ -287,7 +284,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     );
     setState(() {
       _task.subtasks.add(subtask);
-      // _subtasks.add(subtask);
     });
     _task.save();
   }

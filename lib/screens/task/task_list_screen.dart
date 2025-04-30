@@ -9,8 +9,6 @@ import '../../blocs/tasks_controller/task_manager_state.dart';
 import '../../models/task.dart';
 import '../../utils/category_utils.dart';
 import '../../utils/debouncer.dart';
-import '../../utils/task_urgency_calculator.dart';
-import '../../models/day.dart';
 import '../event/event_form_screen.dart';
 import '../event/event_screen.dart';
 import '../habit/habit_form_screen.dart';
@@ -23,7 +21,6 @@ import '../widgets/add_task_aurora_sphere_button.dart';
 import 'task_form_screen.dart';
 import 'task_page_screen.dart';
 import 'task_statistics_screen.dart';
-import 'package:hive/hive.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -41,7 +38,6 @@ class _TaskListScreenState extends State<TaskListScreen>
   final Map<String, bool> _expandedTasks = {};
   String _searchQuery = '';
   late final ScrollController _scrollController;
-  late TaskUrgencyCalculator _urgencyCalculator;
   final bool _schedulingStatus = true; // true = all good, false = needs attention
   final int _tasksToSchedule = 0; // Number of tasks that need scheduling
 
@@ -55,9 +51,6 @@ class _TaskListScreenState extends State<TaskListScreen>
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _scrollController = ScrollController();
-    _urgencyCalculator = TaskUrgencyCalculator(
-      Hive.box<Day>('scheduled_tasks'),
-    );
     WidgetsBinding.instance.addObserver(this);
 
     // Check scheduling status after a short delay to allow the UI to build
@@ -73,22 +66,6 @@ class _TaskListScreenState extends State<TaskListScreen>
     final tasks = tasksCubit.state.tasks;
     final scheduledTasks = tasksCubit.getScheduledTasks();
 
-    // Calculate urgency for all tasks to populate the impossible and needs rescheduling lists
-
-    _urgencyCalculator.calculateUrgency(tasks, scheduledTasks);
-    final impossibleTasks =
-        tasks.where((task) {
-          final timeLeft =
-              task.deadline - DateTime.now().millisecondsSinceEpoch;
-          return timeLeft < 0 && task.estimatedTime > timeLeft;
-        }).toList();
-
-    final needsReschedulingTasks =
-        tasks.where((task) {
-          final timeLeft =
-              task.deadline - DateTime.now().millisecondsSinceEpoch;
-          return timeLeft < 0 && task.estimatedTime <= timeLeft;
-        }).toList();
   }
 
   void _onSearchChanged() {

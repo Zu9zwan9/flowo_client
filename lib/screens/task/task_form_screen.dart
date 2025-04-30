@@ -1028,7 +1028,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       'Task ${widget.task == null ? "Created" : "Updated"}: ${_titleController.text}',
     );
 
-    taskManagerCubit.taskManager.scheduleTasks();
+    taskManagerCubit.taskManager.manageTasks();
 
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
