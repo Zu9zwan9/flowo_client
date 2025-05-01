@@ -549,7 +549,7 @@ class TaskManager {
 
     return subtasks;
   }
-
+// TODO: fix scheduling and order
   void scheduleSubtasks(List<Task> subtasks) {
     logInfo('Scheduling ${subtasks.length} subtasks');
     subtasks.sort((a, b) => (a.order ?? 0).compareTo(b.order ?? 0));
