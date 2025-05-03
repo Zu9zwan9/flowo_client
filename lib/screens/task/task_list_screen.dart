@@ -355,7 +355,17 @@ class _TaskListScreenState extends State<TaskListScreen>
           final task = tasks[index];
           final hasSubtasks = task.subtaskIds.isNotEmpty;
           final isExpanded = _expandedTasks[task.id] ?? false;
-          return _buildTaskListItem(context, task, hasSubtasks, isExpanded);
+          final parentTask =
+              _selectedViewMode == TaskViewMode.leaf
+                  ? context.read<TaskManagerCubit>().getParentTask(task)
+                  : null;
+          return _buildTaskListItem(
+            context,
+            task,
+            hasSubtasks,
+            isExpanded,
+            parentTask,
+          );
         },
       ),
     );
@@ -366,8 +376,9 @@ class _TaskListScreenState extends State<TaskListScreen>
     BuildContext context,
     Task task,
     bool hasSubtasks,
-    bool isExpanded,
-  ) {
+    bool isExpanded, [
+    Task? parentTask,
+  ]) {
     return Column(
       children: [
         TaskListItem(
@@ -379,6 +390,9 @@ class _TaskListScreenState extends State<TaskListScreen>
           categoryColor: CategoryUtils.getCategoryColor(task.category.name),
           hasSubtasks: hasSubtasks,
           isExpanded: isExpanded,
+          parentTask: parentTask,
+          showParentTask:
+              _selectedViewMode == TaskViewMode.leaf && parentTask != null,
           onToggleExpand:
               hasSubtasks
                   ? () {
@@ -420,6 +434,9 @@ class _TaskListScreenState extends State<TaskListScreen>
                             ),
                             hasSubtasks: subtask.subtaskIds.isNotEmpty,
                             isExpanded: _expandedTasks[subtask.id] ?? false,
+                            parentTask: task,
+                            showParentTask:
+                                _selectedViewMode == TaskViewMode.leaf,
                             onToggleExpand:
                                 subtask.subtaskIds.isNotEmpty
                                     ? () {
@@ -601,6 +618,15 @@ class _TaskListScreenState extends State<TaskListScreen>
                       ),
                       hasSubtasks: hasSubtasks,
                       isExpanded: isExpanded,
+                      parentTask:
+                          _selectedViewMode == TaskViewMode.leaf
+                              ? context.read<TaskManagerCubit>().getParentTask(
+                                task,
+                              )
+                              : null,
+                      showParentTask:
+                          _selectedViewMode == TaskViewMode.leaf &&
+                          task.parentTaskId != null,
                       onToggleExpand:
                           hasSubtasks
                               ? () {
@@ -655,6 +681,10 @@ class _TaskListScreenState extends State<TaskListScreen>
                                           isExpanded:
                                               _expandedTasks[subtask.id] ??
                                               false,
+                                          parentTask: task,
+                                          showParentTask:
+                                              _selectedViewMode ==
+                                              TaskViewMode.leaf,
                                           onToggleExpand:
                                               subtask.subtaskIds.isNotEmpty
                                                   ? () {
@@ -1015,43 +1045,94 @@ class _TaskListScreenState extends State<TaskListScreen>
 
   // Build view mode segmented control
   Widget _buildViewModeControl(BuildContext context) {
-    return CupertinoSegmentedControl<TaskViewMode>(
-      children: {
-        TaskViewMode.topLevel: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(CupertinoIcons.tree, size: 18),
-              const SizedBox(width: 4),
-              const Flexible(
-                child: Text('Top-level', overflow: TextOverflow.visible),
-              ),
-            ],
+    final primaryColor = CupertinoTheme.of(context).primaryColor;
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: CupertinoColors.systemGrey6.resolveFrom(context),
+      ),
+      child: CupertinoSegmentedControl<TaskViewMode>(
+        padding: const EdgeInsets.all(4),
+        borderColor: CupertinoColors.systemGrey4.resolveFrom(context),
+        selectedColor: primaryColor.withOpacity(isDarkMode ? 0.8 : 0.9),
+        pressedColor: primaryColor.withOpacity(0.2),
+        children: {
+          TaskViewMode.topLevel: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  CupertinoIcons.square_stack_3d_up,
+                  size: 18,
+                  color:
+                      _selectedViewMode == TaskViewMode.topLevel
+                          ? CupertinoColors.white
+                          : CupertinoColors.label.resolveFrom(context),
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    'Tasks',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color:
+                          _selectedViewMode == TaskViewMode.topLevel
+                              ? CupertinoColors.white
+                              : CupertinoColors.label.resolveFrom(context),
+                    ),
+                    overflow: TextOverflow.visible,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        TaskViewMode.leaf: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(CupertinoIcons.leaf_arrow_circlepath, size: 18),
-              const SizedBox(width: 4),
-              const Flexible(
-                child: Text('Leaf', overflow: TextOverflow.visible),
-              ),
-            ],
+          TaskViewMode.leaf: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  CupertinoIcons.list_bullet_below_rectangle,
+                  size: 18,
+                  color:
+                      _selectedViewMode == TaskViewMode.leaf
+                          ? CupertinoColors.white
+                          : CupertinoColors.label.resolveFrom(context),
+                ),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    'Leaf',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color:
+                          _selectedViewMode == TaskViewMode.leaf
+                              ? CupertinoColors.white
+                              : CupertinoColors.label.resolveFrom(context),
+                    ),
+                    overflow: TextOverflow.visible,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      },
-      onValueChanged: (value) {
-        HapticFeedback.selectionClick();
-        setState(() {
-          _selectedViewMode = value;
-          _clearCache();
-        });
-      },
-      groupValue: _selectedViewMode,
+        },
+        onValueChanged: (value) {
+          HapticFeedback.selectionClick();
+          setState(() {
+            _selectedViewMode = value;
+            _clearCache();
+          });
+        },
+        groupValue: _selectedViewMode,
+      ),
     );
   }
 }
