@@ -72,9 +72,6 @@ class Scheduler {
     int dateIndex = 0;
     ScheduledTask? lastScheduledTask;
 
-    removePreviousScheduledTasks(task);
-    removeParentsScheduledTasks(task);
-
     while (remainingTime > 0 ||
         (availableDates != null && availableDates.isNotEmpty)) {
       String dateKey = _formatDateKey(currentDate);
@@ -401,41 +398,6 @@ class Scheduler {
         (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
       );
       daysDB.put(dateKey, day);
-    }
-  }
-
-  void removePreviousScheduledTasks(Task task) {
-    final scheduledTasksCopy = List<ScheduledTask>.from(task.scheduledTasks);
-
-    task.scheduledTasks.clear();
-    tasksDB.put(task.id, task);
-
-    final taskIdsByDay = <String, List<String>>{};
-    for (var scheduledTask in scheduledTasksCopy) {
-      final dateKey = _formatDateKey(scheduledTask.startTime);
-      taskIdsByDay
-          .putIfAbsent(dateKey, () => [])
-          .add(scheduledTask.scheduledTaskId);
-    }
-
-    for (var entry in taskIdsByDay.entries) {
-      final day = daysDB.get(entry.key);
-      if (day != null) {
-        day.scheduledTasks.removeWhere(
-          (st) => entry.value.contains(st.scheduledTaskId),
-        );
-        daysDB.put(entry.key, day);
-      }
-    }
-  }
-
-  void removeParentsScheduledTasks(Task task) {
-    if (task.parentTaskId != null) {
-      final parentTask = tasksDB.get(task.parentTaskId!);
-      if (parentTask != null) {
-        removePreviousScheduledTasks(parentTask);
-        removeParentsScheduledTasks(parentTask);
-      }
     }
   }
 
