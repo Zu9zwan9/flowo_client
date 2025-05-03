@@ -1046,94 +1046,103 @@ class _TaskListScreenState extends State<TaskListScreen>
   // Build view mode segmented control
   Widget _buildViewModeControl(BuildContext context) {
     final primaryColor = CupertinoTheme.of(context).primaryColor;
-    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
 
     return Container(
+      height: 44,
       decoration: BoxDecoration(
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(10),
-        color: CupertinoColors.systemGrey6.resolveFrom(context),
       ),
-      child: CupertinoSegmentedControl<TaskViewMode>(
-        padding: const EdgeInsets.all(4),
-        borderColor: CupertinoColors.systemGrey4.resolveFrom(context),
-        selectedColor: primaryColor.withOpacity(isDarkMode ? 0.8 : 0.9),
-        pressedColor: primaryColor.withOpacity(0.2),
-        children: {
-          TaskViewMode.topLevel: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  CupertinoIcons.square_stack_3d_up,
-                  size: 18,
-                  color:
-                      _selectedViewMode == TaskViewMode.topLevel
-                          ? CupertinoColors.white
-                          : CupertinoColors.label.resolveFrom(context),
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    'Tasks',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+      child: Row(
+        children:
+            TaskViewMode.values.map((mode) {
+              final isSelected = _selectedViewMode == mode;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _selectedViewMode = mode;
+                      _clearCache();
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: double.infinity,
+                    decoration: BoxDecoration(
                       color:
-                          _selectedViewMode == TaskViewMode.topLevel
-                              ? CupertinoColors.white
-                              : CupertinoColors.label.resolveFrom(context),
+                          isSelected
+                              ? CupertinoColors.systemBackground.resolveFrom(
+                                context,
+                              )
+                              : Colors.transparent,
+                      borderRadius: BorderRadius.circular(9),
                     ),
-                    overflow: TextOverflow.visible,
+                    margin: const EdgeInsets.all(2),
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getViewModeIcon(mode),
+                            size: 18,
+                            color:
+                                isSelected
+                                    ? primaryColor
+                                    : CupertinoColors.systemGrey.resolveFrom(
+                                      context,
+                                    ),
+                            semanticLabel: _getViewModeName(mode),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _getViewModeName(mode),
+                            style: TextStyle(
+                              color:
+                                  isSelected
+                                      ? primaryColor
+                                      : CupertinoColors.systemGrey.resolveFrom(
+                                        context,
+                                      ),
+                              fontSize: 14,
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                            ),
+                            semanticsLabel:
+                                '${_getViewModeName(mode)} view mode',
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
-          TaskViewMode.leaf: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  CupertinoIcons.list_bullet_below_rectangle,
-                  size: 18,
-                  color:
-                      _selectedViewMode == TaskViewMode.leaf
-                          ? CupertinoColors.white
-                          : CupertinoColors.label.resolveFrom(context),
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    'Leaf',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color:
-                          _selectedViewMode == TaskViewMode.leaf
-                              ? CupertinoColors.white
-                              : CupertinoColors.label.resolveFrom(context),
-                    ),
-                    overflow: TextOverflow.visible,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        },
-        onValueChanged: (value) {
-          HapticFeedback.selectionClick();
-          setState(() {
-            _selectedViewMode = value;
-            _clearCache();
-          });
-        },
-        groupValue: _selectedViewMode,
+              );
+            }).toList(),
       ),
     );
+  }
+
+  // Get icon for view mode
+  IconData _getViewModeIcon(TaskViewMode mode) {
+    switch (mode) {
+      case TaskViewMode.topLevel:
+        return CupertinoIcons.square_stack_3d_up;
+      case TaskViewMode.leaf:
+        return CupertinoIcons.list_bullet_below_rectangle;
+    }
+  }
+
+  // Get name for view mode
+  String _getViewModeName(TaskViewMode mode) {
+    switch (mode) {
+      case TaskViewMode.topLevel:
+        return 'Tasks';
+      case TaskViewMode.leaf:
+        return 'Leaf';
+    }
   }
 }
 

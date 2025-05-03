@@ -201,7 +201,7 @@ class _TaskListItemState extends State<TaskListItem> {
         // Slidable widget for swipe actions
         Slidable(
           key: ValueKey(widget.task.id),
-          endActionPane: ActionPane(
+          startActionPane: ActionPane(
             motion: const DrawerMotion(),
             extentRatio: 0.25,
             children: [
