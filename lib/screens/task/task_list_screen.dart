@@ -996,11 +996,15 @@ class _TaskListScreenState extends State<TaskListScreen>
               color: CupertinoTheme.of(context).primaryColor,
             ),
             const SizedBox(width: 4),
-            Text(
-              'Group by: ${_selectedGrouping.displayName}',
-              style: TextStyle(
-                color: CupertinoTheme.of(context).primaryColor,
-                fontSize: 14,
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                'Group by: ${_selectedGrouping.displayName}',
+                style: TextStyle(
+                  color: CupertinoTheme.of(context).primaryColor,
+                  fontSize: 14,
+                ),
+                overflow: TextOverflow.visible,
               ),
             ),
           ],
