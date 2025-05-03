@@ -1,7 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-
+import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../models/task.dart';
+import '../../utils/logger.dart';
 
 class TaskListItem extends StatelessWidget {
   final Task task;
@@ -13,6 +14,7 @@ class TaskListItem extends StatelessWidget {
   final bool isExpanded;
   final VoidCallback? onToggleExpand;
   final VoidCallback? onToggleCompletion;
+  final TaskManagerCubit taskManagerCubit;
 
   const TaskListItem({
     super.key,
@@ -21,6 +23,7 @@ class TaskListItem extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.categoryColor,
+    required this.taskManagerCubit,
     this.hasSubtasks = false,
     this.isExpanded = false,
     this.onToggleExpand,
@@ -101,13 +104,9 @@ class TaskListItem extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${task.scheduledTasks.length} scheduled',
-                        style: CupertinoTheme.of(
-                          context,
-                        ).textTheme.textStyle.copyWith(
-                          fontSize: 12,
-                          color: secondaryTextColor,
-                        ),
+                        '${getScheduledTasksCount(task)} scheduled',
+                        style: CupertinoTheme.of(context).textTheme.textStyle
+                            .copyWith(fontSize: 12, color: secondaryTextColor),
                       ),
                     ],
                   ),
@@ -182,5 +181,33 @@ class TaskListItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  int getScheduledTasksCount(Task task) {
+    int count = 0;
+    List<Task> subtasks = getLowLevelTasks(task);
+
+    for (Task subtask in subtasks) {
+      count += subtask.scheduledTasks.length;
+    }
+    return count;
+  }
+
+  List<Task> getLowLevelTasks(Task task) {
+    List<Task> lowLevelTasks = [];
+
+    if (task.subtaskIds.isEmpty) {
+      lowLevelTasks.add(task);
+      return lowLevelTasks;
+    }
+    var subtasks = taskManagerCubit.getSubtasksForTask(task);
+    for (var subtask in subtasks) {
+      if (subtask.subtaskIds.isEmpty) {
+        lowLevelTasks.add(subtask);
+      } else {
+        lowLevelTasks.addAll(getLowLevelTasks(subtask));
+      }
+    }
+    return lowLevelTasks;
   }
 }

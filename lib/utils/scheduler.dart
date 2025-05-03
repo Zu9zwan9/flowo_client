@@ -67,16 +67,13 @@ class Scheduler {
     double? urgency,
     List<String>? availableDates,
   }) {
-    if (urgency != null && urgency > 0) {
-      _replaceTasksWithLowerPriority(task);
-    }
-
     int remainingTime = task.estimatedTime;
     DateTime currentDate = DateTime.now();
     int dateIndex = 0;
     ScheduledTask? lastScheduledTask;
 
     removePreviousScheduledTasks(task);
+    removeParentsScheduledTasks(task);
 
     while (remainingTime > 0 ||
         (availableDates != null && availableDates.isNotEmpty)) {
@@ -115,36 +112,6 @@ class Scheduler {
 
         if (remainingTime <= 0) {
           break;
-        }
-      }
-
-      // If we still have remaining time and sufficient urgency, try to displace existing tasks
-      if (remainingTime > 0 && urgency != null && urgency > 0) {
-        List<ScheduledTask> displacedTasks = _findDisplaceableSlots(
-          day,
-          start,
-          remainingTime,
-          minSessionDuration,
-          urgency,
-          task.title,
-        );
-
-        for (var taskToDisplace in displacedTasks) {
-          removeScheduledTask(taskToDisplace);
-          lastScheduledTask = _createScheduledTask(
-            task: task,
-            urgency: urgency,
-            start: taskToDisplace.startTime,
-            end: taskToDisplace.endTime,
-            dateKey: dateKey,
-          );
-
-          remainingTime -= _calculateDurationMs(
-            taskToDisplace.startTime,
-            taskToDisplace.endTime,
-          );
-
-          if (remainingTime <= 0) break;
         }
       }
 
@@ -267,40 +234,6 @@ class Scheduler {
 
     // Fall back to global active days
     return userSettings.activeDays?[dayName] ?? true;
-  }
-
-  void _replaceTasksWithLowerPriority(Task highPriorityTask) {
-    List<ScheduledTask> tasksToRemove = [];
-    for (Day day in daysDB.values) {
-      for (ScheduledTask scheduledTask in List.from(day.scheduledTasks)) {
-        Task? parentTask = tasksDB.get(scheduledTask.parentTaskId);
-        if (parentTask != null &&
-            parentTask.priority < highPriorityTask.priority &&
-            scheduledTask.type == ScheduledTaskType.defaultType) {
-          tasksToRemove.add(scheduledTask);
-        }
-      }
-    }
-
-    for (ScheduledTask scheduledTask in tasksToRemove) {
-      for (Day day in daysDB.values) {
-        if (day.scheduledTasks.contains(scheduledTask)) {
-          day.scheduledTasks.remove(scheduledTask);
-          daysDB.put(day.day, day);
-        }
-      }
-      Task? parentTask = tasksDB.get(scheduledTask.parentTaskId);
-      if (parentTask != null) {
-        parentTask.scheduledTasks.remove(scheduledTask);
-        tasksDB.put(parentTask.id, parentTask);
-      }
-    }
-
-    if (tasksToRemove.isNotEmpty) {
-      logInfo(
-        'Displaced ${tasksToRemove.length} lower priority tasks for ${highPriorityTask.title}',
-      );
-    }
   }
 
   List<ScheduledTask> _findAllAvailableTimeSlots(
@@ -430,42 +363,8 @@ class Scheduler {
         breakTime: 0,
       );
 
-  List<ScheduledTask> _findDisplaceableSlots(
-    Day day,
-    DateTime start,
-    int requiredTime,
-    int minSession,
-    double urgency,
-    String taskTitle,
-  ) {
-    final displaceable = <ScheduledTask>[];
-    int timeFound = 0;
-    final tasks =
-        day.scheduledTasks
-            .where(
-              (task) =>
-                  task.startTime.isAfter(start) &&
-                  task.type == ScheduledTaskType.defaultType &&
-                  (task.urgency ?? 0) < urgency,
-            )
-            .toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
-
-    for (var task in tasks) {
-      final duration = _calculateDurationMs(task.startTime, task.endTime);
-      if (duration >= minSession) {
-        displaceable.add(task);
-        timeFound += duration;
-        logDebug(
-          'Displacing task ${task.parentTaskId} (${task.urgency}) for $taskTitle ($urgency)',
-        );
-        if (timeFound >= requiredTime) break;
-      }
-    }
-    return displaceable;
-  }
-
-  void updateScheduledTask(ScheduledTask newScheduledTask) { // only tasks with unchanged IDs
+  void updateScheduledTask(ScheduledTask newScheduledTask) {
+    // only tasks with unchanged IDs
     final task = tasksDB.get(newScheduledTask.parentTaskId);
     if (task != null) {
       task.scheduledTasks.removeWhere(
@@ -507,6 +406,7 @@ class Scheduler {
 
   void removePreviousScheduledTasks(Task task) {
     final scheduledTasksCopy = List<ScheduledTask>.from(task.scheduledTasks);
+
     task.scheduledTasks.clear();
     tasksDB.put(task.id, task);
 
@@ -527,10 +427,16 @@ class Scheduler {
         daysDB.put(entry.key, day);
       }
     }
+  }
 
-    logDebug(
-      'Cleared ${scheduledTasksCopy.length} previous tasks for ${task.title}',
-    );
+  void removeParentsScheduledTasks(Task task) {
+    if (task.parentTaskId != null) {
+      final parentTask = tasksDB.get(task.parentTaskId!);
+      if (parentTask != null) {
+        removePreviousScheduledTasks(parentTask);
+        removeParentsScheduledTasks(parentTask);
+      }
+    }
   }
 
   List<ScheduledTask> _sortScheduledTasksByTime(List<ScheduledTask> tasks) =>

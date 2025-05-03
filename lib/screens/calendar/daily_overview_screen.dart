@@ -757,7 +757,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                           child: Text(
                             isFreeTimeTask
                                 ? freeTimeInfo!['label']
-                                : getHabitName(scheduledTask) ?? task.title,
+                                : getHabitName(scheduledTask) ?? '(${task.parentTask?.title} ${task.order}) ${task.title}',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -766,7 +766,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                                     context,
                                   ).textTheme.textStyle.color,
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            overflow: TextOverflow.visible,
                           ),
                         ),
                       ],

@@ -27,7 +27,7 @@ class TaskAdapter extends TypeAdapter<Task> {
       location: fields[7] as Coordinates?,
       image: fields[8] as String?,
       frequency: fields[9] as RepeatRule?,
-      subtasks: (fields[10] as List?)?.cast<Task>(),
+      subtaskIds: (fields[10] as List?)?.cast<String>(),
       scheduledTasks: (fields[12] as List?)?.cast<ScheduledTask>(),
       isDone: fields[13] as bool,
       order: fields[14] as int?,
@@ -75,7 +75,7 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(9)
       ..write(obj.frequency)
       ..writeByte(10)
-      ..write(obj.subtasks)
+      ..write(obj.subtaskIds)
       ..writeByte(11)
       ..write(obj.parentTaskId)
       ..writeByte(12)

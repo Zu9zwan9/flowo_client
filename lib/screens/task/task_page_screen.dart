@@ -45,11 +45,13 @@ class TaskPageScreen extends StatefulWidget {
 class _TaskPageScreenState extends State<TaskPageScreen> {
   late Task _task;
   late final TextEditingController _notesController;
+  late final TaskManagerCubit _taskManagerCubit;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
+    _taskManagerCubit = context.read<TaskManagerCubit>();
     _task = widget.task;
     _notesController = TextEditingController(text: _task.notes ?? '');
   }
@@ -64,7 +66,6 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     cubit.toggleTaskCompletion(_task).then((isCompleted) {
       setState(() {
         _task.isDone = isCompleted;
-        //_arrangeSubtasks();
       });
       _showAutoDismissDialog(
         context,
@@ -125,7 +126,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 MagicButton(onGenerate: _generateTaskBreakdown),
                 const SizedBox(height: 24),
                 SubtasksList(
-                  subtasks: _task.subtasks,
+                  subtasks: _taskManagerCubit.getSubtasksForTask(_task),
                   parentTask: _task,
                   onAdd: _showAddSubtaskDialog,
                   onDelete: _deleteSubtask,
@@ -148,13 +149,12 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       setState(() {
         _task = widget.task;
         _notesController.text = _task.notes ?? '';
-        //_arrangeSubtasks();
       });
     });
   }
 
   void _confirmDelete(BuildContext context) {
-    final subtaskCount = _task.subtasks.length;
+    final subtaskCount = _task.subtaskIds.length;
     showCupertinoDialog(
       context: context,
       builder:
@@ -184,12 +184,12 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     );
   }
 
-
   Future<void> _generateTaskBreakdown() async {
     setState(() => _isLoading = true);
     try {
-
-      final subtasksCopy = List<Task>.from(_task.subtasks);
+      final subtasksCopy = List<Task>.from(
+        _taskManagerCubit.getSubtasksForTask(_task),
+      );
       for (var task in subtasksCopy) {
         context.read<TaskManagerCubit>().deleteTask(task);
       }
@@ -252,7 +252,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 onPressed: () {
                   context.read<TaskManagerCubit>().deleteTask(subtask);
                   setState(() {
-                    _task.subtasks.remove(subtask);
+                    _task.subtaskIds.remove(subtask.id);
                   });
                   _task.save();
                   Navigator.pop(context);
@@ -283,7 +283,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       parentTask: _task,
     );
     setState(() {
-      _task.subtasks.add(subtask);
+      _task.subtaskIds.add(subtask.id);
     });
     _task.save();
   }
@@ -583,6 +583,11 @@ class SubtasksList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = CupertinoTheme.of(context);
+
+    // Sort subtasks by task.order
+    final sortedSubtasks = List<Task>.from(subtasks)
+      ..sort((a, b) => (a.order ?? 0).compareTo(b.order ?? 0));
+
     return Container(
       padding: const EdgeInsets.all(TaskPageConstants.padding),
       decoration: BoxDecoration(
@@ -633,7 +638,7 @@ class SubtasksList extends StatelessWidget {
                 ),
               ),
               Text(
-                '${subtasks.length}',
+                '${sortedSubtasks.length}',
                 style: theme.textTheme.textStyle.copyWith(
                   color: CupertinoColors.systemGrey,
                 ),
@@ -643,7 +648,7 @@ class SubtasksList extends StatelessWidget {
           const SizedBox(height: 12),
           const Divider(height: 1),
           const SizedBox(height: 12),
-          ...subtasks.map(
+          ...sortedSubtasks.map(
             (subtask) => SubtaskItem(subtask: subtask, onDelete: onDelete),
           ),
         ],

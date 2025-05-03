@@ -48,10 +48,6 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
     final tasks = tasksCubit.state.tasks;
     final scheduledTasks = tasksCubit.getScheduledTasks();
 
-    for(var task in tasks){
-      logInfo(task.title);
-    }
-
     _totalScheduledTasks =
         scheduledTasks
             .where(

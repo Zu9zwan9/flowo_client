@@ -1,4 +1,5 @@
 import 'package:flowo_client/screens/habit/habit_details_screen.dart';
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -136,8 +137,12 @@ class _TaskListScreenState extends State<TaskListScreen>
       final matchesViewMode =
           _selectedViewMode == TaskViewMode.topLevel
               ? task.parentTaskId == null
-              : task.subtasks.isEmpty;
-      return matchesQuery && matchesFilter && matchesViewMode;
+              : task.subtaskIds.isEmpty;
+      final matchesCategory = task.category.name != 'Free Time Manager';
+      return matchesQuery &&
+          matchesFilter &&
+          matchesViewMode &&
+          matchesCategory;
     }).toList();
   }
 
@@ -145,10 +150,7 @@ class _TaskListScreenState extends State<TaskListScreen>
   Map<String, List<Task>> _groupTasksByCategory(List<Task> tasks) {
     final Map<String, List<Task>> grouped = {};
     for (final task in tasks) {
-      if (task.parentTaskId == null &&
-          task.category.name != 'Free Time Manager') {
-        grouped.putIfAbsent(task.category.name, () => []).add(task);
-      }
+      grouped.putIfAbsent(task.category.name, () => []).add(task);
     }
     // Sort categories alphabetically
     return Map.fromEntries(
@@ -351,7 +353,7 @@ class _TaskListScreenState extends State<TaskListScreen>
         itemCount: tasks.length,
         itemBuilder: (context, index) {
           final task = tasks[index];
-          final hasSubtasks = task.subtasks.isNotEmpty;
+          final hasSubtasks = task.subtaskIds.isNotEmpty;
           final isExpanded = _expandedTasks[task.id] ?? false;
           return _buildTaskListItem(context, task, hasSubtasks, isExpanded);
         },
@@ -370,6 +372,7 @@ class _TaskListScreenState extends State<TaskListScreen>
       children: [
         TaskListItem(
           task: task,
+          taskManagerCubit: context.read<TaskManagerCubit>(),
           onTap: () => _onTaskTap(context, task),
           onEdit: () => _editTask(context, task),
           onDelete: () => _deleteTask(context, task),
@@ -401,37 +404,40 @@ class _TaskListScreenState extends State<TaskListScreen>
             margin: const EdgeInsets.only(left: 20),
             child: Column(
               children:
-                  task.subtasks.map((subtask) {
-                    return Column(
-                      children: [
-                        const CupertinoDivider(),
-                        TaskListItem(
-                          task: subtask,
-                          onTap: () => _onTaskTap(context, subtask),
-                          onEdit: () => _editTask(context, subtask),
-                          onDelete: () => _deleteTask(context, subtask),
-                          categoryColor: CategoryUtils.getCategoryColor(
-                            subtask.category.name,
+                  context.read<TaskManagerCubit>().getSubtasksForTask(task).map(
+                    (subtask) {
+                      return Column(
+                        children: [
+                          const CupertinoDivider(),
+                          TaskListItem(
+                            task: subtask,
+                            taskManagerCubit: context.read<TaskManagerCubit>(),
+                            onTap: () => _onTaskTap(context, subtask),
+                            onEdit: () => _editTask(context, subtask),
+                            onDelete: () => _deleteTask(context, subtask),
+                            categoryColor: CategoryUtils.getCategoryColor(
+                              subtask.category.name,
+                            ),
+                            hasSubtasks: subtask.subtaskIds.isNotEmpty,
+                            isExpanded: _expandedTasks[subtask.id] ?? false,
+                            onToggleExpand:
+                                subtask.subtaskIds.isNotEmpty
+                                    ? () {
+                                      HapticFeedback.selectionClick();
+                                      setState(() {
+                                        _expandedTasks[subtask.id] =
+                                            !(_expandedTasks[subtask.id] ??
+                                                false);
+                                      });
+                                    }
+                                    : null,
+                            onToggleCompletion:
+                                () => _toggleTaskCompletion(context, subtask),
                           ),
-                          hasSubtasks: subtask.subtasks.isNotEmpty,
-                          isExpanded: _expandedTasks[subtask.id] ?? false,
-                          onToggleExpand:
-                              subtask.subtasks.isNotEmpty
-                                  ? () {
-                                    HapticFeedback.selectionClick();
-                                    setState(() {
-                                      _expandedTasks[subtask.id] =
-                                          !(_expandedTasks[subtask.id] ??
-                                              false);
-                                    });
-                                  }
-                                  : null,
-                          onToggleCompletion:
-                              () => _toggleTaskCompletion(context, subtask),
-                        ),
-                      ],
-                    );
-                  }).toList(),
+                        ],
+                      );
+                    },
+                  ).toList(),
             ),
           ),
       ],
@@ -580,12 +586,13 @@ class _TaskListScreenState extends State<TaskListScreen>
             if (isExpanded) ...[
               const CupertinoDivider(),
               ...tasks.map((task) {
-                final hasSubtasks = task.subtasks.isNotEmpty;
+                final hasSubtasks = task.subtaskIds.isNotEmpty;
                 final isExpanded = _expandedTasks[task.id] ?? false;
                 return Column(
                   children: [
                     TaskListItem(
                       task: task,
+                      taskManagerCubit: context.read<TaskManagerCubit>(),
                       onTap: () => _onTaskTap(context, task),
                       onEdit: () => _editTask(context, task),
                       onDelete: () => _deleteTask(context, task),
@@ -620,44 +627,57 @@ class _TaskListScreenState extends State<TaskListScreen>
                         margin: const EdgeInsets.only(left: 20),
                         child: Column(
                           children:
-                              task.subtasks.map((subtask) {
-                                return Column(
-                                  children: [
-                                    const CupertinoDivider(),
-                                    TaskListItem(
-                                      task: subtask,
-                                      onTap: () => _onTaskTap(context, subtask),
-                                      onEdit: () => _editTask(context, subtask),
-                                      onDelete:
-                                          () => _deleteTask(context, subtask),
-                                      categoryColor:
-                                          CategoryUtils.getCategoryColor(
-                                            subtask.category.name,
-                                          ),
-                                      hasSubtasks: subtask.subtasks.isNotEmpty,
-                                      isExpanded:
-                                          _expandedTasks[subtask.id] ?? false,
-                                      onToggleExpand:
-                                          subtask.subtasks.isNotEmpty
-                                              ? () {
-                                                HapticFeedback.selectionClick();
-                                                setState(() {
-                                                  _expandedTasks[subtask.id] =
-                                                      !(_expandedTasks[subtask
-                                                              .id] ??
-                                                          false);
-                                                });
-                                              }
-                                              : null,
-                                      onToggleCompletion:
-                                          () => _toggleTaskCompletion(
-                                            context,
-                                            subtask,
-                                          ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
+                              context
+                                  .read<TaskManagerCubit>()
+                                  .getSubtasksForTask(task)
+                                  .map((subtask) {
+                                    return Column(
+                                      children: [
+                                        const CupertinoDivider(),
+                                        TaskListItem(
+                                          task: subtask,
+                                          taskManagerCubit:
+                                              context.read<TaskManagerCubit>(),
+                                          onTap:
+                                              () =>
+                                                  _onTaskTap(context, subtask),
+                                          onEdit:
+                                              () => _editTask(context, subtask),
+                                          onDelete:
+                                              () =>
+                                                  _deleteTask(context, subtask),
+                                          categoryColor:
+                                              CategoryUtils.getCategoryColor(
+                                                subtask.category.name,
+                                              ),
+                                          hasSubtasks:
+                                              subtask.subtaskIds.isNotEmpty,
+                                          isExpanded:
+                                              _expandedTasks[subtask.id] ??
+                                              false,
+                                          onToggleExpand:
+                                              subtask.subtaskIds.isNotEmpty
+                                                  ? () {
+                                                    HapticFeedback.selectionClick();
+                                                    setState(() {
+                                                      _expandedTasks[subtask
+                                                              .id] =
+                                                          !(_expandedTasks[subtask
+                                                                  .id] ??
+                                                              false);
+                                                    });
+                                                  }
+                                                  : null,
+                                          onToggleCompletion:
+                                              () => _toggleTaskCompletion(
+                                                context,
+                                                subtask,
+                                              ),
+                                        ),
+                                      ],
+                                    );
+                                  })
+                                  .toList(),
                         ),
                       ),
                     if (task != tasks.last) const CupertinoDivider(),
@@ -710,7 +730,7 @@ class _TaskListScreenState extends State<TaskListScreen>
   // Show confirmation dialog and delete task
   void _deleteTask(BuildContext context, Task task) {
     HapticFeedback.mediumImpact();
-    final subtaskCount = task.subtasks.length;
+    final subtaskCount = task.subtaskIds.length;
     final message =
         subtaskCount > 0
             ? 'Are you sure you want to delete "${task.title}" and its $subtaskCount subtask${subtaskCount == 1 ? "" : "s"}?'
@@ -996,20 +1016,26 @@ class _TaskListScreenState extends State<TaskListScreen>
         TaskViewMode.topLevel: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(CupertinoIcons.tree, size: 18),
               const SizedBox(width: 4),
-              const Text('Top-level'),
+              const Flexible(
+                child: Text('Top-level', overflow: TextOverflow.visible),
+              ),
             ],
           ),
         ),
         TaskViewMode.leaf: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(CupertinoIcons.leaf_arrow_circlepath, size: 18),
               const SizedBox(width: 4),
-              const Text('Leaf'),
+              const Flexible(
+                child: Text('Leaf', overflow: TextOverflow.visible),
+              ),
             ],
           ),
         ),

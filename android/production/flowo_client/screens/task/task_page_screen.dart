@@ -336,7 +336,7 @@ class TaskHeader extends StatelessWidget {
                   style: theme.textTheme.textStyle.copyWith(
                     color: CupertinoColors.systemGrey,
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.visible,
                 ),
               ),
             ],
@@ -356,7 +356,7 @@ class TaskHeader extends StatelessWidget {
                   style: theme.textTheme.textStyle.copyWith(
                     color: CupertinoColors.systemGrey,
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.visible,
                 ),
               ),
               const SizedBox(width: 8),
@@ -374,7 +374,7 @@ class TaskHeader extends StatelessWidget {
                   style: theme.textTheme.textStyle.copyWith(
                     color: CupertinoColors.systemGrey,
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.visible,
                 ),
               ),
             ],
@@ -403,7 +403,7 @@ class CategoryTag extends StatelessWidget {
       child: Text(
         categoryName,
         style: TextStyle(color: color, fontWeight: FontWeight.bold),
-        overflow: TextOverflow.ellipsis,
+        overflow: TextOverflow.visible,
       ),
     );
   }
@@ -450,7 +450,7 @@ class CompletionToggle extends StatelessWidget {
                         : CupertinoColors.systemGrey,
                 fontSize: 14,
               ),
-              overflow: TextOverflow.ellipsis,
+              overflow: TextOverflow.visible,
             ),
           ),
         ],
@@ -629,7 +629,7 @@ class SubtasksList extends StatelessWidget {
                         child: Text(
                           'Add Subtask',
                           style: theme.textTheme.textStyle,
-                          overflow: TextOverflow.ellipsis,
+                          overflow: TextOverflow.visible,
                         ),
                       ),
                     ],
@@ -734,7 +734,7 @@ class SubtaskItem extends StatelessWidget {
                                   ? CupertinoColors.systemGrey
                                   : theme.textTheme.textStyle.color,
                         ),
-                        overflow: TextOverflow.ellipsis,
+                        overflow: TextOverflow.visible,
                       ),
                     ),
                   ],
@@ -755,7 +755,7 @@ class SubtaskItem extends StatelessWidget {
                           fontSize: 12,
                           color: CupertinoColors.systemGrey,
                         ),
-                        overflow: TextOverflow.ellipsis,
+                        overflow: TextOverflow.visible,
                       ),
                     ),
                     const SizedBox(width: 12),

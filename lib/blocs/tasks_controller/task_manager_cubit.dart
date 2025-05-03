@@ -90,7 +90,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     }
 
     final priority = 0; // Not required, set to default
-    final estimatedTime = end.difference(start).inMilliseconds;
+    final estimatedTime = end
+        .difference(start)
+        .inMilliseconds;
     final deadline = end.millisecondsSinceEpoch; // Use end time as deadline
     final category = Category(
       name: 'Event',
@@ -131,8 +133,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }
 
   Future<List<TaskWithSchedules>> getScheduledTasksForDate(
-    DateTime date,
-  ) async {
+      DateTime date,) async {
     final dateKey = _formatDateKey(date);
 
     final scheduledTasks = taskManager.daysDB.values
@@ -152,18 +153,34 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     }
 
     final result =
-        grouped.entries
-            .map((entry) => TaskWithSchedules(entry.key, entry.value))
-            .toList();
+    grouped.entries
+        .map((entry) => TaskWithSchedules(entry.key, entry.value))
+        .toList();
 
     return result;
   }
 
+  List<Task> getSubtasksForTask(Task task) {
+    final subtasks = <Task>[];
+    for (var t in taskManager.tasksDB.values) {
+      if (task.subtaskIds.contains(t.id)) {
+        subtasks.add(t);
+      }
+    }
+    return subtasks;
+  }
+
+  Task? getTaskById(String taskId) {
+    return taskManager.tasksDB.get(taskId);
+  }
+
   String _formatDateKey(DateTime date) =>
-      '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
+      '${date.year}${date.month.toString().padLeft(2, '0')}${date.day
+          .toString()
+          .padLeft(2, '0')}';
 
   void deleteTask(Task task) {
-    taskManager.deleteTask(task);
+    taskManager.deleteTaskById(task.id);
     emit(
       state.copyWith(tasks: taskManager.tasksDB.values.toList()),
     ); // Refresh state after deletion
@@ -234,7 +251,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     bool overrideOverlaps = false,
   }) {
     logInfo(
-      'Editing event: ${task.title} to new title - $title, start - $start, end - $end',
+      'Editing event: ${task
+          .title} to new title - $title, start - $start, end - $end',
     );
 
     final dateKey = _formatDateKey(start);
@@ -242,10 +260,10 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     // Check for overlaps first, excluding the current task's scheduled tasks
     if (!overrideOverlaps) {
       final overlappingTasks =
-          taskManager.scheduler
-              .findOverlappingTasks(start: start, end: end, dateKey: dateKey)
-              .where((st) => st.parentTaskId != task.id)
-              .toList();
+      taskManager.scheduler
+          .findOverlappingTasks(start: start, end: end, dateKey: dateKey)
+          .where((st) => st.parentTaskId != task.id)
+          .toList();
 
       if (overlappingTasks.isNotEmpty) {
         logInfo(
@@ -263,7 +281,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
       if (day != null) {
         day.scheduledTasks.removeWhere(
-          (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+              (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
         );
         if (day.scheduledTasks.isEmpty) {
           daysBox.delete(oldDateKey);
@@ -275,7 +293,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       task.scheduledTasks.clear();
     }
 
-    final estimatedTime = end.difference(start).inMilliseconds;
+    final estimatedTime = end
+        .difference(start)
+        .inMilliseconds;
     final deadline = end.millisecondsSinceEpoch;
 
     taskManager.editTask(
@@ -391,7 +411,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       // Calculate the total estimated time from the subtasks
       final totalEstimatedTime = subtasks.fold(
         0,
-        (sum, subtask) => sum + subtask.estimatedTime,
+            (sum, subtask) => sum + subtask.estimatedTime,
       );
 
       // Update the task with the estimated time
@@ -426,9 +446,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     try {
       // Get all top-level tasks (tasks without a parent)
       final tasks =
-          taskManager.tasksDB.values
-              .where((task) => task.parentTaskId == null)
-              .toList();
+      taskManager.tasksDB.values
+          .where((task) => task.parentTaskId == null)
+          .toList();
 
       int updatedCount = 0;
 
@@ -464,7 +484,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       // If the task is marked as completed, update any subtasks
       if (task.isDone) {
         // Mark all subtasks as completed if the parent task is completed
-        for (var subtask in task.subtasks) {
+        var subtasks = getSubtasksForTask(task);
+        for (var subtask in subtasks) {
           if (!subtask.isDone) {
             subtask.isDone = true;
             taskManager.tasksDB.put(subtask.id, subtask);
@@ -482,7 +503,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
 
       logInfo(
-        'Task "${task.title}" marked as ${task.isDone ? "completed" : "incomplete"}',
+        'Task "${task.title}" marked as ${task.isDone
+            ? "completed"
+            : "incomplete"}',
       );
 
       return task.isDone;
@@ -570,15 +593,14 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }
 
   /// Schedule a reminder to check if a task is completed
-  Future<void> scheduleCompletionCheckReminder(
-    Task task,
-    DateTime scheduledTime,
-  ) async {
+  Future<void> scheduleCompletionCheckReminder(Task task,
+      DateTime scheduledTime,) async {
     try {
       // TODO: Schedule a notification for the task completion check
       // TODO: This would typically use a notification service
       logInfo(
-        'Would schedule completion check reminder for task "${task.title}" at $scheduledTime',
+        'Would schedule completion check reminder for task "${task
+            .title}" at $scheduledTime',
       );
 
       //TODO:  await _notificationService.scheduleCompletionCheckReminder(task, scheduledTime);

@@ -50,7 +50,7 @@ class Task extends HiveObject {
   RepeatRule? frequency;
 
   @HiveField(10)
-  List<Task> subtasks;
+  List<String> subtaskIds;
 
   @HiveField(11)
   String? parentTaskId;
@@ -104,8 +104,8 @@ class Task extends HiveObject {
   bool get isPaused => status == 'paused';
 
   /// Whether the task can be started (either it has no subtasks or all subtasks are completed)
-  bool get canStart =>
-      subtasks.isEmpty || subtasks.every((subtask) => subtask.isDone);
+  bool get canStart => subtaskIds.isEmpty;
+     // subtasks.isEmpty || subtasks.every((subtask) => subtask.isDone);
 
   Task? get parentTask =>
       parentTaskId != null ? Hive.box<Task>('tasks').get(parentTaskId) : null;
@@ -126,7 +126,7 @@ class Task extends HiveObject {
         'deadline: $deadline, estimatedTime: $estimatedTime, category: $category, '
         'optimisticTime: $optimisticTime, realisticTime: $realisticTime, pessimisticTime: $pessimisticTime, '
         'notes: $notes, location: $location, image: $image, frequency: ${frequency.toString()}, '
-        'subtasks: $subtasks, parentTaskId: $parentTaskId, scheduledTasks: $scheduledTasks, '
+        'subtasks: $subtaskIds, parentTaskId: $parentTaskId, scheduledTasks: $scheduledTasks, '
         'isDone: $isDone, order: $order, overdue: $overdue, color: $color}';
   }
 
@@ -231,7 +231,7 @@ class Task extends HiveObject {
     this.location,
     this.image,
     this.frequency,
-    List<Task>? subtasks,
+    List<String>? subtaskIds,
     List<ScheduledTask>? scheduledTasks,
     this.isDone = false,
     this.order,
@@ -246,7 +246,7 @@ class Task extends HiveObject {
     this.totalDuration = 0,
     List<TaskSession>? sessions,
   }) : parentTaskId = parentTask?.id,
-       subtasks = subtasks ?? [],
+       subtaskIds = subtaskIds ?? [],
        scheduledTasks = scheduledTasks ?? [],
        sessions = sessions ?? [];
 }
