@@ -1,11 +1,12 @@
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import 'package:easy_refresh/easy_refresh.dart';
-import 'package:lottie/lottie.dart';
+
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
 import '../../models/scheduled_task.dart';
@@ -724,7 +725,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
             children: [
               Container(
                 width: 4,
-                height: 40,
+                constraints: BoxConstraints(
+                  minHeight: 40,
+                  maxHeight: double.infinity,
+                ),
                 decoration: BoxDecoration(
                   color:
                       isFreeTimeTask
@@ -735,6 +739,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
+
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -757,7 +762,8 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                           child: Text(
                             isFreeTimeTask
                                 ? freeTimeInfo!['label']
-                                : getHabitName(scheduledTask) ?? '(${task.parentTask?.title} ${task.order}) ${task.title}',
+                                : getHabitName(scheduledTask) ??
+                                    '(${task.parentTask?.title} ${task.order}) ${task.title}',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,

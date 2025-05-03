@@ -1,9 +1,13 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../models/task.dart';
+import '../../models/task_session.dart';
 import '../../utils/category_utils.dart';
 import '../../utils/logger.dart';
 import 'task_form_screen.dart';
@@ -122,6 +126,11 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 ),
                 const SizedBox(height: 24),
                 TaskDescription(task: _task, controller: _notesController),
+                const SizedBox(height: 24),
+                SessionsWidget(
+                  task: _task,
+                  taskManagerCubit: _taskManagerCubit,
+                ),
                 const SizedBox(height: 24),
                 MagicButton(onGenerate: _generateTaskBreakdown),
                 const SizedBox(height: 24),
@@ -272,6 +281,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     int estimatedTime,
     int priority,
     int deadline,
+    int order,
   ) {
     final subtask = Task(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -281,6 +291,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       estimatedTime: estimatedTime,
       category: _task.category,
       parentTask: _task,
+      order: order,
     );
     setState(() {
       _task.subtaskIds.add(subtask.id);
@@ -802,17 +813,843 @@ class LoadingOverlay extends StatelessWidget {
   }
 }
 
-// Add Subtask Dialog Widget (unchanged for brevity)
+/// Widget to display and manage task sessions
+class SessionsWidget extends StatefulWidget {
+  final Task task;
+  final TaskManagerCubit taskManagerCubit;
+
+  const SessionsWidget({
+    required this.task,
+    required this.taskManagerCubit,
+    super.key,
+  });
+
+  @override
+  State<SessionsWidget> createState() => _SessionsWidgetState();
+}
+
+class _SessionsWidgetState extends State<SessionsWidget> {
+  late List<TaskSession> _sessions;
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSessions();
+
+    // Set up a timer to refresh the UI every second if there's an active session
+    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (widget.task.activeSession != null) {
+        setState(() {
+          // Just trigger a rebuild to update the duration
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _loadSessions() {
+    setState(() {
+      _sessions = widget.taskManagerCubit.getTaskSessions(widget.task);
+      // Sort sessions by start time (newest first)
+      _sessions.sort((a, b) => b.startTime.compareTo(a.startTime));
+    });
+  }
+
+  String _formatDuration(int milliseconds) {
+    final duration = Duration(milliseconds: milliseconds);
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    final seconds = duration.inSeconds.remainder(60);
+
+    if (hours > 0) {
+      return '$hours:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    } else {
+      return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
+  }
+
+  // Helper method to build a statistic item
+  Widget _buildStatItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: CupertinoColors.systemGrey.resolveFrom(context),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: CupertinoColors.secondaryLabel.resolveFrom(context),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: CupertinoColors.label.resolveFrom(context),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Calculate session statistics
+  Map<String, dynamic> _calculateSessionStats() {
+    if (_sessions.isEmpty) {
+      return {
+        'avgDuration': 0,
+        'mostProductiveHour': 0,
+        'completedSessions': 0,
+        'totalSessions': 0,
+      };
+    }
+
+    // Calculate average duration
+    final completedSessions =
+        _sessions.where((s) => s.endTime != null).toList();
+    final avgDuration =
+        completedSessions.isEmpty
+            ? 0
+            : completedSessions.fold<int>(
+                  0,
+                  (sum, session) => sum + session.duration,
+                ) ~/
+                completedSessions.length;
+
+    // Find most productive hour (hour with most sessions)
+    final hourCounts = <int, int>{};
+    for (var session in _sessions) {
+      final hour = session.startTime.hour;
+      hourCounts[hour] = (hourCounts[hour] ?? 0) + 1;
+    }
+
+    int mostProductiveHour = 0;
+    int maxCount = 0;
+    hourCounts.forEach((hour, count) {
+      if (count > maxCount) {
+        maxCount = count;
+        mostProductiveHour = hour;
+      }
+    });
+
+    return {
+      'avgDuration': avgDuration,
+      'mostProductiveHour': mostProductiveHour,
+      'completedSessions': completedSessions.length,
+      'totalSessions': _sessions.length,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = CupertinoTheme.of(context);
+    final totalDuration = widget.taskManagerCubit.getTotalDuration(widget.task);
+    final activeSession = widget.task.activeSession;
+    final sessionStats = _calculateSessionStats();
+
+    return Container(
+      padding: const EdgeInsets.all(TaskPageConstants.padding),
+      decoration: BoxDecoration(
+        color: CupertinoColors.systemBackground.resolveFrom(context),
+        borderRadius: BorderRadius.circular(TaskPageConstants.cornerRadius),
+        boxShadow: [
+          BoxShadow(
+            color: CupertinoColors.black.withOpacity(0.1),
+            blurRadius: TaskPageConstants.shadowBlurRadius,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                CupertinoIcons.clock,
+                size: 20,
+                color: CupertinoColors.activeBlue.resolveFrom(context),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Sessions',
+                style: theme.textTheme.navTitleTextStyle.copyWith(fontSize: 18),
+              ),
+              const Spacer(),
+              Text(
+                'Total: ${_formatDuration(totalDuration)}',
+                style: TextStyle(
+                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Session statistics
+          if (_sessions.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: CupertinoColors.systemFill.resolveFrom(context),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Session Statistics',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: CupertinoColors.label.resolveFrom(context),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatItem(
+                          context,
+                          icon: CupertinoIcons.time,
+                          label: 'Avg. Duration',
+                          value: _formatDuration(sessionStats['avgDuration']),
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildStatItem(
+                          context,
+                          icon: CupertinoIcons.chart_bar,
+                          label: 'Most Productive',
+                          value: '${sessionStats['mostProductiveHour']}:00',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatItem(
+                          context,
+                          icon: CupertinoIcons.checkmark_circle,
+                          label: 'Completed',
+                          value:
+                              '${sessionStats['completedSessions']}/${sessionStats['totalSessions']}',
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildStatItem(
+                          context,
+                          icon: CupertinoIcons.calendar,
+                          label: 'First Session',
+                          value:
+                              _sessions.isNotEmpty
+                                  ? '${_sessions.last.startTime.day}/${_sessions.last.startTime.month}'
+                                  : 'N/A',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // Session controls
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildControlButton(
+                context,
+                icon: CupertinoIcons.play_fill,
+                label: 'Start',
+                color: CupertinoColors.activeGreen,
+                onPressed:
+                    widget.task.isDone || widget.task.isInProgress
+                        ? null
+                        : () {
+                          widget.taskManagerCubit.startTask(widget.task);
+                          setState(() {});
+                        },
+              ),
+              _buildControlButton(
+                context,
+                icon: CupertinoIcons.pause_fill,
+                label: 'Pause',
+                color: CupertinoColors.systemOrange,
+                onPressed:
+                    widget.task.isInProgress
+                        ? () {
+                          widget.taskManagerCubit.pauseTask(widget.task);
+                          setState(() {});
+                        }
+                        : null,
+              ),
+              _buildControlButton(
+                context,
+                icon: CupertinoIcons.stop_fill,
+                label: 'Stop',
+                color: CupertinoColors.destructiveRed,
+                onPressed:
+                    widget.task.isInProgress || widget.task.isPaused
+                        ? () {
+                          widget.taskManagerCubit.stopTask(widget.task);
+                          setState(() {});
+                        }
+                        : null,
+              ),
+            ],
+          ),
+
+          // Active session indicator
+          if (activeSession != null) ...[
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: CupertinoColors.activeGreen
+                    .resolveFrom(context)
+                    .withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: CupertinoColors.activeGreen
+                      .resolveFrom(context)
+                      .withOpacity(0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        CupertinoIcons.timer,
+                        color: CupertinoColors.activeGreen.resolveFrom(context),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Session in progress',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: CupertinoColors.activeGreen.resolveFrom(
+                                  context,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              'Started at ${activeSession.startTime.hour.toString().padLeft(2, '0')}:${activeSession.startTime.minute.toString().padLeft(2, '0')}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: CupertinoColors.secondaryLabel
+                                    .resolveFrom(context),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        _formatDuration(activeSession.duration),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: CupertinoColors.activeGreen.resolveFrom(
+                            context,
+                          ),
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Progress indicator
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Progress',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: CupertinoColors.secondaryLabel.resolveFrom(
+                                context,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${((activeSession.duration / widget.task.estimatedTime) * 100).clamp(0, 100).toInt()}%',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: CupertinoColors.activeGreen.resolveFrom(
+                                context,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Stack(
+                        children: [
+                          // Background
+                          Container(
+                            height: 8,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.systemFill.resolveFrom(
+                                context,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          // Progress
+                          Container(
+                            height: 8,
+                            width:
+                                (MediaQuery.of(context).size.width - 64) *
+                                (activeSession.duration /
+                                        widget.task.estimatedTime)
+                                    .clamp(0, 1),
+                            decoration: BoxDecoration(
+                              color: CupertinoColors.activeGreen.resolveFrom(
+                                context,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Elapsed: ${_formatDuration(activeSession.duration)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: CupertinoColors.secondaryLabel.resolveFrom(
+                                context,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'Estimated: ${_formatDuration(widget.task.estimatedTime)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: CupertinoColors.secondaryLabel.resolveFrom(
+                                context,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          // Sessions list
+          if (_sessions.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 8),
+            Text(
+              'Recent Sessions',
+              style: theme.textTheme.textStyle.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...(_sessions
+                .take(5)
+                .map((session) => _buildSessionItem(context, session))),
+            if (_sessions.length > 5) ...[
+              const SizedBox(height: 8),
+              Center(
+                child: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: Text(
+                    'View all ${_sessions.length} sessions',
+                    style: theme.textTheme.textStyle.copyWith(
+                      color: CupertinoColors.activeBlue,
+                    ),
+                  ),
+                  onPressed: () => _showAllSessions(context),
+                ),
+              ),
+            ],
+          ] else ...[
+            const SizedBox(height: 16),
+            Center(
+              child: Text(
+                'No sessions yet',
+                style: theme.textTheme.textStyle.copyWith(
+                  color: CupertinoColors.systemGrey,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback? onPressed,
+  }) {
+    final theme = CupertinoTheme.of(context);
+    final isDisabled = onPressed == null;
+
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onPressed,
+      child: Column(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color:
+                  isDisabled
+                      ? CupertinoColors.systemGrey5
+                      : color.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color:
+                    isDisabled
+                        ? CupertinoColors.systemGrey4
+                        : color.withOpacity(0.3),
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: isDisabled ? CupertinoColors.systemGrey : color,
+              size: 20,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: theme.textTheme.textStyle.copyWith(
+              fontSize: 12,
+              color:
+                  isDisabled
+                      ? CupertinoColors.systemGrey
+                      : theme.textTheme.textStyle.color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionItem(BuildContext context, TaskSession session) {
+    final isActive = session.isActive;
+    final startDate = session.startTime;
+    final endDate = session.endTime;
+
+    // Calculate session completion percentage if there's an estimated time
+    final completionPercentage =
+        widget.task.estimatedTime > 0
+            ? (session.duration / widget.task.estimatedTime * 100)
+                .clamp(0, 100)
+                .toInt()
+            : null;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color:
+            isActive
+                ? CupertinoColors.activeGreen
+                    .resolveFrom(context)
+                    .withOpacity(0.05)
+                : CupertinoColors.systemFill.resolveFrom(context),
+        borderRadius: BorderRadius.circular(8),
+        border:
+            isActive
+                ? Border.all(
+                  color: CupertinoColors.activeGreen
+                      .resolveFrom(context)
+                      .withOpacity(0.2),
+                )
+                : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: (isActive
+                          ? CupertinoColors.activeGreen
+                          : CupertinoColors.systemGrey)
+                      .resolveFrom(context)
+                      .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Icon(
+                  isActive ? CupertinoIcons.timer : CupertinoIcons.clock,
+                  size: 14,
+                  color: (isActive
+                          ? CupertinoColors.activeGreen
+                          : CupertinoColors.systemGrey)
+                      .resolveFrom(context),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${startDate.day}/${startDate.month}/${startDate.year}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: CupertinoColors.label.resolveFrom(context),
+                      ),
+                    ),
+                    Text(
+                      'Started at ${startDate.hour.toString().padLeft(2, '0')}:${startDate.minute.toString().padLeft(2, '0')}${endDate != null ? ' - Ended at ${endDate.hour.toString().padLeft(2, '0')}:${endDate.minute.toString().padLeft(2, '0')}' : ' (In Progress)'}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: CupertinoColors.secondaryLabel.resolveFrom(
+                          context,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isActive
+                          ? CupertinoColors.activeGreen
+                          : CupertinoColors.systemGrey)
+                      .resolveFrom(context)
+                      .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  _formatDuration(session.duration),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: (isActive
+                            ? CupertinoColors.activeGreen
+                            : CupertinoColors.label)
+                        .resolveFrom(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          // Show progress bar for completed sessions if we have estimated time
+          if (!isActive && completionPercentage != null) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: Stack(
+                    children: [
+                      // Background
+                      Container(
+                        height: 4,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: CupertinoColors.systemFill.resolveFrom(
+                            context,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                      // Progress
+                      Container(
+                        height: 4,
+                        width:
+                            (MediaQuery.of(context).size.width - 64) *
+                            (session.duration / widget.task.estimatedTime)
+                                .clamp(0, 1),
+                        decoration: BoxDecoration(
+                          color: CupertinoColors.systemGrey.resolveFrom(
+                            context,
+                          ),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '$completionPercentage%',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showAllSessions(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder:
+          (context) => Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(12),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'All Sessions',
+                      style:
+                          CupertinoTheme.of(
+                            context,
+                          ).textTheme.navTitleTextStyle,
+                    ),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: const Text('Close'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: _sessions.length,
+                    itemBuilder:
+                        (context, index) =>
+                            _buildSessionItem(context, _sessions[index]),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+}
+
+// Add Subtask Dialog Widget (improved for better UX and Apple HIG compliance)
 class AddSubtaskDialog {
+  // Helper method to get a user-friendly label for the order position
+  static String _getOrderLabel(int order, List<Task> sortedSubtasks) {
+    if (sortedSubtasks.isEmpty || order == 0) {
+      return 'First position';
+    } else if (order > (sortedSubtasks.last.order ?? 0)) {
+      return 'Last position';
+    } else {
+      // Find the task before this position
+      final beforeTask = sortedSubtasks.lastWhere(
+        (t) => (t.order ?? 0) < order,
+        orElse: () => sortedSubtasks.first,
+      );
+
+      final beforeTitle = beforeTask.title.substring(
+        0,
+        min(20, beforeTask.title.length),
+      );
+
+      return 'After "$beforeTitle${beforeTask.title.length > 20 ? '...' : ''}"';
+    }
+  }
+
   static void show(
     BuildContext context,
     Task parentTask,
-    Function(String, int, int, int) onAdd,
+    Function(String, int, int, int, int) onAdd,
   ) {
     final titleController = TextEditingController();
     int estimatedTime = 0;
     int priority = 1;
     int deadline = parentTask.deadline;
+    int order = 0; // Will be set based on existing subtasks
+
+    // Get existing subtasks to show order options
+    final existingSubtasks = context
+        .read<TaskManagerCubit>()
+        .getSubtasksForTask(parentTask);
+
+    // Sort subtasks by order
+    final sortedSubtasks = List<Task>.from(existingSubtasks)
+      ..sort((a, b) => (a.order ?? 0).compareTo(b.order ?? 0));
+
+    // Default order to the end of the list
+    if (sortedSubtasks.isNotEmpty) {
+      final lastOrder = sortedSubtasks.last.order ?? 0;
+      order = lastOrder + 1;
+    } else {
+      order = 1; // First subtask
+    }
+
+    final theme = CupertinoTheme.of(context);
+    final isDarkMode =
+        MediaQuery.of(context).platformBrightness == Brightness.dark;
+
+    // Create a list of order options
+    final orderOptions = <int>[];
+    // Add option to insert at the beginning
+    orderOptions.add(0);
+    // Add options to insert between existing subtasks
+    for (int i = 0; i < sortedSubtasks.length; i++) {
+      final currentOrder = sortedSubtasks[i].order ?? i;
+      orderOptions.add(currentOrder + 1);
+    }
+    // Add option to add at the end (already set as default)
+    if (!orderOptions.contains(order)) {
+      orderOptions.add(order);
+    }
 
     showCupertinoModalPopup(
       context: context,
@@ -820,366 +1657,874 @@ class AddSubtaskDialog {
           (_) => StatefulBuilder(
             builder:
                 (context, setState) => Container(
-                  height: MediaQuery.of(context).size.height * 0.7,
+                  height: MediaQuery.of(context).size.height * 0.8,
                   padding: const EdgeInsets.all(TaskPageConstants.padding),
-                  color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemBackground.resolveFrom(
+                      context,
+                    ),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(12),
+                    ),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            child: const Text('Cancel'),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                          const Text(
-                            'Add Subtask',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                      // Header with navigation bar style
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  color: CupertinoColors.activeBlue.resolveFrom(
+                                    context,
+                                  ),
+                                ),
+                              ),
+                              onPressed: () => Navigator.pop(context),
                             ),
-                          ),
-                          CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            child: const Text('Add'),
-                            onPressed: () {
-                              if (_validate(
-                                titleController.text,
-                                estimatedTime,
-                                deadline,
-                                parentTask,
-                                context,
-                              )) {
+                            Text(
+                              'Add Subtask',
+                              style: theme.textTheme.navTitleTextStyle,
+                            ),
+                            CupertinoButton(
+                              padding: EdgeInsets.zero,
+                              child: Text(
+                                'Add',
+                                style: TextStyle(
+                                  color: CupertinoColors.activeBlue.resolveFrom(
+                                    context,
+                                  ),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              onPressed: () {
+                                if (titleController.text.trim().isEmpty) {
+                                  // Show error for empty title
+                                  showCupertinoDialog(
+                                    context: context,
+                                    builder:
+                                        (context) => CupertinoAlertDialog(
+                                          title: const Text('Error'),
+                                          content: const Text(
+                                            'Title cannot be empty',
+                                          ),
+                                          actions: [
+                                            CupertinoDialogAction(
+                                              child: const Text('OK'),
+                                              onPressed:
+                                                  () => Navigator.pop(context),
+                                            ),
+                                          ],
+                                        ),
+                                  );
+                                  return;
+                                }
                                 onAdd(
-                                  titleController.text,
+                                  titleController.text.trim(),
                                   estimatedTime,
                                   priority,
                                   deadline,
+                                  order,
                                 );
                                 Navigator.pop(context);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTextField(
-                        titleController,
-                        'Title',
-                        'Enter subtask title',
-                      ),
-                      const SizedBox(height: 16),
-                      _buildTimePicker(
-                        context,
-                        estimatedTime,
-                        (value) => setState(() => estimatedTime = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPrioritySlider(
-                        priority,
-                        (value) => setState(() => priority = value),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildDeadlinePicker(
-                        context,
-                        deadline,
-                        (value) => setState(() => deadline = value),
-                      ),
-                    ],
-                  ),
-                ),
-          ),
-    ).then((_) => titleController.dispose());
-  }
-
-  static bool _validate(
-    String title,
-    int estimatedTime,
-    int deadline,
-    Task parentTask,
-    BuildContext context,
-  ) {
-    if (title.isEmpty) {
-      _showError(context, 'Please enter a title');
-      return false;
-    }
-    if (estimatedTime <= 0) {
-      _showError(context, 'Select an estimated time greater than 0');
-      return false;
-    }
-    if (estimatedTime > parentTask.estimatedTime) {
-      _showError(context, 'Subtask time cannot exceed parent task time');
-      return false;
-    }
-    if (deadline > parentTask.deadline) {
-      _showError(
-        context,
-        'Subtask deadline cannot exceed parent task deadline',
-      );
-      return false;
-    }
-    return true;
-  }
-
-  static void _showError(BuildContext context, String message) {
-    showCupertinoDialog(
-      context: context,
-      builder:
-          (_) => CupertinoAlertDialog(
-            title: const Text('Error'),
-            content: Text(message),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-    );
-  }
-
-  static Widget _buildTextField(
-    TextEditingController controller,
-    String label,
-    String placeholder,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        CupertinoTextField(
-          controller: controller,
-          placeholder: placeholder,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(color: CupertinoColors.systemGrey4),
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      ],
-    );
-  }
-
-  static Widget _buildTimePicker(
-    BuildContext context,
-    int currentTime,
-    Function(int) onChanged,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Estimated Time',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () async {
-            final time = await _showTimePicker(context);
-            if (time != null) onChanged(time);
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: CupertinoColors.systemBlue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Estimated Time',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: CupertinoColors.systemBlue,
-                  ),
-                ),
-                Text(
-                  DurationFormatter.format(currentTime),
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  static Future<int?> _showTimePicker(BuildContext context) {
-    int? hours;
-    int? minutes;
-    return showCupertinoModalPopup<int>(
-      context: context,
-      builder:
-          (_) => Container(
-            height: 300,
-            color: CupertinoColors.systemBackground,
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 220,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: CupertinoPicker(
-                          itemExtent: 32,
-                          onSelectedItemChanged: (index) => hours = index,
-                          children: [
-                            for (var i = 0; i <= 120; i++) Text('$i hours'),
+                              },
+                            ),
                           ],
                         ),
                       ),
+
+                      // Form fields
                       Expanded(
-                        child: CupertinoPicker(
-                          itemExtent: 32,
-                          onSelectedItemChanged:
-                              (index) => minutes = index * 15,
-                          children: [
-                            for (var i = 0; i < 4; i++)
-                              Text('${i * 15} minutes'),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    CupertinoButton(
-                      child: const Text('Cancel'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    CupertinoButton(
-                      child: const Text('Done'),
-                      onPressed:
-                          () => Navigator.pop(
-                            context,
-                            (hours ?? 0) * 3600000 + (minutes ?? 0) * 60000,
-                          ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-    );
-  }
-
-  static Widget _buildPrioritySlider(int priority, Function(int) onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Priority: $priority',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        CupertinoSlider(
-          min: 1,
-          max: 10,
-          divisions: 9,
-          value: priority.toDouble(),
-          onChanged: (value) => onChanged(value.toInt()),
-          activeColor: CupertinoColors.systemOrange,
-        ),
-      ],
-    );
-  }
-
-  static Widget _buildDeadlinePicker(
-    BuildContext context,
-    int deadline,
-    Function(int) onChanged,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Deadline',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        GestureDetector(
-          onTap: () {
-            final now = DateTime.now();
-            showCupertinoModalPopup(
-              context: context,
-              builder:
-                  (_) => Container(
-                    height: 300,
-                    color: CupertinoColors.systemBackground,
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          height: 220,
-                          child: CupertinoDatePicker(
-                            mode: CupertinoDatePickerMode.date,
-                            initialDateTime:
-                                DateTime.fromMillisecondsSinceEpoch(
-                                      deadline,
-                                    ).isBefore(now)
-                                    ? now
-                                    : DateTime.fromMillisecondsSinceEpoch(
-                                      deadline,
+                        child: SingleChildScrollView(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Title field
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Title',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: CupertinoColors.label
+                                            .resolveFrom(context),
+                                      ),
                                     ),
-                            minimumDate: now,
-                            onDateTimeChanged:
-                                (val) => onChanged(val.millisecondsSinceEpoch),
+                                    const SizedBox(height: 8),
+                                    CupertinoTextField(
+                                      controller: titleController,
+                                      placeholder: 'Enter subtask title',
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: CupertinoColors.systemFill
+                                            .resolveFrom(context),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      style: TextStyle(
+                                        color: CupertinoColors.label
+                                            .resolveFrom(context),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Estimated time field with time picker
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Estimated Time',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: CupertinoColors.label
+                                            .resolveFrom(context),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    GestureDetector(
+                                      onTap: () {
+                                        showCupertinoModalPopup(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return Container(
+                                              height: 216,
+                                              padding: const EdgeInsets.only(
+                                                top: 6.0,
+                                              ),
+                                              margin: EdgeInsets.only(
+                                                bottom:
+                                                    MediaQuery.of(
+                                                      context,
+                                                    ).viewInsets.bottom,
+                                              ),
+                                              color: CupertinoColors
+                                                  .systemBackground
+                                                  .resolveFrom(context),
+                                              child: SafeArea(
+                                                top: false,
+                                                child: Column(
+                                                  children: [
+                                                    Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                      children: [
+                                                        CupertinoButton(
+                                                          child: const Text(
+                                                            'Cancel',
+                                                          ),
+                                                          onPressed: () {
+                                                            Navigator.of(
+                                                              context,
+                                                            ).pop();
+                                                          },
+                                                        ),
+                                                        CupertinoButton(
+                                                          child: const Text(
+                                                            'Done',
+                                                          ),
+                                                          onPressed: () {
+                                                            Navigator.of(
+                                                              context,
+                                                            ).pop();
+                                                          },
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    Expanded(
+                                                      child: CupertinoPicker(
+                                                        magnification: 1.22,
+                                                        squeeze: 1.2,
+                                                        useMagnifier: true,
+                                                        itemExtent: 32,
+                                                        // This sets the initial item.
+                                                        scrollController:
+                                                            FixedExtentScrollController(
+                                                              initialItem:
+                                                                  (estimatedTime ~/
+                                                                          15)
+                                                                      .clamp(
+                                                                        0,
+                                                                        23,
+                                                                      ),
+                                                            ),
+                                                        // This is called when selected item is changed.
+                                                        onSelectedItemChanged: (
+                                                          int selectedItem,
+                                                        ) {
+                                                          setState(() {
+                                                            // Convert to minutes (15-minute increments)
+                                                            estimatedTime =
+                                                                selectedItem *
+                                                                15 *
+                                                                60 *
+                                                                1000;
+                                                          });
+                                                        },
+                                                        children: List<
+                                                          Widget
+                                                        >.generate(24, (
+                                                          int index,
+                                                        ) {
+                                                          final hours =
+                                                              index ~/ 4;
+                                                          final minutes =
+                                                              (index % 4) * 15;
+                                                          return Center(
+                                                            child: Text(
+                                                              '${hours > 0 ? '$hours hr ' : ''}${minutes > 0
+                                                                  ? '$minutes min'
+                                                                  : hours > 0
+                                                                  ? ''
+                                                                  : '0 min'}',
+                                                              style:
+                                                                  const TextStyle(
+                                                                    fontSize:
+                                                                        16,
+                                                                  ),
+                                                            ),
+                                                          );
+                                                        }),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: CupertinoColors.systemFill
+                                              .resolveFrom(context),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              DurationFormatter.format(
+                                                estimatedTime,
+                                              ),
+                                              style: TextStyle(
+                                                color: CupertinoColors.label
+                                                    .resolveFrom(context),
+                                              ),
+                                            ),
+                                            Icon(
+                                              CupertinoIcons.time,
+                                              color: CupertinoColors
+                                                  .secondaryLabel
+                                                  .resolveFrom(context),
+                                              size: 20,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Priority field
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Priority (1-5)',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: CupertinoColors.label
+                                            .resolveFrom(context),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: CupertinoColors.systemFill
+                                            .resolveFrom(context),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: CupertinoSlider(
+                                              value: priority.toDouble(),
+                                              min: 1,
+                                              max: 5,
+                                              divisions: 4,
+                                              onChanged: (value) {
+                                                setState(() {
+                                                  priority = value.round();
+                                                });
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            priority.toString(),
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: CupertinoColors.label
+                                                  .resolveFrom(context),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Order field with improved visual cues
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Subtask Order',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: CupertinoColors.label
+                                                .resolveFrom(context),
+                                          ),
+                                        ),
+                                        Text(
+                                          sortedSubtasks.isEmpty
+                                              ? 'No existing subtasks'
+                                              : '${sortedSubtasks.length} existing subtask${sortedSubtasks.length > 1 ? 's' : ''}',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: CupertinoColors
+                                                .secondaryLabel
+                                                .resolveFrom(context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Choose where to place this subtask in the list',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: CupertinoColors.secondaryLabel
+                                            .resolveFrom(context),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    GestureDetector(
+                                      onTap: () {
+                                        showCupertinoModalPopup(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return Container(
+                                              height: 300,
+                                              padding: const EdgeInsets.only(
+                                                top: 6.0,
+                                              ),
+                                              margin: EdgeInsets.only(
+                                                bottom:
+                                                    MediaQuery.of(
+                                                      context,
+                                                    ).viewInsets.bottom,
+                                              ),
+                                              color: CupertinoColors
+                                                  .systemBackground
+                                                  .resolveFrom(context),
+                                              child: SafeArea(
+                                                top: false,
+                                                child: Column(
+                                                  children: [
+                                                    Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                      children: [
+                                                        CupertinoButton(
+                                                          child: const Text(
+                                                            'Cancel',
+                                                          ),
+                                                          onPressed: () {
+                                                            Navigator.of(
+                                                              context,
+                                                            ).pop();
+                                                          },
+                                                        ),
+                                                        Text(
+                                                          'Select Position',
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.bold,
+                                                            fontSize: 16,
+                                                          ),
+                                                        ),
+                                                        CupertinoButton(
+                                                          child: const Text(
+                                                            'Done',
+                                                          ),
+                                                          onPressed: () {
+                                                            Navigator.of(
+                                                              context,
+                                                            ).pop();
+                                                          },
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    Expanded(
+                                                      child: CupertinoPicker(
+                                                        magnification: 1.22,
+                                                        squeeze: 1.2,
+                                                        useMagnifier: true,
+                                                        itemExtent: 44,
+                                                        scrollController:
+                                                            FixedExtentScrollController(
+                                                              initialItem:
+                                                                  orderOptions
+                                                                      .indexOf(
+                                                                        order,
+                                                                      ),
+                                                            ),
+                                                        onSelectedItemChanged: (
+                                                          index,
+                                                        ) {
+                                                          setState(() {
+                                                            order =
+                                                                orderOptions[index];
+                                                          });
+                                                        },
+                                                        children:
+                                                            orderOptions.map((
+                                                              o,
+                                                            ) {
+                                                              String label;
+                                                              IconData icon;
+                                                              Color iconColor;
+
+                                                              if (o == 0 ||
+                                                                  (sortedSubtasks
+                                                                          .isEmpty &&
+                                                                      o == 1)) {
+                                                                label =
+                                                                    'First position';
+                                                                icon =
+                                                                    CupertinoIcons
+                                                                        .arrow_up_to_line;
+                                                                iconColor = CupertinoColors
+                                                                    .systemBlue
+                                                                    .resolveFrom(
+                                                                      context,
+                                                                    );
+                                                              } else if (o ==
+                                                                      order &&
+                                                                  sortedSubtasks
+                                                                      .isNotEmpty) {
+                                                                label =
+                                                                    'Last position';
+                                                                icon =
+                                                                    CupertinoIcons
+                                                                        .arrow_down_to_line;
+                                                                iconColor = CupertinoColors
+                                                                    .systemIndigo
+                                                                    .resolveFrom(
+                                                                      context,
+                                                                    );
+                                                              } else {
+                                                                // Find the tasks before and after this position
+                                                                final beforeTask =
+                                                                    sortedSubtasks.lastWhere(
+                                                                      (t) =>
+                                                                          (t.order ??
+                                                                              0) <
+                                                                          o,
+                                                                      orElse:
+                                                                          () =>
+                                                                              sortedSubtasks.first,
+                                                                    );
+                                                                final afterTask = sortedSubtasks.firstWhere(
+                                                                  (t) =>
+                                                                      (t.order ??
+                                                                          0) >=
+                                                                      o,
+                                                                  orElse:
+                                                                      () =>
+                                                                          sortedSubtasks
+                                                                              .last,
+                                                                );
+
+                                                                final beforeTitle = beforeTask
+                                                                    .title
+                                                                    .substring(
+                                                                      0,
+                                                                      min(
+                                                                        15,
+                                                                        beforeTask
+                                                                            .title
+                                                                            .length,
+                                                                      ),
+                                                                    );
+                                                                final afterTitle = afterTask
+                                                                    .title
+                                                                    .substring(
+                                                                      0,
+                                                                      min(
+                                                                        15,
+                                                                        afterTask
+                                                                            .title
+                                                                            .length,
+                                                                      ),
+                                                                    );
+
+                                                                label =
+                                                                    'After "$beforeTitle${beforeTask.title.length > 15 ? '...' : ''}"';
+                                                                icon =
+                                                                    CupertinoIcons
+                                                                        .arrow_right;
+                                                                iconColor = CupertinoColors
+                                                                    .systemGreen
+                                                                    .resolveFrom(
+                                                                      context,
+                                                                    );
+                                                              }
+
+                                                              return Container(
+                                                                padding:
+                                                                    const EdgeInsets.symmetric(
+                                                                      horizontal:
+                                                                          16,
+                                                                    ),
+                                                                child: Row(
+                                                                  children: [
+                                                                    Icon(
+                                                                      icon,
+                                                                      color:
+                                                                          iconColor,
+                                                                      size: 20,
+                                                                    ),
+                                                                    const SizedBox(
+                                                                      width: 12,
+                                                                    ),
+                                                                    Expanded(
+                                                                      child: Text(
+                                                                        label,
+                                                                        style: TextStyle(
+                                                                          fontSize:
+                                                                              16,
+                                                                          color: CupertinoColors.label.resolveFrom(
+                                                                            context,
+                                                                          ),
+                                                                        ),
+                                                                        overflow:
+                                                                            TextOverflow.ellipsis,
+                                                                      ),
+                                                                    ),
+                                                                  ],
+                                                                ),
+                                                              );
+                                                            }).toList(),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      },
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: CupertinoColors.systemFill
+                                              .resolveFrom(context),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: CupertinoColors.activeBlue
+                                                .resolveFrom(context)
+                                                .withOpacity(0.3),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              AddSubtaskDialog._getOrderLabel(
+                                                order,
+                                                sortedSubtasks,
+                                              ),
+                                              style: TextStyle(
+                                                color: CupertinoColors.label
+                                                    .resolveFrom(context),
+                                              ),
+                                            ),
+                                            Icon(
+                                              CupertinoIcons.list_number,
+                                              color: CupertinoColors.activeBlue
+                                                  .resolveFrom(context),
+                                              size: 20,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Deadline field with date picker (limited to parent's deadline)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'Deadline',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: CupertinoColors.label
+                                                .resolveFrom(context),
+                                          ),
+                                        ),
+                                        CupertinoSwitch(
+                                          value:
+                                              deadline != parentTask.deadline,
+                                          onChanged: (value) {
+                                            setState(() {
+                                              if (value) {
+                                                // Set to one day before parent deadline if using custom
+                                                final parentDate =
+                                                    DateTime.fromMillisecondsSinceEpoch(
+                                                      parentTask.deadline,
+                                                    );
+                                                final oneDayBefore = parentDate
+                                                    .subtract(
+                                                      const Duration(days: 1),
+                                                    );
+                                                deadline =
+                                                    oneDayBefore
+                                                        .millisecondsSinceEpoch;
+                                              } else {
+                                                // Use parent deadline
+                                                deadline = parentTask.deadline;
+                                              }
+                                            });
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      deadline == parentTask.deadline
+                                          ? 'Using parent task deadline'
+                                          : 'Custom deadline (before parent\'s)',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: CupertinoColors.secondaryLabel
+                                            .resolveFrom(context),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    GestureDetector(
+                                      onTap:
+                                          deadline != parentTask.deadline
+                                              ? () {
+                                                showCupertinoModalPopup(
+                                                  context: context,
+                                                  builder: (
+                                                    BuildContext context,
+                                                  ) {
+                                                    return Container(
+                                                      height: 216,
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                            top: 6.0,
+                                                          ),
+                                                      margin: EdgeInsets.only(
+                                                        bottom:
+                                                            MediaQuery.of(
+                                                              context,
+                                                            ).viewInsets.bottom,
+                                                      ),
+                                                      color: CupertinoColors
+                                                          .systemBackground
+                                                          .resolveFrom(context),
+                                                      child: SafeArea(
+                                                        top: false,
+                                                        child: Column(
+                                                          children: [
+                                                            Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .spaceBetween,
+                                                              children: [
+                                                                CupertinoButton(
+                                                                  child:
+                                                                      const Text(
+                                                                        'Cancel',
+                                                                      ),
+                                                                  onPressed: () {
+                                                                    Navigator.of(
+                                                                      context,
+                                                                    ).pop();
+                                                                  },
+                                                                ),
+                                                                CupertinoButton(
+                                                                  child:
+                                                                      const Text(
+                                                                        'Done',
+                                                                      ),
+                                                                  onPressed: () {
+                                                                    Navigator.of(
+                                                                      context,
+                                                                    ).pop();
+                                                                  },
+                                                                ),
+                                                              ],
+                                                            ),
+                                                            Expanded(
+                                                              child: CupertinoDatePicker(
+                                                                mode:
+                                                                    CupertinoDatePickerMode
+                                                                        .date,
+                                                                initialDateTime:
+                                                                    DateTime.fromMillisecondsSinceEpoch(
+                                                                      deadline,
+                                                                    ),
+                                                                minimumDate:
+                                                                    DateTime.now(),
+                                                                maximumDate:
+                                                                    DateTime.fromMillisecondsSinceEpoch(
+                                                                      parentTask
+                                                                          .deadline,
+                                                                    ),
+                                                                onDateTimeChanged: (
+                                                                  DateTime
+                                                                  newDate,
+                                                                ) {
+                                                                  setState(() {
+                                                                    deadline =
+                                                                        newDate
+                                                                            .millisecondsSinceEpoch;
+                                                                  });
+                                                                },
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+                                              }
+                                              : null,
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: CupertinoColors.systemFill
+                                              .resolveFrom(context),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border:
+                                              deadline != parentTask.deadline
+                                                  ? Border.all(
+                                                    color: CupertinoColors
+                                                        .activeBlue
+                                                        .resolveFrom(context)
+                                                        .withOpacity(0.3),
+                                                    width: 1,
+                                                  )
+                                                  : null,
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              DateTime.fromMillisecondsSinceEpoch(
+                                                deadline,
+                                              ).toLocal().toString().split(
+                                                ' ',
+                                              )[0],
+                                              style: TextStyle(
+                                                color:
+                                                    deadline !=
+                                                            parentTask.deadline
+                                                        ? CupertinoColors.label
+                                                            .resolveFrom(
+                                                              context,
+                                                            )
+                                                        : CupertinoColors
+                                                            .secondaryLabel
+                                                            .resolveFrom(
+                                                              context,
+                                                            ),
+                                              ),
+                                            ),
+                                            Icon(
+                                              CupertinoIcons.calendar,
+                                              color:
+                                                  deadline !=
+                                                          parentTask.deadline
+                                                      ? CupertinoColors
+                                                          .activeBlue
+                                                          .resolveFrom(context)
+                                                      : CupertinoColors
+                                                          .secondaryLabel
+                                                          .resolveFrom(context),
+                                              size: 20,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            CupertinoButton(
-                              child: const Text('Cancel'),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                            CupertinoButton(
-                              child: const Text('Done'),
-                              onPressed: () => Navigator.pop(context),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: CupertinoColors.systemBlue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Date',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: CupertinoColors.systemBlue,
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  DateTime.fromMillisecondsSinceEpoch(
-                    deadline,
-                  ).toLocal().toString().split(' ')[0],
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
           ),
-        ),
-      ],
     );
   }
 }

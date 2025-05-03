@@ -76,16 +76,29 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       _firstNotification = widget.task!.firstNotification;
       _secondNotification = widget.task!.secondNotification;
     } else {
+      // Initialize with default values
+      final defaultDuration = 0; // 1 hour in milliseconds
+
       _formData = TaskFormData(
         selectedDateTime:
             widget.selectedDate ?? _roundToNearestFiveMinutes(DateTime.now()),
         category: '',
         priority: 1,
-        estimatedTime: 0,
-        optimisticTime: 0,
-        realisticTime: 0,
-        pessimisticTime: 0,
+        estimatedTime: defaultDuration,
+        optimisticTime: defaultDuration,
+        realisticTime: defaultDuration,
+        pessimisticTime: defaultDuration,
       );
+
+      // If using PERT method, adjust the default values to show a range
+      if (_userSettings.usePertMethod) {
+        _formData.optimisticTime =
+            (defaultDuration * 0.8).toInt(); // 80% of default
+        _formData.realisticTime = defaultDuration; // 100% of default
+        _formData.pessimisticTime =
+            (defaultDuration * 1.2).toInt(); // 120% of default
+        _formData.calculateEstimatedTime();
+      }
     }
 
     _animationController = AnimationController(
@@ -184,37 +197,95 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 form.sectionTitle('Estimated Time'),
                 form.formGroup(
                   children: [
-                    form.selectionButton(
-                      label: 'Optimistic Time',
-                      value: _formatDuration(_formData.optimisticTime),
-                      onTap: () => _showDurationPicker(context, 'optimistic'),
-                      icon: CupertinoIcons.timer,
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: form.segmentedControl<bool>(
+                        children: {
+                          true: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              'PERT Method',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                          ),
+                          false: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text(
+                              'Simple Duration',
+                              style: TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        },
+                        groupValue: _userSettings.usePertMethod,
+                        onValueChanged: (value) {
+                          setState(() {
+                            // Update the user setting
+                            _userSettings.usePertMethod = value;
+                            _userSettings.save();
+
+                            // Update form data based on the new method
+                            if (value) {
+                              // Switching to PERT method
+                              // Create a range based on current estimated time
+                              final currentTime = _formData.estimatedTime;
+                              _formData.optimisticTime =
+                                  (currentTime * 0.8).toInt();
+                              _formData.realisticTime = currentTime;
+                              _formData.pessimisticTime =
+                                  (currentTime * 1.2).toInt();
+                              _formData.calculateEstimatedTime();
+                            } else {
+                              // Switching to simple duration
+                              // Keep the current estimated time
+                              final currentEstimatedTime =
+                                  _formData.estimatedTime;
+                              _formData.setSimpleDuration(currentEstimatedTime);
+                            }
+                          });
+                        },
+                      ),
                     ),
-                    form.divider(),
-                    form.selectionButton(
-                      label: 'Realistic Time',
-                      value: _formatDuration(_formData.realisticTime),
-                      onTap: () => _showDurationPicker(context, 'realistic'),
-                      icon: CupertinoIcons.timer,
-                    ),
-                    form.divider(),
-                    form.selectionButton(
-                      label: 'Pessimistic Time',
-                      value: _formatDuration(_formData.pessimisticTime),
-                      onTap: () => _showDurationPicker(context, 'pessimistic'),
-                      icon: CupertinoIcons.timer,
-                    ),
-                    form.divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Expected Time:', style: form.labelTextStyle()),
-                        Text(
-                          _formatDuration(_formData.estimatedTime),
-                          style: form.valueTextStyle,
-                        ),
-                      ],
-                    ),
+                    if (_userSettings.usePertMethod) ...[
+                      form.selectionButton(
+                        label: 'Optimistic Time',
+                        value: _formatDuration(_formData.optimisticTime),
+                        onTap: () => _showDurationPicker(context, 'optimistic'),
+                        icon: CupertinoIcons.timer,
+                      ),
+                      form.divider(),
+                      form.selectionButton(
+                        label: 'Realistic Time',
+                        value: _formatDuration(_formData.realisticTime),
+                        onTap: () => _showDurationPicker(context, 'realistic'),
+                        icon: CupertinoIcons.timer,
+                      ),
+                      form.divider(),
+                      form.selectionButton(
+                        label: 'Pessimistic Time',
+                        value: _formatDuration(_formData.pessimisticTime),
+                        onTap:
+                            () => _showDurationPicker(context, 'pessimistic'),
+                        icon: CupertinoIcons.timer,
+                      ),
+                      form.divider(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Expected Time:', style: form.labelTextStyle()),
+                          Text(
+                            _formatDuration(_formData.estimatedTime),
+                            style: form.valueTextStyle,
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      form.selectionButton(
+                        label: 'Duration',
+                        value: _formatDuration(_formData.estimatedTime),
+                        onTap: () => _showDurationPicker(context, 'simple'),
+                        icon: CupertinoIcons.timer,
+                      ),
+                    ],
                   ],
                 ),
 
@@ -579,6 +650,10 @@ class _TaskFormScreenState extends State<TaskFormScreen>
         initialHours = _formData.pessimisticTime ~/ 3600000;
         initialMinutes = (_formData.pessimisticTime % 3600000) ~/ 60000;
         break;
+      case 'simple':
+        initialHours = _formData.estimatedTime ~/ 3600000;
+        initialMinutes = (_formData.estimatedTime % 3600000) ~/ 60000;
+        break;
       default:
         initialHours = _formData.estimatedTime ~/ 3600000;
         initialMinutes = (_formData.estimatedTime % 3600000) ~/ 60000;
@@ -608,8 +683,15 @@ class _TaskFormScreenState extends State<TaskFormScreen>
           case 'pessimistic':
             _formData.pessimisticTime = duration;
             break;
+          case 'simple':
+            _formData.setSimpleDuration(duration);
+            break;
         }
-        _formData.calculateEstimatedTime();
+
+        // Only calculate estimated time if using PERT method
+        if (_userSettings.usePertMethod) {
+          _formData.calculateEstimatedTime();
+        }
       });
     }
   }
@@ -945,14 +1027,22 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       return 'Please select or add a category';
     }
 
-    if (_formData.optimisticTime > _formData.realisticTime) {
-      return 'Optimistic time should not exceed realistic time';
-    }
-    if (_formData.realisticTime > _formData.pessimisticTime) {
-      return 'Realistic time should not exceed pessimistic time';
-    }
-    if (_formData.optimisticTime <= 0) {
-      return 'Optimistic time must be greater than zero';
+    if (_userSettings.usePertMethod) {
+      // Validate PERT method inputs
+      if (_formData.optimisticTime > _formData.realisticTime) {
+        return 'Optimistic time should not exceed realistic time';
+      }
+      if (_formData.realisticTime > _formData.pessimisticTime) {
+        return 'Realistic time should not exceed pessimistic time';
+      }
+      if (_formData.optimisticTime <= 0) {
+        return 'Optimistic time must be greater than zero';
+      }
+    } else {
+      // Validate simple duration input
+      if (_formData.estimatedTime <= 0) {
+        return 'Duration must be greater than zero';
+      }
     }
 
     final now = DateTime.now();

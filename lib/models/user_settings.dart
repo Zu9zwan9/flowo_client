@@ -83,6 +83,9 @@ class UserSettings extends HiveObject {
   @HiveField(23)
   String? gradientEndAlignment;
 
+  @HiveField(24)
+  bool usePertMethod = true;
+
   UserSettings({
     required this.name,
     required this.minSession,
@@ -108,6 +111,7 @@ class UserSettings extends HiveObject {
     this.highContrastMode = false,
     this.gradientStartAlignment = "topLeft",
     this.gradientEndAlignment = "bottomRight",
+    this.usePertMethod = true,
   }) : daySchedules = daySchedules ?? {} {
     activeDays ??= {
       'Monday': true,

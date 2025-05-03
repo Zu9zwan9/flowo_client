@@ -198,50 +198,49 @@ class _TaskListItemState extends State<TaskListItem> {
           ),
         ),
 
-        // Slidable widget for swipe actions
-        Slidable(
-          key: ValueKey(widget.task.id),
-          startActionPane: ActionPane(
-            motion: const DrawerMotion(),
-            extentRatio: 0.25,
-            children: [
-              SlidableAction(
-                onPressed: (_) {
-                  HapticFeedback.selectionClick();
-                  widget.onEdit();
-                },
-                backgroundColor: CupertinoColors.systemBlue,
-                foregroundColor: CupertinoColors.white,
-                icon: CupertinoIcons.pencil,
-                label: 'Edit',
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
+        // Regular CupertinoButton for the task item
+        CupertinoButton(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            widget.onTap();
+          },
+          child: Slidable(
+            key: ValueKey(widget.task.id),
+            startActionPane: ActionPane(
+              motion: const DrawerMotion(),
+              extentRatio: 0.25,
+              children: [
+                SlidableAction(
+                  onPressed: (_) {
+                    HapticFeedback.selectionClick();
+                    widget.onEdit();
+                  },
+                  backgroundColor: CupertinoColors.systemBlue,
+                  foregroundColor: CupertinoColors.white,
+                  icon: CupertinoIcons.pencil,
+                  label: 'Edit',
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
                 ),
-              ),
-              SlidableAction(
-                onPressed: (_) {
-                  HapticFeedback.selectionClick();
-                  widget.onDelete();
-                },
-                backgroundColor: CupertinoColors.destructiveRed,
-                foregroundColor: CupertinoColors.white,
-                icon: CupertinoIcons.delete,
-                label: 'Delete',
-                borderRadius: const BorderRadius.only(
-                  topRight: Radius.circular(12),
-                  bottomRight: Radius.circular(12),
+                SlidableAction(
+                  onPressed: (_) {
+                    HapticFeedback.selectionClick();
+                    widget.onDelete();
+                  },
+                  backgroundColor: CupertinoColors.destructiveRed,
+                  foregroundColor: CupertinoColors.white,
+                  icon: CupertinoIcons.delete,
+                  label: 'Delete',
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
                 ),
-              ),
-            ],
-          ),
-
-          child: CupertinoButton(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            onPressed: () {
-              HapticFeedback.selectionClick();
-              widget.onTap();
-            },
+              ],
+            ),
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: glassEffect,
@@ -260,46 +259,39 @@ class _TaskListItemState extends State<TaskListItem> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (widget.showParentTask &&
-                                widget.parentTask != null) ...[
-                              _ParentTaskIndicator(
-                                parentTask: widget.parentTask!,
-                              ),
-                              const SizedBox(height: 2),
-                            ],
-                            Text(
-                              widget.task.title,
-                              style: CupertinoTheme.of(
-                                context,
-                              ).textTheme.textStyle.copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color:
-                                    widget.task.isDone
-                                        ? secondaryTextColor
-                                        : textColor,
-                                decoration:
-                                    widget.task.isDone
-                                        ? TextDecoration.lineThrough
-                                        : null,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${getScheduledTasksCount(widget.task)} scheduled',
-                              style: CupertinoTheme.of(
-                                context,
-                              ).textTheme.textStyle.copyWith(
-                                fontSize: 12,
-                                color: secondaryTextColor,
-                              ),
-                            ),
-                          ],
+                        if (widget.showParentTask &&
+                            widget.parentTask != null) ...[
+                          _ParentTaskIndicator(parentTask: widget.parentTask!),
+                          const SizedBox(height: 2),
+                        ],
+                        Text(
+                          widget.task.title,
+                          style: CupertinoTheme.of(
+                            context,
+                          ).textTheme.textStyle.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color:
+                                widget.task.isDone
+                                    ? secondaryTextColor
+                                    : textColor,
+                            decoration:
+                                widget.task.isDone
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${getScheduledTasksCount(widget.task)} scheduled',
+                          style: CupertinoTheme.of(
+                            context,
+                          ).textTheme.textStyle.copyWith(
+                            fontSize: 12,
+                            color: secondaryTextColor,
+                          ),
                         ),
                         if (widget.task.notes?.isNotEmpty == true) ...[
                           const SizedBox(height: 4),
