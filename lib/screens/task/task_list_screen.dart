@@ -1012,7 +1012,7 @@ class _TaskListScreenState extends State<TaskListScreen>
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
         decoration: BoxDecoration(
           color: CupertinoColors.systemGrey6.resolveFrom(context),
           borderRadius: BorderRadius.circular(10),
@@ -1021,7 +1021,7 @@ class _TaskListScreenState extends State<TaskListScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              CupertinoIcons.group,
+              CupertinoIcons.group_solid,
               size: 18,
               color: CupertinoTheme.of(context).primaryColor,
             ),
@@ -1129,9 +1129,9 @@ class _TaskListScreenState extends State<TaskListScreen>
   IconData _getViewModeIcon(TaskViewMode mode) {
     switch (mode) {
       case TaskViewMode.topLevel:
-        return CupertinoIcons.square_stack_3d_up;
+        return CupertinoIcons.rocket_fill;
       case TaskViewMode.leaf:
-        return CupertinoIcons.list_bullet_below_rectangle;
+        return CupertinoIcons.layers_alt_fill;
     }
   }
 
@@ -1139,9 +1139,9 @@ class _TaskListScreenState extends State<TaskListScreen>
   String _getViewModeName(TaskViewMode mode) {
     switch (mode) {
       case TaskViewMode.topLevel:
-        return 'Tasks';
+        return 'Goals';
       case TaskViewMode.leaf:
-        return 'Leaf';
+        return 'Steps';
     }
   }
 }

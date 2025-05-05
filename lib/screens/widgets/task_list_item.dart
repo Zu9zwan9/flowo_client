@@ -6,7 +6,6 @@ import 'package:confetti/confetti.dart';
 import 'dart:math';
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../models/task.dart';
-import '../../utils/logger.dart';
 
 /// A widget that displays the parent task information
 class _ParentTaskIndicator extends StatelessWidget {
@@ -18,7 +17,7 @@ class _ParentTaskIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(
+        const Icon(
           CupertinoIcons.arrow_turn_up_right,
           size: 12,
           color: CupertinoColors.systemGrey,
@@ -76,7 +75,7 @@ class TaskListItem extends StatefulWidget {
 }
 
 class _TaskListItemState extends State<TaskListItem> {
-  late ConfettiController _confettiController;
+  late final ConfettiController _confettiController;
 
   @override
   void initState() {
@@ -92,41 +91,26 @@ class _TaskListItemState extends State<TaskListItem> {
     super.dispose();
   }
 
-  // Handle task completion toggle with confetti
   void _handleToggleCompletion() {
     if (widget.onToggleCompletion != null) {
       if (!widget.task.isDone) {
-        // Only play confetti when marking as completed
         _confettiController.play();
       }
       widget.onToggleCompletion!();
     }
   }
 
-  // Build the parent task indicator widget
-  Widget _buildParentTaskIndicator(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          CupertinoIcons.arrow_turn_up_right,
-          size: 12,
-          color: CupertinoColors.systemGrey,
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            'From: ${widget.parentTask!.title}',
-            style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-              fontSize: 12,
-              color: CupertinoColors.systemGrey,
-              fontStyle: FontStyle.italic,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
+  int getScheduledTasksCount(Task task) {
+    return _getLowLevelTasks(
+      task,
+    ).fold(0, (sum, subtask) => sum + subtask.scheduledTasks.length);
+  }
+
+  List<Task> _getLowLevelTasks(Task task) {
+    if (task.subtaskIds.isEmpty) return [task];
+
+    final subtasks = widget.taskManagerCubit.getSubtasksForTask(task);
+    return subtasks.expand(_getLowLevelTasks).toList();
   }
 
   @override
@@ -144,7 +128,6 @@ class _TaskListItemState extends State<TaskListItem> {
             ? Color(widget.task.color!)
             : widget.categoryColor;
 
-    // Create a glassmorphic effect
     final glassEffect = BoxDecoration(
       color: backgroundColor.withOpacity(0.8),
       borderRadius: BorderRadius.circular(12),
@@ -175,13 +158,12 @@ class _TaskListItemState extends State<TaskListItem> {
 
     return Stack(
       children: [
-        // Confetti controller positioned at the top center of the task item
         Positioned.fill(
           child: Align(
             alignment: Alignment.bottomCenter,
             child: ConfettiWidget(
               confettiController: _confettiController,
-              blastDirection: 3 * pi / 2, // straight up
+              blastDirection: 3 * pi / 2,
               emissionFrequency: 0.05,
               numberOfParticles: 20,
               maxBlastForce: 30,
@@ -200,63 +182,62 @@ class _TaskListItemState extends State<TaskListItem> {
                 Colors.amber,
                 Colors.lime,
                 Colors.indigo,
-
               ],
             ),
           ),
         ),
 
-        // Regular CupertinoButton for the task item
         CupertinoButton(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
           onPressed: () {
             HapticFeedback.selectionClick();
             widget.onTap();
           },
-          child: Slidable(
-            key: ValueKey(widget.task.id),
-            startActionPane: ActionPane(
-              motion: const DrawerMotion(),
-              extentRatio: 0.25,
-              children: [
-                SlidableAction(
-                  onPressed: (_) {
-                    HapticFeedback.selectionClick();
-                    widget.onEdit();
-                  },
-                  backgroundColor: CupertinoColors.systemBlue,
-                  foregroundColor: CupertinoColors.white,
-                  icon: CupertinoIcons.pencil,
-                  label: 'Edit',
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    bottomLeft: Radius.circular(12),
+          child: Container(
+            decoration: glassEffect,
+            padding: const EdgeInsets.all(6),
+            child: Slidable(
+              key: ValueKey(widget.task.id),
+              startActionPane: ActionPane(
+                motion: const DrawerMotion(),
+                extentRatio: 0.39,
+                children: [
+                  SlidableAction(
+                    onPressed: (_) {
+                      HapticFeedback.selectionClick();
+                      widget.onEdit();
+                    },
+                    backgroundColor: CupertinoColors.systemBlue,
+                    foregroundColor: CupertinoColors.white,
+                    icon: CupertinoIcons.pencil,
+                    label: 'Edit',
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      bottomLeft: Radius.circular(8),
+                    ),
                   ),
-                ),
-                SlidableAction(
-                  onPressed: (_) {
-                    HapticFeedback.selectionClick();
-                    widget.onDelete();
-                  },
-                  backgroundColor: CupertinoColors.destructiveRed,
-                  foregroundColor: CupertinoColors.white,
-                  icon: CupertinoIcons.delete,
-                  label: 'Delete',
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(12),
-                    bottomRight: Radius.circular(12),
+                  SlidableAction(
+                    onPressed: (_) {
+                      HapticFeedback.selectionClick();
+                      widget.onDelete();
+                    },
+                    backgroundColor: CupertinoColors.destructiveRed,
+                    foregroundColor: CupertinoColors.white,
+                    icon: CupertinoIcons.delete,
+                    label: 'Delete',
+                    borderRadius: const BorderRadius.only(
+                      topRight: Radius.circular(8),
+                      bottomRight: Radius.circular(8),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: glassEffect,
+                ],
+              ),
               child: Row(
                 children: [
+                  const SizedBox(width: 6),
                   Container(
                     width: 4,
-                    height: 46,
+                    height: 50,
                     decoration: BoxDecoration(
                       color: taskColor,
                       borderRadius: BorderRadius.circular(2),
@@ -353,33 +334,5 @@ class _TaskListItemState extends State<TaskListItem> {
         ),
       ],
     );
-  }
-
-  int getScheduledTasksCount(Task task) {
-    int count = 0;
-    List<Task> subtasks = getLowLevelTasks(task);
-
-    for (Task subtask in subtasks) {
-      count += subtask.scheduledTasks.length;
-    }
-    return count;
-  }
-
-  List<Task> getLowLevelTasks(Task task) {
-    List<Task> lowLevelTasks = [];
-
-    if (task.subtaskIds.isEmpty) {
-      lowLevelTasks.add(task);
-      return lowLevelTasks;
-    }
-    var subtasks = widget.taskManagerCubit.getSubtasksForTask(task);
-    for (var subtask in subtasks) {
-      if (subtask.subtaskIds.isEmpty) {
-        lowLevelTasks.add(subtask);
-      } else {
-        lowLevelTasks.addAll(getLowLevelTasks(subtask));
-      }
-    }
-    return lowLevelTasks;
   }
 }
