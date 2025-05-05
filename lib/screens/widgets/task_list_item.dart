@@ -178,13 +178,13 @@ class _TaskListItemState extends State<TaskListItem> {
         // Confetti controller positioned at the top center of the task item
         Positioned.fill(
           child: Align(
-            alignment: Alignment.topCenter,
+            alignment: Alignment.bottomCenter,
             child: ConfettiWidget(
               confettiController: _confettiController,
-              blastDirection: pi / 2, // straight up
+              blastDirection: 3 * pi / 2, // straight up
               emissionFrequency: 0.05,
               numberOfParticles: 20,
-              maxBlastForce: 20,
+              maxBlastForce: 30,
               minBlastForce: 10,
               gravity: 0.1,
               colors: const [
@@ -193,6 +193,14 @@ class _TaskListItemState extends State<TaskListItem> {
                 Colors.pink,
                 Colors.orange,
                 Colors.purple,
+                Colors.yellow,
+                Colors.red,
+                Colors.teal,
+                Colors.cyan,
+                Colors.amber,
+                Colors.lime,
+                Colors.indigo,
+
               ],
             ),
           ),

@@ -63,6 +63,7 @@ class TaskManager {
     Category category, {
     Task? parentTask,
     String? notes,
+    int? order,
     int? color,
     RepeatRule? frequency,
     int? optimisticTime,

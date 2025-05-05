@@ -283,20 +283,20 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     int deadline,
     int order,
   ) {
-    final subtask = Task(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+    _taskManagerCubit.createTask(
       title: title,
       priority: priority,
-      deadline: deadline,
       estimatedTime: estimatedTime,
+      deadline: deadline,
       category: _task.category,
       parentTask: _task,
       order: order,
+      color: _task.color,
     );
+
     setState(() {
-      _task.subtaskIds.add(subtask.id);
+      _task = _taskManagerCubit.getTaskById(_task.id) ?? _task;
     });
-    _task.save();
   }
 }
 
@@ -698,7 +698,10 @@ class SubtaskItem extends StatelessWidget {
             width: 4,
             height: 40,
             decoration: BoxDecoration(
-              color: CategoryUtils.getCategoryColor(subtask.category.name),
+              color:
+                  subtask.color != null
+                      ? Color(subtask.color!)
+                      : CategoryUtils.getCategoryColor(subtask.category.name),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -1951,7 +1954,7 @@ class AddSubtaskDialog {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Priority (1-5)',
+                                      'Priority',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         color: CupertinoColors.label
@@ -1974,8 +1977,8 @@ class AddSubtaskDialog {
                                             child: CupertinoSlider(
                                               value: priority.toDouble(),
                                               min: 1,
-                                              max: 5,
-                                              divisions: 4,
+                                              max: 10,
+                                              divisions: 9,
                                               onChanged: (value) {
                                                 setState(() {
                                                   priority = value.round();
