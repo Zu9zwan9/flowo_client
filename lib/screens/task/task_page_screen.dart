@@ -2103,8 +2103,8 @@ class AddSubtaskDialog {
                                                     ),
                                                     Expanded(
                                                       child: CupertinoPicker(
-                                                        magnification: 1.22,
-                                                        squeeze: 1.2,
+                                                        magnification: 1.17,
+                                                        squeeze: 1.45,
                                                         useMagnifier: true,
                                                         itemExtent: 44,
                                                         scrollController:
@@ -2187,7 +2187,7 @@ class AddSubtaskDialog {
                                                                     .substring(
                                                                       0,
                                                                       min(
-                                                                        15,
+                                                                        45,
                                                                         beforeTask
                                                                             .title
                                                                             .length,
@@ -2198,7 +2198,7 @@ class AddSubtaskDialog {
                                                                     .substring(
                                                                       0,
                                                                       min(
-                                                                        15,
+                                                                        45,
                                                                         afterTask
                                                                             .title
                                                                             .length,
@@ -2206,7 +2206,7 @@ class AddSubtaskDialog {
                                                                     );
 
                                                                 label =
-                                                                    'After "$beforeTitle${beforeTask.title.length > 15 ? '...' : ''}"';
+                                                                    'After "$beforeTitle${beforeTask.title.length > 45 ? '...' : ''}"';
                                                                 icon =
                                                                     CupertinoIcons
                                                                         .arrow_right;
@@ -2429,7 +2429,7 @@ class AddSubtaskDialog {
                                                                       deadline,
                                                                     ),
                                                                 minimumDate:
-                                                                    DateTime.now(),
+                                                                    DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day),
                                                                 maximumDate:
                                                                     DateTime.fromMillisecondsSinceEpoch(
                                                                       parentTask

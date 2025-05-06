@@ -37,7 +37,7 @@ class _TaskListScreenState extends State<TaskListScreen>
   TaskFilterType _selectedFilter = TaskFilterType.all;
   GroupingOption _selectedGrouping =
       GroupingOption.none; // Selected grouping option
-  TaskViewMode _selectedViewMode = TaskViewMode.leaf; // Selected view mode
+  TaskViewMode _selectedViewMode = TaskViewMode.steps; // Selected view mode
   final Map<String, bool> _expandedCategories = {};
   final Map<String, bool> _expandedTasks = {};
   String _searchQuery = '';
@@ -135,7 +135,7 @@ class _TaskListScreenState extends State<TaskListScreen>
       final matchesFilter =
           _selectedFilter == TaskFilterType.all || _selectedFilter == type;
       final matchesViewMode =
-          _selectedViewMode == TaskViewMode.topLevel
+          _selectedViewMode == TaskViewMode.goals
               ? task.parentTaskId == null
               : task.subtaskIds.isEmpty;
       final matchesCategory = task.category.name != 'Free Time Manager';
@@ -356,7 +356,7 @@ class _TaskListScreenState extends State<TaskListScreen>
           final hasSubtasks = task.subtaskIds.isNotEmpty;
           final isExpanded = _expandedTasks[task.id] ?? false;
           final parentTask =
-              _selectedViewMode == TaskViewMode.leaf
+              _selectedViewMode == TaskViewMode.steps
                   ? context.read<TaskManagerCubit>().getParentTask(task)
                   : null;
           return _buildTaskListItem(
@@ -392,7 +392,7 @@ class _TaskListScreenState extends State<TaskListScreen>
           isExpanded: isExpanded,
           parentTask: parentTask,
           showParentTask:
-              _selectedViewMode == TaskViewMode.leaf && parentTask != null,
+              _selectedViewMode == TaskViewMode.steps && parentTask != null,
           onToggleExpand:
               hasSubtasks
                   ? () {
@@ -407,9 +407,7 @@ class _TaskListScreenState extends State<TaskListScreen>
         if (hasSubtasks && isExpanded)
           Container(
             decoration: BoxDecoration(
-              color: CupertinoColors.systemGrey6
-                  .resolveFrom(context)
-                  .withOpacity(0.3),
+              color: CupertinoColors.transparent,
               borderRadius: const BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
@@ -422,7 +420,6 @@ class _TaskListScreenState extends State<TaskListScreen>
                     (subtask) {
                       return Column(
                         children: [
-                          const CupertinoDivider(),
                           TaskListItem(
                             task: subtask,
                             taskManagerCubit: context.read<TaskManagerCubit>(),
@@ -436,7 +433,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                             isExpanded: _expandedTasks[subtask.id] ?? false,
                             parentTask: task,
                             showParentTask:
-                                _selectedViewMode == TaskViewMode.leaf,
+                                _selectedViewMode == TaskViewMode.steps,
                             onToggleExpand:
                                 subtask.subtaskIds.isNotEmpty
                                     ? () {
@@ -532,9 +529,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey6
-                      .resolveFrom(context)
-                      .withOpacity(0.6),
+                  color: CupertinoColors.transparent,
                   border: Border(
                     bottom: BorderSide(
                       color: CupertinoColors.separator.resolveFrom(context),
@@ -601,7 +596,6 @@ class _TaskListScreenState extends State<TaskListScreen>
               ),
             ),
             if (isExpanded) ...[
-              const CupertinoDivider(),
               ...tasks.map((task) {
                 final hasSubtasks = task.subtaskIds.isNotEmpty;
                 final isExpanded = _expandedTasks[task.id] ?? false;
@@ -619,13 +613,13 @@ class _TaskListScreenState extends State<TaskListScreen>
                       hasSubtasks: hasSubtasks,
                       isExpanded: isExpanded,
                       parentTask:
-                          _selectedViewMode == TaskViewMode.leaf
+                          _selectedViewMode == TaskViewMode.steps
                               ? context.read<TaskManagerCubit>().getParentTask(
                                 task,
                               )
                               : null,
                       showParentTask:
-                          _selectedViewMode == TaskViewMode.leaf &&
+                          _selectedViewMode == TaskViewMode.steps &&
                           task.parentTaskId != null,
                       onToggleExpand:
                           hasSubtasks
@@ -642,9 +636,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                     if (hasSubtasks && isExpanded)
                       Container(
                         decoration: BoxDecoration(
-                          color: CupertinoColors.systemGrey6
-                              .resolveFrom(context)
-                              .withOpacity(isDarkMode ? 0.5 : 0.3),
+                          color: CupertinoColors.transparent,
                           borderRadius: const BorderRadius.only(
                             bottomLeft: Radius.circular(12),
                             bottomRight: Radius.circular(12),
@@ -659,7 +651,6 @@ class _TaskListScreenState extends State<TaskListScreen>
                                   .map((subtask) {
                                     return Column(
                                       children: [
-                                        const CupertinoDivider(),
                                         TaskListItem(
                                           task: subtask,
                                           taskManagerCubit:
@@ -684,7 +675,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                                           parentTask: task,
                                           showParentTask:
                                               _selectedViewMode ==
-                                              TaskViewMode.leaf,
+                                              TaskViewMode.steps,
                                           onToggleExpand:
                                               subtask.subtaskIds.isNotEmpty
                                                   ? () {
@@ -710,7 +701,6 @@ class _TaskListScreenState extends State<TaskListScreen>
                                   .toList(),
                         ),
                       ),
-                    if (task != tasks.last) const CupertinoDivider(),
                   ],
                 );
               }),
@@ -1128,9 +1118,9 @@ class _TaskListScreenState extends State<TaskListScreen>
   // Get icon for view mode
   IconData _getViewModeIcon(TaskViewMode mode) {
     switch (mode) {
-      case TaskViewMode.topLevel:
+      case TaskViewMode.goals:
         return CupertinoIcons.rocket_fill;
-      case TaskViewMode.leaf:
+      case TaskViewMode.steps:
         return CupertinoIcons.layers_alt_fill;
     }
   }
@@ -1138,9 +1128,9 @@ class _TaskListScreenState extends State<TaskListScreen>
   // Get name for view mode
   String _getViewModeName(TaskViewMode mode) {
     switch (mode) {
-      case TaskViewMode.topLevel:
+      case TaskViewMode.goals:
         return 'Goals';
-      case TaskViewMode.leaf:
+      case TaskViewMode.steps:
         return 'Steps';
     }
   }
@@ -1161,7 +1151,7 @@ extension GroupingOptionExtension on GroupingOption {
 }
 
 // Enum for task view modes
-enum TaskViewMode { topLevel, leaf }
+enum TaskViewMode { goals, steps }
 
 // Enum for task filter types
 enum TaskFilterType { all, task, event, habit }

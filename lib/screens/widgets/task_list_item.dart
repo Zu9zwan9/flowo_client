@@ -150,8 +150,8 @@ class _TaskListItemState extends State<TaskListItem> {
       border: Border.all(
         color:
             isDarkMode
-                ? CupertinoColors.systemGrey.withOpacity(0.2)
-                : CupertinoColors.systemGrey5.withOpacity(0.5),
+                ? CupertinoColors.systemGrey.withOpacity(0.4)
+                : CupertinoColors.systemGrey5,
         width: 0.5,
       ),
     );
