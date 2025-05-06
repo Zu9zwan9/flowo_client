@@ -127,10 +127,11 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
                 const SizedBox(height: 24),
                 TaskDescription(task: _task, controller: _notesController),
                 const SizedBox(height: 24),
-                SessionsWidget(
-                  task: _task,
-                  taskManagerCubit: _taskManagerCubit,
-                ),
+                if (_task.subtaskIds.isEmpty)
+                  SessionsWidget(
+                    task: _task,
+                    taskManagerCubit: _taskManagerCubit,
+                  ),
                 const SizedBox(height: 24),
                 MagicButton(onGenerate: _generateTaskBreakdown),
                 const SizedBox(height: 24),
@@ -577,7 +578,7 @@ class MagicButton extends StatelessWidget {
 }
 
 // Subtasks List Widget (unchanged for brevity)
-class SubtasksList extends StatelessWidget {
+class SubtasksList extends StatefulWidget {
   final List<Task> subtasks;
   final Task parentTask;
   final VoidCallback onAdd;
@@ -592,12 +593,50 @@ class SubtasksList extends StatelessWidget {
   });
 
   @override
+  _SubtasksListState createState() => _SubtasksListState();
+}
+
+class _SubtasksListState extends State<SubtasksList> {
+  late List<Task> _reorderedSubtasks;
+  bool _orderChanged = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Create a copy of subtasks sorted by order
+    _reorderedSubtasks = List<Task>.from(widget.subtasks)
+      ..sort((a, b) => (a.order ?? 0).compareTo(b.order ?? 0));
+  }
+
+  // Handle reordering of subtasks
+  void _onReorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) {
+        newIndex -= 1;
+      }
+      final Task item = _reorderedSubtasks.removeAt(oldIndex);
+      _reorderedSubtasks.insert(newIndex, item);
+      _orderChanged = true;
+    });
+  }
+
+  // Save new order to TaskManagerCubit
+  void _confirmOrder() {
+    final taskManagerCubit = context.read<TaskManagerCubit>();
+    for (int i = 0; i < _reorderedSubtasks.length; i++) {
+      final task = _reorderedSubtasks[i];
+      task.order = i + 1; // Update order starting from 1
+      task.save();
+    }
+    taskManagerCubit.updateTaskOrder(widget.parentTask, _reorderedSubtasks);
+    setState(() {
+      _orderChanged = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = CupertinoTheme.of(context);
-
-    // Sort subtasks by task.order
-    final sortedSubtasks = List<Task>.from(subtasks)
-      ..sort((a, b) => (a.order ?? 0).compareTo(b.order ?? 0));
 
     return Container(
       padding: const EdgeInsets.all(TaskPageConstants.padding),
@@ -631,7 +670,7 @@ class SubtasksList extends StatelessWidget {
               Flexible(
                 child: CupertinoButton(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  onPressed: onAdd,
+                  onPressed: widget.onAdd,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -649,7 +688,7 @@ class SubtasksList extends StatelessWidget {
                 ),
               ),
               Text(
-                '${sortedSubtasks.length}',
+                '${_reorderedSubtasks.length}',
                 style: theme.textTheme.textStyle.copyWith(
                   color: CupertinoColors.systemGrey,
                 ),
@@ -657,29 +696,57 @@ class SubtasksList extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          ...sortedSubtasks.map(
-            (subtask) => SubtaskItem(subtask: subtask, onDelete: onDelete),
+          ReorderableListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            buildDefaultDragHandles: false,
+            // Disable default drag handles
+            onReorder: _onReorder,
+            children:
+                _reorderedSubtasks.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final subtask = entry.value;
+                  return Container(
+                    key: ValueKey(subtask.id),
+                    margin: const EdgeInsets.symmetric(vertical: 6),
+                    child: SubtaskItem(
+                      subtask: subtask,
+                      onDelete: widget.onDelete,
+                      reorderIndex: index, // Pass index for drag handle
+                    ),
+                  );
+                }).toList(),
           ),
+          if (_orderChanged) ...[
+            const SizedBox(height: 12),
+            CupertinoButton.filled(
+              padding: TaskPageConstants.buttonPadding,
+              onPressed: _confirmOrder,
+              child: const Text('Confirm Order'),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-// Subtask Item Widget (unchanged for brevity)
 class SubtaskItem extends StatelessWidget {
   final Task subtask;
   final Function(Task) onDelete;
+  final int reorderIndex; // Index for drag-and-drop
 
-  const SubtaskItem({required this.subtask, required this.onDelete, super.key});
+  const SubtaskItem({
+    required this.subtask,
+    required this.onDelete,
+    required this.reorderIndex,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = CupertinoTheme.of(context);
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: theme.scaffoldBackgroundColor,
@@ -694,6 +761,17 @@ class SubtaskItem extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Drag handle for reordering
+          ReorderableDragStartListener(
+            index: reorderIndex,
+            child: const Icon(
+              CupertinoIcons.line_horizontal_3,
+              size: 20,
+              color: CupertinoColors.systemGrey,
+              semanticLabel: 'Drag to reorder',
+            ),
+          ),
+          const SizedBox(width: 8),
           Container(
             width: 4,
             height: 40,
@@ -792,6 +870,7 @@ class SubtaskItem extends StatelessWidget {
               ],
             ),
           ),
+          const SizedBox(width: 8),
           CupertinoButton(
             padding: EdgeInsets.zero,
             child: const Icon(CupertinoIcons.delete, size: 20),
@@ -2428,8 +2507,14 @@ class AddSubtaskDialog {
                                                                     DateTime.fromMillisecondsSinceEpoch(
                                                                       deadline,
                                                                     ),
-                                                                minimumDate:
-                                                                    DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day),
+                                                                minimumDate: DateTime(
+                                                                  DateTime.now()
+                                                                      .year,
+                                                                  DateTime.now()
+                                                                      .month,
+                                                                  DateTime.now()
+                                                                      .day,
+                                                                ),
                                                                 maximumDate:
                                                                     DateTime.fromMillisecondsSinceEpoch(
                                                                       parentTask

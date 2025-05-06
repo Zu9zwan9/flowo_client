@@ -147,6 +147,7 @@ class TaskManager {
     Task? parentTask, {
     String? notes,
     int? color,
+    int? order,
     RepeatRule? frequency,
     int? optimisticTime,
     int? realisticTime,
@@ -160,6 +161,9 @@ class TaskManager {
     task.deadline = deadline;
     task.category = category;
     task.parentTask = parentTask;
+    if (order != null) {
+      task.order = order;
+    }
     if (notes != null) {
       task.notes = notes;
     }

@@ -193,6 +193,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }
 
   void editTask({
+    // TODO: Refactor to use only needed parameters
     required Task task,
     required String title,
     required int priority,
@@ -202,6 +203,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     Task? parentTask,
     String? notes,
     int? color,
+    int? order,
     RepeatRule? frequency,
     int? optimisticTime,
     int? realisticTime,
@@ -220,6 +222,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       parentTask,
       notes: notes,
       color: color,
+      order: order,
       frequency: frequency,
       optimisticTime: optimisticTime,
       realisticTime: realisticTime,
@@ -327,6 +330,20 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     logInfo('Event updated successfully: ${task.title}');
 
     return []; // Return empty list to indicate success
+  }
+
+  void updateTaskOrder(Task task, List<Task> tasks) {
+    for (var i = 0; i < tasks.length; i++) {
+      editTask(
+        task: task,
+        title: task.title,
+        priority: task.priority,
+        estimatedTime: task.estimatedTime,
+        deadline: task.deadline,
+        category: task.category,
+        order: i + 1,
+      );
+    }
   }
 
   void scheduleTasks() {
