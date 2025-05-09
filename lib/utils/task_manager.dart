@@ -567,6 +567,8 @@ class TaskManager {
         color: task.color,
         parentTask: task,
         order: order++,
+        firstNotification: task.firstNotification,
+        secondNotification: task.secondNotification,
       );
       tasksDB.put(subtask.id, subtask);
       subtasks.add(subtask);
