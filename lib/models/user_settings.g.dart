@@ -41,13 +41,14 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       highContrastMode: fields[21] as bool?,
       gradientStartAlignment: fields[22] as String?,
       gradientEndAlignment: fields[23] as String?,
+      usePertMethod: fields[24] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserSettings obj) {
     writer
-      ..writeByte(24)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -95,7 +96,9 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       ..writeByte(22)
       ..write(obj.gradientStartAlignment)
       ..writeByte(23)
-      ..write(obj.gradientEndAlignment);
+      ..write(obj.gradientEndAlignment)
+      ..writeByte(24)
+      ..write(obj.usePertMethod);
   }
 
   @override

@@ -497,6 +497,10 @@ class TaskManager {
         } else {
           logWarning('Task with id ${scheduledTask.scheduledTaskId} not found');
         }
+
+        for (var notificationId in scheduledTask.notificationIds) {
+          scheduler.notiService.cancelNotification(notificationId);
+        }
       }
       daysDB.put(day.day, day);
     }

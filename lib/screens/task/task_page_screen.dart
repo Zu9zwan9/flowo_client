@@ -283,6 +283,8 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     int priority,
     int deadline,
     int order,
+    int? firstNotification,
+    int? secondNotification,
   ) {
     _taskManagerCubit.createTask(
       title: title,
@@ -293,6 +295,8 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       parentTask: _task,
       order: order,
       color: _task.color,
+      firstNotification: firstNotification,
+      secondNotification: secondNotification,
     );
 
     setState(() {
@@ -1687,16 +1691,127 @@ class AddSubtaskDialog {
     }
   }
 
+  static String _formatNotificationTime(int? minutes) {
+    if (minutes == null) {
+      return 'None';
+    }
+    switch (minutes) {
+      case 0:
+        return 'At event time';
+      case 1:
+        return '1 minute before';
+      case 5:
+        return '5 minutes before';
+      case 15:
+        return '15 minutes before';
+      case 30:
+        return '30 minutes before';
+      case 60:
+        return '1 hour before';
+      case 120:
+        return '2 hours before';
+      case 1440:
+        return '1 day before';
+      case 2880:
+        return '2 days before';
+      case 10080:
+        return '1 week before';
+      default:
+        if (minutes < 60) {
+          return '$minutes minutes before';
+        } else if (minutes < 1440) {
+          final hours = minutes ~/ 60;
+          final mins = minutes % 60;
+          if (mins == 0) {
+            return '$hours hours before';
+          } else {
+            return '$hours hours $mins minutes before';
+          }
+        } else {
+          final days = minutes ~/ 1440;
+          return '$days days before';
+        }
+    }
+  }
+
+  static Future<void> _showNotificationTimePicker(
+    BuildContext context,
+    bool isFirstNotification,
+    int? currentValue,
+    Function(int?) onChanged,
+  ) async {
+    final List<int?> timeOptions = [
+      null,
+      0,
+      5,
+      15,
+      30,
+      60,
+      120,
+      1440,
+      2880,
+      10080,
+    ];
+
+    final int initialIndex =
+        timeOptions.contains(currentValue)
+            ? timeOptions.indexOf(currentValue)
+            : 0;
+
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder:
+          (context) => Container(
+            height: 300,
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    CupertinoButton(
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoButton(
+                      child: const Text('Done'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: CupertinoPicker(
+                    itemExtent: 32,
+                    scrollController: FixedExtentScrollController(
+                      initialItem: initialIndex,
+                    ),
+                    onSelectedItemChanged: (index) {
+                      onChanged(timeOptions[index]);
+                    },
+                    children:
+                        timeOptions
+                            .map((time) => Text(_formatNotificationTime(time)))
+                            .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
   static void show(
     BuildContext context,
     Task parentTask,
-    Function(String, int, int, int, int) onAdd,
+    Function(String, int, int, int, int, int?, int?) onAdd,
   ) {
     final titleController = TextEditingController();
     int estimatedTime = 0;
     int priority = 1;
     int deadline = parentTask.deadline;
-    int order = 0; // Will be set based on existing subtasks
+    int order = 0;
+    int? firstNotification = 5;
+    int? secondNotification = 0;
 
     // Get existing subtasks to show order options
     final existingSubtasks = context
@@ -1716,19 +1831,14 @@ class AddSubtaskDialog {
     }
 
     final theme = CupertinoTheme.of(context);
-    final isDarkMode =
-        MediaQuery.of(context).platformBrightness == Brightness.dark;
 
     // Create a list of order options
     final orderOptions = <int>[];
-    // Add option to insert at the beginning
-    orderOptions.add(0);
-    // Add options to insert between existing subtasks
+    orderOptions.add(0); // Insert at the beginning
     for (int i = 0; i < sortedSubtasks.length; i++) {
       final currentOrder = sortedSubtasks[i].order ?? i;
       orderOptions.add(currentOrder + 1);
     }
-    // Add option to add at the end (already set as default)
     if (!orderOptions.contains(order)) {
       orderOptions.add(order);
     }
@@ -1752,7 +1862,7 @@ class AddSubtaskDialog {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header with navigation bar style
+                      // Header
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Row(
@@ -1787,7 +1897,6 @@ class AddSubtaskDialog {
                               ),
                               onPressed: () {
                                 if (titleController.text.trim().isEmpty) {
-                                  // Show error for empty title
                                   showCupertinoDialog(
                                     context: context,
                                     builder:
@@ -1813,6 +1922,8 @@ class AddSubtaskDialog {
                                   priority,
                                   deadline,
                                   order,
+                                  firstNotification,
+                                  secondNotification,
                                 );
                                 Navigator.pop(context);
                               },
@@ -1860,7 +1971,7 @@ class AddSubtaskDialog {
                                 ),
                               ),
 
-                              // Estimated time field with time picker
+                              // Estimated time field
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
                                 child: Column(
@@ -1907,21 +2018,21 @@ class AddSubtaskDialog {
                                                           child: const Text(
                                                             'Cancel',
                                                           ),
-                                                          onPressed: () {
-                                                            Navigator.of(
-                                                              context,
-                                                            ).pop();
-                                                          },
+                                                          onPressed:
+                                                              () =>
+                                                                  Navigator.of(
+                                                                    context,
+                                                                  ).pop(),
                                                         ),
                                                         CupertinoButton(
                                                           child: const Text(
                                                             'Done',
                                                           ),
-                                                          onPressed: () {
-                                                            Navigator.of(
-                                                              context,
-                                                            ).pop();
-                                                          },
+                                                          onPressed:
+                                                              () =>
+                                                                  Navigator.of(
+                                                                    context,
+                                                                  ).pop(),
                                                         ),
                                                       ],
                                                     ),
@@ -1931,7 +2042,6 @@ class AddSubtaskDialog {
                                                         squeeze: 1.2,
                                                         useMagnifier: true,
                                                         itemExtent: 32,
-                                                        // This sets the initial item.
                                                         scrollController:
                                                             FixedExtentScrollController(
                                                               initialItem:
@@ -1942,12 +2052,10 @@ class AddSubtaskDialog {
                                                                         23,
                                                                       ),
                                                             ),
-                                                        // This is called when selected item is changed.
                                                         onSelectedItemChanged: (
                                                           int selectedItem,
                                                         ) {
                                                           setState(() {
-                                                            // Convert to minutes (15-minute increments)
                                                             estimatedTime =
                                                                 selectedItem *
                                                                 15 *
@@ -2081,7 +2189,7 @@ class AddSubtaskDialog {
                                 ),
                               ),
 
-                              // Order field with improved visual cues
+                              // Order field
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
                                 child: Column(
@@ -2154,11 +2262,11 @@ class AddSubtaskDialog {
                                                           child: const Text(
                                                             'Cancel',
                                                           ),
-                                                          onPressed: () {
-                                                            Navigator.of(
-                                                              context,
-                                                            ).pop();
-                                                          },
+                                                          onPressed:
+                                                              () =>
+                                                                  Navigator.of(
+                                                                    context,
+                                                                  ).pop(),
                                                         ),
                                                         Text(
                                                           'Select Position',
@@ -2172,11 +2280,11 @@ class AddSubtaskDialog {
                                                           child: const Text(
                                                             'Done',
                                                           ),
-                                                          onPressed: () {
-                                                            Navigator.of(
-                                                              context,
-                                                            ).pop();
-                                                          },
+                                                          onPressed:
+                                                              () =>
+                                                                  Navigator.of(
+                                                                    context,
+                                                                  ).pop(),
                                                         ),
                                                       ],
                                                     ),
@@ -2239,7 +2347,6 @@ class AddSubtaskDialog {
                                                                       context,
                                                                     );
                                                               } else {
-                                                                // Find the tasks before and after this position
                                                                 final beforeTask =
                                                                     sortedSubtasks.lastWhere(
                                                                       (t) =>
@@ -2250,17 +2357,6 @@ class AddSubtaskDialog {
                                                                           () =>
                                                                               sortedSubtasks.first,
                                                                     );
-                                                                final afterTask = sortedSubtasks.firstWhere(
-                                                                  (t) =>
-                                                                      (t.order ??
-                                                                          0) >=
-                                                                      o,
-                                                                  orElse:
-                                                                      () =>
-                                                                          sortedSubtasks
-                                                                              .last,
-                                                                );
-
                                                                 final beforeTitle = beforeTask
                                                                     .title
                                                                     .substring(
@@ -2272,18 +2368,6 @@ class AddSubtaskDialog {
                                                                             .length,
                                                                       ),
                                                                     );
-                                                                final afterTitle = afterTask
-                                                                    .title
-                                                                    .substring(
-                                                                      0,
-                                                                      min(
-                                                                        45,
-                                                                        afterTask
-                                                                            .title
-                                                                            .length,
-                                                                      ),
-                                                                    );
-
                                                                 label =
                                                                     'After "$beforeTitle${beforeTask.title.length > 45 ? '...' : ''}"';
                                                                 icon =
@@ -2361,7 +2445,7 @@ class AddSubtaskDialog {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              AddSubtaskDialog._getOrderLabel(
+                                              _getOrderLabel(
                                                 order,
                                                 sortedSubtasks,
                                               ),
@@ -2384,7 +2468,7 @@ class AddSubtaskDialog {
                                 ),
                               ),
 
-                              // Deadline field with date picker (limited to parent's deadline)
+                              // Deadline field
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
                                 child: Column(
@@ -2408,7 +2492,6 @@ class AddSubtaskDialog {
                                           onChanged: (value) {
                                             setState(() {
                                               if (value) {
-                                                // Set to one day before parent deadline if using custom
                                                 final parentDate =
                                                     DateTime.fromMillisecondsSinceEpoch(
                                                       parentTask.deadline,
@@ -2421,7 +2504,6 @@ class AddSubtaskDialog {
                                                     oneDayBefore
                                                         .millisecondsSinceEpoch;
                                               } else {
-                                                // Use parent deadline
                                                 deadline = parentTask.deadline;
                                               }
                                             });
@@ -2479,22 +2561,22 @@ class AddSubtaskDialog {
                                                                       const Text(
                                                                         'Cancel',
                                                                       ),
-                                                                  onPressed: () {
-                                                                    Navigator.of(
-                                                                      context,
-                                                                    ).pop();
-                                                                  },
+                                                                  onPressed:
+                                                                      () =>
+                                                                          Navigator.of(
+                                                                            context,
+                                                                          ).pop(),
                                                                 ),
                                                                 CupertinoButton(
                                                                   child:
                                                                       const Text(
                                                                         'Done',
                                                                       ),
-                                                                  onPressed: () {
-                                                                    Navigator.of(
-                                                                      context,
-                                                                    ).pop();
-                                                                  },
+                                                                  onPressed:
+                                                                      () =>
+                                                                          Navigator.of(
+                                                                            context,
+                                                                          ).pop(),
                                                                 ),
                                                               ],
                                                             ),
@@ -2596,6 +2678,122 @@ class AddSubtaskDialog {
                                                       : CupertinoColors
                                                           .secondaryLabel
                                                           .resolveFrom(context),
+                                              size: 20,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // Notification Settings
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Notification Settings',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: CupertinoColors.label
+                                            .resolveFrom(context),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    GestureDetector(
+                                      onTap: () {
+                                        _showNotificationTimePicker(
+                                          context,
+                                          true,
+                                          firstNotification,
+                                          (value) => setState(
+                                            () => firstNotification = value,
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: CupertinoColors.systemFill
+                                              .resolveFrom(context),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: CupertinoColors.activeBlue
+                                                .resolveFrom(context)
+                                                .withOpacity(0.3),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Alert: ${_formatNotificationTime(firstNotification)}',
+                                              style: TextStyle(
+                                                color: CupertinoColors.label
+                                                    .resolveFrom(context),
+                                              ),
+                                            ),
+                                            Icon(
+                                              CupertinoIcons.time,
+                                              color: CupertinoColors.activeBlue
+                                                  .resolveFrom(context),
+                                              size: 20,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    GestureDetector(
+                                      onTap: () {
+                                        _showNotificationTimePicker(
+                                          context,
+                                          false,
+                                          secondNotification,
+                                          (value) => setState(
+                                            () => secondNotification = value,
+                                          ),
+                                        );
+                                      },
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: CupertinoColors.systemFill
+                                              .resolveFrom(context),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          border: Border.all(
+                                            color: CupertinoColors.activeBlue
+                                                .resolveFrom(context)
+                                                .withOpacity(0.3),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              'Second Alert: ${_formatNotificationTime(secondNotification)}',
+                                              style: TextStyle(
+                                                color: CupertinoColors.label
+                                                    .resolveFrom(context),
+                                              ),
+                                            ),
+                                            Icon(
+                                              CupertinoIcons.time,
+                                              color: CupertinoColors.activeBlue
+                                                  .resolveFrom(context),
                                               size: 20,
                                             ),
                                           ],
