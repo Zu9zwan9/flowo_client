@@ -394,6 +394,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
+
+
   void updateUserSettings(UserSettings userSettings) {
     _deleteAllDays();
     taskManager.updateUserSettings(userSettings);
@@ -404,7 +406,11 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     } catch (e) {
       logError('Failed to save user settings: $e');
     }
+    taskManager.manageEvents();
     scheduleTasks();
+    scheduleHabits();
+
+
     emit(
       state.copyWith(
         tasks: taskManager.tasksDB.values.toList(),

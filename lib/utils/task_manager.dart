@@ -245,6 +245,32 @@ class TaskManager {
     logInfo('Scheduled ${justScheduledTasks.length} tasks');
   }
 
+  void manageEvents() {
+    // restoring events if they deleted from daysDB
+    final events =
+        tasksDB.values
+            .where((task) => task.category.name.toLowerCase().contains('event'))
+            .toList();
+
+    for (Task event in events) {
+      if (event.scheduledTasks.isNotEmpty) {
+        for (var scheduledTask in event.scheduledTasks) {
+          final day = daysDB.get(
+            scheduler.formatDateKey(scheduledTask.startTime),
+          );
+          if (day != null) {
+            day.scheduledTasks.add(scheduledTask);
+            daysDB.put(day.day, day);
+          } else {
+            logWarning('Day $day not found');
+          }
+        }
+      } else {
+        logWarning('Event ${event.title} has no scheduled tasks');
+      }
+    }
+  }
+
   void manageHabits() {
     List<Task> habits =
         tasksDB.values.where((task) => task.frequency != null).toList();

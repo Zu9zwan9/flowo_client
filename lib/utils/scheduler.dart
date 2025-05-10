@@ -74,7 +74,7 @@ class Scheduler {
 
     while (remainingTime > 0 ||
         (availableDates != null && availableDates.isNotEmpty)) {
-      String dateKey = _formatDateKey(currentDate);
+      String dateKey = formatDateKey(currentDate);
 
       if (!_isActiveDay(dateKey)) {
         logDebug('Skipping inactive day: $dateKey');
@@ -148,7 +148,7 @@ class Scheduler {
     required DateTime end,
     bool overrideOverlaps = false,
   }) {
-    final dateKey = _formatDateKey(start);
+    final dateKey = formatDateKey(start);
 
     if (!overrideOverlaps) {
       final overlappingTasks = findOverlappingTasks(
@@ -184,7 +184,7 @@ class Scheduler {
     TimeOfDay end,
   ) {
     for (DateTime date in dates) {
-      final dateKey = _formatDateKey(date);
+      final dateKey = formatDateKey(date);
       final day = _getOrCreateDay(dateKey);
       final startTime = _combineDateKeyAndTimeOfDay(dateKey, start);
       final endTime = _combineDateKeyAndTimeOfDay(dateKey, end);
@@ -371,7 +371,7 @@ class Scheduler {
       tasksDB.put(task.id, task);
     }
 
-    final dateKey = _formatDateKey(newScheduledTask.startTime);
+    final dateKey = formatDateKey(newScheduledTask.startTime);
     final day = daysDB.get(dateKey);
     if (day != null) {
       day.scheduledTasks.removeWhere(
@@ -391,7 +391,7 @@ class Scheduler {
       tasksDB.put(task.id, task);
     }
 
-    final dateKey = _formatDateKey(scheduledTask.startTime);
+    final dateKey = formatDateKey(scheduledTask.startTime);
     final day = daysDB.get(dateKey);
     if (day != null) {
       day.scheduledTasks.removeWhere(
@@ -424,7 +424,7 @@ class Scheduler {
     final daysToCreate = endDate.difference(now).inDays;
 
     for (int i = 0; i <= daysToCreate; i++) {
-      final dateKey = _formatDateKey(now.add(Duration(days: i)));
+      final dateKey = formatDateKey(now.add(Duration(days: i)));
       if (!daysDB.containsKey(dateKey)) {
         _getOrCreateDay(dateKey);
       }
@@ -646,7 +646,7 @@ class Scheduler {
         dateKey: day.day,
       );
 
-      final nextDay = _formatDateKey(baseDate.add(const Duration(days: 1)));
+      final nextDay = formatDateKey(baseDate.add(const Duration(days: 1)));
       final nextDayStart = _combineDateKeyAndTimeOfDay(
         nextDay,
         const TimeOfDay(hour: 0, minute: 0),
@@ -774,7 +774,7 @@ class Scheduler {
           ? ((location.latitude.abs() + location.longitude.abs()) * 10).toInt()
           : 0;
 
-  String _formatDateKey(DateTime date) =>
+  String formatDateKey(DateTime date) =>
       '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
 
   DateTime _combineDateKeyAndTimeOfDay(String dateKey, TimeOfDay timeOfDay) {

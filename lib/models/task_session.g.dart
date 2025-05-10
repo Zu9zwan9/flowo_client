@@ -21,13 +21,14 @@ class TaskSessionAdapter extends TypeAdapter<TaskSession> {
       taskId: fields[1] as String,
       startTime: fields[2] as DateTime,
       endTime: fields[3] as DateTime?,
+      notes: fields[4] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TaskSession obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class TaskSessionAdapter extends TypeAdapter<TaskSession> {
       ..writeByte(2)
       ..write(obj.startTime)
       ..writeByte(3)
-      ..write(obj.endTime);
+      ..write(obj.endTime)
+      ..writeByte(4)
+      ..write(obj.notes);
   }
 
   @override
