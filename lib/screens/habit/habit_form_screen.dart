@@ -6,7 +6,6 @@ import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
-import 'package:flowo_client/utils/cupertino_hero_tag_resolver.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -431,16 +430,9 @@ class HabitFormScreenState extends State<HabitFormScreen>
     return CupertinoPageScaffold(
       navigationBar:
           widget.habit != null
-              ? CupertinoHeroTagResolver.create(
-                middle: Text('Edit Habit'),
-                uniqueIdentifier: 'edit-habit-${widget.habit!.id}',
-              )
+              ? CupertinoNavigationBar(middle: Text('Edit Habit'))
               : Navigator.canPop(context)
-              ? CupertinoHeroTagResolver.create(
-                middle: Text('Create Habit'),
-                uniqueIdentifier:
-                    'create-habit-${DateTime.now().millisecondsSinceEpoch}',
-              )
+              ? CupertinoNavigationBar(middle: Text('Create Habit'))
               : null,
       child: SafeArea(
         child: SingleChildScrollView(

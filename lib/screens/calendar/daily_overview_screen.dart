@@ -150,6 +150,8 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
           curve: Curves.easeInOut,
         );
       }
+      if (!mounted)
+        return; // Check if widget is still mounted after async operation
       setState(() {
         _isCalendarVisible = false;
         _scrollController.jumpTo(0.0);
@@ -163,6 +165,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   void _handlePull(double offset) {
     if (!_isCalendarVisible) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return; // Check if widget is still mounted
         if (offset > 80 && !isAnimationActive) {
           _lottieController.forward();
           isAnimationActive = true;
@@ -183,8 +186,11 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
         _isCalendarVisible = true;
         _calendarAnimationController.forward();
         _lottieController.forward().then((_) {
-          _lottieController.reset();
-          isAnimationActive = false;
+          if (mounted) {
+            // Check if widget is still mounted
+            _lottieController.reset();
+            isAnimationActive = false;
+          }
         });
       });
     }

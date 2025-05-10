@@ -14,7 +14,6 @@ import '../../models/task_form_data.dart';
 import '../../models/user_settings.dart';
 import '../../services/category/category_service.dart';
 import '../../utils/logger.dart';
-import '../../utils/cupertino_hero_tag_resolver.dart';
 
 class TaskFormScreen extends StatefulWidget {
   final DateTime? selectedDate;
@@ -296,16 +295,9 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     return CupertinoPageScaffold(
       navigationBar:
           widget.task != null
-              ? CupertinoHeroTagResolver.create(
-                middle: Text('Edit Task'),
-                uniqueIdentifier: 'edit-task-${widget.task!.id}',
-              )
+              ? CupertinoNavigationBar(middle: Text('Edit Task'))
               : Navigator.canPop(context)
-              ? CupertinoHeroTagResolver.create(
-                middle: Text('Create Task'),
-                uniqueIdentifier:
-                    'create-task-${DateTime.now().millisecondsSinceEpoch}',
-              )
+              ? CupertinoNavigationBar(middle: Text('Create Task'))
               : null,
       child: SafeArea(
         child: SingleChildScrollView(
