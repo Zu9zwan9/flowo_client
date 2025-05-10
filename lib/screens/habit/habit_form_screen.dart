@@ -431,9 +431,16 @@ class HabitFormScreenState extends State<HabitFormScreen>
     return CupertinoPageScaffold(
       navigationBar:
           widget.habit != null
-              ? CupertinoNavigationBar(middle: Text('Edit Habit'))
+              ? CupertinoHeroTagResolver.create(
+                middle: Text('Edit Habit'),
+                uniqueIdentifier: 'edit-habit-${widget.habit!.id}',
+              )
               : Navigator.canPop(context)
-              ? CupertinoNavigationBar(middle: Text('Create Habit'))
+              ? CupertinoHeroTagResolver.create(
+                middle: Text('Create Habit'),
+                uniqueIdentifier:
+                    'create-habit-${DateTime.now().millisecondsSinceEpoch}',
+              )
               : null,
       child: SafeArea(
         child: SingleChildScrollView(
