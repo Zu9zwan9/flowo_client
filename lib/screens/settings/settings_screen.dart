@@ -1,7 +1,6 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/screens/settings/day_schedule_screen.dart';
-import 'package:flowo_client/screens/settings/theme_settings_screen.dart';
 import 'package:flowo_client/screens/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';

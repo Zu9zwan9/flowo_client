@@ -1,4 +1,3 @@
-import 'dart:developer';
 
 import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';

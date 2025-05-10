@@ -150,8 +150,9 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
           curve: Curves.easeInOut,
         );
       }
-      if (!mounted)
+      if (!mounted) {
         return; // Check if widget is still mounted after async operation
+      }
       setState(() {
         _isCalendarVisible = false;
         _scrollController.jumpTo(0.0);

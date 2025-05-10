@@ -1,5 +1,4 @@
 import 'package:flowo_client/screens/habit/habit_details_screen.dart';
-import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +13,6 @@ import '../event/event_form_screen.dart';
 import '../event/event_screen.dart';
 import '../habit/habit_form_screen.dart';
 import '../home_screen.dart';
-import '../widgets/cupertino_divider.dart';
 import '../widgets/task_list_components.dart';
 import '../widgets/task_list_item.dart';
 import '../widgets/aurora_sphere_button.dart';
