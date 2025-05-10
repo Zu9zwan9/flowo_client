@@ -6,6 +6,7 @@ import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flowo_client/utils/logger.dart';
+import 'package:flowo_client/utils/cupertino_hero_tag_resolver.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -127,9 +128,16 @@ class EventFormScreenState extends State<EventFormScreen>
     return CupertinoPageScaffold(
       navigationBar:
           widget.event != null
-              ? CupertinoNavigationBar(middle: Text('Edit Event'))
+              ? CupertinoHeroTagResolver.create(
+                middle: Text('Edit Event'),
+                uniqueIdentifier: 'edit-event-${widget.event!.id}',
+              )
               : Navigator.canPop(context)
-              ? CupertinoNavigationBar(middle: Text('Create Event'))
+              ? CupertinoHeroTagResolver.create(
+                middle: Text('Create Event'),
+                uniqueIdentifier:
+                    'create-event-${DateTime.now().millisecondsSinceEpoch}',
+              )
               : null,
       child: SafeArea(
         child: SingleChildScrollView(

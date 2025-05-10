@@ -168,6 +168,27 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
         subtasks.add(t);
       }
     }
+
+    // Sort subtasks by order field if available, otherwise maintain the order defined in subtaskIds
+    subtasks.sort((a, b) {
+      // If both tasks have an order, sort by order
+      if (a.order != null && b.order != null) {
+        return a.order!.compareTo(b.order!);
+      }
+      // If only one task has an order, prioritize the one with an order
+      else if (a.order != null) {
+        return -1;
+      } else if (b.order != null) {
+        return 1;
+      }
+      // If neither has an order, maintain the order in subtaskIds list
+      else {
+        return task.subtaskIds
+            .indexOf(a.id)
+            .compareTo(task.subtaskIds.indexOf(b.id));
+      }
+    });
+
     return subtasks;
   }
 
@@ -332,18 +353,34 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     return []; // Return empty list to indicate success
   }
 
-  void updateTaskOrder(Task task, List<Task> tasks) {
-    for (var i = 0; i < tasks.length; i++) {
+  void updateTaskOrder(Task parentTask, List<Task> subtasks) {
+    for (var i = 0; i < subtasks.length; i++) {
+      final subtask = subtasks[i];
       editTask(
-        task: task,
-        title: task.title,
-        priority: task.priority,
-        estimatedTime: task.estimatedTime,
-        deadline: task.deadline,
-        category: task.category,
+        task: subtask,
+        title: subtask.title,
+        priority: subtask.priority,
+        estimatedTime: subtask.estimatedTime,
+        deadline: subtask.deadline,
+        category: subtask.category,
+        parentTask: parentTask,
+        notes: subtask.notes,
+        color: subtask.color,
         order: i + 1,
+        frequency: subtask.frequency,
+        optimisticTime: subtask.optimisticTime,
+        realisticTime: subtask.realisticTime,
+        pessimisticTime: subtask.pessimisticTime,
+        firstNotification: subtask.firstNotification,
+        secondNotification: subtask.secondNotification,
       );
     }
+
+    final subtaskIds = subtasks.map((subtask) => subtask.id).toList();
+    parentTask.subtaskIds = subtaskIds;
+    taskManager.tasksDB.put(parentTask.id, parentTask);
+
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
   void scheduleTasks() {
