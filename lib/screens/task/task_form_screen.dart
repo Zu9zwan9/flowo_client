@@ -2,6 +2,7 @@ import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
@@ -130,6 +131,164 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     super.dispose();
   }
 
+  // Build estimation method toggle (PERT Method vs Simple Duration)
+  Widget _buildEstimationMethodToggle(BuildContext context) {
+    final primaryColor = CupertinoTheme.of(context).primaryColor;
+    final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
+
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          // PERT Method option
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (!_userSettings.usePertMethod) {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    // Update the user setting
+                    _userSettings.usePertMethod = true;
+                    _userSettings.save();
+
+                    // Switching to PERT method
+                    // Create a range based on current estimated time
+                    final currentTime = _formData.estimatedTime;
+                    _formData.optimisticTime = (currentTime * 0.8).toInt();
+                    _formData.realisticTime = currentTime;
+                    _formData.pessimisticTime = (currentTime * 1.2).toInt();
+                    _formData.calculateEstimatedTime();
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color:
+                      _userSettings.usePertMethod
+                          ? CupertinoColors.systemBackground.resolveFrom(
+                            context,
+                          )
+                          : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                margin: const EdgeInsets.all(2),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.chart_bar_alt_fill,
+                        size: 18,
+                        color:
+                            _userSettings.usePertMethod
+                                ? primaryColor
+                                : CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'PERT Method',
+                        style: TextStyle(
+                          color:
+                              _userSettings.usePertMethod
+                                  ? primaryColor
+                                  : CupertinoColors.systemGrey.resolveFrom(
+                                    context,
+                                  ),
+                          fontSize: 14,
+                          fontWeight:
+                              _userSettings.usePertMethod
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Simple Duration option
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (_userSettings.usePertMethod) {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    // Update the user setting
+                    _userSettings.usePertMethod = false;
+                    _userSettings.save();
+
+                    // Switching to simple duration
+                    // Keep the current estimated time
+                    final currentEstimatedTime = _formData.estimatedTime;
+                    _formData.setSimpleDuration(currentEstimatedTime);
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color:
+                      !_userSettings.usePertMethod
+                          ? CupertinoColors.systemBackground.resolveFrom(
+                            context,
+                          )
+                          : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                margin: const EdgeInsets.all(2),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.timer,
+                        size: 18,
+                        color:
+                            !_userSettings.usePertMethod
+                                ? primaryColor
+                                : CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Simple Duration',
+                        style: TextStyle(
+                          color:
+                              !_userSettings.usePertMethod
+                                  ? primaryColor
+                                  : CupertinoColors.systemGrey.resolveFrom(
+                                    context,
+                                  ),
+                          fontSize: 14,
+                          fontWeight:
+                              !_userSettings.usePertMethod
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final form = CupertinoTaskForm(context);
@@ -199,51 +358,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                   children: [
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
-                      child: form.segmentedControl<bool>(
-                        children: {
-                          true: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Text(
-                              'PERT Method',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                          ),
-                          false: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8.0),
-                            child: Text(
-                              'Simple Duration',
-                              style: TextStyle(fontSize: 14),
-                            ),
-                          ),
-                        },
-                        groupValue: _userSettings.usePertMethod,
-                        onValueChanged: (value) {
-                          setState(() {
-                            // Update the user setting
-                            _userSettings.usePertMethod = value;
-                            _userSettings.save();
-
-                            // Update form data based on the new method
-                            if (value) {
-                              // Switching to PERT method
-                              // Create a range based on current estimated time
-                              final currentTime = _formData.estimatedTime;
-                              _formData.optimisticTime =
-                                  (currentTime * 0.8).toInt();
-                              _formData.realisticTime = currentTime;
-                              _formData.pessimisticTime =
-                                  (currentTime * 1.2).toInt();
-                              _formData.calculateEstimatedTime();
-                            } else {
-                              // Switching to simple duration
-                              // Keep the current estimated time
-                              final currentEstimatedTime =
-                                  _formData.estimatedTime;
-                              _formData.setSimpleDuration(currentEstimatedTime);
-                            }
-                          });
-                        },
-                      ),
+                      child: _buildEstimationMethodToggle(context),
                     ),
                     if (_userSettings.usePertMethod) ...[
                       form.selectionButton(
