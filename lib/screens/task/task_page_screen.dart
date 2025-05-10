@@ -1003,6 +1003,8 @@ class _SessionsWidgetState extends State<SessionsWidget> {
         'mostProductiveHour': 0,
         'completedSessions': 0,
         'totalSessions': 0,
+        'timeEfficiencyRatio': null,
+        'timeEfficiencyDescription': 'No data',
       };
     }
 
@@ -1034,11 +1036,18 @@ class _SessionsWidgetState extends State<SessionsWidget> {
       }
     });
 
+    // Get time efficiency ratio
+    final timeEfficiencyRatio = widget.task.getTimeEfficiencyRatio();
+    final timeEfficiencyDescription =
+        widget.task.getTimeEfficiencyDescription();
+
     return {
       'avgDuration': avgDuration,
       'mostProductiveHour': mostProductiveHour,
       'completedSessions': completedSessions.length,
       'totalSessions': _sessions.length,
+      'timeEfficiencyRatio': timeEfficiencyRatio,
+      'timeEfficiencyDescription': timeEfficiencyDescription,
     };
   }
 
@@ -1149,6 +1158,30 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                               _sessions.isNotEmpty
                                   ? '${_sessions.last.startTime.day}/${_sessions.last.startTime.month}'
                                   : 'N/A',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatItem(
+                          context,
+                          icon: CupertinoIcons.chart_pie,
+                          label: 'Time Efficiency',
+                          value:
+                              sessionStats['timeEfficiencyRatio'] != null
+                                  ? '${(sessionStats['timeEfficiencyRatio'] * 100).toStringAsFixed(0)}%'
+                                  : 'N/A',
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildStatItem(
+                          context,
+                          icon: CupertinoIcons.info_circle,
+                          label: 'Estimation',
+                          value: sessionStats['timeEfficiencyDescription'],
                         ),
                       ),
                     ],
@@ -1459,6 +1492,56 @@ class _SessionsWidgetState extends State<SessionsWidget> {
     );
   }
 
+  // Method to show a dialog for editing session notes
+  void _showEditNotesDialog(BuildContext context, TaskSession session) {
+    final TextEditingController notesController = TextEditingController(
+      text: session.notes,
+    );
+
+    showCupertinoDialog(
+      context: context,
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Session Notes'),
+            content: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: CupertinoTextField(
+                controller: notesController,
+                placeholder: 'What did you accomplish in this session?',
+                maxLines: 5,
+                minLines: 3,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: CupertinoColors.systemBackground.resolveFrom(context),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: CupertinoColors.systemGrey4.resolveFrom(context),
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('Save'),
+                onPressed: () {
+                  session.notes = notesController.text.trim();
+                  if (session.isInBox) {
+                    session.save();
+                  }
+                  _loadSessions(); // Refresh the sessions list
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+    ).then((_) => notesController.dispose());
+  }
+
   Widget _buildSessionItem(BuildContext context, TaskSession session) {
     final isActive = session.isActive;
     final startDate = session.startTime;
@@ -1610,6 +1693,70 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                     color: CupertinoColors.secondaryLabel.resolveFrom(context),
                   ),
                 ),
+              ],
+            ),
+          ],
+
+          // Session notes section
+          if (session.notes?.isNotEmpty == true || !isActive) ...[
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  CupertinoIcons.doc_text,
+                  size: 16,
+                  color: CupertinoColors.systemGrey.resolveFrom(context),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child:
+                      session.notes?.isNotEmpty == true
+                          ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Notes:',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  color: CupertinoColors.secondaryLabel
+                                      .resolveFrom(context),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                session.notes!,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: CupertinoColors.label.resolveFrom(
+                                    context,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                          : Text(
+                            'No notes for this session',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontStyle: FontStyle.italic,
+                              color: CupertinoColors.secondaryLabel.resolveFrom(
+                                context,
+                              ),
+                            ),
+                          ),
+                ),
+                if (!isActive)
+                  CupertinoButton(
+                    padding: const EdgeInsets.all(0),
+                    child: Icon(
+                      CupertinoIcons.pencil,
+                      size: 18,
+                      color: CupertinoColors.systemBlue.resolveFrom(context),
+                    ),
+                    onPressed: () => _showEditNotesDialog(context, session),
+                  ),
               ],
             ),
           ],
