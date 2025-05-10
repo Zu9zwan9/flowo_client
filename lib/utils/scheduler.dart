@@ -357,7 +357,6 @@ class Scheduler {
         endTime: end,
         type: ScheduledTaskType.defaultType,
         travelingTime: 0,
-        breakTime: 0,
       );
 
   void updateScheduledTask(ScheduledTask newScheduledTask) {
@@ -700,8 +699,7 @@ class Scheduler {
       endTime: end,
       urgency: urgency,
       type: type ?? ScheduledTaskType.defaultType,
-      travelingTime: _getTravelTime(task.location),
-      breakTime: userSettings.breakTime ?? 5 * 60 * 1000,
+      travelingTime: _getTravelTime(task.location)
     );
 
     task.scheduledTasks.add(scheduledTask);

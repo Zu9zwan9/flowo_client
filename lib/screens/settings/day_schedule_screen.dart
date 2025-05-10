@@ -45,7 +45,6 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
     final updatedSettings = UserSettings(
       name: userSettings.name,
       minSession: userSettings.minSession,
-      breakTime: userSettings.breakTime,
       mealBreaks: userSettings.mealBreaks,
       sleepTime: userSettings.sleepTime,
       freeTime: userSettings.freeTime,

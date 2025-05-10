@@ -29,9 +29,6 @@ class ScheduledTask extends HiveObject {
   int travelingTime;
 
   @HiveField(7)
-  int breakTime;
-
-  @HiveField(8)
   List<int> notificationIds;
 
   Task? get parentTask =>
@@ -45,7 +42,11 @@ class ScheduledTask extends HiveObject {
 
   @override
   String toString() {
-    return 'ScheduledTask{scheduledTaskId: $scheduledTaskId, parentTaskId: $parentTaskId, startTime: $startTime, endTime: $endTime, urgency: $urgency, type: $type, travelingTime: $travelingTime, breakTime: $breakTime}';
+    return 'ScheduledTask{scheduledTaskId: $scheduledTaskId,'
+        ' parentTaskId: $parentTaskId, startTime: $startTime,'
+        ' endTime: $endTime, urgency: $urgency,'
+        ' type: $type, travelingTime: $travelingTime'
+        ', notificationIds: $notificationIds}';
   }
 
   ScheduledTask({
@@ -56,7 +57,6 @@ class ScheduledTask extends HiveObject {
     this.urgency,
     required this.type,
     required this.travelingTime,
-    required this.breakTime,
     List<int>? notificationIds,
   }) : notificationIds = notificationIds ?? [];
 }

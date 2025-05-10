@@ -153,8 +153,6 @@ void main() async {
             name: 'Default',
             minSession: 15 * 60 * 1000,
             // Convert to milliseconds
-            breakTime: 15 * 60 * 1000,
-            // Default break time (15 minutes)
             sleepTime: [
               TimeFrame(
                 startTime: const TimeOfDay(hour: 22, minute: 0),
