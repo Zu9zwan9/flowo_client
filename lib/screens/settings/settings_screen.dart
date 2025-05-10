@@ -880,22 +880,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   themeNotifier,
                   (themeValue) => themeNotifier.setThemeMode(themeValue),
                 ),
-                const SizedBox(height: 16),
-                SettingsItem(
-                  label: 'Advanced Theme Settings',
-                  subtitle: 'Customize colors, effects, and accessibility',
-                  leading: const Icon(
-                    CupertinoIcons.paintbrush,
-                    color: CupertinoColors.systemBlue,
-                  ),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (context) => const ThemeSettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
+                // const SizedBox(height: 16),
+                // SettingsItem(
+                //   label: 'Advanced Theme Settings',
+                //   subtitle: 'Customize colors, effects, and accessibility',
+                //   leading: const Icon(
+                //     CupertinoIcons.paintbrush,
+                //     color: CupertinoColors.systemBlue,
+                //   ),
+                //   onTap: () {
+                //     Navigator.of(context).push(
+                //       CupertinoPageRoute(
+                //         builder: (context) => const ThemeSettingsScreen(),
+                //       ),
+                //     );
+                //   },
+                // ),
               ],
             ),
             SettingsSection(
