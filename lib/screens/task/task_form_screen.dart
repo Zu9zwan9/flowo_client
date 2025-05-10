@@ -1214,28 +1214,26 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     } else {
       taskManagerCubit.editTask(
         task: widget.task!,
-        title: _titleController.text,
-        priority: _formData.priority,
-        estimatedTime: _formData.estimatedTime,
-        deadline: _formData.selectedDateTime.millisecondsSinceEpoch,
-        category: Category(name: _selectedCategory),
+        title: _titleController.text != widget.task!.title ? _titleController.text : null,
+        priority: _formData.priority != widget.task!.priority ? _formData.priority : null,
+        estimatedTime: _formData.estimatedTime != widget.task!.estimatedTime ? _formData.estimatedTime : null,
+        deadline: _formData.selectedDateTime.millisecondsSinceEpoch != widget.task!.deadline ? _formData.selectedDateTime.millisecondsSinceEpoch : null,
+        category: _selectedCategory != widget.task!.category.name ? Category(name: _selectedCategory) : null,
         parentTask: widget.task!.parentTask,
-        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-        color: _formData.color,
+        notes: _notesController.text != (widget.task!.notes ?? '') ? (_notesController.text.isNotEmpty ? _notesController.text : null) : null,
+        color: _formData.color != widget.task!.color ? _formData.color : null,
         order: widget.task!.order,
-        optimisticTime: _formData.optimisticTime,
-        realisticTime: _formData.realisticTime,
-        pessimisticTime: _formData.pessimisticTime,
-        firstNotification: _firstNotification,
-        secondNotification: _secondNotification,
+        optimisticTime: _formData.optimisticTime != widget.task!.optimisticTime ? _formData.optimisticTime : null,
+        realisticTime: _formData.realisticTime != widget.task!.realisticTime ? _formData.realisticTime : null,
+        pessimisticTime: _formData.pessimisticTime != widget.task!.pessimisticTime ? _formData.pessimisticTime : null,
+        firstNotification: _firstNotification != widget.task!.firstNotification ? _firstNotification : null,
+        secondNotification: _secondNotification != widget.task!.secondNotification ? _secondNotification : null,
       );
     }
 
     logInfo(
       'Task ${widget.task == null ? "Created" : "Updated"}: ${_titleController.text}',
     );
-
-    taskManagerCubit.taskManager.manageTasks();
 
     if (Navigator.canPop(context)) {
       Navigator.pop(context);

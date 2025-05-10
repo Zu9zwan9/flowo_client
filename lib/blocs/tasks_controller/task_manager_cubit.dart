@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:flowo_client/models/scheduled_task.dart';
 import 'package:flowo_client/utils/logger.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
 
 import '../../models/category.dart';
@@ -214,13 +215,12 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }
 
   void editTask({
-    // TODO: Refactor to use only needed parameters
     required Task task,
-    required String title,
-    required int priority,
-    required int estimatedTime,
-    required int deadline,
-    required Category category,
+    String? title,
+    int? priority,
+    int? estimatedTime,
+    int? deadline,
+    Category? category,
     Task? parentTask,
     String? notes,
     int? color,
@@ -251,12 +251,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       firstNotification: firstNotification,
       secondNotification: secondNotification,
     );
-
-    taskManager.tasksDB.put(task.id, task);
-
-    // Recalculate scheduling after edit
-    taskManager.removeScheduledTasksFor(task);
-    taskManager.manageHabits();
 
     // Update state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
@@ -394,8 +388,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
-
-
   void updateUserSettings(UserSettings userSettings) {
     _deleteAllDays();
     taskManager.updateUserSettings(userSettings);
@@ -409,7 +401,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     taskManager.manageEvents();
     scheduleTasks();
     scheduleHabits();
-
 
     emit(
       state.copyWith(

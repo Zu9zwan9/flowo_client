@@ -139,11 +139,11 @@ class TaskManager {
 
   void editTask(
     Task task,
-    String title,
-    int priority,
-    int estimatedTime,
-    int deadline,
-    Category category,
+    String? title,
+    int? priority,
+    int? estimatedTime,
+    int? deadline,
+    Category? category,
     Task? parentTask, {
     String? notes,
     int? color,
@@ -155,41 +155,66 @@ class TaskManager {
     int? firstNotification,
     int? secondNotification,
   }) {
-    task.title = title;
-    task.priority = priority;
-    task.estimatedTime = estimatedTime;
-    task.deadline = deadline;
-    task.category = category;
-    task.parentTask = parentTask;
-    if (order != null) {
-      task.order = order;
-    }
-    if (notes != null) {
-      task.notes = notes;
-    }
-    if (color != null) {
-      task.color = color;
-    }
-    if (frequency != null) {
-      task.frequency = frequency;
-    }
-    if (optimisticTime != null) {
-      task.optimisticTime = optimisticTime;
-    }
-    if (realisticTime != null) {
-      task.realisticTime = realisticTime;
-    }
-    if (pessimisticTime != null) {
-      task.pessimisticTime = pessimisticTime;
-    }
-    task.firstNotification = firstNotification;
-    task.secondNotification = secondNotification;
+    task.title = title ?? task.title;
+    task.priority = priority ?? task.priority;
+    task.estimatedTime = estimatedTime ?? task.estimatedTime;
+    task.deadline = deadline ?? task.deadline;
+    task.category = category ?? task.category;
+    task.parentTask = parentTask ?? task.parentTask;
+    task.order = order ?? task.order;
+    task.notes = notes ?? task.notes;
+    task.color = color ?? task.color;
+    task.frequency = frequency ?? task.frequency;
+    task.optimisticTime = optimisticTime ?? task.optimisticTime;
+    task.realisticTime = realisticTime ?? task.realisticTime;
+    task.pessimisticTime = pessimisticTime ?? task.pessimisticTime;
+    task.firstNotification = firstNotification ?? task.firstNotification;
+    task.secondNotification = secondNotification ?? task.secondNotification;
     tasksDB.put(task.id, task);
+
+    // Recalculate scheduling after edit of critical properties
+    if (priority != null ||
+        deadline != null ||
+        optimisticTime != null ||
+        realisticTime != null ||
+        pessimisticTime != null ||
+        estimatedTime != null ||
+        frequency != null) {
+      manageTasks();
+      manageHabits();
+    }
+
+    // if notifications are changed, update the scheduled tasks
+    if (firstNotification != null || secondNotification != null) {
+      for (ScheduledTask scheduledTask in task.scheduledTasks) {
+        // cancel old notifications
+        for (var id in scheduledTask.notificationIds) {
+          scheduler.notiService.cancelNotification(id);
+        }
+
+        if (task.firstNotification != null) {
+          scheduler.scheduleNotification(
+            task.firstNotification!,
+            scheduledTask,
+            task,
+          );
+        }
+
+        if (task.secondNotification != null) {
+          scheduler.scheduleNotification(
+            task.secondNotification!,
+            scheduledTask,
+            task,
+          );
+        }
+      }
+    }
+
     logInfo('Edited task: ${task.title}');
   }
 
   void manageTasks() {
-    removeScheduledTasks(); // TODO: check if this works correctly
+    removeScheduledTasks();
     final tasks =
         tasksDB.values
             .where((task) => task.frequency == null && task.subtaskIds.isEmpty)

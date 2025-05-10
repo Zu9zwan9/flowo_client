@@ -699,52 +699,18 @@ class Scheduler {
       endTime: end,
       urgency: urgency,
       type: type ?? ScheduledTaskType.defaultType,
-      travelingTime: _getTravelTime(task.location)
+      travelingTime: _getTravelTime(task.location),
     );
 
     task.scheduledTasks.add(scheduledTask);
     tasksDB.put(task.id, task);
 
     if (task.firstNotification != null) {
-      DateTime notificationDate = start.subtract(
-        Duration(minutes: task.firstNotification!),
-      );
-
-      var notificationKey = UniqueKey().hashCode;
-
-      notiService.scheduleNotification(
-        id: notificationKey,
-        title: task.title,
-        body: 'Scheduled task: ${task.title}',
-        year: notificationDate.year,
-        month: notificationDate.month,
-        day: notificationDate.day,
-        hour: notificationDate.hour,
-        minute: notificationDate.minute,
-      );
-
-      scheduledTask.addNotificationId(notificationKey);
+      scheduleNotification(task.firstNotification!, scheduledTask, task);
     }
 
     if (task.secondNotification != null) {
-      DateTime notificationDate = start.subtract(
-        Duration(minutes: task.secondNotification!),
-      );
-
-      var notificationKey = UniqueKey().hashCode;
-
-      notiService.scheduleNotification(
-        id: notificationKey,
-        title: task.title,
-        body: 'Scheduled task: ${task.title}',
-        year: notificationDate.year,
-        month: notificationDate.month,
-        day: notificationDate.day,
-        hour: notificationDate.hour,
-        minute: notificationDate.minute,
-      );
-
-      scheduledTask.addNotificationId(notificationKey);
+      scheduleNotification(task.secondNotification!, scheduledTask, task);
     }
 
     final day = _getOrCreateDay(dateKey);
@@ -753,6 +719,34 @@ class Scheduler {
 
     log('Scheduled task ${task.title} from $start to $end on $dateKey');
     return scheduledTask;
+  }
+
+  void scheduleNotification(
+    int notificationTime,
+    ScheduledTask scheduledTask,
+    Task task,
+  ) {
+    DateTime notificationDate = scheduledTask.startTime.subtract(
+      Duration(minutes: notificationTime),
+    );
+
+    var notificationKey = UniqueKey().hashCode;
+
+    notiService.scheduleNotification(
+      id: notificationKey,
+      title: task.title,
+      body:
+          task.secondNotification != 0
+              ? 'Starts in ${task.secondNotification} minutes'
+              : 'Starts now',
+      year: notificationDate.year,
+      month: notificationDate.month,
+      day: notificationDate.day,
+      hour: notificationDate.hour,
+      minute: notificationDate.minute,
+    );
+
+    scheduledTask.addNotificationId(notificationKey);
   }
 
   int _calculateDurationMs(DateTime start, DateTime end) =>
