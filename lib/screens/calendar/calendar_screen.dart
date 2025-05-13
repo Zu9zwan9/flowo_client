@@ -1,9 +1,7 @@
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/screens/event/event_form_screen.dart';
 import 'package:flowo_client/screens/widgets/calendar_widgets.dart';
-import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
@@ -33,9 +31,6 @@ class CalendarScreenState extends State<CalendarScreen> {
   String? _errorMessage;
   late UserSettings _userSettings;
 
-  // Store the Future to avoid unnecessary data fetching
-  // This improves performance by preventing redundant database queries
-  // when the widget rebuilds but the selected date hasn't changed
   Future<List<TaskWithSchedules>>? _scheduledTasksFuture;
 
   @override
@@ -53,13 +48,8 @@ class CalendarScreenState extends State<CalendarScreen> {
     });
 
     try {
-      // Select the current date in the calendar cubit
       context.read<CalendarCubit>().selectDate(_selectedDate);
 
-      // Ensure tasks are scheduled
-      // Select the current date in the calendar cubit
-
-      // Initialize the Future for scheduled tasks
       _scheduledTasksFuture = context
           .read<TaskManagerCubit>()
           .getScheduledTasksForDate(_selectedDate);
@@ -100,10 +90,8 @@ class CalendarScreenState extends State<CalendarScreen> {
     });
 
     try {
-      // Reload data
       context.read<TaskManagerCubit>().scheduleTasks();
 
-      // Update the Future for scheduled tasks
       _scheduledTasksFuture = context
           .read<TaskManagerCubit>()
           .getScheduledTasksForDate(_selectedDate);
@@ -122,7 +110,6 @@ class CalendarScreenState extends State<CalendarScreen> {
     setState(() {
       _calendarView = newView;
 
-      // Update the Future for scheduled tasks when view changes
       _scheduledTasksFuture = context
           .read<TaskManagerCubit>()
           .getScheduledTasksForDate(_selectedDate);
@@ -167,148 +154,6 @@ class CalendarScreenState extends State<CalendarScreen> {
         newDate = DateTime(_selectedDate.year, _selectedDate.month + 1, 1);
     }
     _onDateSelected(newDate);
-  }
-
-  void _showEventDetails(Task task, ScheduledTask scheduledTask) {
-    showCupertinoModalPopup(
-      context: context,
-      builder:
-          (context) => CupertinoActionSheet(
-            title: Text(getHabitName(scheduledTask) ?? task.title),
-            message: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 8),
-                Text(
-                  '${DateTimeFormatter.formatTime(scheduledTask.startTime, is24HourFormat: _userSettings.is24HourFormat)} - ${DateTimeFormatter.formatTime(scheduledTask.endTime, is24HourFormat: _userSettings.is24HourFormat)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                if (task.notes != null && task.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(task.notes!, style: const TextStyle(fontSize: 14)),
-                ],
-                const SizedBox(height: 8),
-                Text(
-                  'Category: ${task.category.name}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              CupertinoActionSheetAction(
-                onPressed: () {
-                  _editTask(context, task);
-                },
-                child: const Text('Edit Event'),
-              ),
-              CupertinoActionSheetAction(
-                isDestructiveAction: true,
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showDeleteConfirmation(task);
-                },
-                child: const Text('Delete Event'),
-              ),
-            ],
-            cancelButton: CupertinoActionSheetAction(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-          ),
-    );
-  }
-
-  void _editTask(BuildContext context, Task task) {
-    HapticFeedback.mediumImpact();
-    Navigator.push(
-      context,
-      CupertinoPageRoute(
-        builder: (context) {
-          if (task.category.name.toLowerCase().contains('event')) {
-            return EventFormScreen(event: task);
-          } else if (task.frequency != null) {
-            return HabitFormScreen(habit: task);
-          } else {
-            return TaskFormScreen(task: task);
-          }
-        },
-      ),
-    );
-  }
-
-  void _showDeleteConfirmation(Task task) {
-    showCupertinoDialog(
-      context: context,
-      builder:
-          (context) => CupertinoAlertDialog(
-            title: const Text('Delete Event'),
-            content: Text('Are you sure you want to delete "${task.title}"?'),
-            actions: [
-              CupertinoDialogAction(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              CupertinoDialogAction(
-                isDestructiveAction: true,
-                onPressed: () {
-                  Navigator.pop(context);
-                  _deleteTask(task);
-                },
-                child: const Text('Delete'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  Future<void> _deleteTask(Task task) async {
-    try {
-      context.read<TaskManagerCubit>().deleteTask(task);
-      _showSuccessMessage('Event deleted successfully');
-    } catch (e) {
-      _showErrorMessage('Failed to delete event: ${e.toString()}');
-    }
-  }
-
-  void _showSuccessMessage(String message) {
-    showCupertinoModalPopup(
-      context: context,
-      builder:
-          (context) => CupertinoActionSheet(
-            message: Text(
-              message,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            cancelButton: CupertinoActionSheetAction(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ),
-    );
-  }
-
-  void _showErrorMessage(String message) {
-    showCupertinoDialog(
-      context: context,
-      builder:
-          (context) => CupertinoAlertDialog(
-            title: const Text('Error'),
-            content: Text(message),
-            actions: [
-              CupertinoDialogAction(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-    );
   }
 
   void _navigateToAddEvent() {
@@ -441,10 +286,6 @@ class CalendarScreenState extends State<CalendarScreen> {
                     onNextPressed: _goToNextPeriod,
                   ),
 
-                  // Calendar view with responsive height
-                  // Using a percentage of screen height instead of fixed height
-                  // This prevents layout issues on smaller screens and different orientations
-                  // and ensures the calendar scales appropriately on all devices
                   SizedBox(
                     height:
                         MediaQuery.of(context).size.height *
@@ -568,7 +409,6 @@ class CalendarScreenState extends State<CalendarScreen> {
           ),
           todayHighlightColor: CupertinoColors.activeBlue,
           headerHeight: 0,
-          // Hide the default header since we have our own
           viewHeaderStyle: ViewHeaderStyle(
             dayTextStyle: TextStyle(
               fontSize: 12,

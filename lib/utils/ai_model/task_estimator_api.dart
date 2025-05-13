@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
 import 'package:flowo_client/utils/logger.dart';
 
@@ -12,20 +13,15 @@ class TaskEstimatorAPI {
   /// Creates a new TaskEstimatorAPI with the given API key
   ///
   /// The API key should be a valid Azure API key
-  TaskEstimatorAPI({
-    String? apiKey,
-    this.apiUrl = 'https://models.inference.ai.azure.com/chat/completions',
-  }) : apiKey =
-           apiKey ??
-           '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',
-       _pipeline = pipeline(
-         "chat",
-         model: 'gpt-4o',
-         apiKey:
-             apiKey ??
-             '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',
-         apiUrl: apiUrl,
-       );
+  TaskEstimatorAPI({String? apiKey, String? apiUrl})
+    : apiKey = apiKey ?? EnvConfig.azureApiKey,
+      apiUrl = apiUrl ?? EnvConfig.azureApiUrl,
+      _pipeline = pipeline(
+        "chat",
+        model: EnvConfig.aiModel,
+        apiKey: apiKey ?? EnvConfig.azureApiKey,
+        apiUrl: apiUrl ?? EnvConfig.azureApiUrl,
+      );
 
   /// Makes a request to the Azure API to estimate time for a task
   ///

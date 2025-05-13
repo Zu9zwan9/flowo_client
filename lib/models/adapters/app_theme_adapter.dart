@@ -3,7 +3,7 @@ import '../app_theme.dart';
 
 class AppThemeAdapter extends TypeAdapter<AppTheme> {
   @override
-  final int typeId = 20; // Choose a unique typeId that doesn't conflict with other adapters
+  final int typeId = 20;
 
   @override
   AppTheme read(BinaryReader reader) {

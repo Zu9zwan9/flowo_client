@@ -18,3 +18,23 @@ Flowo is a task management application built with Flutter and Dart. It helps use
 
 - Flutter SDK
 - Dart SDK
+
+### Environment Configuration
+
+Flowo uses environment variables to manage sensitive data like API keys. Follow these steps to set up your environment:
+
+1. Copy the `.env.template` file to a new file named `.env` in the project root:
+   ```bash
+   cp .env.template .env
+   ```
+
+2. Edit the `.env` file and replace the placeholder values with your actual API keys and configuration:
+   ```
+   AZURE_API_KEY=your_azure_api_key_here
+   AZURE_API_URL=https://models.inference.ai.azure.com/chat/completions
+   AI_MODEL=gpt-4o
+   ```
+
+3. Make sure not to commit your `.env` file to version control. It's already added to `.gitignore` to prevent accidental commits.
+
+> **Note**: The application will still run without a valid API key, but AI-powered features like task breakdown and time estimation will use fallback values.

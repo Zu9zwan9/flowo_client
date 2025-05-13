@@ -31,8 +31,7 @@ class ScheduledTask extends HiveObject {
   @HiveField(7)
   List<int> notificationIds;
 
-  Task? get parentTask =>
-      Hive.box<Task>('tasks').get(parentTaskId); // Avoid null check operator
+  Task? get parentTask => Hive.box<Task>('tasks').get(parentTaskId);
 
   void addNotificationId(notificationId) {
     if (!notificationIds.contains(notificationId)) {

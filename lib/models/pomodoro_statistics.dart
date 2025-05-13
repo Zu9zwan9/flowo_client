@@ -4,7 +4,6 @@ import 'package:hive/hive.dart';
 part 'pomodoro_statistics.g.dart';
 
 /// A model class that represents statistics for Pomodoro sessions.
-/// This follows the Single Responsibility Principle by focusing only on statistics tracking.
 @HiveType(typeId: 18)
 class PomodoroStatistics extends HiveObject with ChangeNotifier {
   // Total completed sessions

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
 import 'package:flowo_client/utils/logger.dart';
@@ -22,12 +23,9 @@ class AITimeEstimationStrategy implements TimeEstimationStrategy {
   AITimeEstimationStrategy({String? apiKey, String? apiUrl})
     : _pipeline = pipeline(
         "chat",
-        model: 'gpt-4o',
-        apiKey:
-            apiKey ??
-            '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',
-        apiUrl:
-            apiUrl ?? 'https://models.inference.ai.azure.com/chat/completions',
+        model: EnvConfig.aiModel,
+        apiKey: apiKey ?? EnvConfig.azureApiKey,
+        apiUrl: apiUrl ?? EnvConfig.azureApiUrl,
       );
 
   @override

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:http/http.dart' as http;
 
@@ -125,20 +126,15 @@ class TaskBreakdownAPI {
   /// Creates a new TaskBreakdownAPI with the given API key
   ///
   /// The API key should be a valid Azure API key
-  TaskBreakdownAPI({
-    String? apiKey,
-    this.apiUrl = 'https://models.inference.ai.azure.com/chat/completions',
-  }) : apiKey =
-           apiKey ??
-           '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',
-       _pipeline = pipeline(
-         "chat",
-         model: 'gpt-4o',
-         apiKey:
-             apiKey ??
-             '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',
-         apiUrl: apiUrl,
-       );
+  TaskBreakdownAPI({String? apiKey, String? apiUrl})
+    : apiKey = apiKey ?? EnvConfig.azureApiKey,
+      apiUrl = apiUrl ?? EnvConfig.azureApiUrl,
+      _pipeline = pipeline(
+        "chat",
+        model: EnvConfig.aiModel,
+        apiKey: apiKey ?? EnvConfig.azureApiKey,
+        apiUrl: apiUrl ?? EnvConfig.azureApiUrl,
+      );
 
   /// Makes a request to the Azure API to break down a task into subtasks
   ///

@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
 import 'package:flowo_client/utils/ai_model/task_estimator_api.dart';
@@ -35,14 +36,10 @@ class TaskManager {
   }) : scheduler = Scheduler(daysDB, tasksDB, userSettings),
        taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
        taskBreakdownAPI = TaskBreakdownAPI(
-         apiKey:
-             huggingFaceApiKey ??
-             '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',
+         apiKey: huggingFaceApiKey ?? EnvConfig.azureApiKey,
        ),
        taskEstimatorAPI = TaskEstimatorAPI(
-         apiKey:
-             huggingFaceApiKey ??
-             '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',
+         apiKey: huggingFaceApiKey ?? EnvConfig.azureApiKey,
        );
 
   void updateUserSettings(UserSettings userSettings) {

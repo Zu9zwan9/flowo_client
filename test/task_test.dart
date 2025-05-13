@@ -13,7 +13,6 @@ void main() {
         deadline: DateTime.now().millisecondsSinceEpoch,
         estimatedTime: 60, // 60 minutes
         category: Category(name: 'Test Category'),
-        subtasks: [],
         scheduledTasks: [],
         isDone: false,
         overdue: false,
@@ -27,7 +26,6 @@ void main() {
       expect(task.category.name, 'Test Category');
       expect(task.isDone, false);
       expect(task.overdue, false);
-      expect(task.subtasks, isEmpty);
       expect(task.scheduledTasks, isEmpty);
     });
 
@@ -40,7 +38,7 @@ void main() {
         deadline: DateTime.now().millisecondsSinceEpoch,
         estimatedTime: 60,
         category: Category(name: 'Test Category'),
-        subtasks: [],
+
         scheduledTasks: [],
         isDone: false,
         overdue: false,

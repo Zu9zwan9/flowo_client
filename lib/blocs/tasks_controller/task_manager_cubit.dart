@@ -117,11 +117,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       overrideOverlaps: overrideOverlaps,
     );
 
-    // Update the state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
     logInfo('Event created successfully: $task.title');
-
-    return []; // Return empty list to indicate success
+    return [];
   }
 
   List<ScheduledTask> getScheduledTasks() {
@@ -342,8 +340,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
     logInfo('Event updated successfully: ${task.title}');
-
-    return []; // Return empty list to indicate success
+    return [];
   }
 
   void updateTaskOrder(Task parentTask, List<Task> subtasks) {

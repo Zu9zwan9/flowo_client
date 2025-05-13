@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:http/http.dart' as http;
 
@@ -22,12 +23,9 @@ class ChatPipeline {
     this.maxTokens = 4096,
     this.shouldStream = false,
     String? apiUrl,
-  }) : model = model ?? 'gpt-4o',
-       apiKey =
-           apiKey ??
-           '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',
-       apiUrl =
-           apiUrl ?? 'https://models.inference.ai.azure.com/chat/completions';
+  }) : model = model ?? EnvConfig.aiModel,
+       apiKey = apiKey ?? EnvConfig.azureApiKey,
+       apiUrl = apiUrl ?? EnvConfig.azureApiUrl;
 
   /// Calls the pipeline with the given messages
   ///

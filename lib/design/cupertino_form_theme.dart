@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 
-/// A design system for Cupertino forms adhering to Apple's HIG with dynamic theming.
 class CupertinoFormTheme {
   final CupertinoThemeData _themeData;
   final BuildContext context; // Store context as a field

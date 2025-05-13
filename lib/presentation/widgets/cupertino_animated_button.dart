@@ -3,9 +3,6 @@ import 'package:flutter/cupertino.dart';
 import '../haptics/haptic_service.dart';
 import 'base_animated_widget.dart';
 
-/// A Cupertino-style animated button with haptic feedback.
-/// This button follows Apple's design guidelines and provides
-/// smooth animations and haptic feedback for a native iOS feel.
 class CupertinoAnimatedButton extends BaseAnimatedWidget {
   /// The child widget to display inside the button.
   final Widget child;
@@ -52,13 +49,10 @@ class _CupertinoAnimatedButtonState
 
   @override
   Widget build(BuildContext context) {
-    // Get the primary color from the Cupertino theme
     final primaryColor = CupertinoTheme.of(context).primaryColor;
 
-    // Use the provided background color or fall back to the primary color
     final effectiveBackgroundColor = widget.backgroundColor ?? primaryColor;
 
-    // Apply opacity if the button is disabled
     final color =
         widget.isDisabled
             ? effectiveBackgroundColor.withOpacity(0.5)

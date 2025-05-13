@@ -10,7 +10,7 @@
     <!-- Required for notification vibration -->
     <uses-permission android:name="android.permission.VIBRATE"/>
 
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <application
             android:label="Flowo"
             android:name="${applicationName}"
@@ -41,12 +41,12 @@
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
                 android:name="flutterEmbedding"
-                android:value="2" />
+                android:value="2"/>
 
         <!-- Handles showing scheduled notifications -->
         <receiver
                 android:exported="false"
-                android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+                android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"/>
 
         <!-- Handles notification rescheduling after device restart -->
         <receiver
@@ -55,7 +55,7 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON"/>
                 <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
             </intent-filter>
         </receiver>

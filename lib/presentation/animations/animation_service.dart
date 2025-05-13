@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class AnimationService {
-  // Private constructor for singleton pattern
   AnimationService._();
 
   // Singleton instance

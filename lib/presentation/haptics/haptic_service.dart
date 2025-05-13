@@ -1,8 +1,6 @@
 import 'package:flutter/animation.dart';
 import 'package:flutter/services.dart';
 
-/// Haptic feedback service that provides reusable haptic feedback methods
-/// following Clean Architecture principles.
 class HapticService {
   // Private constructor for singleton pattern
   HapticService._();

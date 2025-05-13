@@ -56,7 +56,7 @@ class Task extends HiveObject {
   String? parentTaskId;
 
   @HiveField(12)
-  List<ScheduledTask> scheduledTasks; // Changed from const [] to mutable
+  List<ScheduledTask> scheduledTasks;
 
   @HiveField(13)
   bool isDone;

@@ -12,7 +12,6 @@ import 'package:flutter/material.dart'
         AlwaysStoppedAnimation;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-// Formatter interface for dependency inversion (SOLID)
 abstract class AnalyticsFormatter {
   String formatNumber(num value);
 
@@ -21,7 +20,6 @@ abstract class AnalyticsFormatter {
   String getEfficiencyMessage(double score);
 }
 
-// Concrete implementation of formatter
 class DefaultAnalyticsFormatter implements AnalyticsFormatter {
   @override
   String formatNumber(num value) => value.toString();
@@ -60,9 +58,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
   @override
   void initState() {
     super.initState();
-    // Arrange - Get the analytics cubit
     _analyticsCubit = BlocProvider.of<AnalyticsCubit>(context);
-    // Act - Load the analytics data
     _analyticsCubit.loadAnalytics();
   }
 
@@ -76,7 +72,6 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       child: SafeArea(
         child: BlocBuilder<AnalyticsCubit, AnalyticsState>(
           builder: (context, state) {
-            // Assert - Check the state and render appropriate UI
             if (state is AnalyticsLoading) {
               return const Center(child: CupertinoActivityIndicator());
             } else if (state is AnalyticsError) {
