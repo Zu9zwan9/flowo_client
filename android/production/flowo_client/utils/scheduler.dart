@@ -67,21 +67,14 @@ class Scheduler {
     double? urgency,
     List<String>? availableDates,
   }) {
-    if (urgency != null && urgency > 0) {
-      _replaceTasksWithLowerPriority(task);
-    }
-
     int remainingTime = task.estimatedTime;
     DateTime currentDate = DateTime.now();
     int dateIndex = 0;
     ScheduledTask? lastScheduledTask;
 
-    removePreviousScheduledTasks(task);
-    logDebug('No available dates provided for: ${task.title}');
-
     while (remainingTime > 0 ||
         (availableDates != null && availableDates.isNotEmpty)) {
-      String dateKey = _formatDateKey(currentDate);
+      String dateKey = formatDateKey(currentDate);
 
       if (!_isActiveDay(dateKey)) {
         logDebug('Skipping inactive day: $dateKey');
@@ -116,36 +109,6 @@ class Scheduler {
 
         if (remainingTime <= 0) {
           break;
-        }
-      }
-
-      // If we still have remaining time and sufficient urgency, try to displace existing tasks
-      if (remainingTime > 0 && urgency != null && urgency > 0) {
-        List<ScheduledTask> displacedTasks = _findDisplaceableSlots(
-          day,
-          start,
-          remainingTime,
-          minSessionDuration,
-          urgency,
-          task.title,
-        );
-
-        for (var taskToDisplace in displacedTasks) {
-          removeScheduledTask(taskToDisplace);
-          lastScheduledTask = _createScheduledTask(
-            task: task,
-            urgency: urgency,
-            start: taskToDisplace.startTime,
-            end: taskToDisplace.endTime,
-            dateKey: dateKey,
-          );
-
-          remainingTime -= _calculateDurationMs(
-            taskToDisplace.startTime,
-            taskToDisplace.endTime,
-          );
-
-          if (remainingTime <= 0) break;
         }
       }
 
@@ -185,7 +148,7 @@ class Scheduler {
     required DateTime end,
     bool overrideOverlaps = false,
   }) {
-    final dateKey = _formatDateKey(start);
+    final dateKey = formatDateKey(start);
 
     if (!overrideOverlaps) {
       final overlappingTasks = findOverlappingTasks(
@@ -221,7 +184,7 @@ class Scheduler {
     TimeOfDay end,
   ) {
     for (DateTime date in dates) {
-      final dateKey = _formatDateKey(date);
+      final dateKey = formatDateKey(date);
       final day = _getOrCreateDay(dateKey);
       final startTime = _combineDateKeyAndTimeOfDay(dateKey, start);
       final endTime = _combineDateKeyAndTimeOfDay(dateKey, end);
@@ -268,40 +231,6 @@ class Scheduler {
 
     // Fall back to global active days
     return userSettings.activeDays?[dayName] ?? true;
-  }
-
-  void _replaceTasksWithLowerPriority(Task highPriorityTask) {
-    List<ScheduledTask> tasksToRemove = [];
-    for (Day day in daysDB.values) {
-      for (ScheduledTask scheduledTask in List.from(day.scheduledTasks)) {
-        Task? parentTask = tasksDB.get(scheduledTask.parentTaskId);
-        if (parentTask != null &&
-            parentTask.priority < highPriorityTask.priority &&
-            scheduledTask.type == ScheduledTaskType.defaultType) {
-          tasksToRemove.add(scheduledTask);
-        }
-      }
-    }
-
-    for (ScheduledTask scheduledTask in tasksToRemove) {
-      for (Day day in daysDB.values) {
-        if (day.scheduledTasks.contains(scheduledTask)) {
-          day.scheduledTasks.remove(scheduledTask);
-          daysDB.put(day.day, day);
-        }
-      }
-      Task? parentTask = tasksDB.get(scheduledTask.parentTaskId);
-      if (parentTask != null) {
-        parentTask.scheduledTasks.remove(scheduledTask);
-        tasksDB.put(parentTask.id, parentTask);
-      }
-    }
-
-    if (tasksToRemove.isNotEmpty) {
-      logInfo(
-        'Displaced ${tasksToRemove.length} lower priority tasks for ${highPriorityTask.title}',
-      );
-    }
   }
 
   List<ScheduledTask> _findAllAvailableTimeSlots(
@@ -428,45 +357,10 @@ class Scheduler {
         endTime: end,
         type: ScheduledTaskType.defaultType,
         travelingTime: 0,
-        breakTime: 0,
       );
 
-  List<ScheduledTask> _findDisplaceableSlots(
-    Day day,
-    DateTime start,
-    int requiredTime,
-    int minSession,
-    double urgency,
-    String taskTitle,
-  ) {
-    final displaceable = <ScheduledTask>[];
-    int timeFound = 0;
-    final tasks =
-        day.scheduledTasks
-            .where(
-              (task) =>
-                  task.startTime.isAfter(start) &&
-                  task.type == ScheduledTaskType.defaultType &&
-                  (task.urgency ?? 0) < urgency,
-            )
-            .toList()
-          ..sort((a, b) => a.startTime.compareTo(b.startTime));
-
-    for (var task in tasks) {
-      final duration = _calculateDurationMs(task.startTime, task.endTime);
-      if (duration >= minSession) {
-        displaceable.add(task);
-        timeFound += duration;
-        logDebug(
-          'Displacing task ${task.parentTaskId} (${task.urgency}) for $taskTitle ($urgency)',
-        );
-        if (timeFound >= requiredTime) break;
-      }
-    }
-    return displaceable;
-  }
-
-  void updateScheduledTask(ScheduledTask newScheduledTask) { // only tasks with unchanged IDs
+  void updateScheduledTask(ScheduledTask newScheduledTask) {
+    // only tasks with unchanged IDs
     final task = tasksDB.get(newScheduledTask.parentTaskId);
     if (task != null) {
       task.scheduledTasks.removeWhere(
@@ -476,7 +370,7 @@ class Scheduler {
       tasksDB.put(task.id, task);
     }
 
-    final dateKey = _formatDateKey(newScheduledTask.startTime);
+    final dateKey = formatDateKey(newScheduledTask.startTime);
     final day = daysDB.get(dateKey);
     if (day != null) {
       day.scheduledTasks.removeWhere(
@@ -496,7 +390,7 @@ class Scheduler {
       tasksDB.put(task.id, task);
     }
 
-    final dateKey = _formatDateKey(scheduledTask.startTime);
+    final dateKey = formatDateKey(scheduledTask.startTime);
     final day = daysDB.get(dateKey);
     if (day != null) {
       day.scheduledTasks.removeWhere(
@@ -504,34 +398,6 @@ class Scheduler {
       );
       daysDB.put(dateKey, day);
     }
-  }
-
-  void removePreviousScheduledTasks(Task task) {
-    final scheduledTasksCopy = List<ScheduledTask>.from(task.scheduledTasks);
-    task.scheduledTasks.clear();
-    tasksDB.put(task.id, task);
-
-    final taskIdsByDay = <String, List<String>>{};
-    for (var scheduledTask in scheduledTasksCopy) {
-      final dateKey = _formatDateKey(scheduledTask.startTime);
-      taskIdsByDay
-          .putIfAbsent(dateKey, () => [])
-          .add(scheduledTask.scheduledTaskId);
-    }
-
-    for (var entry in taskIdsByDay.entries) {
-      final day = daysDB.get(entry.key);
-      if (day != null) {
-        day.scheduledTasks.removeWhere(
-          (st) => entry.value.contains(st.scheduledTaskId),
-        );
-        daysDB.put(entry.key, day);
-      }
-    }
-
-    logDebug(
-      'Cleared ${scheduledTasksCopy.length} previous tasks for ${task.title}',
-    );
   }
 
   List<ScheduledTask> _sortScheduledTasksByTime(List<ScheduledTask> tasks) =>
@@ -557,7 +423,7 @@ class Scheduler {
     final daysToCreate = endDate.difference(now).inDays;
 
     for (int i = 0; i <= daysToCreate; i++) {
-      final dateKey = _formatDateKey(now.add(Duration(days: i)));
+      final dateKey = formatDateKey(now.add(Duration(days: i)));
       if (!daysDB.containsKey(dateKey)) {
         _getOrCreateDay(dateKey);
       }
@@ -779,7 +645,7 @@ class Scheduler {
         dateKey: day.day,
       );
 
-      final nextDay = _formatDateKey(baseDate.add(const Duration(days: 1)));
+      final nextDay = formatDateKey(baseDate.add(const Duration(days: 1)));
       final nextDayStart = _combineDateKeyAndTimeOfDay(
         nextDay,
         const TimeOfDay(hour: 0, minute: 0),
@@ -834,52 +700,17 @@ class Scheduler {
       urgency: urgency,
       type: type ?? ScheduledTaskType.defaultType,
       travelingTime: _getTravelTime(task.location),
-      breakTime: userSettings.breakTime ?? 5 * 60 * 1000,
     );
 
     task.scheduledTasks.add(scheduledTask);
     tasksDB.put(task.id, task);
 
     if (task.firstNotification != null) {
-      DateTime notificationDate = start.subtract(
-        Duration(minutes: task.firstNotification!),
-      );
-
-      var notificationKey = UniqueKey().hashCode;
-
-      notiService.scheduleNotification(
-        id: notificationKey,
-        title: task.title,
-        body: 'Scheduled task: ${task.title}',
-        year: notificationDate.year,
-        month: notificationDate.month,
-        day: notificationDate.day,
-        hour: notificationDate.hour,
-        minute: notificationDate.minute,
-      );
-
-      scheduledTask.addNotificationId(notificationKey);
+      scheduleNotification(task.firstNotification!, scheduledTask, task);
     }
 
     if (task.secondNotification != null) {
-      DateTime notificationDate = start.subtract(
-        Duration(minutes: task.secondNotification!),
-      );
-
-      var notificationKey = UniqueKey().hashCode;
-
-      notiService.scheduleNotification(
-        id: notificationKey,
-        title: task.title,
-        body: 'Scheduled task: ${task.title}',
-        year: notificationDate.year,
-        month: notificationDate.month,
-        day: notificationDate.day,
-        hour: notificationDate.hour,
-        minute: notificationDate.minute,
-      );
-
-      scheduledTask.addNotificationId(notificationKey);
+      scheduleNotification(task.secondNotification!, scheduledTask, task);
     }
 
     final day = _getOrCreateDay(dateKey);
@@ -888,6 +719,34 @@ class Scheduler {
 
     log('Scheduled task ${task.title} from $start to $end on $dateKey');
     return scheduledTask;
+  }
+
+  void scheduleNotification(
+    int notificationTime,
+    ScheduledTask scheduledTask,
+    Task task,
+  ) {
+    DateTime notificationDate = scheduledTask.startTime.subtract(
+      Duration(minutes: notificationTime),
+    );
+
+    var notificationKey = UniqueKey().hashCode;
+
+    notiService.scheduleNotification(
+      id: notificationKey,
+      title: task.title,
+      body:
+          task.secondNotification != 0
+              ? 'Starts in ${task.secondNotification} minutes'
+              : 'Starts now',
+      year: notificationDate.year,
+      month: notificationDate.month,
+      day: notificationDate.day,
+      hour: notificationDate.hour,
+      minute: notificationDate.minute,
+    );
+
+    scheduledTask.addNotificationId(notificationKey);
   }
 
   int _calculateDurationMs(DateTime start, DateTime end) =>
@@ -907,7 +766,7 @@ class Scheduler {
           ? ((location.latitude.abs() + location.longitude.abs()) * 10).toInt()
           : 0;
 
-  String _formatDateKey(DateTime date) =>
+  String formatDateKey(DateTime date) =>
       '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
 
   DateTime _combineDateKeyAndTimeOfDay(String dateKey, TimeOfDay timeOfDay) {

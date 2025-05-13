@@ -19,12 +19,11 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
     return UserSettings(
       name: fields[0] as String,
       minSession: fields[1] as int,
-      breakTime: fields[2] as int?,
-      mealBreaks: (fields[3] as List).cast<TimeFrame>(),
-      sleepTime: (fields[4] as List).cast<TimeFrame>(),
-      freeTime: (fields[5] as List).cast<TimeFrame>(),
-      activeDays: (fields[6] as Map?)?.cast<String, bool>(),
-      daySchedules: (fields[18] as Map?)?.cast<String, DaySchedule>(),
+      mealBreaks: (fields[2] as List).cast<TimeFrame>(),
+      sleepTime: (fields[3] as List).cast<TimeFrame>(),
+      freeTime: (fields[4] as List).cast<TimeFrame>(),
+      activeDays: (fields[5] as Map?)?.cast<String, bool>(),
+      daySchedules: (fields[6] as Map?)?.cast<String, DaySchedule>(),
       defaultNotificationType: fields[7] as NotificationType,
       dateFormat: fields[8] as String,
       monthFormat: fields[9] as String,
@@ -36,11 +35,12 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       useGradient: fields[15] as bool,
       secondaryColorValue: fields[16] as int?,
       useDynamicColors: fields[17] as bool,
-      textSizeAdjustment: fields[19] as double?,
-      reduceMotion: fields[20] as bool?,
-      highContrastMode: fields[21] as bool?,
-      gradientStartAlignment: fields[22] as String?,
-      gradientEndAlignment: fields[23] as String?,
+      textSizeAdjustment: fields[18] as double?,
+      reduceMotion: fields[19] as bool?,
+      highContrastMode: fields[20] as bool?,
+      gradientStartAlignment: fields[21] as String?,
+      gradientEndAlignment: fields[22] as String?,
+      usePertMethod: fields[23] as bool,
     );
   }
 
@@ -53,16 +53,14 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       ..writeByte(1)
       ..write(obj.minSession)
       ..writeByte(2)
-      ..write(obj.breakTime)
-      ..writeByte(3)
       ..write(obj.mealBreaks)
-      ..writeByte(4)
+      ..writeByte(3)
       ..write(obj.sleepTime)
-      ..writeByte(5)
+      ..writeByte(4)
       ..write(obj.freeTime)
-      ..writeByte(6)
+      ..writeByte(5)
       ..write(obj.activeDays)
-      ..writeByte(18)
+      ..writeByte(6)
       ..write(obj.daySchedules)
       ..writeByte(7)
       ..write(obj.defaultNotificationType)
@@ -86,16 +84,18 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       ..write(obj.secondaryColorValue)
       ..writeByte(17)
       ..write(obj.useDynamicColors)
-      ..writeByte(19)
+      ..writeByte(18)
       ..write(obj.textSizeAdjustment)
-      ..writeByte(20)
+      ..writeByte(19)
       ..write(obj.reduceMotion)
-      ..writeByte(21)
+      ..writeByte(20)
       ..write(obj.highContrastMode)
-      ..writeByte(22)
+      ..writeByte(21)
       ..write(obj.gradientStartAlignment)
+      ..writeByte(22)
+      ..write(obj.gradientEndAlignment)
       ..writeByte(23)
-      ..write(obj.gradientEndAlignment);
+      ..write(obj.usePertMethod);
   }
 
   @override

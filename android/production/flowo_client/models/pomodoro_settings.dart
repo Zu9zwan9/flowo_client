@@ -4,8 +4,6 @@ import 'package:hive/hive.dart';
 part 'pomodoro_settings.g.dart';
 
 /// A model class that represents customizable settings for the Pomodoro timer.
-/// This follows the Open/Closed Principle by allowing extension through settings
-/// without modifying the core timer logic.
 @HiveType(typeId: 16)
 class PomodoroSettings extends HiveObject with ChangeNotifier {
   // Focus duration in milliseconds

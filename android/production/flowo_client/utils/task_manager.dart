@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
 import 'package:flowo_client/utils/ai_model/task_estimator_api.dart';
@@ -35,10 +36,10 @@ class TaskManager {
   }) : scheduler = Scheduler(daysDB, tasksDB, userSettings),
        taskUrgencyCalculator = TaskUrgencyCalculator(daysDB),
        taskBreakdownAPI = TaskBreakdownAPI(
-         apiKey: huggingFaceApiKey ?? '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',
+         apiKey: huggingFaceApiKey ?? EnvConfig.azureApiKey,
        ),
        taskEstimatorAPI = TaskEstimatorAPI(
-         apiKey: huggingFaceApiKey ?? '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',
+         apiKey: huggingFaceApiKey ?? EnvConfig.azureApiKey,
        );
 
   void updateUserSettings(UserSettings userSettings) {
@@ -59,6 +60,7 @@ class TaskManager {
     Category category, {
     Task? parentTask,
     String? notes,
+    int? order,
     int? color,
     RepeatRule? frequency,
     int? optimisticTime,
@@ -87,7 +89,7 @@ class TaskManager {
     tasksDB.put(task.id, task);
     if (parentTask != null) {
       task.parentTask = parentTask;
-      parentTask.subtasks.add(task);
+      parentTask.subtaskIds.add(task.id);
       tasksDB.put(parentTask.id, parentTask);
     }
     logInfo('Created task: ${task.title}');
@@ -101,15 +103,21 @@ class TaskManager {
     return task;
   }
 
-  void deleteTask(Task task) {
+  void deleteTaskById(String taskId) {
+    final task = tasksDB.get(taskId);
+    if (task == null) {
+      logWarning('Task with id $taskId not found');
+      return;
+    }
+
     tasksDB.delete(task.id);
     final parentTask = task.parentTask;
     if (parentTask != null) {
-      parentTask.subtasks.remove(task);
+      parentTask.subtaskIds.remove(task.id);
       tasksDB.put(parentTask.id, parentTask);
     }
-    for (var subtask in List.from(task.subtasks)) {
-      deleteTask(subtask);
+    for (var subtaskId in task.subtaskIds) {
+      deleteTaskById(subtaskId);
     }
     for (var scheduledTask in List.from(task.scheduledTasks)) {
       for (var day in daysDB.values) {
@@ -128,14 +136,15 @@ class TaskManager {
 
   void editTask(
     Task task,
-    String title,
-    int priority,
-    int estimatedTime,
-    int deadline,
-    Category category,
+    String? title,
+    int? priority,
+    int? estimatedTime,
+    int? deadline,
+    Category? category,
     Task? parentTask, {
     String? notes,
     int? color,
+    int? order,
     RepeatRule? frequency,
     int? optimisticTime,
     int? realisticTime,
@@ -143,40 +152,69 @@ class TaskManager {
     int? firstNotification,
     int? secondNotification,
   }) {
-    task.title = title;
-    task.priority = priority;
-    task.estimatedTime = estimatedTime;
-    task.deadline = deadline;
-    task.category = category;
-    task.parentTask = parentTask;
-    if (notes != null) {
-      task.notes = notes;
-    }
-    if (color != null) {
-      task.color = color;
-    }
-    if (frequency != null) {
-      task.frequency = frequency;
-    }
-    if (optimisticTime != null) {
-      task.optimisticTime = optimisticTime;
-    }
-    if (realisticTime != null) {
-      task.realisticTime = realisticTime;
-    }
-    if (pessimisticTime != null) {
-      task.pessimisticTime = pessimisticTime;
-    }
-    task.firstNotification = firstNotification;
-    task.secondNotification = secondNotification;
+    task.title = title ?? task.title;
+    task.priority = priority ?? task.priority;
+    task.estimatedTime = estimatedTime ?? task.estimatedTime;
+    task.deadline = deadline ?? task.deadline;
+    task.category = category ?? task.category;
+    task.parentTask = parentTask ?? task.parentTask;
+    task.order = order ?? task.order;
+    task.notes = notes ?? task.notes;
+    task.color = color ?? task.color;
+    task.frequency = frequency ?? task.frequency;
+    task.optimisticTime = optimisticTime ?? task.optimisticTime;
+    task.realisticTime = realisticTime ?? task.realisticTime;
+    task.pessimisticTime = pessimisticTime ?? task.pessimisticTime;
+    task.firstNotification = firstNotification ?? task.firstNotification;
+    task.secondNotification = secondNotification ?? task.secondNotification;
     tasksDB.put(task.id, task);
+
+    // Recalculate scheduling after edit of critical properties
+    if (priority != null ||
+        deadline != null ||
+        optimisticTime != null ||
+        realisticTime != null ||
+        pessimisticTime != null ||
+        estimatedTime != null ||
+        frequency != null) {
+      manageTasks();
+      manageHabits();
+    }
+
+    // if notifications are changed, update the scheduled tasks
+    if (firstNotification != null || secondNotification != null) {
+      for (ScheduledTask scheduledTask in task.scheduledTasks) {
+        // cancel old notifications
+        for (var id in scheduledTask.notificationIds) {
+          scheduler.notiService.cancelNotification(id);
+        }
+
+        if (task.firstNotification != null) {
+          scheduler.scheduleNotification(
+            task.firstNotification!,
+            scheduledTask,
+            task,
+          );
+        }
+
+        if (task.secondNotification != null) {
+          scheduler.scheduleNotification(
+            task.secondNotification!,
+            scheduledTask,
+            task,
+          );
+        }
+      }
+    }
+
     logInfo('Edited task: ${task.title}');
   }
 
-  void scheduleTasks() {
+  void manageTasks() {
+    removeScheduledTasks();
     final tasks =
         tasksDB.values
-            .where((task) => task.frequency == null && task.subtasks.isEmpty)
+            .where((task) => task.frequency == null && task.subtaskIds.isEmpty)
             .where((task) => task.id != 'free_time_manager')
             .where(
               (task) => !task.category.name.toLowerCase().contains('event'),
@@ -190,6 +228,7 @@ class TaskManager {
         tasks,
         justScheduledTasks,
       );
+
       if (taskUrgencyMap.isEmpty) {
         log('No tasks left to schedule');
         break;
@@ -226,6 +265,32 @@ class TaskManager {
       tasks.remove(mostUrgentTask);
     }
     logInfo('Scheduled ${justScheduledTasks.length} tasks');
+  }
+
+  void manageEvents() {
+    // restoring events if they deleted from daysDB
+    final events =
+        tasksDB.values
+            .where((task) => task.category.name.toLowerCase().contains('event'))
+            .toList();
+
+    for (Task event in events) {
+      if (event.scheduledTasks.isNotEmpty) {
+        for (var scheduledTask in event.scheduledTasks) {
+          final day = daysDB.get(
+            scheduler.formatDateKey(scheduledTask.startTime),
+          );
+          if (day != null) {
+            day.scheduledTasks.add(scheduledTask);
+            daysDB.put(day.day, day);
+          } else {
+            logWarning('Day $day not found');
+          }
+        }
+      } else {
+        logWarning('Event ${event.title} has no scheduled tasks');
+      }
+    }
   }
 
   void manageHabits() {
@@ -431,38 +496,63 @@ class TaskManager {
   }
 
   bool _isOrderCorrect(Task task) {
-    if (task.order != null && task.order! > 0 && task.parentTask != null) {
-      return !task.parentTask!.subtasks.any(
-        (subtask) =>
-            subtask.order != null &&
-            subtask.order! < task.order! &&
-            subtask.scheduledTasks.isEmpty,
-      );
+    if (task.order == null || task.order! <= 1 || task.parentTask == null) {
+      return true;
     }
+
+    final parentTask = tasksDB.get(task.parentTaskId);
+    final parentSubtasks =
+        tasksDB.values
+            .where((t) => parentTask?.subtaskIds.contains(t.id) ?? false)
+            .toList();
+
+    for (var subtask in parentSubtasks) {
+      if (subtask.order! < task.order! && subtask.scheduledTasks.isEmpty) {
+        return false;
+      }
+    }
+
     return true;
   }
 
   void removeScheduledTasks() {
-    final now = DateTime.now();
     for (var day in daysDB.values) {
-      final dayDate = DateTime.parse(day.day);
-      if (dayDate.isBefore(now)) continue;
+      // final dayDate = DateTime.parse(day.day); //TODO: update this later
+      // if (dayDate.isBefore(now)) continue;
 
       final toRemove =
           day.scheduledTasks
               .where((st) => st.type == ScheduledTaskType.defaultType)
               .toList();
+
+      if (toRemove.isEmpty) continue;
+
+      logInfo(
+        'Removing ${toRemove.length} scheduled tasks from day ${day.day}',
+      );
       for (var scheduledTask in toRemove) {
-        day.scheduledTasks.remove(scheduledTask);
+        day.scheduledTasks.removeWhere(
+          (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+        );
+
         final task = tasksDB.get(scheduledTask.parentTaskId);
         if (task != null) {
-          task.scheduledTasks.remove(scheduledTask);
+          task.scheduledTasks.removeWhere(
+            (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+          );
+
           tasksDB.put(task.id, task);
+        } else {
+          logWarning('Task with id ${scheduledTask.scheduledTaskId} not found');
+        }
+
+        for (var notificationId in scheduledTask.notificationIds) {
+          scheduler.notiService.cancelNotification(notificationId);
         }
       }
       daysDB.put(day.day, day);
     }
-    logInfo('Removed scheduled tasks after ${now.toIso8601String()}');
+    logInfo('Removed all scheduled tasks');
   }
 
   void removeScheduledTasksFor(Task task) {
@@ -496,7 +586,6 @@ class TaskManager {
   Future<List<Task>> breakdownAndScheduleTask(Task task) async {
     logInfo('Breaking down task: ${task.title} ${task.estimatedTime}');
 
-    // Изменяем тип с List<String> на List<Map<String, dynamic>>
     final subtaskDataList = await taskBreakdownAPI.breakdownTask(
       task.title,
       task.estimatedTime.toString(),
@@ -504,8 +593,6 @@ class TaskManager {
 
     if (subtaskDataList.isEmpty) {
       logWarning('No subtasks generated for task: ${task.title}');
-      logInfo('Scheduling parent task: ${task.title}');
-      scheduler.scheduleTask(task, userSettings.minSession, urgency: null);
       return [];
     }
 
@@ -515,7 +602,6 @@ class TaskManager {
     int order = 1;
 
     for (var subtaskData in subtaskDataList) {
-      // Извлекаем title и estimatedTime из Map
       final subtaskTitle = subtaskData['title'] as String;
       final estimatedTime = subtaskData['estimatedTime'] as int;
 
@@ -526,27 +612,20 @@ class TaskManager {
         estimatedTime: estimatedTime,
         deadline: task.deadline,
         category: task.category,
+        color: task.color,
         parentTask: task,
         order: order++,
+        firstNotification: task.firstNotification,
+        secondNotification: task.secondNotification,
       );
       tasksDB.put(subtask.id, subtask);
       subtasks.add(subtask);
-      task.subtasks.add(subtask);
+      task.subtaskIds.add(subtask.id);
     }
 
-    tasksDB.put(task.id, task);
-    scheduleSubtasks(subtasks);
+    manageTasks();
 
     return subtasks;
-  }
-
-  void scheduleSubtasks(List<Task> subtasks) {
-    logInfo('Scheduling ${subtasks.length} subtasks');
-    subtasks.sort((a, b) => (a.order ?? 0).compareTo(b.order ?? 0));
-    for (var subtask in subtasks) {
-      scheduler.scheduleTask(subtask, userSettings.minSession, urgency: null);
-      logInfo('Scheduled subtask: ${subtask.title}');
-    }
   }
 
   /// Starts a task or subtask
@@ -610,7 +689,9 @@ class TaskManager {
     // Check if parent task should be completed too
     final parentTask = task.parentTask;
     if (parentTask != null) {
-      if (parentTask.subtasks.every((subtask) => subtask.isDone)) {
+      if (parentTask.subtaskIds.every(
+        (subtaskId) => tasksDB.get(subtaskId)!.isDone,
+      )) {
         completeTask(parentTask);
       }
     }
@@ -623,8 +704,11 @@ class TaskManager {
     List<TaskSession> allSessions = List.from(task.sessions);
 
     // Add sessions from subtasks
-    for (var subtask in task.subtasks) {
-      allSessions.addAll(getTaskSessions(subtask));
+    for (var subtaskId in task.subtaskIds) {
+      final subtask = tasksDB.get(subtaskId);
+      if (subtask != null) {
+        allSessions.addAll(getTaskSessions(subtask));
+      }
     }
 
     return allSessions;
@@ -635,8 +719,11 @@ class TaskManager {
     int total = task.getTotalDuration();
 
     // Add duration from subtasks
-    for (var subtask in task.subtasks) {
-      total += getTotalDuration(subtask);
+    for (var subtaskId in task.subtaskIds) {
+      final subtask = tasksDB.get(subtaskId);
+      if (subtask != null) {
+        total += getTotalDuration(subtask);
+      }
     }
 
     return total;

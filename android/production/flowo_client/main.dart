@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/models/ambient_scene.dart';
 import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/repeat_rule_instance.dart';
@@ -43,8 +44,8 @@ import 'utils/logger.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await EnvConfig.initialize();
 
-  // Initialize security service to protect against reverse engineering
   if (!kIsWeb) {
     final securityService = SecurityService(
       // For Android
@@ -126,7 +127,6 @@ void main() async {
     ambientScenesDB = await Hive.openBox<AmbientScene>('ambient_scenes');
   }
 
-  // Check if it's the first app launch by checking if the UserSettings box is empty
   var isFirstLaunch = profiles.isEmpty;
   appLogger.info('Is first app launch: $isFirstLaunch', 'App');
 
@@ -145,7 +145,6 @@ void main() async {
     );
   }
 
-  // Create and save default UserSettings if it's the first launch
   var selectedProfile =
       profiles.values.isNotEmpty
           ? profiles.values.first
@@ -153,8 +152,6 @@ void main() async {
             name: 'Default',
             minSession: 15 * 60 * 1000,
             // Convert to milliseconds
-            breakTime: 15 * 60 * 1000,
-            // Default break time (15 minutes)
             sleepTime: [
               TimeFrame(
                 startTime: const TimeOfDay(hour: 22, minute: 0),
@@ -218,15 +215,22 @@ void main() async {
             defaultNotificationType: NotificationType.push,
           );
 
+  // Get API key with fallback to empty string if environment initialization failed
+  String apiKey = '';
+  try {
+    apiKey = EnvConfig.azureApiKey;
+  } catch (e) {
+    appLogger.error('Failed to get API key: $e', 'App');
+    appLogger.info('Using empty API key as fallback', 'App');
+  }
+
   final taskManager = TaskManager(
     daysDB: daysDB,
     tasksDB: tasksDB,
     userSettings: selectedProfile,
-    huggingFaceApiKey:
-        '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', // Default API key
+    huggingFaceApiKey: apiKey,
   );
 
-  // Save the default settings to the Hive box if it's the first launch
   if (isFirstLaunch) {
     appLogger.info('Saving default user settings', 'App');
     profiles.put('current', selectedProfile);
@@ -282,7 +286,6 @@ void main() async {
 
   appLogger.info('Hive initialized and task boxes opened', 'App');
 
-  // Create web theme bridge for system theme detection
   final webThemeBridge = WebThemeBridge();
 
   runApp(
@@ -324,14 +327,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     appLogger.info('Building MyApp', 'App');
 
-    // Initialize web-specific features
     if (kIsWeb) {
       try {
         final webThemeBridge = Provider.of<WebThemeBridge>(
           context,
           listen: false,
         );
-        // Register web theme with JavaScript
         webThemeBridge.callJavaScriptFunction('flutterThemeReady');
         appLogger.info('Web theme bridge initialized', 'App');
       } catch (e) {
@@ -353,9 +354,7 @@ class MyApp extends StatelessWidget {
           value: onboardingService,
           child: CupertinoApp(
             debugShowCheckedModeBanner: false,
-            // Use the theme from ThemeNotifier to ensure custom colors, noise, and gradient are applied
             theme: themeNotifier.currentTheme,
-            // Add these two lines to support localization:
             localizationsDelegates: const [
               DefaultCupertinoLocalizations.delegate,
               DefaultWidgetsLocalizations.delegate,

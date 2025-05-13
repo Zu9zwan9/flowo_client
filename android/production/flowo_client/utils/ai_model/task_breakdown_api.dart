@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:http/http.dart' as http;
 
@@ -13,7 +14,7 @@ Pipeline pipeline(
   return Pipeline(task: task, model: model, apiKey: apiKey, apiUrl: apiUrl);
 }
 
-/// A pipeline for text generation using Hugging Face models
+/// A pipeline for text generation using Azure API models
 class Pipeline {
   final String task;
   final String model;
@@ -22,25 +23,40 @@ class Pipeline {
 
   /// Creates a new pipeline for text generation
   ///
-  /// The task should be a valid NLP task (e.g., "text-generation")
-  /// The model should be a valid Hugging Face model ID
-  /// The API key should be a valid Hugging Face API key
+  /// The task should be a valid task type (e.g., "chat")
+  /// The model should be a valid Azure API model ID
+  /// The API key should be a valid Azure API key
   Pipeline({
     required this.task,
     required this.model,
     required this.apiKey,
     String? apiUrl,
   }) : apiUrl =
-           apiUrl ?? 'https://router.huggingface.co/hf-inference/models/$model';
+           apiUrl ?? 'https://models.inference.ai.azure.com/chat/completions';
 
   /// Calls the pipeline with the given messages
   ///
   /// Returns the generated text or null if the request failed
   /// The response can be either a Map<String, dynamic> or a List<dynamic>
   Future<dynamic> call(List<Map<String, String>> messages) async {
+    // Convert the messages to the format expected by Azure API
+    final List<Map<String, String>> formattedMessages = [];
+
+    // Add system message if not present
+    bool hasSystemMessage = messages.any((msg) => msg["role"] == "system");
+    if (!hasSystemMessage) {
+      formattedMessages.add({"role": "system", "content": ""});
+    }
+
+    // Add the rest of the messages
+    formattedMessages.addAll(messages);
+
     final data = {
-      "inputs": jsonEncode(messages),
-      "parameters": {"max_new_tokens": 500, "return_full_text": false},
+      "messages": formattedMessages,
+      "model": model,
+      "temperature": 1,
+      "max_tokens": 4096,
+      "top_p": 1,
     };
 
     final headers = {
@@ -49,7 +65,7 @@ class Pipeline {
     };
 
     try {
-      logInfo('Making request to Hugging Face API for model: $model');
+      logInfo('Making request to Azure API for model: $model');
       final client = http.Client();
       final response = await client.post(
         Uri.parse(apiUrl),
@@ -58,11 +74,27 @@ class Pipeline {
       );
 
       if (response.statusCode == 200) {
-        logInfo('Received successful response from Hugging Face API');
-        return jsonDecode(response.body);
+        logInfo('Received successful response from Azure API');
+        final responseBody = jsonDecode(response.body);
+        // Extract the generated text from the Azure API response format
+        if (responseBody.containsKey('choices') &&
+            responseBody['choices'] is List &&
+            responseBody['choices'].isNotEmpty &&
+            responseBody['choices'][0].containsKey('message') &&
+            responseBody['choices'][0]['message'].containsKey('content')) {
+          return {
+            "generated_text": responseBody['choices'][0]['message']['content'],
+          };
+        } else {
+          logWarning('Unexpected response format from Azure API');
+          return {
+            "generated_text":
+                "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work",
+          };
+        }
       } else {
         logError(
-          'Error from Hugging Face API: ${response.statusCode} - ${response.body}',
+          'Error from Azure API: ${response.statusCode} - ${response.body}',
         );
 
         // If the API is unavailable, return a fallback response
@@ -73,7 +105,7 @@ class Pipeline {
         };
       }
     } catch (e) {
-      logError('Exception making request to Hugging Face API: $e');
+      logError('Exception making request to Azure API: $e');
 
       // If there's an exception, return a fallback response
       logWarning('Using fallback response due to exception');
@@ -85,7 +117,7 @@ class Pipeline {
   }
 }
 
-/// A service that uses Hugging Face API to break down tasks into subtasks
+/// A service that uses Azure API to break down tasks into subtasks
 class TaskBreakdownAPI {
   final String apiKey;
   final String apiUrl;
@@ -93,19 +125,18 @@ class TaskBreakdownAPI {
 
   /// Creates a new TaskBreakdownAPI with the given API key
   ///
-  /// The API key should be a valid Hugging Face API key
-  TaskBreakdownAPI({
-    required this.apiKey,
-    this.apiUrl =
-        'https://router.huggingface.co/hf-inference/models/HuggingFaceH4/zephyr-7b-beta',
-  }) : _pipeline = pipeline(
-         "text-generation",
-         model: 'HuggingFaceH4/zephyr-7b-beta',
-         apiKey: apiKey,
-         apiUrl: apiUrl,
-       );
+  /// The API key should be a valid Azure API key
+  TaskBreakdownAPI({String? apiKey, String? apiUrl})
+    : apiKey = apiKey ?? EnvConfig.azureApiKey,
+      apiUrl = apiUrl ?? EnvConfig.azureApiUrl,
+      _pipeline = pipeline(
+        "chat",
+        model: EnvConfig.aiModel,
+        apiKey: apiKey ?? EnvConfig.azureApiKey,
+        apiUrl: apiUrl ?? EnvConfig.azureApiUrl,
+      );
 
-  /// Makes a request to the Hugging Face API to break down a task into subtasks
+  /// Makes a request to the Azure API to break down a task into subtasks
   ///
   /// Returns the raw API response or null if the request failed
   /// The response can be either a Map<String, dynamic> or a List<dynamic>
@@ -137,12 +168,12 @@ class TaskBreakdownAPI {
     return await _pipeline.call(messages);
   }
 
-  /// Parses the response from the Hugging Face API into a list of subtasks
+  /// Parses the response from the Azure API into a list of subtasks
   ///
   /// Returns an empty list if the response is invalid or empty
   List<Map<String, dynamic>> parseSubtasks(dynamic response) {
     if (response == null) {
-      logWarning('Received null response from Hugging Face API');
+      logWarning('Received null response from Azure API');
       return [];
     }
 
@@ -153,9 +184,7 @@ class TaskBreakdownAPI {
       } else if (response is Map<String, dynamic>) {
         text = response["generated_text"] ?? "";
       } else {
-        logWarning(
-          'Unexpected response format from Hugging Face API: $response',
-        );
+        logWarning('Unexpected response format from Azure API: $response');
         return [];
       }
 

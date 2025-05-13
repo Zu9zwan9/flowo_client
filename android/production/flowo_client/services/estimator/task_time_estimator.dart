@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
 import 'package:flowo_client/utils/logger.dart';
@@ -19,12 +20,12 @@ class AITimeEstimationStrategy implements TimeEstimationStrategy {
   final Pipeline _pipeline;
 
   /// Creates a new AITimeEstimationStrategy with the given API key
-  AITimeEstimationStrategy({required String apiKey, String? apiUrl})
+  AITimeEstimationStrategy({String? apiKey, String? apiUrl})
     : _pipeline = pipeline(
-        "text-generation",
-        model: 'HuggingFaceH4/zephyr-7b-beta',
-        apiKey: apiKey,
-        apiUrl: apiUrl,
+        "chat",
+        model: EnvConfig.aiModel,
+        apiKey: apiKey ?? EnvConfig.azureApiKey,
+        apiUrl: apiUrl ?? EnvConfig.azureApiUrl,
       );
 
   @override
@@ -96,7 +97,7 @@ The sum of all estimates should be approximately equal to the total estimated ti
     int totalTime,
   ) {
     if (response == null) {
-      logWarning('Received null response from Hugging Face API');
+      logWarning('Received null response from Azure API');
       return _distributeProportionally(subtaskCount, totalTime);
     }
 
@@ -107,9 +108,7 @@ The sum of all estimates should be approximately equal to the total estimated ti
       } else if (response is Map<String, dynamic>) {
         text = response["generated_text"] ?? "";
       } else {
-        logWarning(
-          'Unexpected response format from Hugging Face API: $response',
-        );
+        logWarning('Unexpected response format from Azure API: $response');
         return _distributeProportionally(subtaskCount, totalTime);
       }
 

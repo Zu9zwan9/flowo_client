@@ -25,7 +25,6 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
   void initState() {
     super.initState();
     _loadSettings();
-    _loadSettings();
   }
 
   void _loadSettings() {
@@ -46,7 +45,6 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
     final updatedSettings = UserSettings(
       name: userSettings.name,
       minSession: userSettings.minSession,
-      breakTime: userSettings.breakTime,
       mealBreaks: userSettings.mealBreaks,
       sleepTime: userSettings.sleepTime,
       freeTime: userSettings.freeTime,
@@ -69,18 +67,17 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
 
     showCupertinoDialog(
       context: context,
-      builder:
-          (dialogContext) => CupertinoAlertDialog(
-            title: const Text('Settings Saved'),
-            content: const Text('Your day schedules have been updated.'),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(dialogContext),
-              ),
-            ],
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: const Text('Settings Saved'),
+        content: const Text('Your day schedules have been updated.'),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('OK'),
+            onPressed: () => Navigator.pop(dialogContext),
           ),
+        ],
+      ),
     );
   }
 
@@ -92,145 +89,219 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
 
     await showCupertinoModalPopup(
       context: context,
-      builder:
-          (_) => Container(
-            height: 280,
-            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-            child: Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      CupertinoButton(
-                        child: const Text('Cancel'),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      CupertinoButton(
-                        child: const Text('Done'),
-                        onPressed: () {
-                          onTimeSelected(selectedTime!);
-                          Navigator.pop(context);
-                        },
-                      ),
-                    ],
+      builder: (_) => Container(
+        height: 280,
+        color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  CupertinoButton(
+                    child: const Text('Cancel'),
+                    onPressed: () => Navigator.pop(context),
                   ),
-                ),
-                Expanded(
-                  child: CupertinoDatePicker(
-                    mode: CupertinoDatePickerMode.time,
-                    initialDateTime: DateTime(
-                      2022,
-                      1,
-                      1,
-                      initialTime.hour,
-                      initialTime.minute,
-                    ),
-                    use24hFormat: _is24HourFormat,
-                    onDateTimeChanged: (dateTime) {
-                      selectedTime = TimeOfDay(
-                        hour: dateTime.hour,
-                        minute: dateTime.minute,
-                      );
+                  CupertinoButton(
+                    child: const Text('Done'),
+                    onPressed: () {
+                      onTimeSelected(selectedTime!);
+                      Navigator.pop(context);
                     },
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            Expanded(
+              child: CupertinoDatePicker(
+                mode: CupertinoDatePickerMode.time,
+                initialDateTime: DateTime(
+                  2022,
+                  1,
+                  1,
+                  initialTime.hour,
+                  initialTime.minute,
+                ),
+                use24hFormat: _is24HourFormat,
+                onDateTimeChanged: (dateTime) {
+                  selectedTime = TimeOfDay(
+                    hour: dateTime.hour,
+                    minute: dateTime.minute,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  void _showAddTimeSlotDialog({
+  void _showTimeSlotDialog({
     required String title,
-    required Function(TimeOfDay, TimeOfDay) onAdd,
+    required Function(TimeOfDay, TimeOfDay) onSave,
+    TimeOfDay? initialStartTime,
+    TimeOfDay? initialEndTime,
     Color iconColor = CupertinoColors.systemBlue,
   }) {
-    var startTime = const TimeOfDay(hour: 12, minute: 0);
-    var endTime = const TimeOfDay(hour: 13, minute: 0);
+    var startTime = initialStartTime ?? const TimeOfDay(hour: 12, minute: 0);
+    var endTime = initialEndTime ?? const TimeOfDay(hour: 13, minute: 0);
 
     showCupertinoModalPopup(
       context: context,
-      builder:
-          (_) => StatefulBuilder(
-            builder:
-                (context, setDialogState) => CupertinoActionSheet(
-                  title: Text('Add $title'),
-                  message: Text('Set your $title start and end times'),
-                  actions: [
-                    CupertinoActionSheetAction(
-                      child: Text('Start Time: ${_formatTimeOfDay(startTime)}'),
-                      onPressed:
-                          () => _showTimePicker(
-                            initialTime: startTime,
-                            onTimeSelected:
-                                (time) =>
-                                    setDialogState(() => startTime = time),
-                          ),
-                    ),
-                    CupertinoActionSheetAction(
-                      child: Text('End Time: ${_formatTimeOfDay(endTime)}'),
-                      onPressed:
-                          () => _showTimePicker(
-                            initialTime: endTime,
-                            onTimeSelected:
-                                (time) => setDialogState(() => endTime = time),
-                          ),
-                    ),
-                    CupertinoActionSheetAction(
-                      isDefaultAction: true,
-                      child: Text('Add $title'),
-                      onPressed: () {
-                        onAdd(startTime, endTime);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
-                  cancelButton: CupertinoActionSheetAction(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                ),
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => CupertinoActionSheet(
+          title: Text(title),
+          message: Text('Set your ${title.toLowerCase()} start and end times'),
+          actions: [
+            CupertinoActionSheetAction(
+              child: Text('Start Time: ${_formatTimeOfDay(startTime)}'),
+              onPressed: () => _showTimePicker(
+                initialTime: startTime,
+                onTimeSelected: (time) => setDialogState(() => startTime = time),
+              ),
+            ),
+            CupertinoActionSheetAction(
+              child: Text('End Time: ${_formatTimeOfDay(endTime)}'),
+              onPressed: () => _showTimePicker(
+                initialTime: endTime,
+                onTimeSelected: (time) => setDialogState(() => endTime = time),
+              ),
+            ),
+            CupertinoActionSheetAction(
+              isDefaultAction: true,
+              child: Text(initialStartTime == null ? 'Add $title' : 'Save $title'),
+              onPressed: () {
+                onSave(startTime, endTime);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
+        ),
+      ),
     );
   }
 
   void _showAddMealDialog() {
-    _showAddTimeSlotDialog(
+    _showTimeSlotDialog(
       title: 'Meal Time',
       iconColor: CupertinoColors.systemOrange,
-      onAdd:
-          (startTime, endTime) => setState(() {
-            final daySchedule = _daySchedules[_selectedDay]!;
-            // Create a mutable copy of the list if it's a const list
-            if (daySchedule.mealBreaks.isEmpty &&
-                identical(daySchedule.mealBreaks, const [])) {
-              daySchedule.mealBreaks = [];
-            }
-            daySchedule.mealBreaks.add(
-              TimeFrame(startTime: startTime, endTime: endTime),
-            );
-          }),
+      onSave: (startTime, endTime) => setState(() {
+        final daySchedule = _daySchedules[_selectedDay]!;
+        if (daySchedule.mealBreaks.isEmpty &&
+            identical(daySchedule.mealBreaks, const [])) {
+          daySchedule.mealBreaks = [];
+        }
+        daySchedule.mealBreaks.add(
+          TimeFrame(startTime: startTime, endTime: endTime),
+        );
+      }),
+    );
+  }
+
+  void _showEditMealDialog(TimeFrame meal) {
+    _showTimeSlotDialog(
+      title: 'Edit Meal Time',
+      iconColor: CupertinoColors.systemOrange,
+      initialStartTime: meal.startTime,
+      initialEndTime: meal.endTime,
+      onSave: (startTime, endTime) => setState(() {
+        final daySchedule = _daySchedules[_selectedDay]!;
+        final index = daySchedule.mealBreaks.indexOf(meal);
+        daySchedule.mealBreaks[index] = TimeFrame(
+          startTime: startTime,
+          endTime: endTime,
+        );
+      }),
     );
   }
 
   void _showAddFreeTimeDialog() {
-    _showAddTimeSlotDialog(
+    _showTimeSlotDialog(
       title: 'Free Time',
       iconColor: CupertinoColors.systemGreen,
-      onAdd:
-          (startTime, endTime) => setState(() {
-            final daySchedule = _daySchedules[_selectedDay]!;
-            // Create a mutable copy of the list if it's a const list
-            if (daySchedule.freeTimes.isEmpty &&
-                identical(daySchedule.freeTimes, const [])) {
-              daySchedule.freeTimes = [];
-            }
-            daySchedule.freeTimes.add(
-              TimeFrame(startTime: startTime, endTime: endTime),
-            );
-          }),
+      onSave: (startTime, endTime) => setState(() {
+        final daySchedule = _daySchedules[_selectedDay]!;
+        if (daySchedule.freeTimes.isEmpty &&
+            identical(daySchedule.freeTimes, const [])) {
+          daySchedule.freeTimes = [];
+        }
+        daySchedule.freeTimes.add(
+          TimeFrame(startTime: startTime, endTime: endTime),
+        );
+      }),
+    );
+  }
+
+  void _showEditFreeTimeDialog(TimeFrame freeTime) {
+    _showTimeSlotDialog(
+      title: 'Edit Free Time',
+      iconColor: CupertinoColors.systemGreen,
+      initialStartTime: freeTime.startTime,
+      initialEndTime: freeTime.endTime,
+      onSave: (startTime, endTime) => setState(() {
+        final daySchedule = _daySchedules[_selectedDay]!;
+        final index = daySchedule.freeTimes.indexOf(freeTime);
+        daySchedule.freeTimes[index] = TimeFrame(
+          startTime: startTime,
+          endTime: endTime,
+        );
+      }),
+    );
+  }
+
+  // Show dialog to copy schedule from another day
+  void _showCopyScheduleDialog() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => CupertinoActionSheet(
+        title: const Text('Copy Schedule'),
+        message: const Text('Select a day to copy schedule from'),
+        actions: _daySchedules.keys
+            .where((day) => day != _selectedDay)
+            .map(
+              (day) => CupertinoActionSheetAction(
+            child: Text(day),
+            onPressed: () {
+              setState(() {
+                // Create a new DaySchedule by copying the selected day's schedule
+                final sourceSchedule = _daySchedules[day]!;
+                _daySchedules[_selectedDay] = DaySchedule(
+                  day: _selectedDay, // Set the day to the current selected day
+                  isActive: sourceSchedule.isActive,
+                  sleepTime: TimeFrame(
+                    startTime: sourceSchedule.sleepTime.startTime,
+                    endTime: sourceSchedule.sleepTime.endTime,
+                  ),
+                  mealBreaks: sourceSchedule.mealBreaks
+                      .map((meal) => TimeFrame(
+                    startTime: meal.startTime,
+                    endTime: meal.endTime,
+                  ))
+                      .toList(),
+                  freeTimes: sourceSchedule.freeTimes
+                      .map((free) => TimeFrame(
+                    startTime: free.startTime,
+                    endTime: free.endTime,
+                  ))
+                      .toList(),
+                );
+              });
+              Navigator.pop(context);
+            },
+          ),
+        )
+            .toList(),
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+      ),
     );
   }
 
@@ -270,24 +341,35 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
                   child: Wrap(
                     spacing: 8.0,
                     runSpacing: 8.0,
-                    children:
-                        _daySchedules.keys
-                            .map(
-                              (day) => SettingsButton(
-                                label: day.substring(0, 3),
-                                isPrimary: _selectedDay == day,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12.0,
-                                  vertical: 6.0,
-                                ),
-                                borderRadius: BorderRadius.circular(16.0),
-                                minSize: 0,
-                                onPressed:
-                                    () => setState(() => _selectedDay = day),
-                              ),
-                            )
-                            .toList(),
+                    children: _daySchedules.keys
+                        .map(
+                          (day) => SettingsButton(
+                        label: day.substring(0, 3),
+                        isPrimary: _selectedDay == day,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12.0,
+                          vertical: 6.0,
+                        ),
+                        borderRadius: BorderRadius.circular(16.0),
+                        minSize: 0,
+                        onPressed: () => setState(() => _selectedDay = day),
+                      ),
+                    )
+                        .toList(),
                   ),
+                ),
+              ],
+            ),
+            SettingsSection(
+              title: 'Schedule Actions',
+              children: [
+                SettingsItem(
+                  label: 'Copy Schedule from Another Day',
+                  leading: const Icon(
+                    CupertinoIcons.doc_on_doc,
+                    color: CupertinoColors.systemBlue,
+                  ),
+                  onTap: _showCopyScheduleDialog,
                 ),
               ],
             ),
@@ -297,10 +379,9 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
                 SettingsToggleItem(
                   label: 'Enable $_selectedDay',
                   value: currentDaySchedule.isActive,
-                  onChanged:
-                      (value) => setState(() {
-                        currentDaySchedule.isActive = value;
-                      }),
+                  onChanged: (value) => setState(() {
+                    currentDaySchedule.isActive = value;
+                  }),
                 ),
               ],
             ),
@@ -311,13 +392,12 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
                 SettingsTimePickerItem(
                   label: 'Sleep Time',
                   time: currentDaySchedule.sleepTime.startTime,
-                  onTimeSelected:
-                      (time) => setState(() {
-                        currentDaySchedule.sleepTime = TimeFrame(
-                          startTime: time,
-                          endTime: currentDaySchedule.sleepTime.endTime,
-                        );
-                      }),
+                  onTimeSelected: (time) => setState(() {
+                    currentDaySchedule.sleepTime = TimeFrame(
+                      startTime: time,
+                      endTime: currentDaySchedule.sleepTime.endTime,
+                    );
+                  }),
                   leading: const Icon(
                     CupertinoIcons.moon_fill,
                     color: CupertinoColors.systemIndigo,
@@ -327,13 +407,12 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
                 SettingsTimePickerItem(
                   label: 'Wake Up Time',
                   time: currentDaySchedule.sleepTime.endTime,
-                  onTimeSelected:
-                      (time) => setState(() {
-                        currentDaySchedule.sleepTime = TimeFrame(
-                          startTime: currentDaySchedule.sleepTime.startTime,
-                          endTime: time,
-                        );
-                      }),
+                  onTimeSelected: (time) => setState(() {
+                    currentDaySchedule.sleepTime = TimeFrame(
+                      startTime: currentDaySchedule.sleepTime.startTime,
+                      endTime: time,
+                    );
+                  }),
                   leading: const Icon(
                     CupertinoIcons.sunrise_fill,
                     color: CupertinoColors.systemOrange,
@@ -347,23 +426,24 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
               footerText: 'Set your regular meal times for $_selectedDay.',
               children: [
                 ...currentDaySchedule.mealBreaks.map(
-                  (meal) => SettingsItem(
+                      (meal) => SettingsItem(
                     label:
-                        'Meal ${_formatTimeOfDay(meal.startTime)} - ${_formatTimeOfDay(meal.endTime)}',
+                    'Meal ${_formatTimeOfDay(meal.startTime)} - ${_formatTimeOfDay(meal.endTime)}',
                     leading: const Icon(
                       CupertinoIcons.clock,
                       color: CupertinoColors.systemOrange,
                     ),
+                    onTap: () => _showEditMealDialog(meal),
+                    showDisclosure: false, // Disable chevron for existing slots
                     trailing: CupertinoButton(
                       padding: EdgeInsets.zero,
                       child: const Icon(
                         CupertinoIcons.delete,
                         color: CupertinoColors.systemRed,
                       ),
-                      onPressed:
-                          () => setState(
+                      onPressed: () => setState(
                             () => currentDaySchedule.mealBreaks.remove(meal),
-                          ),
+                      ),
                     ),
                   ),
                 ),
@@ -380,26 +460,27 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
             SettingsSection(
               title: 'Free Times',
               footerText:
-                  'Set your free time periods for $_selectedDay to avoid scheduling tasks during these times.',
+              'Set your free time periods for $_selectedDay to avoid scheduling tasks during these times.',
               children: [
                 ...currentDaySchedule.freeTimes.map(
-                  (freeTime) => SettingsItem(
+                      (freeTime) => SettingsItem(
                     label:
-                        'Free ${_formatTimeOfDay(freeTime.startTime)} - ${_formatTimeOfDay(freeTime.endTime)}',
+                    'Free ${_formatTimeOfDay(freeTime.startTime)} - ${_formatTimeOfDay(freeTime.endTime)}',
                     leading: const Icon(
                       CupertinoIcons.clock,
                       color: CupertinoColors.systemGreen,
                     ),
+                    onTap: () => _showEditFreeTimeDialog(freeTime),
+                    showDisclosure: false, // Disable chevron for existing slots
                     trailing: CupertinoButton(
                       padding: EdgeInsets.zero,
                       child: const Icon(
                         CupertinoIcons.delete,
                         color: CupertinoColors.systemRed,
                       ),
-                      onPressed:
-                          () => setState(
+                      onPressed: () => setState(
                             () => currentDaySchedule.freeTimes.remove(freeTime),
-                          ),
+                      ),
                     ),
                   ),
                 ),

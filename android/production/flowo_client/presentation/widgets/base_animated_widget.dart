@@ -4,9 +4,6 @@ import 'package:flutter/material.dart';
 import '../animations/animation_service.dart';
 import '../haptics/haptic_service.dart';
 
-/// Base widget for animated components following Clean Architecture principles.
-/// This widget provides common animation and haptic feedback functionality
-/// that can be reused across the app.
 abstract class BaseAnimatedWidget extends StatefulWidget {
   const BaseAnimatedWidget({super.key});
 }

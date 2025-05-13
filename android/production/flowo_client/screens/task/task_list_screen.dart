@@ -9,13 +9,10 @@ import '../../blocs/tasks_controller/task_manager_state.dart';
 import '../../models/task.dart';
 import '../../utils/category_utils.dart';
 import '../../utils/debouncer.dart';
-import '../../utils/task_urgency_calculator.dart';
-import '../../models/day.dart';
 import '../event/event_form_screen.dart';
 import '../event/event_screen.dart';
 import '../habit/habit_form_screen.dart';
 import '../home_screen.dart';
-import '../widgets/cupertino_divider.dart';
 import '../widgets/task_list_components.dart';
 import '../widgets/task_list_item.dart';
 import '../widgets/aurora_sphere_button.dart';
@@ -23,7 +20,6 @@ import '../widgets/add_task_aurora_sphere_button.dart';
 import 'task_form_screen.dart';
 import 'task_page_screen.dart';
 import 'task_statistics_screen.dart';
-import 'package:hive/hive.dart';
 
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
@@ -37,27 +33,30 @@ class _TaskListScreenState extends State<TaskListScreen>
   final TextEditingController _searchController = TextEditingController();
   final Debouncer _searchDebouncer = Debouncer(Duration(milliseconds: 300));
   TaskFilterType _selectedFilter = TaskFilterType.all;
+  GroupingOption _selectedGrouping =
+      GroupingOption.none; // Selected grouping option
+  TaskViewMode _selectedViewMode = TaskViewMode.steps; // Selected view mode
   final Map<String, bool> _expandedCategories = {};
   final Map<String, bool> _expandedTasks = {};
   String _searchQuery = '';
   late final ScrollController _scrollController;
-  late TaskUrgencyCalculator _urgencyCalculator;
-  final bool _schedulingStatus = true; // true = all good, false = needs attention
+  final bool _schedulingStatus =
+      true; // true = all good, false = needs attention
   final int _tasksToSchedule = 0; // Number of tasks that need scheduling
 
   // Caching to improve performance
-  Map<String, List<Task>>? _filteredTasksCache;
+  Map<String, List<Task>>? _filteredTasksCache; // Cache for grouped tasks
+  List<Task>? _filteredFlatTasksCache; // Cache for flat list tasks
   String? _lastQuery;
   TaskFilterType? _lastFilter;
+  GroupingOption? _lastGrouping;
+  TaskViewMode? _lastViewMode;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _scrollController = ScrollController();
-    _urgencyCalculator = TaskUrgencyCalculator(
-      Hive.box<Day>('scheduled_tasks'),
-    );
     WidgetsBinding.instance.addObserver(this);
 
     // Check scheduling status after a short delay to allow the UI to build
@@ -66,31 +65,17 @@ class _TaskListScreenState extends State<TaskListScreen>
     });
   }
 
+  // Check the scheduling status of tasks
   void _checkSchedulingStatus() {
     if (!mounted) return;
 
     final tasksCubit = context.read<TaskManagerCubit>();
     final tasks = tasksCubit.state.tasks;
     final scheduledTasks = tasksCubit.getScheduledTasks();
-
-    // Calculate urgency for all tasks to populate the impossible and needs rescheduling lists
-
-    _urgencyCalculator.calculateUrgency(tasks, scheduledTasks);
-    final impossibleTasks =
-        tasks.where((task) {
-          final timeLeft =
-              task.deadline - DateTime.now().millisecondsSinceEpoch;
-          return timeLeft < 0 && task.estimatedTime > timeLeft;
-        }).toList();
-
-    final needsReschedulingTasks =
-        tasks.where((task) {
-          final timeLeft =
-              task.deadline - DateTime.now().millisecondsSinceEpoch;
-          return timeLeft < 0 && task.estimatedTime <= timeLeft;
-        }).toList();
+    // TODO: Implement logic to check scheduling status
   }
 
+  // Handle search input changes with debouncing
   void _onSearchChanged() {
     _searchDebouncer.call(() {
       if (mounted) {
@@ -105,9 +90,8 @@ class _TaskListScreenState extends State<TaskListScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Clear cache when dependencies change (e.g., when screen becomes visible again)
+    // Clear cache when dependencies change (e.g., screen becomes visible)
     _clearCache();
-    // Check scheduling status when screen becomes visible again
     _checkSchedulingStatus();
   }
 
@@ -128,6 +112,7 @@ class _TaskListScreenState extends State<TaskListScreen>
     }
   }
 
+  // Determine the type of task (task, event, habit)
   TaskFilterType _getTaskType(Task task) {
     final categoryName = task.category.name.toLowerCase();
     if (categoryName.contains('event')) {
@@ -139,58 +124,89 @@ class _TaskListScreenState extends State<TaskListScreen>
     return TaskFilterType.task;
   }
 
-  Map<String, List<Task>> _filterGroupedTasks(
-    Map<String, List<Task>> groupedTasks,
-  ) {
-    if (_filteredTasksCache != null &&
-        _lastQuery == _searchQuery &&
-        _lastFilter == _selectedFilter) {
-      return _filteredTasksCache!;
-    }
-
+  // Filter tasks based on search query, filter type, and view mode
+  List<Task> _filterTasks(List<Task> tasks) {
     final query = _searchQuery.toLowerCase();
-    final filtered = <String, List<Task>>{};
-
-    groupedTasks.forEach((category, tasks) {
-      final tasksFiltered =
-          tasks.where((task) {
-            final matchesQuery = task.title.toLowerCase().contains(query);
-            final type = _getTaskType(task);
-            final matchesFilter =
-                _selectedFilter == TaskFilterType.all ||
-                _selectedFilter == type;
-            return matchesQuery && matchesFilter;
-          }).toList();
-
-      if (tasksFiltered.isNotEmpty) {
-        filtered[category] = tasksFiltered;
-      }
-    });
-
-    _filteredTasksCache = filtered;
-    _lastQuery = _searchQuery;
-    _lastFilter = _selectedFilter;
-
-    return filtered;
+    return tasks.where((task) {
+      final matchesQuery = task.title.toLowerCase().contains(query);
+      final type = _getTaskType(task);
+      final matchesFilter =
+          _selectedFilter == TaskFilterType.all || _selectedFilter == type;
+      final matchesViewMode =
+          _selectedViewMode == TaskViewMode.goals
+              ? task.parentTaskId == null
+              : task.subtaskIds.isEmpty;
+      final matchesCategory = task.category.name != 'Free Time Manager';
+      return matchesQuery &&
+          matchesFilter &&
+          matchesViewMode &&
+          matchesCategory;
+    }).toList();
   }
 
+  // Group tasks by category
+  Map<String, List<Task>> _groupTasksByCategory(List<Task> tasks) {
+    final Map<String, List<Task>> grouped = {};
+    for (final task in tasks) {
+      grouped.putIfAbsent(task.category.name, () => []).add(task);
+    }
+    // Sort categories alphabetically
+    return Map.fromEntries(
+      grouped.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
+    );
+  }
+
+  // Get filtered tasks based on grouping option
+  dynamic _getFilteredTasks(List<Task> tasks) {
+    if (_selectedGrouping == GroupingOption.category) {
+      if (_filteredTasksCache != null &&
+          _lastQuery == _searchQuery &&
+          _lastFilter == _selectedFilter &&
+          _lastGrouping == _selectedGrouping &&
+          _lastViewMode == _selectedViewMode) {
+        return _filteredTasksCache;
+      }
+      final filtered = _filterTasks(tasks);
+      final grouped = _groupTasksByCategory(filtered);
+      _filteredTasksCache = grouped;
+    } else {
+      if (_filteredFlatTasksCache != null &&
+          _lastQuery == _searchQuery &&
+          _lastFilter == _selectedFilter &&
+          _lastGrouping == _selectedGrouping &&
+          _lastViewMode == _selectedViewMode) {
+        return _filteredFlatTasksCache;
+      }
+      final filtered = _filterTasks(tasks);
+      _filteredFlatTasksCache = filtered;
+    }
+    _lastQuery = _searchQuery;
+    _lastFilter = _selectedFilter;
+    _lastGrouping = _selectedGrouping;
+    _lastViewMode = _selectedViewMode;
+    return _selectedGrouping == GroupingOption.category
+        ? _filteredTasksCache
+        : _filteredFlatTasksCache;
+  }
+
+  // Clear the cache to force re-filtering
   void _clearCache() {
     _filteredTasksCache = null;
+    _filteredFlatTasksCache = null;
     _lastQuery = null;
     _lastFilter = null;
+    _lastGrouping = null;
+    _lastViewMode = null;
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocListener<TaskManagerCubit, TaskManagerState>(
       listenWhen: (previous, current) {
-        // Listen only when the tasks list changes
         return previous.tasks.length != current.tasks.length;
       },
       listener: (context, state) {
-        // Clear cache when tasks are added or removed
         _clearCache();
-        // Check scheduling status when tasks list changes
         _checkSchedulingStatus();
       },
       child: SafeArea(
@@ -211,6 +227,18 @@ class _TaskListScreenState extends State<TaskListScreen>
                   child: _buildFilterTabs(context),
                 ),
                 const SizedBox(height: 12),
+                // Grouping and view mode controls
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    children: [
+                      Expanded(child: _buildGroupingControl(context)),
+                      const SizedBox(width: 8),
+                      Expanded(child: _buildViewModeControl(context)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
                 Expanded(child: _buildTaskList(context)),
               ],
             ),
@@ -228,7 +256,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                         CupertinoPageRoute(
                           builder:
                               (context) => const HomeScreen(
-                                initialIndex: 3,
+                                initialIndex: 2,
                                 initialExpanded: false,
                               ),
                         ),
@@ -253,61 +281,182 @@ class _TaskListScreenState extends State<TaskListScreen>
     );
   }
 
+  // Show scheduling dialog and navigate to statistics screen
   void _showScheduleDialog(BuildContext context) {
     HapticFeedback.mediumImpact();
 
-    // Schedule tasks first to ensure the statistics are up-to-date
     final tasksCubit = context.read<TaskManagerCubit>();
     tasksCubit.scheduleHabits();
     tasksCubit.scheduleTasks();
     _clearCache();
 
-    // Update the scheduling status
     _checkSchedulingStatus();
 
-    // Navigate to the task statistics screen
     Navigator.push(
       context,
       CupertinoPageRoute(builder: (context) => const TaskStatisticsScreen()),
     ).then((_) {
-      // Refresh the scheduling status when returning from the statistics screen
       _checkSchedulingStatus();
     });
   }
 
+  // Build the task list based on grouping
   Widget _buildTaskList(BuildContext context) =>
       BlocBuilder<TaskManagerCubit, TaskManagerState>(
         builder: (context, state) {
-          final groupedTasks = _groupTasksByCategory(state.tasks);
-          final filteredTasks = _filterGroupedTasks(groupedTasks);
+          final tasks = state.tasks;
+          final filteredTasks = _getFilteredTasks(tasks);
 
           if (filteredTasks.isEmpty) {
             return _buildEmptyState(context);
           }
 
-          return CupertinoScrollbar(
-            controller: _scrollController,
-            child: ListView.builder(
-              controller: _scrollController,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(bottom: 100),
-              itemCount: filteredTasks.length,
-              itemBuilder: (context, index) {
-                final category = filteredTasks.keys.elementAt(index);
-                final tasks = filteredTasks[category]!;
-                final isExpanded = _expandedCategories[category] ?? true;
-                return _buildCategorySection(
-                  context,
-                  category,
-                  tasks,
-                  isExpanded,
-                );
-              },
-            ),
-          );
+          if (_selectedGrouping == GroupingOption.category) {
+            return _buildGroupedTaskList(
+              filteredTasks as Map<String, List<Task>>,
+            );
+          } else {
+            return _buildFlatTaskList(filteredTasks as List<Task>);
+          }
         },
       );
 
+  // Build a grouped task list by category
+  Widget _buildGroupedTaskList(Map<String, List<Task>> groupedTasks) {
+    return CupertinoScrollbar(
+      controller: _scrollController,
+      child: ListView.builder(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 100),
+        itemCount: groupedTasks.length,
+        itemBuilder: (context, index) {
+          final category = groupedTasks.keys.elementAt(index);
+          final tasks = groupedTasks[category]!;
+          final isExpanded = _expandedCategories[category] ?? true;
+          return _buildCategorySection(context, category, tasks, isExpanded);
+        },
+      ),
+    );
+  }
+
+  // Build a flat task list
+  Widget _buildFlatTaskList(List<Task> tasks) {
+    return CupertinoScrollbar(
+      controller: _scrollController,
+      child: ListView.builder(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 100),
+        itemCount: tasks.length,
+        itemBuilder: (context, index) {
+          final task = tasks[index];
+          final hasSubtasks = task.subtaskIds.isNotEmpty;
+          final isExpanded = _expandedTasks[task.id] ?? false;
+          final parentTask =
+              _selectedViewMode == TaskViewMode.steps
+                  ? context.read<TaskManagerCubit>().getParentTask(task)
+                  : null;
+          return _buildTaskListItem(
+            context,
+            task,
+            hasSubtasks,
+            isExpanded,
+            parentTask,
+          );
+        },
+      ),
+    );
+  }
+
+  // Build an individual task list item with subtasks
+  Widget _buildTaskListItem(
+    BuildContext context,
+    Task task,
+    bool hasSubtasks,
+    bool isExpanded, [
+    Task? parentTask,
+  ]) {
+    return Column(
+      children: [
+        TaskListItem(
+          task: task,
+          taskManagerCubit: context.read<TaskManagerCubit>(),
+          onTap: () => _onTaskTap(context, task),
+          onEdit: () => _editTask(context, task),
+          onDelete: () => _deleteTask(context, task),
+          categoryColor: CategoryUtils.getCategoryColor(task.category.name),
+          hasSubtasks: hasSubtasks,
+          isExpanded: isExpanded,
+          parentTask: parentTask,
+          showParentTask:
+              _selectedViewMode == TaskViewMode.steps && parentTask != null,
+          onToggleExpand:
+              hasSubtasks
+                  ? () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _expandedTasks[task.id] = !isExpanded;
+                    });
+                  }
+                  : null,
+          onToggleCompletion: () => _toggleTaskCompletion(context, task),
+        ),
+        if (hasSubtasks && isExpanded)
+          Container(
+            decoration: BoxDecoration(
+              color: CupertinoColors.transparent,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
+              ),
+            ),
+            margin: const EdgeInsets.only(left: 20),
+            child: Column(
+              children:
+                  context.read<TaskManagerCubit>().getSubtasksForTask(task).map(
+                    (subtask) {
+                      return Column(
+                        children: [
+                          TaskListItem(
+                            task: subtask,
+                            taskManagerCubit: context.read<TaskManagerCubit>(),
+                            onTap: () => _onTaskTap(context, subtask),
+                            onEdit: () => _editTask(context, subtask),
+                            onDelete: () => _deleteTask(context, subtask),
+                            categoryColor: CategoryUtils.getCategoryColor(
+                              subtask.category.name,
+                            ),
+                            hasSubtasks: subtask.subtaskIds.isNotEmpty,
+                            isExpanded: _expandedTasks[subtask.id] ?? false,
+                            parentTask: task,
+                            showParentTask:
+                                _selectedViewMode == TaskViewMode.steps,
+                            onToggleExpand:
+                                subtask.subtaskIds.isNotEmpty
+                                    ? () {
+                                      HapticFeedback.selectionClick();
+                                      setState(() {
+                                        _expandedTasks[subtask.id] =
+                                            !(_expandedTasks[subtask.id] ??
+                                                false);
+                                      });
+                                    }
+                                    : null,
+                            onToggleCompletion:
+                                () => _toggleTaskCompletion(context, subtask),
+                          ),
+                        ],
+                      );
+                    },
+                  ).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // Build empty state when no tasks match the filter
   Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
@@ -332,22 +481,7 @@ class _TaskListScreenState extends State<TaskListScreen>
     );
   }
 
-  Map<String, List<Task>> _groupTasksByCategory(List<Task> tasks) {
-    final Map<String, List<Task>> grouped = {};
-
-    for (final task in tasks) {
-      if (task.parentTaskId == null &&
-          task.category.name != 'Free Time Manager') {
-        grouped.putIfAbsent(task.category.name, () => []).add(task);
-      }
-    }
-
-    // Sort categories alphabetically for better UX
-    return Map.fromEntries(
-      grouped.entries.toList()..sort((a, b) => a.key.compareTo(b.key)),
-    );
-  }
-
+  // Build a category section for grouped tasks
   Widget _buildCategorySection(
     BuildContext context,
     String category,
@@ -393,9 +527,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: CupertinoColors.systemGrey6
-                      .resolveFrom(context)
-                      .withOpacity(0.6),
+                  color: CupertinoColors.transparent,
                   border: Border(
                     bottom: BorderSide(
                       color: CupertinoColors.separator.resolveFrom(context),
@@ -462,14 +594,14 @@ class _TaskListScreenState extends State<TaskListScreen>
               ),
             ),
             if (isExpanded) ...[
-              const CupertinoDivider(),
               ...tasks.map((task) {
-                final hasSubtasks = task.subtasks.isNotEmpty;
+                final hasSubtasks = task.subtaskIds.isNotEmpty;
                 final isExpanded = _expandedTasks[task.id] ?? false;
                 return Column(
                   children: [
                     TaskListItem(
                       task: task,
+                      taskManagerCubit: context.read<TaskManagerCubit>(),
                       onTap: () => _onTaskTap(context, task),
                       onEdit: () => _editTask(context, task),
                       onDelete: () => _deleteTask(context, task),
@@ -478,6 +610,15 @@ class _TaskListScreenState extends State<TaskListScreen>
                       ),
                       hasSubtasks: hasSubtasks,
                       isExpanded: isExpanded,
+                      parentTask:
+                          _selectedViewMode == TaskViewMode.steps
+                              ? context.read<TaskManagerCubit>().getParentTask(
+                                task,
+                              )
+                              : null,
+                      showParentTask:
+                          _selectedViewMode == TaskViewMode.steps &&
+                          task.parentTaskId != null,
                       onToggleExpand:
                           hasSubtasks
                               ? () {
@@ -493,9 +634,7 @@ class _TaskListScreenState extends State<TaskListScreen>
                     if (hasSubtasks && isExpanded)
                       Container(
                         decoration: BoxDecoration(
-                          color: CupertinoColors.systemGrey6
-                              .resolveFrom(context)
-                              .withOpacity(isDarkMode ? 0.5 : 0.3),
+                          color: CupertinoColors.transparent,
                           borderRadius: const BorderRadius.only(
                             bottomLeft: Radius.circular(12),
                             bottomRight: Radius.circular(12),
@@ -504,47 +643,62 @@ class _TaskListScreenState extends State<TaskListScreen>
                         margin: const EdgeInsets.only(left: 20),
                         child: Column(
                           children:
-                              task.subtasks.map((subtask) {
-                                return Column(
-                                  children: [
-                                    const CupertinoDivider(),
-                                    TaskListItem(
-                                      task: subtask,
-                                      onTap: () => _onTaskTap(context, subtask),
-                                      onEdit: () => _editTask(context, subtask),
-                                      onDelete:
-                                          () => _deleteTask(context, subtask),
-                                      categoryColor:
-                                          CategoryUtils.getCategoryColor(
-                                            subtask.category.name,
-                                          ),
-                                      hasSubtasks: subtask.subtasks.isNotEmpty,
-                                      isExpanded:
-                                          _expandedTasks[subtask.id] ?? false,
-                                      onToggleExpand:
-                                          subtask.subtasks.isNotEmpty
-                                              ? () {
-                                                HapticFeedback.selectionClick();
-                                                setState(() {
-                                                  _expandedTasks[subtask.id] =
-                                                      !(_expandedTasks[subtask
-                                                              .id] ??
-                                                          false);
-                                                });
-                                              }
-                                              : null,
-                                      onToggleCompletion:
-                                          () => _toggleTaskCompletion(
-                                            context,
-                                            subtask,
-                                          ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
+                              context
+                                  .read<TaskManagerCubit>()
+                                  .getSubtasksForTask(task)
+                                  .map((subtask) {
+                                    return Column(
+                                      children: [
+                                        TaskListItem(
+                                          task: subtask,
+                                          taskManagerCubit:
+                                              context.read<TaskManagerCubit>(),
+                                          onTap:
+                                              () =>
+                                                  _onTaskTap(context, subtask),
+                                          onEdit:
+                                              () => _editTask(context, subtask),
+                                          onDelete:
+                                              () =>
+                                                  _deleteTask(context, subtask),
+                                          categoryColor:
+                                              CategoryUtils.getCategoryColor(
+                                                subtask.category.name,
+                                              ),
+                                          hasSubtasks:
+                                              subtask.subtaskIds.isNotEmpty,
+                                          isExpanded:
+                                              _expandedTasks[subtask.id] ??
+                                              false,
+                                          parentTask: task,
+                                          showParentTask:
+                                              _selectedViewMode ==
+                                              TaskViewMode.steps,
+                                          onToggleExpand:
+                                              subtask.subtaskIds.isNotEmpty
+                                                  ? () {
+                                                    HapticFeedback.selectionClick();
+                                                    setState(() {
+                                                      _expandedTasks[subtask
+                                                              .id] =
+                                                          !(_expandedTasks[subtask
+                                                                  .id] ??
+                                                              false);
+                                                    });
+                                                  }
+                                                  : null,
+                                          onToggleCompletion:
+                                              () => _toggleTaskCompletion(
+                                                context,
+                                                subtask,
+                                              ),
+                                        ),
+                                      ],
+                                    );
+                                  })
+                                  .toList(),
                         ),
                       ),
-                    if (task != tasks.last) const CupertinoDivider(),
                   ],
                 );
               }),
@@ -555,6 +709,7 @@ class _TaskListScreenState extends State<TaskListScreen>
     );
   }
 
+  // Navigate to the appropriate task detail screen
   void _onTaskTap(BuildContext context, Task task) {
     Navigator.push(
       context,
@@ -571,6 +726,7 @@ class _TaskListScreenState extends State<TaskListScreen>
     );
   }
 
+  // Navigate to the task editing screen
   void _editTask(BuildContext context, Task task) {
     HapticFeedback.mediumImpact();
     Navigator.push(
@@ -589,9 +745,10 @@ class _TaskListScreenState extends State<TaskListScreen>
     );
   }
 
+  // Show confirmation dialog and delete task
   void _deleteTask(BuildContext context, Task task) {
     HapticFeedback.mediumImpact();
-    final subtaskCount = task.subtasks.length;
+    final subtaskCount = task.subtaskIds.length;
     final message =
         subtaskCount > 0
             ? 'Are you sure you want to delete "${task.title}" and its $subtaskCount subtask${subtaskCount == 1 ? "" : "s"}?'
@@ -623,6 +780,7 @@ class _TaskListScreenState extends State<TaskListScreen>
     );
   }
 
+  // Toggle task completion and show a toast notification
   void _toggleTaskCompletion(BuildContext context, Task task) {
     HapticFeedback.selectionClick();
     final tasksCubit = context.read<TaskManagerCubit>();
@@ -700,13 +858,14 @@ class _TaskListScreenState extends State<TaskListScreen>
     });
   }
 
+  // Build filter tabs for task types
   Widget _buildFilterTabs(BuildContext context) {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
     final primaryColor = CupertinoTheme.of(context).primaryColor;
     final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
 
     return Container(
-      height: 44, // iOS Human Interface Guidelines minimum touch target size
+      height: 44,
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(10),
@@ -781,6 +940,7 @@ class _TaskListScreenState extends State<TaskListScreen>
     );
   }
 
+  // Get icon for filter type
   IconData _getFilterIcon(TaskFilterType filter) {
     switch (filter) {
       case TaskFilterType.all:
@@ -794,6 +954,7 @@ class _TaskListScreenState extends State<TaskListScreen>
     }
   }
 
+  // Get name for filter type
   String _getFilterName(TaskFilterType filter) {
     switch (filter) {
       case TaskFilterType.all:
@@ -806,8 +967,191 @@ class _TaskListScreenState extends State<TaskListScreen>
         return 'Habits';
     }
   }
+
+  // Build grouping control dropdown
+  Widget _buildGroupingControl(BuildContext context) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: () {
+        HapticFeedback.selectionClick();
+        showCupertinoModalPopup(
+          context: context,
+          builder:
+              (context) => CupertinoActionSheet(
+                title: const Text('Group by'),
+                actions:
+                    GroupingOption.values.map((option) {
+                      return CupertinoActionSheetAction(
+                        onPressed: () {
+                          setState(() {
+                            _selectedGrouping = option;
+                            _clearCache();
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Text(option.displayName),
+                      );
+                    }).toList(),
+                cancelButton: CupertinoActionSheetAction(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+              ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        decoration: BoxDecoration(
+          color: CupertinoColors.systemGrey6.resolveFrom(context),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              CupertinoIcons.group_solid,
+              size: 18,
+              color: CupertinoTheme.of(context).primaryColor,
+            ),
+            const SizedBox(width: 4),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                'Group by: ${_selectedGrouping.displayName}',
+                style: TextStyle(
+                  color: CupertinoTheme.of(context).primaryColor,
+                  fontSize: 14,
+                ),
+                overflow: TextOverflow.visible,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Build view mode segmented control
+  Widget _buildViewModeControl(BuildContext context) {
+    final primaryColor = CupertinoTheme.of(context).primaryColor;
+    final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
+
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children:
+            TaskViewMode.values.map((mode) {
+              final isSelected = _selectedViewMode == mode;
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() {
+                      _selectedViewMode = mode;
+                      _clearCache();
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color:
+                          isSelected
+                              ? CupertinoColors.systemBackground.resolveFrom(
+                                context,
+                              )
+                              : Colors.transparent,
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                    margin: const EdgeInsets.all(2),
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _getViewModeIcon(mode),
+                            size: 18,
+                            color:
+                                isSelected
+                                    ? primaryColor
+                                    : CupertinoColors.systemGrey.resolveFrom(
+                                      context,
+                                    ),
+                            semanticLabel: _getViewModeName(mode),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _getViewModeName(mode),
+                            style: TextStyle(
+                              color:
+                                  isSelected
+                                      ? primaryColor
+                                      : CupertinoColors.systemGrey.resolveFrom(
+                                        context,
+                                      ),
+                              fontSize: 14,
+                              fontWeight:
+                                  isSelected
+                                      ? FontWeight.w600
+                                      : FontWeight.normal,
+                            ),
+                            semanticsLabel:
+                                '${_getViewModeName(mode)} view mode',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+      ),
+    );
+  }
+
+  // Get icon for view mode
+  IconData _getViewModeIcon(TaskViewMode mode) {
+    switch (mode) {
+      case TaskViewMode.goals:
+        return CupertinoIcons.rocket_fill;
+      case TaskViewMode.steps:
+        return CupertinoIcons.layers_alt_fill;
+    }
+  }
+
+  // Get name for view mode
+  String _getViewModeName(TaskViewMode mode) {
+    switch (mode) {
+      case TaskViewMode.goals:
+        return 'Goals';
+      case TaskViewMode.steps:
+        return 'Steps';
+    }
+  }
 }
 
+// Enum for grouping options
+enum GroupingOption { none, category }
+
+extension GroupingOptionExtension on GroupingOption {
+  String get displayName {
+    switch (this) {
+      case GroupingOption.none:
+        return 'None';
+      case GroupingOption.category:
+        return 'Category';
+    }
+  }
+}
+
+// Enum for task view modes
+enum TaskViewMode { goals, steps }
+
+// Enum for task filter types
 enum TaskFilterType { all, task, event, habit }
 
 extension TaskFilterTypeExtension on TaskFilterType {

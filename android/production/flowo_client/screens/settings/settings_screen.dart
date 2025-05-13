@@ -1,7 +1,6 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/user_settings.dart';
 import 'package:flowo_client/screens/settings/day_schedule_screen.dart';
-import 'package:flowo_client/screens/settings/theme_settings_screen.dart';
 import 'package:flowo_client/screens/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -196,7 +195,6 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late TimeOfDay _sleepTime;
   late TimeOfDay _wakeupTime;
-  late int _breakDuration;
   late int _minSessionDuration;
   late List<TimeFrame> _mealTimes;
   late List<TimeFrame> _freeTimes;
@@ -210,16 +208,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _loadSettings();
     _minSessionDuration = _minSessionDuration.clamp(5, 120);
-    _breakDuration = _breakDuration.clamp(5, 30);
   }
 
   void _loadSettings() {
     final currentSettings =
         context.read<TaskManagerCubit>().taskManager.userSettings;
     setState(() {
-      // Break and Session Duration
-      _breakDuration =
-          (currentSettings.breakTime ?? 15 * 60 * 1000) ~/ (60 * 1000);
+      // Session Duration
       _minSessionDuration = currentSettings.minSession ~/ (60 * 1000);
 
       // Date and Time Format
@@ -240,7 +235,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final userSettings = UserSettings(
       name: 'Default',
       minSession: _minSessionDuration * 60 * 1000,
-      breakTime: _breakDuration * 60 * 1000,
       // Preserve existing values for removed UI elements
       sleepTime: currentSettings.sleepTime,
       mealBreaks: currentSettings.mealBreaks,
@@ -880,22 +874,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   themeNotifier,
                   (themeValue) => themeNotifier.setThemeMode(themeValue),
                 ),
-                const SizedBox(height: 16),
-                SettingsItem(
-                  label: 'Advanced Theme Settings',
-                  subtitle: 'Customize colors, effects, and accessibility',
-                  leading: const Icon(
-                    CupertinoIcons.paintbrush,
-                    color: CupertinoColors.systemBlue,
-                  ),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (context) => const ThemeSettingsScreen(),
-                      ),
-                    );
-                  },
-                ),
+                // const SizedBox(height: 16),
+                // SettingsItem(
+                //   label: 'Advanced Theme Settings',
+                //   subtitle: 'Customize colors, effects, and accessibility',
+                //   leading: const Icon(
+                //     CupertinoIcons.paintbrush,
+                //     color: CupertinoColors.systemBlue,
+                //   ),
+                //   onTap: () {
+                //     Navigator.of(context).push(
+                //       CupertinoPageRoute(
+                //         builder: (context) => const ThemeSettingsScreen(),
+                //       ),
+                //     );
+                //   },
+                // ),
               ],
             ),
             SettingsSection(
@@ -937,25 +931,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       (value) =>
                           setState(() => _minSessionDuration = value.round()),
                   subtitle: 'The minimum time you want to spend on a task',
-                ),
-              ],
-            ),
-            SettingsSection(
-              title: 'Break Duration',
-              footerText:
-                  'Set the duration for breaks between tasks in minutes.',
-              children: [
-                SettingsSliderItem(
-                  label: 'Break Time',
-                  value: _breakDuration.toDouble(),
-                  min: 5,
-                  max: 30,
-                  divisions: 5,
-                  valueLabel: '${_breakDuration.round()} min',
-                  onChanged:
-                      (value) => setState(() => _breakDuration = value.round()),
-                  subtitle:
-                      'The time you want to take for breaks between tasks',
                 ),
               ],
             ),

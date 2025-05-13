@@ -1,10 +1,11 @@
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
-import 'package:easy_refresh/easy_refresh.dart';
 
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
@@ -35,7 +36,9 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   late Animation<Offset> _slideAnimation;
   late CalendarController _calendarController;
   late ScrollController _scrollController;
+  late AnimationController _lottieController;
   final double _calendarHeight = 350.0;
+  bool isAnimationActive = false;
 
   @override
   void initState() {
@@ -46,24 +49,27 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     // Initialize animation controller
     _calendarAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 900),
     );
     _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -1.1),
+      begin: const Offset(0, -1),
       end: const Offset(0, 0),
     ).animate(
       CurvedAnimation(
         parent: _calendarAnimationController,
-        curve: Curves.easeInOut,
+        curve: Curves.easeOutQuart,
       ),
     );
 
     // Initialize calendar controller
     _calendarController = CalendarController();
 
-    // Initialize scroll controller with listener to hide calendar when scrolling down
+    _lottieController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
     _scrollController = ScrollController();
-    _scrollController.addListener(_handleScroll);
 
     // Set initial date in CalendarCubit
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -79,21 +85,11 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     _loadUserProfile();
   }
 
-  void _handleScroll() {
-    // Hide calendar when scrolling down (if visible)
-    if (_isCalendarVisible && _scrollController.offset > 20) {
-      setState(() {
-        _isCalendarVisible = false;
-        _calendarAnimationController.reverse();
-      });
-    }
-  }
-
   @override
   void dispose() {
     _calendarAnimationController.dispose();
     _calendarController.dispose();
-    _scrollController.removeListener(_handleScroll);
+    _lottieController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -124,6 +120,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   }
 
   void _navigateToPreviousDay() {
+    _scrollController.jumpTo(0.0);
     setState(() {
       _selectedDate = _selectedDate.subtract(const Duration(days: 1));
     });
@@ -134,6 +131,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   }
 
   void _navigateToNextDay() {
+    _scrollController.jumpTo(0.0);
     setState(() {
       _selectedDate = _selectedDate.add(const Duration(days: 1));
     });
@@ -143,101 +141,60 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
       ..displayDate = _selectedDate;
   }
 
-  bool _isToday(DateTime date) {
-    final now = DateTime.now();
-    return date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
-  }
-
-  void _toggleCalendarVisibility() {
-    setState(() {
-      _isCalendarVisible = !_isCalendarVisible;
-      if (_isCalendarVisible) {
-        _calendarAnimationController.forward();
-      } else {
-        _calendarAnimationController.reverse();
+  void hideCalendar() async {
+    if (_isCalendarVisible) {
+      if (_scrollController.hasClients) {
+        await _scrollController.animateTo(
+          350.0,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
       }
-    });
-  }
-
-  void _handlePull(double offset) {
-    // Show calendar when pulling down far enough
-    if (offset > 120 && !_isCalendarVisible) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _isCalendarVisible = true;
-          _calendarAnimationController.forward();
-        });
+      if (!mounted) {
+        return; // Check if widget is still mounted after async operation
+      }
+      setState(() {
+        _isCalendarVisible = false;
+        _scrollController.jumpTo(0.0);
+        _calendarAnimationController.reset();
+        _lottieController.reset();
+        isAnimationActive = false;
       });
     }
   }
 
-  Future<void> _onRefresh() async {
-    // Simulate a refresh operation
-    await Future.delayed(const Duration(milliseconds: 800));
-
-    // Refresh tasks data if needed
-    if (mounted) {
-      context.read<CalendarCubit>().selectDate(_selectedDate);
+  void _handlePull(double offset) {
+    if (!_isCalendarVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return; // Check if widget is still mounted
+        if (offset > 80 && !isAnimationActive) {
+          _lottieController.forward();
+          isAnimationActive = true;
+        } else if (offset <= 20 && !_lottieController.isAnimating) {
+          _lottieController.reset();
+          isAnimationActive = false;
+        }
+      });
     }
   }
 
-  Widget _buildHandle() {
-    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+  Future<void> _showCalendar() async {
+    await Future.delayed(const Duration(milliseconds: 500));
 
-    return GestureDetector(
-      onTap: _toggleCalendarVisibility,
-      onVerticalDragUpdate: (details) {
-        // Allow swiping down on the handle to show calendar
-        if (details.primaryDelta != null &&
-            details.primaryDelta! > 0 &&
-            !_isCalendarVisible) {
-          _toggleCalendarVisibility();
-        }
-        // Allow swiping up on the handle to hide calendar
-        else if (details.primaryDelta != null &&
-            details.primaryDelta! < 0 &&
-            _isCalendarVisible) {
-          _toggleCalendarVisibility();
-        }
-      },
-      child: Container(
-        height: 36,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(12),
-            bottomRight: Radius.circular(12),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: CupertinoColors.black.withOpacity(isDarkMode ? 0.3 : 0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Small handle indicator
-            Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 6),
-              decoration: BoxDecoration(
-                color: CupertinoTheme.of(
-                  context,
-                ).textTheme.textStyle.color?.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    // Show calendar and refresh tasks data
+    if (mounted && !_isCalendarVisible) {
+      setState(() {
+        _isCalendarVisible = true;
+        _calendarAnimationController.forward();
+        _lottieController.forward().then((_) {
+          if (mounted) {
+            // Check if widget is still mounted
+            _lottieController.reset();
+            isAnimationActive = false;
+          }
+        });
+      });
+    }
   }
 
   @override
@@ -245,207 +202,223 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     final textTheme = CupertinoTheme.of(context);
     return CupertinoPageScaffold(
       child: SafeArea(
-        child: EasyRefresh(
-          header: BuilderHeader(
-            triggerOffset: 150.0,
-            clamping: false,
-            position: IndicatorPosition.above,
-            processedDuration: const Duration(milliseconds: 300),
-            springRebound: true,
-            hapticFeedback: true,
-            builder: (context, state) {
-              // Handle pull to show calendar
-              _handlePull(state.offset);
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: EasyRefresh(
+                spring: const SpringDescription(
+                  mass: 1.0,
+                  stiffness: 200.0,
+                  damping: 20.0,
+                ),
+                header: BuilderHeader(
+                  triggerOffset: 80.0,
+                  clamping: false,
+                  position: IndicatorPosition.behind,
+                  builder: (context, state) {
+                    _handlePull(state.offset);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      decoration: BoxDecoration(
+                        color:
+                            CupertinoTheme.of(context).scaffoldBackgroundColor,
+                      ),
+                    );
+                  },
+                ),
+                onRefresh: _showCalendar,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: SizedBox(height: _isCalendarVisible ? 7 : 0),
+                    ),
+                    _isCalendarVisible
+                        ? SliverToBoxAdapter(
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: Column(
+                              children: [
+                                Container(
+                                  height: _calendarHeight,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  clipBehavior: Clip.hardEdge,
+                                  decoration: BoxDecoration(
+                                    color: textTheme.scaffoldBackgroundColor,
+                                    borderRadius: BorderRadius.circular(5),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: CupertinoColors.black
+                                            .withOpacity(0.1),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: SfCalendar(
+                                    view: CalendarView.month,
+                                    controller: _calendarController,
+                                    dataSource: CalendarTaskDataSource(
+                                      context
+                                          .read<TaskManagerCubit>()
+                                          .getScheduledTasks(),
+                                    ),
+                                    initialSelectedDate: _selectedDate,
+                                    initialDisplayDate: _selectedDate,
+                                    onSelectionChanged: (details) {
+                                      if (details.date != null && mounted) {
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                              setState(() {
+                                                _selectedDate = details.date!;
+                                              });
+                                              context
+                                                  .read<CalendarCubit>()
+                                                  .selectDate(_selectedDate);
+                                            });
+                                      }
+                                    },
+                                    showNavigationArrow: true,
+                                    allowViewNavigation: false,
+                                    headerStyle: CalendarHeaderStyle(
+                                      textStyle: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                            textTheme.textTheme.textStyle.color,
+                                      ),
+                                    ),
+                                    monthViewSettings: MonthViewSettings(
+                                      appointmentDisplayMode:
+                                          MonthAppointmentDisplayMode.indicator,
+                                      showAgenda: false,
+                                      monthCellStyle: MonthCellStyle(
+                                        textStyle: TextStyle(
+                                          color:
+                                              textTheme
+                                                  .textTheme
+                                                  .textStyle
+                                                  .color,
+                                          fontSize: 14,
+                                        ),
+                                        todayTextStyle: TextStyle(
+                                          color: CupertinoColors.activeBlue,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        backgroundColor:
+                                            CupertinoColors.transparent,
+                                        todayBackgroundColor: CupertinoColors
+                                            .activeBlue
+                                            .withOpacity(0.1),
+                                      ),
+                                    ),
+                                    todayHighlightColor:
+                                        CupertinoColors.activeBlue,
+                                    selectionDecoration: BoxDecoration(
+                                      shape: BoxShape.rectangle,
+                                      color: CupertinoColors.activeBlue
+                                          .withOpacity(0.2),
+                                      border: Border.all(
+                                        color: CupertinoColors.activeBlue,
+                                        width: 1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                ),
+                                CupertinoButton(
+                                  padding: const EdgeInsets.all(4),
+                                  onPressed: hideCalendar,
+                                  child: const Icon(
+                                    CupertinoIcons.chevron_up,
+                                    color: CupertinoColors.inactiveGray,
+                                    size: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        : SliverToBoxAdapter(child: const SizedBox()),
 
-              final theme = CupertinoTheme.of(context);
-              final fgColor = CupertinoColors.activeBlue;
-
-              // Determine the appropriate icon and text based on state
-              Widget icon;
-              String text;
-
-              if (state.mode == IndicatorMode.drag ||
-                  state.mode == IndicatorMode.armed) {
-                // Calculate rotation based on offset
-                final progress = state.offset / state.indicator.triggerOffset;
-                icon = Transform.rotate(
-                  angle: progress * 2 * 3.14159, // Full rotation
-                  child: Icon(
-                    CupertinoIcons.calendar,
-                    color: fgColor,
-                    size: 24 + (progress * 4), // Grow slightly with progress
-                  ),
-                );
-                text = 'Pull to show calendar';
-                if (state.mode == IndicatorMode.armed) {
-                  text = 'Release to show calendar';
-                }
-              } else if (state.mode == IndicatorMode.processing ||
-                  state.mode == IndicatorMode.ready) {
-                icon = CupertinoActivityIndicator(color: fgColor, radius: 12);
-                text = 'Loading...';
-              } else if (state.mode == IndicatorMode.processed) {
-                icon = Icon(CupertinoIcons.calendar, color: fgColor, size: 24);
-                text = 'Calendar shown';
-              } else {
-                icon = const SizedBox(width: 24, height: 24);
-                text = '';
-              }
-
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(color: theme.scaffoldBackgroundColor),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    icon,
-                    const SizedBox(width: 12),
-                    Text(
-                      text,
-                      style: TextStyle(
-                        color: theme.textTheme.textStyle.color,
-                        fontSize: 14,
+                    !_isCalendarVisible
+                        ? SliverToBoxAdapter(
+                          child: Transform.translate(
+                            offset: Offset(
+                              0,
+                              _scrollController.hasClients
+                                  ? _scrollController.offset - 55
+                                  : -55,
+                            ),
+                            child: Container(
+                              height: 36,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color:
+                                    CupertinoTheme.of(
+                                      context,
+                                    ).scaffoldBackgroundColor,
+                              ),
+                              child: SizedBox(
+                                height: 36,
+                                width: 36,
+                                child: ColorFiltered(
+                                  colorFilter: const ColorFilter.mode(
+                                    CupertinoColors.activeBlue,
+                                    BlendMode.srcIn,
+                                  ),
+                                  child: Lottie.asset(
+                                    'lib/assets/lottifile/calendarAnimation.json',
+                                    frameRate: FrameRate.composition,
+                                    controller: _lottieController,
+                                    onLoaded: (composition) {
+                                      _lottieController.duration =
+                                          composition.duration;
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        : SliverToBoxAdapter(child: const SizedBox(height: 3)),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Night',
+                        const TimeOfDay(hour: 0, minute: 0),
+                        const TimeOfDay(hour: 5, minute: 0),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Morning',
+                        const TimeOfDay(hour: 5, minute: 0),
+                        const TimeOfDay(hour: 12, minute: 0),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Afternoon',
+                        const TimeOfDay(hour: 12, minute: 0),
+                        const TimeOfDay(hour: 17, minute: 0),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Evening',
+                        const TimeOfDay(hour: 17, minute: 0),
+                        const TimeOfDay(hour: 23, minute: 59),
                       ),
                     ),
                   ],
                 ),
-              );
-            },
-          ),
-          onRefresh: _onRefresh,
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              _isCalendarVisible
-                  ? SliverToBoxAdapter(
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: Container(
-                        height: _calendarHeight,
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        clipBehavior: Clip.hardEdge,
-                        decoration: BoxDecoration(
-                          color: textTheme.scaffoldBackgroundColor,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: CupertinoColors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Expanded(
-                              child: SfCalendar(
-                                view: CalendarView.month,
-                                controller: _calendarController,
-                                dataSource: CalendarTaskDataSource(
-                                  context
-                                      .read<TaskManagerCubit>()
-                                      .getScheduledTasks(),
-                                ),
-                                initialSelectedDate: _selectedDate,
-                                initialDisplayDate: _selectedDate,
-                                onSelectionChanged: (details) {
-                                  if (details.date != null && mounted) {
-                                    WidgetsBinding.instance
-                                        .addPostFrameCallback((_) {
-                                          setState(() {
-                                            _selectedDate = details.date!;
-                                          });
-                                          context
-                                              .read<CalendarCubit>()
-                                              .selectDate(_selectedDate);
-                                        });
-                                  }
-                                },
-                                showNavigationArrow: true,
-                                allowViewNavigation: false,
-                                headerStyle: CalendarHeaderStyle(
-                                  textStyle: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: textTheme.textTheme.textStyle.color,
-                                  ),
-                                ),
-                                monthViewSettings: MonthViewSettings(
-                                  appointmentDisplayMode:
-                                      MonthAppointmentDisplayMode.indicator,
-                                  showAgenda: false,
-                                  monthCellStyle: MonthCellStyle(
-                                    textStyle: TextStyle(
-                                      color:
-                                          textTheme.textTheme.textStyle.color,
-                                      fontSize: 14,
-                                    ),
-                                    todayTextStyle: TextStyle(
-                                      color: CupertinoColors.activeBlue,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                    backgroundColor:
-                                        CupertinoColors.transparent,
-                                    todayBackgroundColor: CupertinoColors
-                                        .activeBlue
-                                        .withOpacity(0.1),
-                                  ),
-                                ),
-                                todayHighlightColor: CupertinoColors.activeBlue,
-                                selectionDecoration: BoxDecoration(
-                                  shape: BoxShape.rectangle,
-                                  color: CupertinoColors.activeBlue.withOpacity(
-                                    0.2,
-                                  ),
-                                  border: Border.all(
-                                    color: CupertinoColors.activeBlue,
-                                    width: 1,
-                                  ),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                  : SliverToBoxAdapter(child: const SizedBox()),
-              SliverToBoxAdapter(child: _buildHandle()),
-              SliverPadding(padding: const EdgeInsets.only(bottom: 8)),
-              SliverToBoxAdapter(child: _buildHeader()),
-              SliverToBoxAdapter(
-                child: _buildTimeSection(
-                  'Night',
-                  const TimeOfDay(hour: 0, minute: 0),
-                  const TimeOfDay(hour: 5, minute: 0),
-                ),
               ),
-              SliverToBoxAdapter(
-                child: _buildTimeSection(
-                  'Morning',
-                  const TimeOfDay(hour: 5, minute: 0),
-                  const TimeOfDay(hour: 12, minute: 0),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _buildTimeSection(
-                  'Afternoon',
-                  const TimeOfDay(hour: 12, minute: 0),
-                  const TimeOfDay(hour: 17, minute: 0),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _buildTimeSection(
-                  'Evening',
-                  const TimeOfDay(hour: 17, minute: 0),
-                  const TimeOfDay(hour: 23, minute: 59),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -454,10 +427,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
   Widget _buildHeader() {
     final formattedDate = DateFormat('EEEE, MMMM d').format(_selectedDate);
     final textTheme = CupertinoTheme.of(context);
-    final isToday = _isToday(_selectedDate);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      // Уменьшен верхний отступ
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -470,65 +443,42 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
             ),
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 15),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Conditionally hide previous day button when calendar is visible
-              if (!_isCalendarVisible)
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: _navigateToPreviousDay,
-                  child: Icon(
-                    CupertinoIcons.chevron_left,
-                    color: textTheme.primaryColor,
-                    semanticLabel: 'Previous day',
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _navigateToPreviousDay,
+                child: Icon(
+                  CupertinoIcons.chevron_left,
+                  color: textTheme.primaryColor,
+                  semanticLabel: 'Previous day',
+                ),
+              ),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  formattedDate,
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: textTheme.textTheme.tabLabelTextStyle.color,
                   ),
-                )
-              else
-                const Spacer(flex: 1), // Maintain layout alignment
-              // Conditionally hide formattedDate when calendar is visible
-              if (!_isCalendarVisible)
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    formattedDate,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: textTheme.textTheme.tabLabelTextStyle.color,
-                    ),
-                    textAlign: TextAlign.center,
-                    semanticsLabel: formattedDate,
-                  ),
-                )
-              else
-                const Spacer(flex: 3), // Maintain layout alignment
-              // Conditionally hide next day button when calendar is visible
-              if (!_isCalendarVisible)
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: _navigateToNextDay,
-                  child: Icon(
-                    CupertinoIcons.chevron_right,
-                    color: textTheme.primaryColor,
-                    semanticLabel: 'Next day',
-                  ),
-                )
-              else
-                const Spacer(flex: 1), // Maintain layout alignment
+                  textAlign: TextAlign.center,
+                  semanticsLabel: formattedDate,
+                ),
+              ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _navigateToNextDay,
+                child: Icon(
+                  CupertinoIcons.chevron_right,
+                  color: textTheme.primaryColor,
+                  semanticLabel: 'Next day',
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            isToday
-                ? 'For today, we have the following tasks:'
-                : 'For this day, we have the following tasks:',
-            style: TextStyle(
-              fontSize: 16,
-              color: textTheme.textTheme.tabLabelTextStyle.color,
-            ),
-          ),
-          const SizedBox(height: 20),
         ],
       ),
     );
@@ -782,7 +732,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
             children: [
               Container(
                 width: 4,
-                height: 40,
+                constraints: BoxConstraints(
+                  minHeight: 40,
+                  maxHeight: double.infinity,
+                ),
                 decoration: BoxDecoration(
                   color:
                       isFreeTimeTask
@@ -793,6 +746,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
+
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -815,7 +769,8 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                           child: Text(
                             isFreeTimeTask
                                 ? freeTimeInfo!['label']
-                                : getHabitName(scheduledTask) ?? task.title,
+                                : getHabitName(scheduledTask) ??
+                                    '(${task.parentTask?.title} ${task.order}) ${task.title}',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -824,7 +779,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                                     context,
                                   ).textTheme.textStyle.color,
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            overflow: TextOverflow.visible,
                           ),
                         ),
                       ],

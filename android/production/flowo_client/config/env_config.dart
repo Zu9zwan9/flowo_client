@@ -37,7 +37,7 @@ class EnvConfig {
         await dotenv.load(fileName: 'assets/.env');
       } else {
         // For non-web platforms, load from the root directory
-        await dotenv.load(fileName: 'assets/.env');
+        await dotenv.load(fileName: '.env');
       }
 
       _initialized = true;

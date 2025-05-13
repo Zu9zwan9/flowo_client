@@ -13,7 +13,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../widgets/gradient_theme.dart';
-import 'calendar/calendar_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final int initialIndex;
@@ -78,12 +77,12 @@ class _HomeScreenState extends State<HomeScreen>
       label: 'Today',
       accentColor: CupertinoColors.systemBlue,
     ),
-    (
-      page: CalendarScreen(),
-      icon: CupertinoIcons.calendar,
-      label: 'Calendar',
-      accentColor: CupertinoColors.systemPink,
-    ),
+    // (
+    //   page: CalendarScreen(),
+    //   icon: CupertinoIcons.calendar,
+    //   label: 'Calendar',
+    //   accentColor: CupertinoColors.systemPink,
+    // ),
     (
       page: TaskListScreen(),
       icon: CupertinoIcons.list_bullet,
@@ -113,12 +112,6 @@ class _HomeScreenState extends State<HomeScreen>
       icon: CupertinoIcons.settings,
       label: 'Settings',
       accentColor: CupertinoColors.systemGrey,
-    ),
-    (
-      page: AnimatedCalendarPage(),
-      icon: CupertinoIcons.news,
-      label: 'Articles',
-      accentColor: CupertinoColors.systemTeal,
     ),
   ];
 

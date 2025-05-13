@@ -481,7 +481,6 @@ class _ScheduledTaskSelectionItem extends StatelessWidget {
           parentTaskId: pendingTask.parentTaskId,
           type: pendingTask.type,
           travelingTime: pendingTask.travelingTime,
-          breakTime: pendingTask.breakTime,
         );
         onTaskUpdated(updatedTask);
       } else {
@@ -517,8 +516,7 @@ class _ScheduledTaskSelectionItem extends StatelessWidget {
           endTime: newEndTime,
           parentTaskId: pendingTask.parentTaskId,
           type: pendingTask.type,
-          travelingTime: pendingTask.travelingTime,
-          breakTime: pendingTask.breakTime,
+          travelingTime: pendingTask.travelingTime
         );
         onTaskUpdated(updatedTask);
       } else {

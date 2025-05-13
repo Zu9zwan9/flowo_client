@@ -1,9 +1,10 @@
 import 'dart:async';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/utils/ai_model/task_breakdown_api.dart';
 import 'package:flowo_client/utils/logger.dart';
 
-/// A service that uses Hugging Face API to estimate time for tasks
+/// A service that uses Azure API to estimate time for tasks
 class TaskEstimatorAPI {
   final String apiKey;
   final String apiUrl;
@@ -11,19 +12,18 @@ class TaskEstimatorAPI {
 
   /// Creates a new TaskEstimatorAPI with the given API key
   ///
-  /// The API key should be a valid Hugging Face API key
-  TaskEstimatorAPI({
-    required this.apiKey,
-    this.apiUrl =
-        'https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta',
-  }) : _pipeline = pipeline(
-         "text-generation",
-         model: 'HuggingFaceH4/zephyr-7b-beta',
-         apiKey: apiKey,
-         apiUrl: apiUrl,
-       );
+  /// The API key should be a valid Azure API key
+  TaskEstimatorAPI({String? apiKey, String? apiUrl})
+    : apiKey = apiKey ?? EnvConfig.azureApiKey,
+      apiUrl = apiUrl ?? EnvConfig.azureApiUrl,
+      _pipeline = pipeline(
+        "chat",
+        model: EnvConfig.aiModel,
+        apiKey: apiKey ?? EnvConfig.azureApiKey,
+        apiUrl: apiUrl ?? EnvConfig.azureApiUrl,
+      );
 
-  /// Makes a request to the Hugging Face API to estimate time for a task
+  /// Makes a request to the Azure API to estimate time for a task
   ///
   /// Returns the raw API response or null if the request failed
   /// The response can be either a Map<String, dynamic> or a List<dynamic>
@@ -51,12 +51,12 @@ class TaskEstimatorAPI {
     return await _pipeline.call(messages);
   }
 
-  /// Parses the response from the Hugging Face API into a duration in milliseconds
+  /// Parses the response from the Azure API into a duration in milliseconds
   ///
   /// Returns a default estimate if the response is invalid or empty
   int parseTimeEstimate(dynamic response) {
     if (response == null) {
-      logWarning('Received null response from Hugging Face API');
+      logWarning('Received null response from Azure API');
       // Return default estimate (1 hour)
       return 60 * 60 * 1000;
     }
@@ -68,9 +68,7 @@ class TaskEstimatorAPI {
       } else if (response is Map<String, dynamic>) {
         text = response["generated_text"] ?? "";
       } else {
-        logWarning(
-          'Unexpected response format from Hugging Face API: $response',
-        );
+        logWarning('Unexpected response format from Azure API: $response');
         // Return default estimate for unexpected format
         return 60 * 60 * 1000;
       }
@@ -87,9 +85,7 @@ class TaskEstimatorAPI {
       // Parse the time estimate
       return _parseTimeString(text);
     } catch (e) {
-      logError(
-        'Error parsing time estimate from Hugging Face API response: $e',
-      );
+      logError('Error parsing time estimate from Azure API response: $e');
       // Return default estimate on error
       return 60 * 60 * 1000;
     }

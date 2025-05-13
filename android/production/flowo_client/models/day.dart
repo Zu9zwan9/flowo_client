@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 
 part 'day.g.dart';
 
-@HiveType(typeId: 4) // Unique ID for the Days class
+@HiveType(typeId: 4)
 class Day extends HiveObject {
   @HiveField(0)
   String day;
@@ -11,10 +11,8 @@ class Day extends HiveObject {
   @HiveField(1)
   List<ScheduledTask> scheduledTasks;
 
-  Day({
-    required this.day,
-    List<ScheduledTask>? scheduledTasks, // Optional named parameter
-  }) : scheduledTasks = scheduledTasks ?? []; // Default to empty list
+  Day({required this.day, List<ScheduledTask>? scheduledTasks})
+    : scheduledTasks = scheduledTasks ?? [];
 
   @override
   String toString() =>

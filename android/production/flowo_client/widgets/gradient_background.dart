@@ -13,7 +13,6 @@ class GradientBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeNotifier>(
       builder: (context, themeNotifier, _) {
-        // If gradient is not enabled, just return the child
         if (!themeNotifier.useGradient) {
           return child;
         }
@@ -44,12 +43,9 @@ class AppGradientBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeNotifier>(
       builder: (context, themeNotifier, _) {
-        // If gradient is not enabled, just return the child
         if (!themeNotifier.useGradient) {
           return child;
         }
-
-        // Create a custom theme with gradient background
         return DecoratedBox(
           decoration: BoxDecoration(
             gradient: LinearGradient(

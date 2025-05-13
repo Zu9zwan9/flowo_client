@@ -14,7 +14,6 @@ class GradientTheme extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeNotifier>(
       builder: (context, themeNotifier, _) {
-        // If gradient is not enabled, just return the child
         if (!themeNotifier.useGradient) {
           return child;
         }

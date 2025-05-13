@@ -24,15 +24,14 @@ class ScheduledTaskAdapter extends TypeAdapter<ScheduledTask> {
       urgency: fields[4] as double?,
       type: fields[5] as ScheduledTaskType,
       travelingTime: fields[6] as int,
-      breakTime: fields[7] as int,
-      notificationIds: (fields[8] as List?)?.cast<int>(),
+      notificationIds: (fields[7] as List?)?.cast<int>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, ScheduledTask obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.scheduledTaskId)
       ..writeByte(1)
@@ -48,8 +47,6 @@ class ScheduledTaskAdapter extends TypeAdapter<ScheduledTask> {
       ..writeByte(6)
       ..write(obj.travelingTime)
       ..writeByte(7)
-      ..write(obj.breakTime)
-      ..writeByte(8)
       ..write(obj.notificationIds);
   }
 

@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:flowo_client/models/user_profile.dart';
 import 'package:flowo_client/screens/analytics/analytics_screen.dart';
+import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -281,7 +283,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onPressed: () {
                       Navigator.of(context).pop();
                       if (mounted) {
-                        Navigator.of(context).pushReplacementNamed('/login');
+                        Navigator.of(context).pushAndRemoveUntil(
+                          CupertinoPageRoute(
+                            builder: (context) => const NameInputScreen(),
+                          ),
+                          (route) => false, // Remove all previous routes
+                        );
                       }
                     },
                   ),
@@ -298,6 +305,129 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 (_) => CupertinoAlertDialog(
                   title: const Text('Error'),
                   content: Text('Failed to delete account: ${e.toString()}'),
+                  actions: [
+                    CupertinoDialogAction(
+                      isDefaultAction: true,
+                      child: const Text('OK'),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _clearAppData() async {
+    final confirm = await showCupertinoDialog<bool>(
+      context: context,
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Clear All App Data'),
+            content: const Text(
+              'Are you sure you want to clear all app data? This will reset the app to its initial state, deleting all tasks, settings, and profile information. This action cannot be undone.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                child: const Text('Clear Data'),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          ),
+    );
+
+    if (confirm == true && mounted) {
+      try {
+        // Delete avatar file if exists
+        if (_currentProfile?.avatarPath != null) {
+          final avatarFile = File(_currentProfile!.avatarPath!);
+          if (avatarFile.existsSync()) {
+            await avatarFile.delete();
+            logInfo('Deleted avatar file: ${_currentProfile!.avatarPath}');
+          }
+        }
+
+        // First close our known box reference
+        await _userProfilesBox.close();
+        logInfo('Closed user_profiles box directly');
+
+        // List all the box names used in the app
+        final boxNames = [
+          'tasks',
+          'scheduled_tasks',
+          'user_settings',
+          'user_profiles',
+          'pomodoro_sessions',
+          'categories_box',
+          'ambient_scenes',
+        ];
+
+        // Process each box
+        for (final boxName in boxNames) {
+          try {
+            final box = Hive.box(boxName);
+            await box.clear();
+          } catch (e) {
+            // Log but continue with other boxes
+            logWarning('Issue with box $boxName during reset: $e');
+          }
+        }
+
+        // Update UI state
+        setState(() {
+          _nameController.clear();
+          _emailController.clear();
+          _avatarImage = null;
+          _currentProfile = null;
+        });
+
+        // Show confirmation dialog
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder:
+                (_) => CupertinoAlertDialog(
+                  title: const Text('App Data Cleared'),
+                  content: const Text(
+                    'All app data has been cleared successfully. The app will now restart as if opened for the first time.',
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      isDefaultAction: true,
+                      child: const Text('OK'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        if (mounted) {
+                          // Navigate to the onboarding screen
+                          Navigator.of(context).pushAndRemoveUntil(
+                            CupertinoPageRoute(
+                              builder: (context) => const NameInputScreen(),
+                            ),
+                            (route) => false, // Remove all previous routes
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+          );
+        }
+        logWarning('All app data cleared');
+      } catch (e) {
+        logError('Error clearing app data: $e');
+        if (mounted) {
+          showCupertinoDialog(
+            context: context,
+            builder:
+                (_) => CupertinoAlertDialog(
+                  title: const Text('Error'),
+                  content: Text('Failed to clear app data: ${e.toString()}'),
                   actions: [
                     CupertinoDialogAction(
                       isDefaultAction: true,
@@ -358,8 +488,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ),
-                  _buildNameField(),
-                  _buildEmailField(),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      bottom: 8.0,
+                    ),
+                    child: _buildNameField(),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      bottom: 8.0,
+                    ),
+                    child: _buildEmailField(),
+                  ),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -442,7 +586,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.all(16),
                     onPressed: () {
                       HapticFeedback.selectionClick();
-                      Navigator.of(context).push(
+                      Navigator.push(
+                        context,
                         CupertinoPageRoute(
                           builder: (context) => const AnalyticsScreen(),
                         ),
@@ -543,6 +688,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
+                  Container(
+                    height: 0.5,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    color: CupertinoColors.systemGrey5,
+                  ),
+                  CupertinoButton(
+                    padding: const EdgeInsets.all(16),
+                    onPressed: () {
+                      HapticFeedback.heavyImpact();
+                      _clearAppData();
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.trash,
+                          color: CupertinoColors.systemRed,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Clear App Data',
+                            style: TextStyle(
+                              color: CupertinoColors.systemRed,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -552,7 +729,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 vertical: 8.0,
               ),
               child: Text(
-                'Deleting your account will permanently remove all your data from the app. This action cannot be undone.',
+                'Deleting your account or clearing app data will permanently remove all your data from the app. These actions cannot be undone.',
                 style: TextStyle(
                   fontSize: 13,
                   color: CupertinoColors.systemGrey,

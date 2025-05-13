@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flowo_client/config/env_config.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:http/http.dart' as http;
 
-/// A pipeline for chat completions using Hugging Face models
+/// A pipeline for chat completions using Azure API models
 class ChatPipeline {
   final String model;
   final String apiKey;
@@ -14,26 +15,36 @@ class ChatPipeline {
 
   /// Creates a new pipeline for chat completions
   ///
-  /// The model should be a valid Hugging Face model ID
-  /// The API key should be a valid Hugging Face API key
+  /// The model should be a valid Azure API model ID
+  /// The API key should be a valid Azure API key
   ChatPipeline({
-    required this.model,
-    required this.apiKey,
-    this.maxTokens = 500,
+    String? model,
+    String? apiKey,
+    this.maxTokens = 4096,
     this.shouldStream = false,
     String? apiUrl,
-  }) : apiUrl =
-           apiUrl ??
-           'https://router.huggingface.co/hf-inference/models/$model/v1/chat/completions';
+  }) : model = model ?? EnvConfig.aiModel,
+       apiKey = apiKey ?? EnvConfig.azureApiKey,
+       apiUrl = apiUrl ?? EnvConfig.azureApiUrl;
 
   /// Calls the pipeline with the given messages
   ///
   /// Returns the generated text or null if the request failed
   Future<Map<String, dynamic>?> call(List<Map<String, String>> messages) async {
+    // Ensure system message is present
+    final List<Map<String, String>> formattedMessages = [];
+    bool hasSystemMessage = messages.any((msg) => msg["role"] == "system");
+    if (!hasSystemMessage) {
+      formattedMessages.add({"role": "system", "content": ""});
+    }
+    formattedMessages.addAll(messages);
+
     final data = {
       "model": model,
-      "messages": messages,
+      "messages": formattedMessages,
       "max_tokens": maxTokens,
+      "temperature": 1,
+      "top_p": 1,
       "stream": false,
     };
 
@@ -43,7 +54,7 @@ class ChatPipeline {
     };
 
     try {
-      logInfo('Making request to Hugging Face Chat API for model: $model');
+      logInfo('Making request to Azure Chat API for model: $model');
       final response = await http.post(
         Uri.parse(apiUrl),
         headers: headers,
@@ -51,11 +62,11 @@ class ChatPipeline {
       );
 
       if (response.statusCode == 200) {
-        logInfo('Received successful response from Hugging Face Chat API');
+        logInfo('Received successful response from Azure Chat API');
         return jsonDecode(response.body);
       } else {
         logError(
-          'Error from Hugging Face Chat API: ${response.statusCode} - ${response.body}',
+          'Error from Azure Chat API: ${response.statusCode} - ${response.body}',
         );
 
         // If the API is unavailable, return a fallback response
@@ -72,7 +83,7 @@ class ChatPipeline {
         };
       }
     } catch (e) {
-      logError('Exception making request to Hugging Face Chat API: $e');
+      logError('Exception making request to Azure Chat API: $e');
 
       // If there's an exception, return a fallback response
       logWarning('Using fallback response due to exception');
@@ -93,10 +104,20 @@ class ChatPipeline {
   ///
   /// Returns a stream of generated text chunks
   Stream<String> streamResponse(List<Map<String, String>> messages) async* {
+    // Ensure system message is present
+    final List<Map<String, String>> formattedMessages = [];
+    bool hasSystemMessage = messages.any((msg) => msg["role"] == "system");
+    if (!hasSystemMessage) {
+      formattedMessages.add({"role": "system", "content": ""});
+    }
+    formattedMessages.addAll(messages);
+
     final data = {
       "model": model,
-      "messages": messages,
+      "messages": formattedMessages,
       "max_tokens": maxTokens,
+      "temperature": 1,
+      "top_p": 1,
       "stream": true,
     };
 
@@ -106,9 +127,7 @@ class ChatPipeline {
     };
 
     try {
-      logInfo(
-        'Making streaming request to Hugging Face Chat API for model: $model',
-      );
+      logInfo('Making streaming request to Azure Chat API for model: $model');
       final request = http.Request('POST', Uri.parse(apiUrl));
       request.headers.addAll(headers);
       request.body = jsonEncode(data);
@@ -116,7 +135,7 @@ class ChatPipeline {
       final streamedResponse = await http.Client().send(request);
 
       if (streamedResponse.statusCode == 200) {
-        logInfo('Receiving streamed response from Hugging Face Chat API');
+        logInfo('Receiving streamed response from Azure Chat API');
 
         await for (var chunk in streamedResponse.stream.transform(
           utf8.decoder,
@@ -141,7 +160,7 @@ class ChatPipeline {
         }
       } else {
         logError(
-          'Error from Hugging Face Chat API stream: ${streamedResponse.statusCode}',
+          'Error from Azure Chat API stream: ${streamedResponse.statusCode}',
         );
 
         // If the API is unavailable, yield a fallback response
@@ -149,9 +168,7 @@ class ChatPipeline {
         yield "1. Research the topic\n2. Create an outline\n3. Draft the content\n4. Review and revise\n5. Finalize the work";
       }
     } catch (e) {
-      logError(
-        'Exception making streaming request to Hugging Face Chat API: $e',
-      );
+      logError('Exception making streaming request to Azure Chat API: $e');
 
       // If there's an exception, yield a fallback response
       logWarning('Using fallback response due to exception');
@@ -162,10 +179,10 @@ class ChatPipeline {
 
 /// A factory function to create a chat pipeline for chat completions
 ChatPipeline chatPipeline({
-  required String model,
-  required String apiKey,
+  String? model,
+  String? apiKey,
   String? apiUrl,
-  int maxTokens = 500,
+  int maxTokens = 4096,
   bool shouldStream = false,
 }) {
   return ChatPipeline(

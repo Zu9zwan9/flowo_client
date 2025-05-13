@@ -40,4 +40,12 @@ class TaskFormData {
           ((optimisticTime + 4 * realisticTime + pessimisticTime) ~/ 6);
     }
   }
+
+  void setSimpleDuration(int duration) {
+    estimatedTime = duration;
+    // Keep PERT values in sync for consistency
+    optimisticTime = duration;
+    realisticTime = duration;
+    pessimisticTime = duration;
+  }
 }

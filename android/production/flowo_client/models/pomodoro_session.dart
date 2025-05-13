@@ -1,6 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 
+import 'session.dart';
 import 'task.dart';
 
 part 'pomodoro_session.g.dart';
@@ -20,8 +20,9 @@ enum PomodoroState {
 }
 
 @HiveType(typeId: 15)
-class PomodoroSession extends HiveObject with ChangeNotifier {
+class PomodoroSession extends Session {
   @HiveField(0)
+  @override
   String id;
 
   @HiveField(1)
@@ -46,21 +47,37 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
   int targetPomodoros;
 
   @HiveField(8)
+  @override
   DateTime startTime;
 
   @HiveField(9)
+  @override
   DateTime? endTime;
 
   // Non-persisted properties
   PomodoroState _state = PomodoroState.initial;
+
+  /// Gets the current state of the Pomodoro session
   PomodoroState get state => _state;
+
+  /// Sets the current state of the Pomodoro session and notifies listeners
   set state(PomodoroState value) {
     _state = value;
     notifyListeners();
   }
 
+  /// Gets the task associated with this session, if any
   Task? get task => taskId != null ? Hive.box<Task>('tasks').get(taskId) : null;
 
+  /// Creates a new Pomodoro session
+  ///
+  /// @param id Unique identifier for the session
+  /// @param taskId Optional ID of the task this session belongs to
+  /// @param totalDuration Total duration of the work period in milliseconds
+  /// @param breakDuration Duration of the break period in milliseconds
+  /// @param completedPomodoros Number of completed pomodoros (default: 0)
+  /// @param targetPomodoros Target number of pomodoros to complete (default: 1)
+  /// @param startTime Start time of the session (default: now)
   PomodoroSession({
     required this.id,
     this.taskId,
@@ -73,7 +90,10 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
        remainingBreakDuration = breakDuration,
        startTime = startTime ?? DateTime.now();
 
-  // Create a Pomodoro session from a task
+  /// Creates a Pomodoro session from a task
+  ///
+  /// This factory method creates a session with appropriate durations based on the task.
+  /// It can use a custom duration, the task's estimated time, or calculate sessions based on focus duration.
   factory PomodoroSession.fromTask(
     Task task, {
     int? customDuration,
@@ -123,7 +143,9 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
     );
   }
 
-  // Create a custom Pomodoro session without a task
+  /// Creates a custom Pomodoro session without a task
+  ///
+  /// This factory method creates a session with the specified duration and parameters.
   factory PomodoroSession.custom({
     required int duration,
     int breakDuration = 5 * 60 * 1000, // 5 minutes in milliseconds
@@ -137,18 +159,24 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
     );
   }
 
+  /// Starts the Pomodoro session
   void start() {
     state = PomodoroState.running;
   }
 
+  /// Pauses the Pomodoro session
   void pause() {
     state = PomodoroState.paused;
   }
 
+  /// Resumes the Pomodoro session after it was paused
   void resume() {
     state = PomodoroState.running;
   }
 
+  /// Resets the Pomodoro session to its initial state
+  ///
+  /// This resets the remaining durations and state without ending the session.
   void reset() {
     remainingDuration = totalDuration;
     remainingBreakDuration = breakDuration;
@@ -156,6 +184,7 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Updates the timer state based on elapsed time
   void tick(int milliseconds) {
     if (state == PomodoroState.running) {
       remainingDuration -= milliseconds;
@@ -164,8 +193,7 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
         completedPomodoros++;
 
         if (completedPomodoros >= targetPomodoros) {
-          state = PomodoroState.completed;
-          endTime = DateTime.now();
+          end(); // Use the end() method to set state and endTime
         } else {
           remainingBreakDuration =
               breakDuration; // Reset break duration when transitioning to break
@@ -184,21 +212,29 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
     }
   }
 
-  void completeEarly() {
-    state = PomodoroState.completed;
-    endTime = DateTime.now();
-    notifyListeners();
+  /// Overrides the base class end() method to set the state to completed
+  @override
+  void end() {
+    if (endTime == null) {
+      state = PomodoroState.completed;
+      super.end();
+    }
   }
 
-  // Skip the current work session and move to break
+  /// Completes the session early
+  void completeEarly() {
+    state = PomodoroState.completed;
+    super.end();
+  }
+
+  /// Skip the current work session and move to break
   void skipToBreak() {
     if (state == PomodoroState.running) {
       remainingDuration = 0;
       completedPomodoros++;
 
       if (completedPomodoros >= targetPomodoros) {
-        state = PomodoroState.completed;
-        endTime = DateTime.now();
+        end(); // Use the end() method to set state and endTime
       } else {
         remainingBreakDuration =
             breakDuration; // Reset break duration when transitioning to break
@@ -208,7 +244,7 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
     }
   }
 
-  // Skip the current break and start a new work session
+  /// Skips the current break and starts a new work session
   void skipBreak() {
     if (state == PomodoroState.breakTime) {
       remainingBreakDuration = 0;
@@ -218,10 +254,12 @@ class PomodoroSession extends HiveObject with ChangeNotifier {
     }
   }
 
+  /// Gets the progress of the current work session as a value between 0.0 and 1.0
   double get progress {
     return 1.0 - (remainingDuration / totalDuration);
   }
 
+  /// Gets the progress of the current break as a value between 0.0 and 1.0
   double get breakProgress {
     return 1.0 - (remainingBreakDuration / breakDuration);
   }

@@ -1,5 +1,7 @@
+import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/screens/pomodoro/pomodoro_timer_screen.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 
 import '../../models/scheduled_task.dart';
@@ -16,7 +18,14 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
   Task? _selectedTask;
   Task? _selectedSubtask;
   ScheduledTask? _selectedScheduledTask;
+  late final TaskManagerCubit _taskManagerCubit;
   final int _customDuration = 25 * 60 * 1000; // Default 25 minutes
+
+  @override
+  void initState() {
+    super.initState();
+    _taskManagerCubit = context.read<TaskManagerCubit>();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +133,7 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
 
               // Subtasks selection (only shown when a task is selected)
               if (_selectedTask != null &&
-                  _selectedTask!.subtasks.isNotEmpty) ...[
+                  _selectedTask!.subtaskIds.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 const Text(
                   'Select a subtask (optional):',
@@ -138,23 +147,23 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: ListView.builder(
-                    itemCount: _selectedTask!.subtasks.length,
+                    itemCount: _selectedTask!.subtaskIds.length,
                     itemBuilder: (context, index) {
-                      final subtask = _selectedTask!.subtasks[index];
+                      final subtaskId = _selectedTask!.subtaskIds[index];
                       return GestureDetector(
                         onTap: () {
                           setState(() {
                             _selectedSubtask =
-                                _selectedSubtask?.id == subtask.id
+                                _selectedSubtask?.id == subtaskId
                                     ? null
-                                    : subtask;
+                                    : _taskManagerCubit.getTaskById(subtaskId);
                           });
                         },
                         child: Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color:
-                                _selectedSubtask?.id == subtask.id
+                                _selectedSubtask?.id == subtaskId
                                     ? CupertinoColors.activeBlue.withOpacity(
                                       0.1,
                                     )
@@ -168,18 +177,18 @@ class _TaskSelectionScreenState extends State<TaskSelectionScreen> {
                           child: Row(
                             children: [
                               Icon(
-                                _selectedSubtask?.id == subtask.id
+                                _selectedSubtask?.id == subtaskId
                                     ? CupertinoIcons.checkmark_circle_fill
                                     : CupertinoIcons.circle,
                                 color:
-                                    _selectedSubtask?.id == subtask.id
+                                    _selectedSubtask?.id == subtaskId
                                         ? CupertinoColors.activeBlue
                                         : CupertinoColors.systemGrey,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  subtask.title,
+                                  _taskManagerCubit.getTaskById(subtaskId)!.title,
                                   style: const TextStyle(fontSize: 16),
                                 ),
                               ),

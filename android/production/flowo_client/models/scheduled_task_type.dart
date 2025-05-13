@@ -2,7 +2,7 @@ import 'package:hive/hive.dart';
 
 part 'scheduled_task_type.g.dart';
 
-@HiveType(typeId: 6) // Unique ID for the ScheduledTaskType enum
+@HiveType(typeId: 6)
 enum ScheduledTaskType {
   @HiveField(0)
   defaultType,

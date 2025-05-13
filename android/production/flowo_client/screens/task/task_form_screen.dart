@@ -2,6 +2,7 @@ import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
@@ -76,16 +77,29 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       _firstNotification = widget.task!.firstNotification;
       _secondNotification = widget.task!.secondNotification;
     } else {
+      // Initialize with default values
+      final defaultDuration = 0; // 1 hour in milliseconds
+
       _formData = TaskFormData(
         selectedDateTime:
             widget.selectedDate ?? _roundToNearestFiveMinutes(DateTime.now()),
         category: '',
         priority: 1,
-        estimatedTime: 0,
-        optimisticTime: 0,
-        realisticTime: 0,
-        pessimisticTime: 0,
+        estimatedTime: defaultDuration,
+        optimisticTime: defaultDuration,
+        realisticTime: defaultDuration,
+        pessimisticTime: defaultDuration,
       );
+
+      // If using PERT method, adjust the default values to show a range
+      if (_userSettings.usePertMethod) {
+        _formData.optimisticTime =
+            (defaultDuration * 0.8).toInt(); // 80% of default
+        _formData.realisticTime = defaultDuration; // 100% of default
+        _formData.pessimisticTime =
+            (defaultDuration * 1.2).toInt(); // 120% of default
+        _formData.calculateEstimatedTime();
+      }
     }
 
     _animationController = AnimationController(
@@ -115,6 +129,164 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     _notesController.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Build estimation method toggle (PERT Method vs Simple Duration)
+  Widget _buildEstimationMethodToggle(BuildContext context) {
+    final primaryColor = CupertinoTheme.of(context).primaryColor;
+    final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
+
+    return Container(
+      height: 44,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          // PERT Method option
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (!_userSettings.usePertMethod) {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    // Update the user setting
+                    _userSettings.usePertMethod = true;
+                    _userSettings.save();
+
+                    // Switching to PERT method
+                    // Create a range based on current estimated time
+                    final currentTime = _formData.estimatedTime;
+                    _formData.optimisticTime = (currentTime * 0.8).toInt();
+                    _formData.realisticTime = currentTime;
+                    _formData.pessimisticTime = (currentTime * 1.2).toInt();
+                    _formData.calculateEstimatedTime();
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color:
+                      _userSettings.usePertMethod
+                          ? CupertinoColors.systemBackground.resolveFrom(
+                            context,
+                          )
+                          : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                margin: const EdgeInsets.all(2),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.chart_bar_alt_fill,
+                        size: 18,
+                        color:
+                            _userSettings.usePertMethod
+                                ? primaryColor
+                                : CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'PERT Method',
+                        style: TextStyle(
+                          color:
+                              _userSettings.usePertMethod
+                                  ? primaryColor
+                                  : CupertinoColors.systemGrey.resolveFrom(
+                                    context,
+                                  ),
+                          fontSize: 14,
+                          fontWeight:
+                              _userSettings.usePertMethod
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Simple Duration option
+          Expanded(
+            child: GestureDetector(
+              onTap: () {
+                if (_userSettings.usePertMethod) {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    // Update the user setting
+                    _userSettings.usePertMethod = false;
+                    _userSettings.save();
+
+                    // Switching to simple duration
+                    // Keep the current estimated time
+                    final currentEstimatedTime = _formData.estimatedTime;
+                    _formData.setSimpleDuration(currentEstimatedTime);
+                  });
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color:
+                      !_userSettings.usePertMethod
+                          ? CupertinoColors.systemBackground.resolveFrom(
+                            context,
+                          )
+                          : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                margin: const EdgeInsets.all(2),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.timer,
+                        size: 18,
+                        color:
+                            !_userSettings.usePertMethod
+                                ? primaryColor
+                                : CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Simple Duration',
+                        style: TextStyle(
+                          color:
+                              !_userSettings.usePertMethod
+                                  ? primaryColor
+                                  : CupertinoColors.systemGrey.resolveFrom(
+                                    context,
+                                  ),
+                          fontSize: 14,
+                          fontWeight:
+                              !_userSettings.usePertMethod
+                                  ? FontWeight.w600
+                                  : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -184,37 +356,51 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 form.sectionTitle('Estimated Time'),
                 form.formGroup(
                   children: [
-                    form.selectionButton(
-                      label: 'Optimistic Time',
-                      value: _formatDuration(_formData.optimisticTime),
-                      onTap: () => _showDurationPicker(context, 'optimistic'),
-                      icon: CupertinoIcons.timer,
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16.0),
+                      child: _buildEstimationMethodToggle(context),
                     ),
-                    form.divider(),
-                    form.selectionButton(
-                      label: 'Realistic Time',
-                      value: _formatDuration(_formData.realisticTime),
-                      onTap: () => _showDurationPicker(context, 'realistic'),
-                      icon: CupertinoIcons.timer,
-                    ),
-                    form.divider(),
-                    form.selectionButton(
-                      label: 'Pessimistic Time',
-                      value: _formatDuration(_formData.pessimisticTime),
-                      onTap: () => _showDurationPicker(context, 'pessimistic'),
-                      icon: CupertinoIcons.timer,
-                    ),
-                    form.divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('Expected Time:', style: form.labelTextStyle()),
-                        Text(
-                          _formatDuration(_formData.estimatedTime),
-                          style: form.valueTextStyle,
-                        ),
-                      ],
-                    ),
+                    if (_userSettings.usePertMethod) ...[
+                      form.selectionButton(
+                        label: 'Optimistic Time',
+                        value: _formatDuration(_formData.optimisticTime),
+                        onTap: () => _showDurationPicker(context, 'optimistic'),
+                        icon: CupertinoIcons.timer,
+                      ),
+                      form.divider(),
+                      form.selectionButton(
+                        label: 'Realistic Time',
+                        value: _formatDuration(_formData.realisticTime),
+                        onTap: () => _showDurationPicker(context, 'realistic'),
+                        icon: CupertinoIcons.timer,
+                      ),
+                      form.divider(),
+                      form.selectionButton(
+                        label: 'Pessimistic Time',
+                        value: _formatDuration(_formData.pessimisticTime),
+                        onTap:
+                            () => _showDurationPicker(context, 'pessimistic'),
+                        icon: CupertinoIcons.timer,
+                      ),
+                      form.divider(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Expected Time:', style: form.labelTextStyle()),
+                          Text(
+                            _formatDuration(_formData.estimatedTime),
+                            style: form.valueTextStyle,
+                          ),
+                        ],
+                      ),
+                    ] else ...[
+                      form.selectionButton(
+                        label: 'Duration',
+                        value: _formatDuration(_formData.estimatedTime),
+                        onTap: () => _showDurationPicker(context, 'simple'),
+                        icon: CupertinoIcons.timer,
+                      ),
+                    ],
                   ],
                 ),
 
@@ -579,6 +765,10 @@ class _TaskFormScreenState extends State<TaskFormScreen>
         initialHours = _formData.pessimisticTime ~/ 3600000;
         initialMinutes = (_formData.pessimisticTime % 3600000) ~/ 60000;
         break;
+      case 'simple':
+        initialHours = _formData.estimatedTime ~/ 3600000;
+        initialMinutes = (_formData.estimatedTime % 3600000) ~/ 60000;
+        break;
       default:
         initialHours = _formData.estimatedTime ~/ 3600000;
         initialMinutes = (_formData.estimatedTime % 3600000) ~/ 60000;
@@ -608,8 +798,15 @@ class _TaskFormScreenState extends State<TaskFormScreen>
           case 'pessimistic':
             _formData.pessimisticTime = duration;
             break;
+          case 'simple':
+            _formData.setSimpleDuration(duration);
+            break;
         }
-        _formData.calculateEstimatedTime();
+
+        // Only calculate estimated time if using PERT method
+        if (_userSettings.usePertMethod) {
+          _formData.calculateEstimatedTime();
+        }
       });
     }
   }
@@ -945,14 +1142,22 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       return 'Please select or add a category';
     }
 
-    if (_formData.optimisticTime > _formData.realisticTime) {
-      return 'Optimistic time should not exceed realistic time';
-    }
-    if (_formData.realisticTime > _formData.pessimisticTime) {
-      return 'Realistic time should not exceed pessimistic time';
-    }
-    if (_formData.optimisticTime <= 0) {
-      return 'Optimistic time must be greater than zero';
+    if (_userSettings.usePertMethod) {
+      // Validate PERT method inputs
+      if (_formData.optimisticTime > _formData.realisticTime) {
+        return 'Optimistic time should not exceed realistic time';
+      }
+      if (_formData.realisticTime > _formData.pessimisticTime) {
+        return 'Realistic time should not exceed pessimistic time';
+      }
+      if (_formData.optimisticTime <= 0) {
+        return 'Optimistic time must be greater than zero';
+      }
+    } else {
+      // Validate simple duration input
+      if (_formData.estimatedTime <= 0) {
+        return 'Duration must be greater than zero';
+      }
     }
 
     final now = DateTime.now();
@@ -1009,18 +1214,20 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     } else {
       taskManagerCubit.editTask(
         task: widget.task!,
-        title: _titleController.text,
-        priority: _formData.priority,
-        estimatedTime: _formData.estimatedTime,
-        deadline: _formData.selectedDateTime.millisecondsSinceEpoch,
-        category: Category(name: _selectedCategory),
-        notes: _notesController.text.isNotEmpty ? _notesController.text : null,
-        color: _formData.color,
-        optimisticTime: _formData.optimisticTime,
-        realisticTime: _formData.realisticTime,
-        pessimisticTime: _formData.pessimisticTime,
-        firstNotification: _firstNotification,
-        secondNotification: _secondNotification,
+        title: _titleController.text != widget.task!.title ? _titleController.text : null,
+        priority: _formData.priority != widget.task!.priority ? _formData.priority : null,
+        estimatedTime: _formData.estimatedTime != widget.task!.estimatedTime ? _formData.estimatedTime : null,
+        deadline: _formData.selectedDateTime.millisecondsSinceEpoch != widget.task!.deadline ? _formData.selectedDateTime.millisecondsSinceEpoch : null,
+        category: _selectedCategory != widget.task!.category.name ? Category(name: _selectedCategory) : null,
+        parentTask: widget.task!.parentTask,
+        notes: _notesController.text != (widget.task!.notes ?? '') ? (_notesController.text.isNotEmpty ? _notesController.text : null) : null,
+        color: _formData.color != widget.task!.color ? _formData.color : null,
+        order: widget.task!.order,
+        optimisticTime: _formData.optimisticTime != widget.task!.optimisticTime ? _formData.optimisticTime : null,
+        realisticTime: _formData.realisticTime != widget.task!.realisticTime ? _formData.realisticTime : null,
+        pessimisticTime: _formData.pessimisticTime != widget.task!.pessimisticTime ? _formData.pessimisticTime : null,
+        firstNotification: _firstNotification != widget.task!.firstNotification ? _firstNotification : null,
+        secondNotification: _secondNotification != widget.task!.secondNotification ? _secondNotification : null,
       );
     }
 

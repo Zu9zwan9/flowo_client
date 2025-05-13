@@ -27,6 +27,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     required Category category,
     Task? parentTask,
     String? notes,
+    int? order,
     int? color,
     RepeatRule? frequency,
     int? optimisticTime,
@@ -43,6 +44,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       category,
       parentTask: parentTask,
       notes: notes,
+      order: order,
       color: color,
       frequency: frequency,
       optimisticTime: optimisticTime,
@@ -115,11 +117,9 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       overrideOverlaps: overrideOverlaps,
     );
 
-    // Update the state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
     logInfo('Event created successfully: $task.title');
-
-    return []; // Return empty list to indicate success
+    return [];
   }
 
   List<ScheduledTask> getScheduledTasks() {
@@ -159,11 +159,53 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     return result;
   }
 
+  List<Task> getSubtasksForTask(Task task) {
+    final subtasks = <Task>[];
+    for (var t in taskManager.tasksDB.values) {
+      if (task.subtaskIds.contains(t.id)) {
+        subtasks.add(t);
+      }
+    }
+
+    // Sort subtasks by order field if available, otherwise maintain the order defined in subtaskIds
+    subtasks.sort((a, b) {
+      // If both tasks have an order, sort by order
+      if (a.order != null && b.order != null) {
+        return a.order!.compareTo(b.order!);
+      }
+      // If only one task has an order, prioritize the one with an order
+      else if (a.order != null) {
+        return -1;
+      } else if (b.order != null) {
+        return 1;
+      }
+      // If neither has an order, maintain the order in subtaskIds list
+      else {
+        return task.subtaskIds
+            .indexOf(a.id)
+            .compareTo(task.subtaskIds.indexOf(b.id));
+      }
+    });
+
+    return subtasks;
+  }
+
+  Task? getParentTask(Task task) {
+    if (task.parentTaskId == null) {
+      return null;
+    }
+    return taskManager.tasksDB.get(task.parentTaskId);
+  }
+
+  Task? getTaskById(String taskId) {
+    return taskManager.tasksDB.get(taskId);
+  }
+
   String _formatDateKey(DateTime date) =>
       '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
 
   void deleteTask(Task task) {
-    taskManager.deleteTask(task);
+    taskManager.deleteTaskById(task.id);
     emit(
       state.copyWith(tasks: taskManager.tasksDB.values.toList()),
     ); // Refresh state after deletion
@@ -171,14 +213,15 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
   void editTask({
     required Task task,
-    required String title,
-    required int priority,
-    required int estimatedTime,
-    required int deadline,
-    required Category category,
+    String? title,
+    int? priority,
+    int? estimatedTime,
+    int? deadline,
+    Category? category,
     Task? parentTask,
     String? notes,
     int? color,
+    int? order,
     RepeatRule? frequency,
     int? optimisticTime,
     int? realisticTime,
@@ -197,6 +240,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       parentTask,
       notes: notes,
       color: color,
+      order: order,
       frequency: frequency,
       optimisticTime: optimisticTime,
       realisticTime: realisticTime,
@@ -204,12 +248,6 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       firstNotification: firstNotification,
       secondNotification: secondNotification,
     );
-
-    taskManager.tasksDB.put(task.id, task);
-
-    // Recalculate scheduling after edit
-    taskManager.removeScheduledTasksFor(task);
-    taskManager.manageHabits();
 
     // Update state
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
@@ -302,12 +340,41 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
     logInfo('Event updated successfully: ${task.title}');
+    return [];
+  }
 
-    return []; // Return empty list to indicate success
+  void updateTaskOrder(Task parentTask, List<Task> subtasks) {
+    for (var i = 0; i < subtasks.length; i++) {
+      final subtask = subtasks[i];
+      editTask(
+        task: subtask,
+        title: subtask.title,
+        priority: subtask.priority,
+        estimatedTime: subtask.estimatedTime,
+        deadline: subtask.deadline,
+        category: subtask.category,
+        parentTask: parentTask,
+        notes: subtask.notes,
+        color: subtask.color,
+        order: i + 1,
+        frequency: subtask.frequency,
+        optimisticTime: subtask.optimisticTime,
+        realisticTime: subtask.realisticTime,
+        pessimisticTime: subtask.pessimisticTime,
+        firstNotification: subtask.firstNotification,
+        secondNotification: subtask.secondNotification,
+      );
+    }
+
+    final subtaskIds = subtasks.map((subtask) => subtask.id).toList();
+    parentTask.subtaskIds = subtaskIds;
+    taskManager.tasksDB.put(parentTask.id, parentTask);
+
+    emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
   void scheduleTasks() {
-    taskManager.scheduleTasks();
+    taskManager.manageTasks();
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
@@ -327,7 +394,10 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     } catch (e) {
       logError('Failed to save user settings: $e');
     }
+    taskManager.manageEvents();
     scheduleTasks();
+    scheduleHabits();
+
     emit(
       state.copyWith(
         tasks: taskManager.tasksDB.values.toList(),
@@ -357,7 +427,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   /// Breaks down a task into subtasks using AI and schedules them
   ///
   /// Returns a list of the created subtasks
-  Future<List<Task>> breakdownAndScheduleTask(Task task) async {
+  Future<List<Task>> generateSubtasksFor(Task task) async {
     logInfo('Breaking down task using AI: ${task.title}');
     final subtasks = await taskManager.breakdownAndScheduleTask(task);
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
@@ -379,7 +449,7 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       final originalEstimatedTime = task.estimatedTime;
 
       // Break down the task into subtasks
-      final subtasks = await breakdownAndScheduleTask(task);
+      final subtasks = await generateSubtasksFor(task);
 
       if (subtasks.isEmpty) {
         logWarning('No subtasks generated for task: ${task.title}');
@@ -464,7 +534,8 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
       // If the task is marked as completed, update any subtasks
       if (task.isDone) {
         // Mark all subtasks as completed if the parent task is completed
-        for (var subtask in task.subtasks) {
+        var subtasks = getSubtasksForTask(task);
+        for (var subtask in subtasks) {
           if (!subtask.isDone) {
             subtask.isDone = true;
             taskManager.tasksDB.put(subtask.id, subtask);

@@ -31,7 +31,6 @@ class TaskUrgencyCalculator {
         _negativeUrgencyHandler(task, trueTimeLeft);
       } else {
         taskUrgencyMap[task] = urgency;
-        logDebug('Task: ${task.title} has urgency $urgency');
       }
     }
 
@@ -99,8 +98,6 @@ class TaskUrgencyCalculator {
         }
       }
     }
-
-    logDebug('busy time -> ${busyTime.toString()}');
 
     return busyTime;
   }

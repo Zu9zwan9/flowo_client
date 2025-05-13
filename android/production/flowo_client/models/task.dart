@@ -50,13 +50,13 @@ class Task extends HiveObject {
   RepeatRule? frequency;
 
   @HiveField(10)
-  List<Task> subtasks;
+  List<String> subtaskIds;
 
   @HiveField(11)
   String? parentTaskId;
 
   @HiveField(12)
-  List<ScheduledTask> scheduledTasks; // Changed from const [] to mutable
+  List<ScheduledTask> scheduledTasks;
 
   @HiveField(13)
   bool isDone;
@@ -104,8 +104,8 @@ class Task extends HiveObject {
   bool get isPaused => status == 'paused';
 
   /// Whether the task can be started (either it has no subtasks or all subtasks are completed)
-  bool get canStart =>
-      subtasks.isEmpty || subtasks.every((subtask) => subtask.isDone);
+  bool get canStart => subtaskIds.isEmpty;
+  // subtasks.isEmpty || subtasks.every((subtask) => subtask.isDone);
 
   Task? get parentTask =>
       parentTaskId != null ? Hive.box<Task>('tasks').get(parentTaskId) : null;
@@ -126,7 +126,7 @@ class Task extends HiveObject {
         'deadline: $deadline, estimatedTime: $estimatedTime, category: $category, '
         'optimisticTime: $optimisticTime, realisticTime: $realisticTime, pessimisticTime: $pessimisticTime, '
         'notes: $notes, location: $location, image: $image, frequency: ${frequency.toString()}, '
-        'subtasks: $subtasks, parentTaskId: $parentTaskId, scheduledTasks: $scheduledTasks, '
+        'subtasks: $subtaskIds, parentTaskId: $parentTaskId, scheduledTasks: $scheduledTasks, '
         'isDone: $isDone, order: $order, overdue: $overdue, color: $color}';
   }
 
@@ -219,6 +219,43 @@ class Task extends HiveObject {
     return total;
   }
 
+  /// Calculates the time efficiency ratio for this task
+  ///
+  /// This ratio represents how well the estimated time matches the actual time spent.
+  /// A ratio of 1.0 means the task took exactly as long as estimated.
+  /// A ratio less than 1.0 means the task took longer than estimated.
+  /// A ratio greater than 1.0 means the task took less time than estimated.
+  ///
+  /// Returns null if the task has no estimated time or has not been worked on.
+  double? getTimeEfficiencyRatio() {
+    if (estimatedTime <= 0) return null;
+
+    final actualDuration = getTotalDuration();
+    if (actualDuration <= 0) return null;
+
+    return estimatedTime / actualDuration;
+  }
+
+  /// Gets a human-readable description of the time efficiency
+  String getTimeEfficiencyDescription() {
+    final ratio = getTimeEfficiencyRatio();
+    if (ratio == null) return 'No data';
+
+    if (ratio >= 0.9 && ratio <= 1.1) {
+      return 'Excellent estimation';
+    } else if (ratio >= 0.7 && ratio < 0.9) {
+      return 'Good estimation';
+    } else if (ratio > 1.1 && ratio <= 1.5) {
+      return 'Faster than estimated';
+    } else if (ratio > 1.5) {
+      return 'Much faster than estimated';
+    } else if (ratio >= 0.5 && ratio < 0.7) {
+      return 'Slower than estimated';
+    } else {
+      return 'Much slower than estimated';
+    }
+  }
+
   Task({
     required this.id,
     required this.title,
@@ -231,7 +268,7 @@ class Task extends HiveObject {
     this.location,
     this.image,
     this.frequency,
-    List<Task>? subtasks,
+    List<String>? subtaskIds,
     List<ScheduledTask>? scheduledTasks,
     this.isDone = false,
     this.order,
@@ -246,7 +283,7 @@ class Task extends HiveObject {
     this.totalDuration = 0,
     List<TaskSession>? sessions,
   }) : parentTaskId = parentTask?.id,
-       subtasks = subtasks ?? [],
+       subtaskIds = subtaskIds ?? [],
        scheduledTasks = scheduledTasks ?? [],
        sessions = sessions ?? [];
 }

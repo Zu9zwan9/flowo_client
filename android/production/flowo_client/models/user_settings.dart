@@ -17,22 +17,19 @@ class UserSettings extends HiveObject {
   int minSession;
 
   @HiveField(2)
-  int? breakTime;
-
-  @HiveField(3)
   List<TimeFrame> mealBreaks;
 
-  @HiveField(4)
+  @HiveField(3)
   List<TimeFrame> sleepTime;
 
-  @HiveField(5)
+  @HiveField(4)
   List<TimeFrame> freeTime;
 
-  @HiveField(6)
+  @HiveField(5)
   Map<String, bool>? activeDays;
 
   /// Day-specific schedules
-  @HiveField(18)
+  @HiveField(6)
   Map<String, DaySchedule> daySchedules;
 
   @HiveField(7)
@@ -68,25 +65,27 @@ class UserSettings extends HiveObject {
   @HiveField(17)
   bool useDynamicColors;
 
-  @HiveField(19)
+  @HiveField(18)
   double? textSizeAdjustment;
 
-  @HiveField(20)
+  @HiveField(19)
   bool? reduceMotion;
 
-  @HiveField(21)
+  @HiveField(20)
   bool? highContrastMode;
 
-  @HiveField(22)
+  @HiveField(21)
   String? gradientStartAlignment;
 
-  @HiveField(23)
+  @HiveField(22)
   String? gradientEndAlignment;
+
+  @HiveField(23)
+  bool usePertMethod = true;
 
   UserSettings({
     required this.name,
     required this.minSession,
-    this.breakTime,
     this.mealBreaks = const [],
     this.sleepTime = const [],
     this.freeTime = const [],
@@ -108,6 +107,7 @@ class UserSettings extends HiveObject {
     this.highContrastMode = false,
     this.gradientStartAlignment = "topLeft",
     this.gradientEndAlignment = "bottomRight",
+    this.usePertMethod = true,
   }) : daySchedules = daySchedules ?? {} {
     activeDays ??= {
       'Monday': true,

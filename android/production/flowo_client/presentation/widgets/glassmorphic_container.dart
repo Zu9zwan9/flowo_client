@@ -1,11 +1,7 @@
 import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
-
 import 'base_animated_widget.dart';
 
-/// A container with glassmorphism effect following Apple's design guidelines.
-/// This widget provides a frosted glass effect with smooth animations.
 class GlassmorphicContainer extends BaseAnimatedWidget {
   /// The child widget to display inside the container.
   final Widget child;
@@ -84,7 +80,6 @@ class _GlassmorphicContainerState
 
   @override
   Widget build(BuildContext context) {
-    // Get the background color from the Cupertino theme or use the provided one
     final effectiveBackgroundColor =
         widget.backgroundColor ??
         CupertinoTheme.of(context).scaffoldBackgroundColor;
