@@ -37,7 +37,7 @@ class EnvConfig {
         await dotenv.load(fileName: 'assets/.env');
       } else {
         // For non-web platforms, load from the root directory
-        await dotenv.load(fileName: '.env');
+        await dotenv.load(fileName: 'assets/.env');
       }
 
       _initialized = true;
@@ -57,9 +57,38 @@ class EnvConfig {
 
   /// Set default values for environment variables when loading fails
   static void _setDefaultValues() {
-    dotenv.env['AZURE_API_KEY'] = _defaults['AZURE_API_KEY']!;
-    dotenv.env['AZURE_API_URL'] = _defaults['AZURE_API_URL']!;
-    dotenv.env['AI_MODEL'] = _defaults['AI_MODEL']!;
+    try {
+      // Initialize dotenv with an empty map if it's not already initialized
+      if (dotenv.env.isEmpty) {
+        // Load from a non-existent file to initialize the dotenv instance without failing
+        try {
+          dotenv.load(fileName: 'non_existent_file.env');
+        } catch (_) {
+          // Ignore the error, we just need the dotenv instance to be initialized
+        }
+      }
+
+      // Add default values to the instance
+      _defaults.forEach((key, value) {
+        dotenv.env[key] = value;
+      });
+
+      debugPrint('Initialized environment with default values');
+    } catch (e) {
+      debugPrint('Error setting default values: $e');
+
+      // Create a new instance as a last resort
+      try {
+        final newDotEnv = DotEnv();
+        _defaults.forEach((key, value) {
+          newDotEnv.env[key] = value;
+        });
+        dotenv = newDotEnv;
+        debugPrint('Initialized environment with a new instance');
+      } catch (e) {
+        debugPrint('Failed to initialize environment: $e');
+      }
+    }
   }
 
   /// Get the Azure API key

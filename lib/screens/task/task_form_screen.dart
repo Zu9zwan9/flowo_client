@@ -495,13 +495,71 @@ class _TaskFormScreenState extends State<TaskFormScreen>
 
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing * 2),
 
-                // Save Button
+                // Save Button with Dropdown
                 Center(
                   child: ScaleTransition(
                     scale: _buttonScaleAnimation,
-                    child: form.primaryButton(
-                      text: 'Save Task',
-                      onPressed: () => _saveTaskWithAnimation(context),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: CupertinoTheme.of(context).primaryColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CupertinoButton(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'Save',
+                              style: TextStyle(color: CupertinoColors.white),
+                            ),
+                            onPressed: () {
+                              _saveTaskWithAnimation(context);
+                            },
+                          ),
+                          Container(
+                            width: 1,
+                            color: CupertinoColors.white.withOpacity(0.5),
+                          ),
+                          CupertinoButton(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Icon(
+                              CupertinoIcons.plus,
+                              size: 20,
+                              color: CupertinoColors.white,
+                            ),
+                            onPressed: () {
+                              showCupertinoModalPopup(
+                                context: context,
+                                builder: (context) => CupertinoActionSheet(
+                                  title: const Text('Save Options'),
+                                  actions: [
+                                    CupertinoActionSheetAction(
+                                      child: const Text('Save Task'),
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        _saveTaskWithAnimation(context);
+                                      },
+                                    ),
+                                    CupertinoActionSheetAction(
+                                      child: const Text('Save and Schedule'),
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                        // Add scheduling logic here
+                                        _saveTaskWithAnimation(context);
+                                      },
+                                    ),
+                                  ],
+                                  cancelButton: CupertinoActionSheetAction(
+                                    child: const Text('Cancel'),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
