@@ -736,9 +736,27 @@ class Scheduler {
       id: notificationKey,
       title: task.title,
       body:
-          task.secondNotification != 0
-              ? 'Starts in ${task.secondNotification} minutes'
-              : 'Starts now',
+      notificationTime != 0
+          ? (notificationTime == 1
+              ? 'Will start in 1 minute'
+              : notificationTime == 5
+                  ? 'Will start in 5 minutes'
+                  : notificationTime == 15
+                      ? 'Will start in 15 minutes'
+                      : notificationTime == 30
+                          ? 'Will start in 30 minutes'
+                          : notificationTime == 60
+                              ? 'Will start in 1 hour'
+                              : notificationTime == 120
+                                  ? 'Will start in 2 hours'
+                                  : notificationTime == 1440
+                                      ? 'Will start in 1 day'
+                                      : notificationTime == 2880
+                                          ? 'Will start in 2 days'
+                                          : notificationTime == 10080
+                                              ? 'Will start in 1 week'
+                                              : 'Will start in $notificationTime minutes')
+          : 'Will start now',
       year: notificationDate.year,
       month: notificationDate.month,
       day: notificationDate.day,
