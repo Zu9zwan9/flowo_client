@@ -78,7 +78,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       _secondNotification = widget.task!.secondNotification;
     } else {
       // Initialize with default values
-      final defaultDuration = 0; // 1 hour in milliseconds
+      final defaultDuration = 3600000; // 1 hour in milliseconds
 
       _formData = TaskFormData(
         selectedDateTime:
@@ -157,7 +157,12 @@ class _TaskFormScreenState extends State<TaskFormScreen>
 
                     // Switching to PERT method
                     // Create a range based on current estimated time
-                    final currentTime = _formData.estimatedTime;
+                    // Switching to PERT method
+                    // Create a range based on current estimated time
+                    final currentTime =
+                        _formData.estimatedTime > 0
+                            ? _formData.estimatedTime
+                            : 3600000;
                     _formData.optimisticTime = (currentTime * 0.8).toInt();
                     _formData.realisticTime = currentTime;
                     _formData.pessimisticTime = (currentTime * 1.2).toInt();
@@ -228,8 +233,11 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                     _userSettings.save();
 
                     // Switching to simple duration
-                    // Keep the current estimated time
-                    final currentEstimatedTime = _formData.estimatedTime;
+                    // Keep the current estimated time or use a default if it's zero
+                    final currentEstimatedTime =
+                        _formData.estimatedTime > 0
+                            ? _formData.estimatedTime
+                            : 3600000;
                     _formData.setSimpleDuration(currentEstimatedTime);
                   });
                 }
@@ -495,13 +503,122 @@ class _TaskFormScreenState extends State<TaskFormScreen>
 
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing * 2),
 
-                // Save Button
+                // Save Button with Dropdown
                 Center(
                   child: ScaleTransition(
                     scale: _buttonScaleAnimation,
-                    child: form.primaryButton(
-                      text: 'Save Task',
-                      onPressed: () => _saveTaskWithAnimation(context),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: CupertinoTheme.of(context).primaryColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CupertinoButton(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              'Save',
+                              style: TextStyle(color: CupertinoColors.white),
+                            ),
+                            onPressed: () {
+                              _saveTaskWithAnimation(context);
+                            },
+                          ),
+                          Container(
+                            width: 1,
+                            color: CupertinoColors.white.withOpacity(0.5),
+                          ),
+                          CupertinoButton(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Icon(
+                              CupertinoIcons.plus,
+                              size: 20,
+                              color: CupertinoColors.white,
+                            ),
+                            onPressed: () {
+                              showCupertinoModalPopup(
+                                context: context,
+                                builder:
+                                    (context) => CupertinoActionSheet(
+                                      title: const Text('Save Options'),
+                                      actions: [
+                                        CupertinoActionSheetAction(
+                                          child: const Text('Save Task'),
+                                          onPressed: () {
+                                            final validationError =
+                                                _validateForm();
+                                            if (validationError != null) {
+                                              Navigator.pop(
+                                                context,
+                                              ); // Close the modal
+                                              showCupertinoDialog(
+                                                context: context,
+                                                builder:
+                                                    (
+                                                      context,
+                                                    ) => CupertinoAlertDialog(
+                                                      title: const Text(
+                                                        'Validation Error',
+                                                      ),
+                                                      content: Text(
+                                                        validationError,
+                                                      ),
+                                                      actions: [
+                                                        CupertinoDialogAction(
+                                                          child: const Text(
+                                                            'OK',
+                                                          ),
+                                                          onPressed:
+                                                              () =>
+                                                                  Navigator.pop(
+                                                                    context,
+                                                                  ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                              );
+                                            } else {
+                                              _saveTaskWithAnimation(context);
+                                              if (Navigator.canPop(context)) {
+                                                Navigator.pop(context);
+                                              } else {
+                                                Navigator.pushReplacement(
+                                                  context,
+                                                  CupertinoPageRoute(
+                                                    builder:
+                                                        (_) => HomeScreen(
+                                                          initialIndex: 1,
+                                                        ),
+                                                  ),
+                                                );
+                                              }
+                                            }
+                                          },
+                                        ),
+                                        CupertinoActionSheetAction(
+                                          child: const Text(
+                                            'Save and Schedule',
+                                          ),
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            _saveTaskWithAnimation(context);
+                                            context
+                                                .read<TaskManagerCubit>()
+                                                .scheduleTasks();
+                                          },
+                                        ),
+                                      ],
+                                      cancelButton: CupertinoActionSheetAction(
+                                        child: const Text('Cancel'),
+                                        onPressed: () => Navigator.pop(context),
+                                      ),
+                                    ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -1214,27 +1331,62 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     } else {
       taskManagerCubit.editTask(
         task: widget.task!,
-        title: _titleController.text != widget.task!.title ? _titleController.text : null,
-        priority: _formData.priority != widget.task!.priority ? _formData.priority : null,
-        estimatedTime: _formData.estimatedTime != widget.task!.estimatedTime ? _formData.estimatedTime : null,
-        deadline: _formData.selectedDateTime.millisecondsSinceEpoch != widget.task!.deadline ? _formData.selectedDateTime.millisecondsSinceEpoch : null,
-        category: _selectedCategory != widget.task!.category.name ? Category(name: _selectedCategory) : null,
+        title:
+            _titleController.text != widget.task!.title
+                ? _titleController.text
+                : null,
+        priority:
+            _formData.priority != widget.task!.priority
+                ? _formData.priority
+                : null,
+        estimatedTime:
+            _formData.estimatedTime != widget.task!.estimatedTime
+                ? _formData.estimatedTime
+                : null,
+        deadline:
+            _formData.selectedDateTime.millisecondsSinceEpoch !=
+                    widget.task!.deadline
+                ? _formData.selectedDateTime.millisecondsSinceEpoch
+                : null,
+        category:
+            _selectedCategory != widget.task!.category.name
+                ? Category(name: _selectedCategory)
+                : null,
         parentTask: widget.task!.parentTask,
-        notes: _notesController.text != (widget.task!.notes ?? '') ? (_notesController.text.isNotEmpty ? _notesController.text : null) : null,
+        notes:
+            _notesController.text != (widget.task!.notes ?? '')
+                ? (_notesController.text.isNotEmpty
+                    ? _notesController.text
+                    : null)
+                : null,
         color: _formData.color != widget.task!.color ? _formData.color : null,
         order: widget.task!.order,
-        optimisticTime: _formData.optimisticTime != widget.task!.optimisticTime ? _formData.optimisticTime : null,
-        realisticTime: _formData.realisticTime != widget.task!.realisticTime ? _formData.realisticTime : null,
-        pessimisticTime: _formData.pessimisticTime != widget.task!.pessimisticTime ? _formData.pessimisticTime : null,
-        firstNotification: _firstNotification != widget.task!.firstNotification ? _firstNotification : null,
-        secondNotification: _secondNotification != widget.task!.secondNotification ? _secondNotification : null,
+        optimisticTime:
+            _formData.optimisticTime != widget.task!.optimisticTime
+                ? _formData.optimisticTime
+                : null,
+        realisticTime:
+            _formData.realisticTime != widget.task!.realisticTime
+                ? _formData.realisticTime
+                : null,
+        pessimisticTime:
+            _formData.pessimisticTime != widget.task!.pessimisticTime
+                ? _formData.pessimisticTime
+                : null,
+        firstNotification:
+            _firstNotification != widget.task!.firstNotification
+                ? _firstNotification
+                : null,
+        secondNotification:
+            _secondNotification != widget.task!.secondNotification
+                ? _secondNotification
+                : null,
       );
     }
 
     logInfo(
       'Task ${widget.task == null ? "Created" : "Updated"}: ${_titleController.text}',
     );
-
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {

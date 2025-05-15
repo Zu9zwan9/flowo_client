@@ -14,6 +14,10 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+
+    <!-- Required for camera access -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
     <application
             android:label="Flowo"
             android:name="${applicationName}"

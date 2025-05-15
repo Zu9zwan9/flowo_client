@@ -3,13 +3,12 @@ import 'dart:io';
 import 'package:flowo_client/models/user_profile.dart';
 import 'package:flowo_client/screens/analytics/analytics_screen.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
+import 'package:flowo_client/services/profile/profile_manager.dart';
 import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -28,6 +27,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late Box<UserProfile> _userProfilesBox;
   UserProfile? _currentProfile;
 
+  /// Profile manager for handling profile operations
+  final ProfileManager _profileManager = ProfileManager();
+
   @override
   void initState() {
     super.initState();
@@ -36,8 +38,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserProfile() async {
     try {
+      // Initialize the profile manager
+      await _profileManager.initialize();
+
+      // Get the current profile from the profile manager
+      final profile = _profileManager.currentProfile;
+
+      // Keep a reference to the user profiles box for other operations
       _userProfilesBox = await Hive.openBox<UserProfile>('user_profiles');
-      final profile = _userProfilesBox.get('current');
 
       if (profile != null) {
         setState(() {
@@ -72,34 +80,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isUploading = true);
 
     try {
-      final pickedFile = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-      );
+      // Initialize the profile manager if needed
+      if (!_profileManager.hasProfile) {
+        await _profileManager.initialize();
+      }
 
-      if (pickedFile != null) {
-        final appDir = await getApplicationDocumentsDirectory();
-        final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final savedImage = File('${appDir.path}/$fileName');
+      // Use the profile manager to change the avatar from gallery
+      final avatarPath = await _profileManager.changeAvatarFromGallery();
 
-        await File(pickedFile.path).copy(savedImage.path);
-
+      if (avatarPath != null) {
         setState(() {
-          _avatarImage = savedImage;
+          _avatarImage = File(avatarPath);
           _isUploading = false;
         });
 
-        if (_currentProfile != null) {
-          _currentProfile!.avatarPath = savedImage.path;
-          await _userProfilesBox.put('current', _currentProfile!);
-        }
+        // Reload the user profile to get the updated avatar
+        await _loadUserProfile();
 
-        logInfo('Avatar saved to: ${savedImage.path}');
+        logInfo('Avatar changed successfully');
       } else {
         setState(() => _isUploading = false);
+
+        // Check if permission was denied and show dialog if needed
+        if (mounted) {
+          await _profileManager.showCameraPermissionDeniedDialog(context);
+        }
       }
     } catch (e) {
       setState(() => _isUploading = false);
       logError('Error changing avatar: $e');
+
+      // Show error dialog
+      if (mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder:
+              (context) => CupertinoAlertDialog(
+                title: const Text('Error'),
+                content: Text('Failed to change avatar: $e'),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+        );
+      }
     }
   }
 
@@ -107,20 +134,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isUploading = true);
 
     try {
+      // Initialize the profile manager if needed
+      if (!_profileManager.hasProfile) {
+        await _profileManager.initialize();
+      }
+
+      // Use the profile manager to remove the avatar
+      await _profileManager.removeAvatar();
+
       setState(() {
         _avatarImage = null;
         _isUploading = false;
       });
 
-      if (_currentProfile != null) {
-        _currentProfile!.avatarPath = null;
-        await _userProfilesBox.put('current', _currentProfile!);
-      }
+      // Reload the user profile to get the updated avatar
+      await _loadUserProfile();
 
       logInfo('Avatar generated from initials');
     } catch (e) {
       setState(() => _isUploading = false);
       logError('Error generating avatar: $e');
+
+      // Show error dialog
+      if (mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder:
+              (context) => CupertinoAlertDialog(
+                title: const Text('Error'),
+                content: Text('Failed to generate avatar: $e'),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('OK'),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+        );
+      }
     }
   }
 
@@ -161,19 +212,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() => _isUpdating = true);
 
     try {
-      if (_currentProfile == null) {
-        _currentProfile = UserProfile(
-          name: _nameController.text,
-          email: _emailController.text,
-          avatarPath: _avatarImage?.path,
-        );
-      } else {
-        _currentProfile!.name = _nameController.text;
-        _currentProfile!.email = _emailController.text;
-        _currentProfile!.avatarPath = _avatarImage?.path;
+      // Initialize the profile manager if needed
+      if (!_profileManager.hasProfile) {
+        await _profileManager.initialize();
       }
 
-      await _userProfilesBox.put('current', _currentProfile!);
+      // Use the profile manager to update the profile
+      await _profileManager.updateProfile(
+        name: _nameController.text,
+        email: _emailController.text,
+        avatarPath: _avatarImage?.path,
+      );
 
       setState(() => _isUpdating = false);
 
@@ -251,18 +300,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (confirm == true && mounted) {
       try {
-        if (_currentProfile?.avatarPath != null) {
-          final avatarFile = File(_currentProfile!.avatarPath!);
-          if (avatarFile.existsSync()) {
-            await avatarFile.delete();
-            logInfo('Deleted avatar file: ${_currentProfile!.avatarPath}');
-          }
+        // Initialize the profile manager if needed
+        if (!_profileManager.hasProfile) {
+          await _profileManager.initialize();
         }
 
-        await _userProfilesBox.delete('current');
-        _currentProfile = null;
+        // Use the profile manager to delete the account
+        await _profileManager.deleteAccount();
 
+        // Update UI state
         setState(() {
+          _currentProfile = null;
           _nameController.clear();
           _emailController.clear();
           _avatarImage = null;
@@ -1151,39 +1199,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     setState(() => _isUploading = true);
                     try {
-                      final pickedFile = await ImagePicker().pickImage(
-                        source: ImageSource.camera,
-                        preferredCameraDevice: CameraDevice.front,
-                      );
+                      // Initialize the profile manager if needed
+                      if (!_profileManager.hasProfile) {
+                        await _profileManager.initialize();
+                      }
 
-                      if (pickedFile != null) {
-                        final appDir = await getApplicationDocumentsDirectory();
-                        final fileName =
-                            'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-                        final savedImage = File('${appDir.path}/$fileName');
+                      // Use the profile manager to take a photo with the camera
+                      final avatarPath =
+                          await _profileManager.changeAvatarFromCamera();
 
-                        await File(pickedFile.path).copy(savedImage.path);
-
+                      if (avatarPath != null) {
                         setState(() {
-                          _avatarImage = savedImage;
+                          _avatarImage = File(avatarPath);
                           _isUploading = false;
                         });
 
-                        if (_currentProfile != null) {
-                          _currentProfile!.avatarPath = savedImage.path;
-                          await _userProfilesBox.put(
-                            'current',
-                            _currentProfile!,
-                          );
-                        }
+                        // Reload the user profile to get the updated avatar
+                        await _loadUserProfile();
 
-                        logInfo('Avatar saved to: ${savedImage.path}');
+                        logInfo('Avatar changed successfully');
                       } else {
                         setState(() => _isUploading = false);
+
+                        // Check if permission was denied and show dialog if needed
+                        if (mounted) {
+                          await _profileManager
+                              .showCameraPermissionDeniedDialog(context);
+                        }
                       }
                     } catch (e) {
                       setState(() => _isUploading = false);
                       logError('Error taking photo: $e');
+
+                      // Show error dialog
+                      if (mounted) {
+                        showCupertinoDialog(
+                          context: context,
+                          builder:
+                              (context) => CupertinoAlertDialog(
+                                title: const Text('Error'),
+                                content: Text('Failed to take photo: $e'),
+                                actions: [
+                                  CupertinoDialogAction(
+                                    child: const Text('OK'),
+                                    onPressed:
+                                        () => Navigator.of(context).pop(),
+                                  ),
+                                ],
+                              ),
+                        );
+                      }
                     }
                   },
                 ),

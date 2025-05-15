@@ -24,7 +24,7 @@ android {
 
     defaultConfig {
         applicationId = "com.u7wells.flowo_client"
-        minSdk = flutter.minSdkVersion
+        minSdk = 21 // Explicitly set to 21 as required by camera plugins
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

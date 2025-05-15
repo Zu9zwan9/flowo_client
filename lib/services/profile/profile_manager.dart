@@ -1,15 +1,18 @@
 import 'dart:io';
 
 import 'package:flowo_client/models/user_profile.dart';
+import 'package:flowo_client/services/media/camera_service.dart';
 import 'package:flowo_client/utils/logger.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:hive/hive.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
 
 /// A service class that manages user profile data and operations
 class ProfileManager {
   late Box<UserProfile> _userProfilesBox;
   UserProfile? _currentProfile;
+
+  /// Camera service for handling camera operations
+  final CameraService _cameraService = CameraService();
 
   /// Initialize the profile manager
   Future<void> initialize() async {
@@ -62,68 +65,70 @@ class ProfileManager {
   }
 
   /// Change the avatar by selecting an image from the gallery
+  ///
+  /// Returns the path to the saved image, or null if the operation was cancelled or failed
   Future<String?> changeAvatarFromGallery() async {
     try {
-      final pickedFile = await ImagePicker().pickImage(
-        source: ImageSource.gallery,
-      );
+      // Use the camera service to pick an image from the gallery
+      final result = await _cameraService.pickImageFromGallery();
 
-      if (pickedFile != null) {
-        // Get the app's documents directory
-        final appDir = await getApplicationDocumentsDirectory();
-        final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final savedImage = File('${appDir.path}/$fileName');
-
-        // Copy the picked image to the app's documents directory
-        await File(pickedFile.path).copy(savedImage.path);
-
+      if (result.success && result.filePath != null) {
         // Update the avatar path in the user profile
         if (_currentProfile != null) {
-          _currentProfile!.avatarPath = savedImage.path;
+          _currentProfile!.avatarPath = result.filePath;
           await _userProfilesBox.put('current', _currentProfile!);
         }
 
-        logInfo('Avatar saved to: ${savedImage.path}');
-        return savedImage.path;
+        logInfo('Avatar saved to: ${result.filePath}');
+        return result.filePath;
+      } else if (result.errorCode == 'permission_denied') {
+        logWarning('Gallery permission denied: ${result.errorMessage}');
+      } else if (result.errorCode != 'user_cancelled') {
+        logError('Error picking image: ${result.errorMessage}');
       }
+
       return null;
     } catch (e) {
       logError('Error changing avatar: $e');
-      rethrow;
+      return null;
     }
   }
 
   /// Change the avatar by taking a photo with the camera
+  ///
+  /// Returns the path to the saved image, or null if the operation was cancelled or failed
   Future<String?> changeAvatarFromCamera() async {
     try {
-      final pickedFile = await ImagePicker().pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.front,
-      );
+      // Use the camera service to take a photo
+      final result = await _cameraService.takePhoto();
 
-      if (pickedFile != null) {
-        // Get the app's documents directory
-        final appDir = await getApplicationDocumentsDirectory();
-        final fileName = 'avatar_${DateTime.now().millisecondsSinceEpoch}.jpg';
-        final savedImage = File('${appDir.path}/$fileName');
-
-        // Copy the picked image to the app's documents directory
-        await File(pickedFile.path).copy(savedImage.path);
-
+      if (result.success && result.filePath != null) {
         // Update the avatar path in the user profile
         if (_currentProfile != null) {
-          _currentProfile!.avatarPath = savedImage.path;
+          _currentProfile!.avatarPath = result.filePath;
           await _userProfilesBox.put('current', _currentProfile!);
         }
 
-        logInfo('Avatar saved to: ${savedImage.path}');
-        return savedImage.path;
+        logInfo('Avatar saved to: ${result.filePath}');
+        return result.filePath;
+      } else if (result.errorCode == 'permission_denied') {
+        logWarning('Camera permission denied: ${result.errorMessage}');
+      } else if (result.errorCode != 'user_cancelled') {
+        logError('Error taking photo: ${result.errorMessage}');
       }
+
       return null;
     } catch (e) {
       logError('Error taking photo: $e');
-      rethrow;
+      return null;
     }
+  }
+
+  /// Show camera permission denied dialog
+  ///
+  /// This is a convenience method that delegates to the camera service
+  Future<void> showCameraPermissionDeniedDialog(BuildContext context) async {
+    await _cameraService.showCameraPermissionDeniedDialog(context);
   }
 
   /// Remove the avatar and use initials instead

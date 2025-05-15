@@ -35,6 +35,8 @@
 	<string>We need to send you notifications about your tasks and reminders.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>This app requires microphone access for audio features in media playback and recording.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Flowo needs camera access to let you take photos for your profile picture. This helps personalize your account and makes it easier for you to identify your profile.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

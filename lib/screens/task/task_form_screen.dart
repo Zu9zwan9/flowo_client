@@ -1,5 +1,4 @@
 import 'package:flowo_client/screens/home_screen.dart';
-import 'package:flowo_client/screens/task/task_list_screen.dart';
 import 'package:flowo_client/screens/widgets/cupertino_task_form.dart';
 import 'package:flowo_client/utils/formatter/date_time_formatter.dart';
 import 'package:flutter/cupertino.dart';
@@ -79,7 +78,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       _secondNotification = widget.task!.secondNotification;
     } else {
       // Initialize with default values
-      final defaultDuration = 0; // 1 hour in milliseconds
+      final defaultDuration = 3600000; // 1 hour in milliseconds
 
       _formData = TaskFormData(
         selectedDateTime:
@@ -158,7 +157,12 @@ class _TaskFormScreenState extends State<TaskFormScreen>
 
                     // Switching to PERT method
                     // Create a range based on current estimated time
-                    final currentTime = _formData.estimatedTime;
+                    // Switching to PERT method
+                    // Create a range based on current estimated time
+                    final currentTime =
+                        _formData.estimatedTime > 0
+                            ? _formData.estimatedTime
+                            : 3600000;
                     _formData.optimisticTime = (currentTime * 0.8).toInt();
                     _formData.realisticTime = currentTime;
                     _formData.pessimisticTime = (currentTime * 1.2).toInt();
@@ -229,8 +233,11 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                     _userSettings.save();
 
                     // Switching to simple duration
-                    // Keep the current estimated time
-                    final currentEstimatedTime = _formData.estimatedTime;
+                    // Keep the current estimated time or use a default if it's zero
+                    final currentEstimatedTime =
+                        _formData.estimatedTime > 0
+                            ? _formData.estimatedTime
+                            : 3600000;
                     _formData.setSimpleDuration(currentEstimatedTime);
                   });
                 }
