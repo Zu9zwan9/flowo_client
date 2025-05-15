@@ -752,6 +752,17 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (!isFreeTimeTask && (task.order != null || task.parentTask?.title != null)) ...[
+                      Text(
+                        '${task.parentTask?.title ?? ""}${task.order != null ? ": step ${task.order}" : ""}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color?.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                    ],
                     Row(
                       children: [
                         if (isFreeTimeTask) ...[
@@ -769,15 +780,11 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                           child: Text(
                             isFreeTimeTask
                                 ? freeTimeInfo!['label']
-                                : getHabitName(scheduledTask) ??
-                                    '(${task.parentTask?.title} ${task.order}) ${task.title}',
+                                : getHabitName(scheduledTask) ?? task.title,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color:
-                                  CupertinoTheme.of(
-                                    context,
-                                  ).textTheme.textStyle.color,
+                              color: CupertinoTheme.of(context).textTheme.textStyle.color,
                             ),
                             overflow: TextOverflow.visible,
                           ),

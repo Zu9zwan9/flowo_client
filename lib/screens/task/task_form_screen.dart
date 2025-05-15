@@ -41,10 +41,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
   // Hive box for storing categories
   late final Box<List<dynamic>> _categoriesBox;
 
-  // Animation for button feedback
-  late final AnimationController _animationController;
-  late final Animation<double> _buttonScaleAnimation;
-
   late UserSettings _userSettings;
 
   // Available task options
@@ -102,14 +98,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       }
     }
 
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
     _loadCategories();
   }
 
@@ -127,7 +115,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
   void dispose() {
     _titleController.dispose();
     _notesController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -505,120 +492,97 @@ class _TaskFormScreenState extends State<TaskFormScreen>
 
                 // Save Button with Dropdown
                 Center(
-                  child: ScaleTransition(
-                    scale: _buttonScaleAnimation,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: CupertinoTheme.of(context).primaryColor,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CupertinoButton(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'Save',
-                              style: TextStyle(color: CupertinoColors.white),
-                            ),
-                            onPressed: () {
-                              _saveTaskWithAnimation(context);
-                            },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: CupertinoTheme.of(context).primaryColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CupertinoButton(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'Save',
+                            style: TextStyle(color: CupertinoColors.white),
                           ),
-                          Container(
-                            width: 1,
-                            color: CupertinoColors.white.withOpacity(0.5),
+                          onPressed: () {
+                            _saveTask(context, false);
+                          },
+                        ),
+                        Container(
+                          width: 1,
+                          color: CupertinoColors.white.withOpacity(0.5),
+                        ),
+                        CupertinoButton(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Icon(
+                            CupertinoIcons.plus,
+                            size: 20,
+                            color: CupertinoColors.white,
                           ),
-                          CupertinoButton(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Icon(
-                              CupertinoIcons.plus,
-                              size: 20,
-                              color: CupertinoColors.white,
-                            ),
-                            onPressed: () {
-                              showCupertinoModalPopup(
-                                context: context,
-                                builder:
-                                    (context) => CupertinoActionSheet(
-                                      title: const Text('Save Options'),
-                                      actions: [
-                                        CupertinoActionSheetAction(
-                                          child: const Text('Save Task'),
-                                          onPressed: () {
-                                            final validationError =
-                                                _validateForm();
-                                            if (validationError != null) {
-                                              Navigator.pop(
-                                                context,
-                                              ); // Close the modal
-                                              showCupertinoDialog(
-                                                context: context,
-                                                builder:
-                                                    (
-                                                      context,
-                                                    ) => CupertinoAlertDialog(
-                                                      title: const Text(
-                                                        'Validation Error',
-                                                      ),
-                                                      content: Text(
-                                                        validationError,
-                                                      ),
-                                                      actions: [
-                                                        CupertinoDialogAction(
-                                                          child: const Text(
-                                                            'OK',
-                                                          ),
-                                                          onPressed:
-                                                              () =>
-                                                                  Navigator.pop(
-                                                                    context,
-                                                                  ),
-                                                        ),
-                                                      ],
+                          onPressed: () {
+                            showCupertinoModalPopup(
+                              context: context,
+                              builder:
+                                  (context) => CupertinoActionSheet(
+                                    title: const Text('Save Options'),
+                                    actions: [
+                                      CupertinoActionSheetAction(
+                                        child: const Text('Save Task'),
+                                        onPressed: () {
+                                          final validationError =
+                                              _validateForm();
+                                          if (validationError != null) {
+                                            Navigator.pop(
+                                              context,
+                                            ); // Close the modal
+                                            showCupertinoDialog(
+                                              context: context,
+                                              builder:
+                                                  (
+                                                    context,
+                                                  ) => CupertinoAlertDialog(
+                                                    title: const Text(
+                                                      'Validation Error',
                                                     ),
-                                              );
-                                            } else {
-                                              _saveTaskWithAnimation(context);
-                                              if (Navigator.canPop(context)) {
-                                                Navigator.pop(context);
-                                              } else {
-                                                Navigator.pushReplacement(
-                                                  context,
-                                                  CupertinoPageRoute(
-                                                    builder:
-                                                        (_) => HomeScreen(
-                                                          initialIndex: 1,
-                                                        ),
+                                                    content: Text(
+                                                      validationError,
+                                                    ),
+                                                    actions: [
+                                                      CupertinoDialogAction(
+                                                        child: const Text('OK'),
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              context,
+                                                            ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                );
-                                              }
-                                            }
-                                          },
-                                        ),
-                                        CupertinoActionSheetAction(
-                                          child: const Text(
-                                            'Save and Schedule',
-                                          ),
-                                          onPressed: () {
+                                            );
+                                          } else {
                                             Navigator.pop(context);
-                                            _saveTaskWithAnimation(context);
-                                            context
-                                                .read<TaskManagerCubit>()
-                                                .scheduleTasks();
-                                          },
-                                        ),
-                                      ],
-                                      cancelButton: CupertinoActionSheetAction(
-                                        child: const Text('Cancel'),
-                                        onPressed: () => Navigator.pop(context),
+                                            _saveTask(context, false);
+                                          }
+                                        },
                                       ),
+                                      CupertinoActionSheetAction(
+                                        child: const Text('Save and Schedule'),
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          _saveTask(context, true);
+                                        },
+                                      ),
+                                    ],
+                                    cancelButton: CupertinoActionSheetAction(
+                                      child: const Text('Cancel'),
+                                      onPressed: () => Navigator.pop(context),
                                     ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                                  ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -773,14 +737,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     } else {
       return CupertinoColors.systemRed.resolveFrom(context);
     }
-  }
-
-  void _saveTaskWithAnimation(BuildContext context) {
-    // Play button animation
-    _animationController.forward().then((_) => _animationController.reverse());
-
-    // Execute save operation
-    _saveTask(context);
   }
 
   Future<void> _showDateTimePicker(BuildContext context) async {
@@ -1290,7 +1246,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     return null;
   }
 
-  void _saveTask(BuildContext context) {
+  void _saveTask(BuildContext context, bool saveAndSchedule) {
     final validationError = _validateForm();
 
     if (validationError != null) {
@@ -1387,12 +1343,23 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     logInfo(
       'Task ${widget.task == null ? "Created" : "Updated"}: ${_titleController.text}',
     );
+
+    if (saveAndSchedule) {
+      taskManagerCubit.scheduleTasks();
+    }
+
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
       Navigator.pushReplacement(
         context,
-        CupertinoPageRoute(builder: (_) => const HomeScreen()),
+        CupertinoPageRoute(
+          builder:
+              (_) =>
+                  saveAndSchedule
+                      ? const HomeScreen()
+                      : const HomeScreen(initialIndex: 1),
+        ),
       );
     }
   }
