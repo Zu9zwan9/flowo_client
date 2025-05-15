@@ -30,7 +30,7 @@ migrate_working_dir/
 .pub-cache/
 .pub/
 /build/
-
+firebase.json
 # iOS specific
 
 /ios/Flutter/flutter_export_environment.sh
@@ -55,3 +55,5 @@ app.*.map.json
 .env.test
 .env.production
 *.env
+/docs/
+/docs/
