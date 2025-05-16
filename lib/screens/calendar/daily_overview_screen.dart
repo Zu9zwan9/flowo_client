@@ -1,9 +1,11 @@
-import 'package:flowo_client/utils/logger.dart';
+import 'package:easy_refresh/easy_refresh.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
+import 'package:syncfusion_flutter_calendar/calendar.dart';
 
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../blocs/tasks_controller/tasks_controller_cubit.dart';
@@ -13,7 +15,8 @@ import '../../models/task.dart';
 import '../../models/user_profile.dart';
 import '../../models/user_settings.dart';
 import '../../utils/formatter/date_time_formatter.dart';
-import 'calendar_screen.dart';
+import '../widgets/calendar_widgets.dart';
+import '../widgets/task_timer_controls.dart';
 
 class DailyOverviewScreen extends StatefulWidget {
   const DailyOverviewScreen({super.key});
@@ -22,30 +25,83 @@ class DailyOverviewScreen extends StatefulWidget {
   State<DailyOverviewScreen> createState() => _DailyOverviewScreenState();
 }
 
-class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
-  late DateTime _today;
+class _DailyOverviewScreenState extends State<DailyOverviewScreen>
+    with TickerProviderStateMixin {
+  late DateTime _selectedDate;
   late UserSettings _userSettings;
   String _greeting = '';
   String _userName = '';
+  bool _isCalendarVisible = false;
+  late AnimationController _calendarAnimationController;
+  late Animation<Offset> _slideAnimation;
+  late CalendarController _calendarController;
+  late ScrollController _scrollController;
+  late AnimationController _lottieController;
+  final double _calendarHeight = 350.0;
+  bool isAnimationActive = false;
 
   @override
   void initState() {
     super.initState();
     _userSettings = context.read<TaskManagerCubit>().taskManager.userSettings;
-    _today = DateTime.now();
+    _selectedDate = DateTime.now();
+
+    // Initialize animation controller
+    _calendarAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, -1),
+      end: const Offset(0, 0),
+    ).animate(
+      CurvedAnimation(
+        parent: _calendarAnimationController,
+        curve: Curves.easeOutQuart,
+      ),
+    );
+
+    // Initialize calendar controller
+    _calendarController = CalendarController();
+
+    _lottieController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _scrollController = ScrollController();
+
+    // Set initial date in CalendarCubit
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<CalendarCubit>().selectDate(_selectedDate);
+        _calendarController
+          ..selectedDate = _selectedDate
+          ..displayDate = _selectedDate;
+      }
+    });
+
     _updateGreeting();
     _loadUserProfile();
   }
 
+  @override
+  void dispose() {
+    _calendarAnimationController.dispose();
+    _calendarController.dispose();
+    _lottieController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _updateGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 12) {
-      _greeting = 'Good morning';
-    } else if (hour < 17) {
-      _greeting = 'Good afternoon';
-    } else {
-      _greeting = 'Good evening';
-    }
+    _greeting =
+        hour < 12
+            ? 'Good morning'
+            : hour < 17
+            ? 'Good afternoon'
+            : 'Good evening';
   }
 
   void _loadUserProfile() {
@@ -63,40 +119,303 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     });
   }
 
-  void _navigateToCalendar() {
-    Navigator.push(
-      context,
-      CupertinoPageRoute(builder: (context) => const CalendarScreen()),
-    );
+  void _navigateToPreviousDay() {
+    _scrollController.jumpTo(0.0);
+    setState(() {
+      _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+    });
+    context.read<CalendarCubit>().selectDate(_selectedDate);
+    _calendarController
+      ..selectedDate = _selectedDate
+      ..displayDate = _selectedDate;
+  }
+
+  void _navigateToNextDay() {
+    _scrollController.jumpTo(0.0);
+    setState(() {
+      _selectedDate = _selectedDate.add(const Duration(days: 1));
+    });
+    context.read<CalendarCubit>().selectDate(_selectedDate);
+    _calendarController
+      ..selectedDate = _selectedDate
+      ..displayDate = _selectedDate;
+  }
+
+  void hideCalendar() async {
+    if (_isCalendarVisible) {
+      if (_scrollController.hasClients) {
+        await _scrollController.animateTo(
+          350.0,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+      }
+      if (!mounted) {
+        return; // Check if widget is still mounted after async operation
+      }
+      setState(() {
+        _isCalendarVisible = false;
+        _scrollController.jumpTo(0.0);
+        _calendarAnimationController.reset();
+        _lottieController.reset();
+        isAnimationActive = false;
+      });
+    }
+  }
+
+  void _handlePull(double offset) {
+    if (!_isCalendarVisible) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return; // Check if widget is still mounted
+        if (offset > 80 && !isAnimationActive) {
+          _lottieController.forward();
+          isAnimationActive = true;
+        } else if (offset <= 20 && !_lottieController.isAnimating) {
+          _lottieController.reset();
+          isAnimationActive = false;
+        }
+      });
+    }
+  }
+
+  Future<void> _showCalendar() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // Show calendar and refresh tasks data
+    if (mounted && !_isCalendarVisible) {
+      setState(() {
+        _isCalendarVisible = true;
+        _calendarAnimationController.forward();
+        _lottieController.forward().then((_) {
+          if (mounted) {
+            // Check if widget is still mounted
+            _lottieController.reset();
+            isAnimationActive = false;
+          }
+        });
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = CupertinoTheme.of(context);
     return CupertinoPageScaffold(
       child: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(child: _buildHeader()),
-            SliverToBoxAdapter(
-              child: _buildTimeSection(
-                'Morning',
-                TimeOfDay(hour: 5, minute: 0),
-                TimeOfDay(hour: 12, minute: 0),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: _buildTimeSection(
-                'Afternoon',
-                TimeOfDay(hour: 12, minute: 0),
-                TimeOfDay(hour: 17, minute: 0),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: _buildTimeSection(
-                'Evening',
-                TimeOfDay(hour: 17, minute: 0),
-                TimeOfDay(hour: 23, minute: 59),
+        child: Column(
+          children: [
+            _buildHeader(),
+            Expanded(
+              child: EasyRefresh(
+                spring: const SpringDescription(
+                  mass: 1.0,
+                  stiffness: 200.0,
+                  damping: 20.0,
+                ),
+                header: BuilderHeader(
+                  triggerOffset: 80.0,
+                  clamping: false,
+                  position: IndicatorPosition.behind,
+                  builder: (context, state) {
+                    _handlePull(state.offset);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      decoration: BoxDecoration(
+                        color:
+                            CupertinoTheme.of(context).scaffoldBackgroundColor,
+                      ),
+                    );
+                  },
+                ),
+                onRefresh: _showCalendar,
+                child: CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: SizedBox(height: _isCalendarVisible ? 7 : 0),
+                    ),
+                    _isCalendarVisible
+                        ? SliverToBoxAdapter(
+                          child: SlideTransition(
+                            position: _slideAnimation,
+                            child: Column(
+                              children: [
+                                Container(
+                                  height: _calendarHeight,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  clipBehavior: Clip.hardEdge,
+                                  decoration: BoxDecoration(
+                                    color: textTheme.scaffoldBackgroundColor,
+                                    borderRadius: BorderRadius.circular(5),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: CupertinoColors.black
+                                            .withOpacity(0.1),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: SfCalendar(
+                                    view: CalendarView.month,
+                                    controller: _calendarController,
+                                    dataSource: CalendarTaskDataSource(
+                                      context
+                                          .read<TaskManagerCubit>()
+                                          .getScheduledTasks(),
+                                    ),
+                                    initialSelectedDate: _selectedDate,
+                                    initialDisplayDate: _selectedDate,
+                                    onSelectionChanged: (details) {
+                                      if (details.date != null && mounted) {
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                              setState(() {
+                                                _selectedDate = details.date!;
+                                              });
+                                              context
+                                                  .read<CalendarCubit>()
+                                                  .selectDate(_selectedDate);
+                                            });
+                                      }
+                                    },
+                                    showNavigationArrow: true,
+                                    allowViewNavigation: false,
+                                    headerStyle: CalendarHeaderStyle(
+                                      textStyle: TextStyle(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                            textTheme.textTheme.textStyle.color,
+                                      ),
+                                    ),
+                                    monthViewSettings: MonthViewSettings(
+                                      appointmentDisplayMode:
+                                          MonthAppointmentDisplayMode.indicator,
+                                      showAgenda: false,
+                                      monthCellStyle: MonthCellStyle(
+                                        textStyle: TextStyle(
+                                          color:
+                                              textTheme
+                                                  .textTheme
+                                                  .textStyle
+                                                  .color,
+                                          fontSize: 14,
+                                        ),
+                                        todayTextStyle: TextStyle(
+                                          color: CupertinoColors.activeBlue,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        backgroundColor:
+                                            CupertinoColors.transparent,
+                                        todayBackgroundColor: CupertinoColors
+                                            .activeBlue
+                                            .withOpacity(0.1),
+                                      ),
+                                    ),
+                                    todayHighlightColor:
+                                        CupertinoColors.activeBlue,
+                                    selectionDecoration: BoxDecoration(
+                                      shape: BoxShape.rectangle,
+                                      color: CupertinoColors.activeBlue
+                                          .withOpacity(0.2),
+                                      border: Border.all(
+                                        color: CupertinoColors.activeBlue,
+                                        width: 1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                ),
+                                CupertinoButton(
+                                  padding: const EdgeInsets.all(4),
+                                  onPressed: hideCalendar,
+                                  child: const Icon(
+                                    CupertinoIcons.chevron_up,
+                                    color: CupertinoColors.inactiveGray,
+                                    size: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        : SliverToBoxAdapter(child: const SizedBox()),
+
+                    !_isCalendarVisible
+                        ? SliverToBoxAdapter(
+                          child: Transform.translate(
+                            offset: Offset(
+                              0,
+                              _scrollController.hasClients
+                                  ? _scrollController.offset - 55
+                                  : -55,
+                            ),
+                            child: Container(
+                              height: 36,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color:
+                                    CupertinoTheme.of(
+                                      context,
+                                    ).scaffoldBackgroundColor,
+                              ),
+                              child: SizedBox(
+                                height: 36,
+                                width: 36,
+                                child: ColorFiltered(
+                                  colorFilter: const ColorFilter.mode(
+                                    CupertinoColors.activeBlue,
+                                    BlendMode.srcIn,
+                                  ),
+                                  child: Lottie.asset(
+                                    'lib/assets/lottifile/calendarAnimation.json',
+                                    frameRate: FrameRate.composition,
+                                    controller: _lottieController,
+                                    onLoaded: (composition) {
+                                      _lottieController.duration =
+                                          composition.duration;
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        )
+                        : SliverToBoxAdapter(child: const SizedBox(height: 3)),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Night',
+                        const TimeOfDay(hour: 0, minute: 0),
+                        const TimeOfDay(hour: 5, minute: 0),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Morning',
+                        const TimeOfDay(hour: 5, minute: 0),
+                        const TimeOfDay(hour: 12, minute: 0),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Afternoon',
+                        const TimeOfDay(hour: 12, minute: 0),
+                        const TimeOfDay(hour: 17, minute: 0),
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildTimeSection(
+                        'Evening',
+                        const TimeOfDay(hour: 17, minute: 0),
+                        const TimeOfDay(hour: 23, minute: 59),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -106,57 +425,60 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }
 
   Widget _buildHeader() {
-    final formattedDate = DateFormat('EEEE, MMMM d').format(_today);
+    final formattedDate = DateFormat('EEEE, MMMM d').format(_selectedDate);
     final textTheme = CupertinoTheme.of(context);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+      // Уменьшен верхний отступ
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            '$_greeting, $_userName',
+            style: TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: textTheme.textTheme.textStyle.color,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 15),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: _navigateToPreviousDay,
+                child: Icon(
+                  CupertinoIcons.chevron_left,
+                  color: textTheme.primaryColor,
+                  semanticLabel: 'Previous day',
+                ),
+              ),
               Expanded(
+                flex: 3,
                 child: Text(
-                  '$_greeting, $_userName',
+                  formattedDate,
                   style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                    fontSize: 18,
+                    color: textTheme.textTheme.tabLabelTextStyle.color,
                   ),
-                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  semanticsLabel: formattedDate,
                 ),
               ),
               CupertinoButton(
                 padding: EdgeInsets.zero,
-                onPressed: _navigateToCalendar,
+                onPressed: _navigateToNextDay,
                 child: Icon(
-                  CupertinoIcons.calendar,
-                  color: CupertinoTheme.of(context).primaryColor,
+                  CupertinoIcons.chevron_right,
+                  color: textTheme.primaryColor,
+                  semanticLabel: 'Next day',
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            formattedDate,
-            style: TextStyle(
-              fontSize: 18,
-              color:
-                  CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'For today, we have the following tasks:',
-            style: TextStyle(
-              fontSize: 16,
-              color:
-                  CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color,
-            ),
-          ),
-          const SizedBox(height: 20),
         ],
       ),
     );
@@ -198,32 +520,22 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }) {
     final startTimeMinutes = startTime.hour * 60 + startTime.minute;
     final endTimeMinutes = endTime.hour * 60 + endTime.minute;
-    List<ScheduledTask> filteredTasks;
 
-    if (filterByTaskStart) {
-      // Only include tasks that start within the given time range.
-      filteredTasks =
-          tasks.where((task) {
-            final taskStartMinutes =
-                task.startTime.hour * 60 + task.startTime.minute;
+    final filteredTasks =
+        tasks.where((task) {
+          final taskStartMinutes =
+              task.startTime.hour * 60 + task.startTime.minute;
+          final taskEndMinutes = task.endTime.hour * 60 + task.endTime.minute;
+          if (filterByTaskStart) {
             return taskStartMinutes >= startTimeMinutes &&
                 taskStartMinutes < endTimeMinutes;
-          }).toList();
-    } else {
-      // Include tasks based on overlapping time intervals.
-      filteredTasks =
-          tasks.where((task) {
-            final taskStartMinutes =
-                task.startTime.hour * 60 + task.startTime.minute;
-            final taskEndMinutes = task.endTime.hour * 60 + task.endTime.minute;
-            return (taskStartMinutes >= startTimeMinutes &&
-                    taskStartMinutes < endTimeMinutes) ||
-                (taskStartMinutes < startTimeMinutes &&
-                    taskEndMinutes > startTimeMinutes);
-          }).toList();
-    }
+          }
+          return (taskStartMinutes >= startTimeMinutes &&
+                  taskStartMinutes < endTimeMinutes) ||
+              (taskStartMinutes < startTimeMinutes &&
+                  taskEndMinutes > startTimeMinutes);
+        }).toList();
 
-    // Sort tasks by start time.
     filteredTasks.sort((a, b) {
       final aStart = a.startTime.hour * 60 + a.startTime.minute;
       final bStart = b.startTime.hour * 60 + b.startTime.minute;
@@ -260,12 +572,23 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
         children: [
           _buildSectionHeader(title),
           const SizedBox(height: 10),
-          Text(
-            'Error loading tasks: $error',
-            style: TextStyle(
-              color: CupertinoColors.destructiveRed,
-              fontSize: 14,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Error loading tasks: $error',
+                  style: TextStyle(
+                    color: CupertinoColors.destructiveRed,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                child: const Text('Retry'),
+                onPressed: () => setState(() {}), // Trigger rebuild
+              ),
+            ],
           ),
         ],
       ),
@@ -323,7 +646,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     );
   }
 
-  // Helper method to get icon and label for freetime task types
   Map<String, dynamic> _getFreeTimeTaskInfo(ScheduledTaskType type) {
     switch (type) {
       case ScheduledTaskType.sleep:
@@ -368,7 +690,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
     );
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
 
-    // Check if this is a freetime task
     final isFreeTimeTask = [
       ScheduledTaskType.sleep,
       ScheduledTaskType.mealBreak,
@@ -376,7 +697,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
       ScheduledTaskType.freeTime,
     ].contains(scheduledTask.type);
 
-    // Get freetime task info if applicable
     final freeTimeInfo =
         isFreeTimeTask ? _getFreeTimeTaskInfo(scheduledTask.type) : null;
 
@@ -412,7 +732,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
             children: [
               Container(
                 width: 4,
-                height: 40,
+                constraints: BoxConstraints(
+                  minHeight: 40,
+                  maxHeight: double.infinity,
+                ),
                 decoration: BoxDecoration(
                   color:
                       isFreeTimeTask
@@ -423,11 +746,23 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
+
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (!isFreeTimeTask && (task.order != null || task.parentTask?.title != null)) ...[
+                      Text(
+                        '${task.parentTask?.title ?? ""}${task.order != null ? ": step ${task.order}" : ""}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color?.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                    ],
                     Row(
                       children: [
                         if (isFreeTimeTask) ...[
@@ -449,11 +784,9 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
-                              color:
-                                  CupertinoTheme.of(
-                                    context,
-                                  ).textTheme.textStyle.color,
+                              color: CupertinoTheme.of(context).textTheme.textStyle.color,
                             ),
+                            overflow: TextOverflow.visible,
                           ),
                         ),
                       ],
@@ -484,6 +817,8 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                             context,
                           ).textTheme.tabLabelTextStyle.color,
                   size: 22,
+                  semanticLabel:
+                      task.isDone ? 'Task completed' : 'Task not completed',
                 ),
             ],
           ),
@@ -493,9 +828,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }
 
   Color _getCategoryColor(String category) {
-    final brightness = CupertinoTheme.of(context).brightness;
-    final isDark = brightness == Brightness.dark;
-
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     switch (category.toLowerCase()) {
       case 'work':
         return isDark
@@ -525,62 +858,50 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
   }
 
   String? getHabitName(ScheduledTask scheduledTask) {
-    Task? task = context.read<CalendarCubit>().tasksDB.get(
+    final task = context.read<CalendarCubit>().tasksDB.get(
       scheduledTask.parentTaskId,
     );
+    if (task == null || task.frequency == null) return null;
 
-    if (task == null || task.frequency == null) {
-      return null;
-    }
-
-    var frequencyType = task.frequency!.type.toLowerCase();
-
+    final frequencyType = task.frequency!.type.toLowerCase();
     switch (frequencyType) {
       case 'daily':
-        return task.frequency!.byDay?.isNotEmpty == true
+        return task.frequency!.byDay?.isNotEmpty ?? false
             ? task.frequency!.byDay!.first.name
             : 'Daily Habit';
-
       case 'weekly':
         final scheduledDay = _getWeekdayName(scheduledTask.startTime.weekday);
         final weeklyInstance = task.frequency!.byDay?.firstWhere(
-              (instance) => instance.selectedDay == scheduledDay,
+          (instance) => instance.selectedDay == scheduledDay,
+          orElse: () => task.frequency!.byDay!.first,
         );
-        return weeklyInstance != null ? weeklyInstance.name : 'Weekly Habit';
-
+        return weeklyInstance?.name ?? 'Weekly Habit';
       case 'monthly':
-        if (task.frequency!.byMonthDay != null &&
-            task.frequency!.byMonthDay!.isNotEmpty) {
-          // Handle specific day of month
+        if (task.frequency!.byMonthDay?.isNotEmpty ?? false) {
           final scheduledDay = scheduledTask.startTime.day;
           final monthlyInstance = task.frequency!.byMonthDay?.firstWhere(
-                (instance) => int.parse(instance.selectedDay) == scheduledDay,
+            (instance) => int.parse(instance.selectedDay) == scheduledDay,
+            orElse: () => task.frequency!.byMonthDay!.first,
           );
-          return monthlyInstance != null
-              ? monthlyInstance.name
-              : 'Monthly Habit';
+          return monthlyInstance?.name ?? 'Monthly Habit';
         } else if (task.frequency!.bySetPos != null &&
-            task.frequency!.byDay != null) {
-          // Handle pattern (e.g., "first Monday")
+            task.frequency!.byDay?.isNotEmpty == true) {
           final scheduledDay = _getWeekdayName(scheduledTask.startTime.weekday);
           final patternInstance = task.frequency!.byDay?.firstWhere(
-                (instance) => instance.selectedDay == scheduledDay,
+            (instance) => instance.selectedDay == scheduledDay,
+            orElse: () => task.frequency!.byDay!.first,
           );
-          return patternInstance != null
-              ? patternInstance.name
-              : 'Monthly Pattern Habit';
+          return patternInstance?.name ?? 'Monthly Pattern Habit';
         }
         return 'Monthly Habit';
-
       case 'yearly':
-        return task.frequency!.byDay?.isNotEmpty == true
+        return task.frequency!.byDay?.isNotEmpty ?? false
             ? task.frequency!.byDay!.first.name
             : 'Yearly Habit';
-
       default:
-        return task.frequency!.byDay?.isNotEmpty == true
+        return task.frequency!.byDay?.isNotEmpty ?? false
             ? task.frequency!.byDay!.first.name
-            : task.title; // Fallback to task title if no specific name
+            : task.title;
     }
   }
 
@@ -599,8 +920,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
 
   void _showTaskDetails(Task task, ScheduledTask scheduledTask) {
     final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
-
-    // Check if this is a freetime task
     final isFreeTimeTask = [
       ScheduledTaskType.sleep,
       ScheduledTaskType.mealBreak,
@@ -608,7 +927,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
       ScheduledTaskType.freeTime,
     ].contains(scheduledTask.type);
 
-    // Get freetime task info if applicable
     final freeTimeInfo =
         isFreeTimeTask ? _getFreeTimeTaskInfo(scheduledTask.type) : null;
 
@@ -648,9 +966,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                     color: CupertinoTheme.of(context).textTheme.textStyle.color,
                   ),
                 ),
-                if (!isFreeTimeTask &&
-                    task.notes != null &&
-                    task.notes!.isNotEmpty) ...[
+                if (!isFreeTimeTask && task.notes?.isNotEmpty == true) ...[
                   const SizedBox(height: 8),
                   Text(
                     task.notes!,
@@ -672,7 +988,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                             isFreeTimeTask
                                 ? (isDark
                                     ? freeTimeInfo!['color'].darkColor
-                                    : freeTimeInfo!['color'])
+                                    : freeTimeInfo?['color'])
                                 : _getCategoryColor(task.category.name),
                         borderRadius: BorderRadius.circular(6),
                       ),
@@ -706,6 +1022,12 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen> {
                           ).textTheme.tabLabelTextStyle.color,
                     ),
                   ),
+                ],
+                if (!isFreeTimeTask) ...[
+                  const SizedBox(height: 16),
+                  Container(height: 1, color: CupertinoColors.separator),
+                  const SizedBox(height: 16),
+                  TaskTimerControls(task: task, isDarkMode: isDark),
                 ],
               ],
             ),
