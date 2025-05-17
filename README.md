@@ -1,5 +1,4 @@
-# Flowo
-
+# [Flowo](https://flowoapp.me/)
 <p align="center">
   <img src="assets/icon/app_icon.png" alt="Flowo Logo" width="120"/>
 </p>
