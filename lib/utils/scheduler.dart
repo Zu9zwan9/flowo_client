@@ -67,7 +67,7 @@ class Scheduler {
     double? urgency,
     List<String>? availableDates,
   }) {
-    int remainingTime = task.estimatedTime;
+    int remainingTime = task.remainingWorkTime();
     DateTime currentDate = DateTime.now();
     int dateIndex = 0;
     ScheduledTask? lastScheduledTask;
@@ -96,7 +96,7 @@ class Scheduler {
       );
 
       for (ScheduledTask slot in availableSlots) {
-        lastScheduledTask = _createScheduledTask(
+        lastScheduledTask = createScheduledTask(
           task: task,
           urgency: urgency,
           start: slot.startTime,
@@ -168,7 +168,7 @@ class Scheduler {
     }
 
     logDebug('Scheduling event: ${task.title} from $start to $end');
-    _createScheduledTask(
+    createScheduledTask(
       task: task,
       start: start,
       end: end,
@@ -200,7 +200,7 @@ class Scheduler {
         }
       }
 
-      _createScheduledTask(
+      createScheduledTask(
         task: task,
         start: startTime,
         end: endTime,
@@ -637,7 +637,7 @@ class Scheduler {
         const TimeOfDay(hour: 23, minute: 59),
       );
 
-      _createScheduledTask(
+      createScheduledTask(
         task: freeTimeManager,
         type: type,
         start: firstDayStart,
@@ -655,7 +655,7 @@ class Scheduler {
         timeFrame.endTime,
       );
 
-      _createScheduledTask(
+      createScheduledTask(
         task: freeTimeManager,
         type: type,
         start: nextDayStart,
@@ -669,7 +669,7 @@ class Scheduler {
           end.isAfter(baseDate.add(const Duration(days: 1)))) {
         return; // Skip if outside day bounds
       }
-      _createScheduledTask(
+      createScheduledTask(
         task: freeTimeManager,
         type: type,
         start: start,
@@ -679,7 +679,7 @@ class Scheduler {
     }
   }
 
-  ScheduledTask _createScheduledTask({
+  ScheduledTask createScheduledTask({
     required Task task,
     required DateTime start,
     required DateTime end,

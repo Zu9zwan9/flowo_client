@@ -154,6 +154,15 @@ class Task extends HiveObject {
     save();
   }
 
+  int remainingWorkTime() {
+    int workedTime = 0;
+    for (var scheduledTask in scheduledTasks) {
+      workedTime +=
+          scheduledTask.endTime.difference(scheduledTask.startTime).inMilliseconds;
+    }
+    return estimatedTime - workedTime;
+  }
+
   /// Pauses the task
   /// Ends the current session and updates the task status
   void pause() {
