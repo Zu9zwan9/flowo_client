@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen>
       accentColor: CupertinoColors.systemOrange,
     ),
     (
-      page: AnalyticsScreen(),
+      page: UnifiedAnalyticsScreen(),
       icon: CupertinoIcons.chart_bar_alt_fill,
       label: 'Analytics',
       accentColor: CupertinoColors.systemPurple,

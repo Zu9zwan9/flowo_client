@@ -983,7 +983,7 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
         ),
         const SizedBox(height: 12),
         ..._impossibleTasks.map(
-          (task) => _TaskListItem(
+          (task) => TaskListItem(
             task: task,
             onTap: () => _showTaskOptions(task, true),
           ),
