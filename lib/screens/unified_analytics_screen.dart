@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flowo_client/blocs/analytics/analytics_cubit.dart';
 import 'package:flowo_client/blocs/analytics/analytics_state.dart';
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
@@ -11,14 +13,7 @@ import 'package:flowo_client/screens/habit/habit_form_screen.dart';
 import 'package:flowo_client/screens/task/task_form_screen.dart';
 import 'package:flowo_client/screens/task/task_reschedule_screen.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart'
-    show
-        Color,
-        BoxShadow,
-        TextStyle,
-        FontWeight,
-        CircularProgressIndicator,
-        AlwaysStoppedAnimation;
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -221,9 +216,36 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('Analytics & Task Statistics'),
+      navigationBar: CupertinoNavigationBar(
+        backgroundColor:
+            isDarkMode
+                ? CupertinoColors.systemBackground.darkColor.withOpacity(0.8)
+                : CupertinoColors.systemBackground.withOpacity(0.8),
+        border: const Border(
+          bottom: BorderSide(color: CupertinoColors.separator, width: 0.0),
+        ),
+        middle: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              CupertinoIcons.chart_bar_alt_fill,
+              color: CupertinoColors.systemIndigo.resolveFrom(context),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Analytics Dashboard',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
+        ),
       ),
       child: SafeArea(
         child: MultiBlocListener(
@@ -305,83 +327,93 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         _buildSummaryCard(analyticsData),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         _buildTaskStatusCard(analyticsData),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         _buildTimeTrackingCard(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         EfficiencyScoreCard(
           score: analyticsData.efficiencyScore,
           formatter: formatter,
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
         if (analyticsData.aiSuggestions.isNotEmpty) ...[
           AiSuggestionsCard(suggestions: analyticsData.aiSuggestions),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
         ],
         if (_impossibleTasks.isNotEmpty) ...[
           _buildImpossibleTasksCard(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
         ],
         if (_needsReschedulingTasks.isNotEmpty) ...[
           _buildReschedulingTasksCard(),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
         ],
         _buildScheduleActionsCard(),
+        // Add some padding at the bottom for better scrolling experience
+        const SizedBox(height: 20),
       ],
     );
   }
 
   Widget _buildSummaryCard(AnalyticsData analyticsData) {
     return AnalyticsCard(
-      title: 'Summary',
+      title: 'Task Summary',
+      icon: CupertinoIcons.chart_pie_fill,
+      accentColor: CupertinoColors.systemIndigo.resolveFrom(context),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              StatItem(
-                icon: CupertinoIcons.list_bullet,
-                value: _totalScheduledTasks.toString(),
-                label: 'Scheduled',
-              ),
-              StatItem(
-                icon: CupertinoIcons.check_mark,
-                value: _completedTasks.toString(),
-                label: 'Completed',
-                color: CupertinoColors.activeGreen,
-              ),
-              StatItem(
-                icon: CupertinoIcons.exclamationmark_circle,
-                value: _overdueTasks.toString(),
-                label: 'Overdue',
-                color: CupertinoColors.systemRed,
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                StatItem(
+                  icon: CupertinoIcons.list_bullet,
+                  value: _totalScheduledTasks.toString(),
+                  label: 'Scheduled',
+                ),
+                StatItem(
+                  icon: CupertinoIcons.check_mark_circled_solid,
+                  value: _completedTasks.toString(),
+                  label: 'Completed',
+                  color: CupertinoColors.activeGreen,
+                ),
+                StatItem(
+                  icon: CupertinoIcons.exclamationmark_circle_fill,
+                  value: _overdueTasks.toString(),
+                  label: 'Overdue',
+                  color: CupertinoColors.systemRed,
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              StatItem(
-                icon: CupertinoIcons.clock,
-                value: _upcomingTasks.toString(),
-                label: 'Upcoming',
-                color: CupertinoColors.activeBlue,
-              ),
-              StatItem(
-                icon: CupertinoIcons.exclamationmark_triangle,
-                value: _impossibleTasks.length.toString(),
-                label: 'Impossible',
-                color: CupertinoColors.systemRed,
-              ),
-              StatItem(
-                icon: CupertinoIcons.arrow_2_circlepath,
-                value: _needsReschedulingTasks.length.toString(),
-                label: 'Need Reschedule',
-                color: CupertinoColors.systemOrange,
-              ),
-            ],
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                StatItem(
+                  icon: CupertinoIcons.clock_fill,
+                  value: _upcomingTasks.toString(),
+                  label: 'Upcoming',
+                  color: CupertinoColors.activeBlue,
+                ),
+                StatItem(
+                  icon: CupertinoIcons.exclamationmark_triangle_fill,
+                  value: _impossibleTasks.length.toString(),
+                  label: 'Impossible',
+                  color: CupertinoColors.systemRed,
+                ),
+                StatItem(
+                  icon: CupertinoIcons.arrow_2_circlepath_circle_fill,
+                  value: _needsReschedulingTasks.length.toString(),
+                  label: 'Need Reschedule',
+                  color: CupertinoColors.systemOrange,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -390,26 +422,30 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
 
   Widget _buildTaskStatusCard(AnalyticsData analyticsData) {
     return AnalyticsCard(
-      title: 'Task Status',
+      title: 'Task Performance',
+      icon: CupertinoIcons.graph_circle_fill,
+      accentColor: CupertinoColors.systemTeal.resolveFrom(context),
       child: Column(
         children: [
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              ProgressItem(
-                value: analyticsData.completionRate,
-                label: 'Completion Rate',
-                color: CupertinoColors.activeGreen,
-                formatter: DefaultAnalyticsFormatter(),
-              ),
-              ProgressItem(
-                value: analyticsData.overdueRate,
-                label: 'Overdue Rate',
-                color: CupertinoColors.systemRed,
-                formatter: DefaultAnalyticsFormatter(),
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                ProgressItem(
+                  value: analyticsData.completionRate,
+                  label: 'Completion Rate',
+                  color: CupertinoColors.activeGreen,
+                  formatter: DefaultAnalyticsFormatter(),
+                ),
+                ProgressItem(
+                  value: analyticsData.overdueRate,
+                  label: 'Overdue Rate',
+                  color: CupertinoColors.systemRed,
+                  formatter: DefaultAnalyticsFormatter(),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -417,75 +453,113 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
   }
 
   Widget _buildTimeTrackingCard() {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final accentColor = CupertinoColors.systemPurple.resolveFrom(context);
+
     return AnalyticsCard(
-      title: 'Time Tracking',
+      title: 'Time Analytics',
+      icon: CupertinoIcons.timer_fill,
+      accentColor: accentColor,
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              StatItem(
-                icon: CupertinoIcons.time,
-                value:
-                    Duration(milliseconds: _totalDuration).inHours > 0
-                        ? '${Duration(milliseconds: _totalDuration).inHours}h ${Duration(milliseconds: _totalDuration).inMinutes.remainder(60)}m'
-                        : '${Duration(milliseconds: _totalDuration).inMinutes}m',
-                label: 'Total Time',
-                color: CupertinoColors.activeBlue,
-              ),
-              StatItem(
-                icon: CupertinoIcons.timer,
-                value:
-                    Duration(milliseconds: _averageDuration).inHours > 0
-                        ? '${Duration(milliseconds: _averageDuration).inHours}h ${Duration(milliseconds: _averageDuration).inMinutes.remainder(60)}m'
-                        : '${Duration(milliseconds: _averageDuration).inMinutes}m',
-                label: 'Average Time',
-                color: CupertinoColors.systemPurple,
-              ),
-              StatItem(
-                icon: CupertinoIcons.number,
-                value: _tasksWithDuration.toString(),
-                label: 'Tasks Tracked',
-                color: CupertinoColors.systemTeal,
-              ),
-            ],
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                StatItem(
+                  icon: CupertinoIcons.time_solid,
+                  value:
+                      Duration(milliseconds: _totalDuration).inHours > 0
+                          ? '${Duration(milliseconds: _totalDuration).inHours}h ${Duration(milliseconds: _totalDuration).inMinutes.remainder(60)}m'
+                          : '${Duration(milliseconds: _totalDuration).inMinutes}m',
+                  label: 'Total Time',
+                  color: CupertinoColors.activeBlue,
+                ),
+                StatItem(
+                  icon: CupertinoIcons.timer_fill,
+                  value:
+                      Duration(milliseconds: _averageDuration).inHours > 0
+                          ? '${Duration(milliseconds: _averageDuration).inHours}h ${Duration(milliseconds: _averageDuration).inMinutes.remainder(60)}m'
+                          : '${Duration(milliseconds: _averageDuration).inMinutes}m',
+                  label: 'Average Time',
+                  color: CupertinoColors.systemPurple,
+                ),
+                StatItem(
+                  icon: CupertinoIcons.number_circle_fill,
+                  value: _tasksWithDuration.toString(),
+                  label: 'Tasks Tracked',
+                  color: CupertinoColors.systemTeal,
+                ),
+              ],
+            ),
           ),
           if (_longestTaskDuration > 0) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: CupertinoColors.systemGrey6.resolveFrom(context),
-                borderRadius: BorderRadius.circular(8),
+                color: accentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: accentColor.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Longest Task:',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color:
-                          CupertinoTheme.of(context).textTheme.textStyle.color,
-                    ),
+                  Row(
+                    children: [
+                      Icon(
+                        CupertinoIcons.clock_fill,
+                        color: accentColor,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Longest Task',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle.color,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   Text(
                     _longestTaskTitle,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w500,
                       color:
                           CupertinoTheme.of(context).textTheme.textStyle.color,
+                      letterSpacing: -0.2,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Duration: ${Duration(milliseconds: _longestTaskDuration).inHours > 0 ? '${Duration(milliseconds: _longestTaskDuration).inHours}h ${Duration(milliseconds: _longestTaskDuration).inMinutes.remainder(60)}m' : '${Duration(milliseconds: _longestTaskDuration).inMinutes}m'}',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: CupertinoColors.systemBlue,
-                      fontWeight: FontWeight.w500,
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Duration: ${Duration(milliseconds: _longestTaskDuration).inHours > 0 ? '${Duration(milliseconds: _longestTaskDuration).inHours}h ${Duration(milliseconds: _longestTaskDuration).inMinutes.remainder(60)}m' : '${Duration(milliseconds: _longestTaskDuration).inMinutes}m'}',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: accentColor,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                      ),
                     ),
                   ),
                 ],
@@ -498,19 +572,47 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
   }
 
   Widget _buildImpossibleTasksCard() {
+    final accentColor = CupertinoColors.systemRed.resolveFrom(context);
+
     return AnalyticsCard(
-      title: 'Tasks Impossible to Complete',
+      title: 'Impossible Tasks',
+      icon: CupertinoIcons.exclamationmark_octagon_fill,
+      accentColor: accentColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'The following tasks cannot be completed before their deadlines:',
-            style: TextStyle(
-              color: CupertinoColors.label.resolveFrom(context),
-              fontSize: 14,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: accentColor.withOpacity(0.2), width: 1),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  CupertinoIcons.info_circle_fill,
+                  color: accentColor,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'These tasks cannot be completed before their deadlines due to time constraints:',
+                    style: TextStyle(
+                      color:
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.2,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ..._impossibleTasks.map((task) => _buildTaskListItem(task, true)),
         ],
       ),
@@ -518,24 +620,44 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
   }
 
   Widget _buildTaskListItem(Task task, bool isImpossible) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
     final textColor = CupertinoTheme.of(context).textTheme.textStyle.color;
     final secondaryColor = CupertinoColors.secondaryLabel.resolveFrom(context);
+
+    // Choose color based on task type
+    final accentColor =
+        isImpossible
+            ? CupertinoColors.systemRed.resolveFrom(context)
+            : CupertinoColors.systemOrange.resolveFrom(context);
 
     return CupertinoButton(
       padding: EdgeInsets.zero,
       onPressed: () => _showTaskOptions(task, isImpossible),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
         decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: CupertinoColors.separator.resolveFrom(context),
-              width: 0.5,
-            ),
-          ),
+          color: accentColor.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: accentColor.withOpacity(0.2), width: 1),
         ),
         child: Row(
           children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isImpossible
+                    ? CupertinoIcons.exclamationmark_circle_fill
+                    : CupertinoIcons.arrow_2_circlepath_circle_fill,
+                color: accentColor,
+                size: 16,
+              ),
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -544,19 +666,89 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
                     task.title,
                     style: TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w600,
                       color: textColor,
+                      letterSpacing: -0.3,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'Due: ${_formatDate(task.deadline)} • Est: ${_formatDuration(task.estimatedTime)}',
-                    style: TextStyle(fontSize: 12, color: secondaryColor),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accentColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              CupertinoIcons.clock_fill,
+                              color: accentColor,
+                              size: 10,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              _formatDate(task.deadline),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: accentColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: CupertinoColors.systemBlue
+                              .resolveFrom(context)
+                              .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              CupertinoIcons.timer_fill,
+                              color: CupertinoColors.systemBlue.resolveFrom(
+                                context,
+                              ),
+                              size: 10,
+                            ),
+                            const SizedBox(width: 3),
+                            Text(
+                              _formatDuration(task.estimatedTime),
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: CupertinoColors.systemBlue.resolveFrom(
+                                  context,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            Icon(CupertinoIcons.chevron_right, color: secondaryColor, size: 18),
+            Icon(
+              CupertinoIcons.chevron_right_circle_fill,
+              color: accentColor.withOpacity(0.7),
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -588,19 +780,47 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
   }
 
   Widget _buildReschedulingTasksCard() {
+    final accentColor = CupertinoColors.systemOrange.resolveFrom(context);
+
     return AnalyticsCard(
-      title: 'Tasks That Need Rescheduling',
+      title: 'Needs Rescheduling',
+      icon: CupertinoIcons.arrow_2_circlepath_circle_fill,
+      accentColor: accentColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'The following tasks need rescheduling to be completed on time:',
-            style: TextStyle(
-              color: CupertinoColors.label.resolveFrom(context),
-              fontSize: 14,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: accentColor.withOpacity(0.2), width: 1),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  CupertinoIcons.info_circle_fill,
+                  color: accentColor,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'These tasks need to be rescheduled to ensure they can be completed on time:',
+                    style: TextStyle(
+                      color:
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.2,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ..._needsReschedulingTasks.map(
             (task) => _buildTaskListItem(task, false),
           ),
@@ -610,29 +830,156 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
   }
 
   Widget _buildScheduleActionsCard() {
+    final accentColor = CupertinoColors.activeBlue.resolveFrom(context);
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+
     return AnalyticsCard(
-      title: 'Schedule Actions',
+      title: 'Quick Actions',
+      icon: CupertinoIcons.wand_stars_inverse,
+      accentColor: accentColor,
       child: Column(
         children: [
-          CupertinoButton.filled(
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              _taskManagerCubit.scheduleTasks();
-              _taskManagerCubit.scheduleHabits();
-              setState(() {
-                _loadTaskStatistics();
-              });
-            },
-            child: const Text('Reschedule All Tasks'),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: accentColor.withOpacity(0.2), width: 1),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  CupertinoIcons.info_circle_fill,
+                  color: accentColor,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Optimize your schedule with these quick actions:',
+                    style: TextStyle(
+                      color:
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: -0.2,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          if (_unscheduledTasks > 0) ...[
-            CupertinoButton.filled(
+          const SizedBox(height: 20),
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  accentColor.withOpacity(0.8),
+                  CupertinoColors.systemIndigo
+                      .resolveFrom(context)
+                      .withOpacity(0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: accentColor.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 16),
               onPressed: () {
                 HapticFeedback.mediumImpact();
-                _scheduleUnscheduledTasks();
+                _taskManagerCubit.scheduleTasks();
+                _taskManagerCubit.scheduleHabits();
+                setState(() {
+                  _loadTaskStatistics();
+                });
               },
-              child: Text('Schedule Unscheduled Tasks ($_unscheduledTasks)'),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.arrow_2_circlepath_circle_fill,
+                    color: CupertinoColors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Reschedule All Tasks',
+                    style: TextStyle(
+                      color: CupertinoColors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_unscheduledTasks > 0) ...[
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    CupertinoColors.systemGreen
+                        .resolveFrom(context)
+                        .withOpacity(0.8),
+                    CupertinoColors.systemTeal
+                        .resolveFrom(context)
+                        .withOpacity(0.8),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: CupertinoColors.systemGreen
+                        .resolveFrom(context)
+                        .withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: CupertinoButton(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                onPressed: () {
+                  HapticFeedback.mediumImpact();
+                  _scheduleUnscheduledTasks();
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      CupertinoIcons.calendar_badge_plus,
+                      color: CupertinoColors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Schedule Unscheduled Tasks ($_unscheduledTasks)',
+                      style: const TextStyle(
+                        color: CupertinoColors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 12),
           ],
@@ -649,32 +996,103 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
       milliseconds: task.estimatedTime - trueTimeLeft,
     );
 
+    final accentColor =
+        isImpossible
+            ? CupertinoColors.systemRed.resolveFrom(context)
+            : CupertinoColors.systemOrange.resolveFrom(context);
+
     String message;
+    IconData messageIcon;
     if (isImpossible) {
       message =
           'This task is impossible to complete before the deadline. '
           'You need ${timeNeeded.inHours}h ${timeNeeded.inMinutes.remainder(60)}m '
           'more time than available before the deadline.';
+      messageIcon = CupertinoIcons.exclamationmark_octagon_fill;
     } else {
       message =
           'This task is possible to complete if you reschedule some other tasks. '
           'You need ${timeNeeded.inHours}h ${timeNeeded.inMinutes.remainder(60)}m '
           'more time to complete this task before the deadline.';
+      messageIcon = CupertinoIcons.arrow_2_circlepath_circle_fill;
     }
 
     showCupertinoModalPopup(
       context: context,
       builder:
           (context) => CupertinoActionSheet(
-            title: Text(task.title),
-            message: Text(message),
+            title: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(messageIcon, color: accentColor, size: 20),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      task.title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color:
+                            CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle.color,
+                        letterSpacing: -0.5,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            message: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: accentColor.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                message,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                  height: 1.3,
+                  letterSpacing: -0.2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
             actions: [
               CupertinoActionSheetAction(
                 onPressed: () {
                   Navigator.pop(context);
                   _editTask(task);
                 },
-                child: const Text('Edit Task'),
+                isDefaultAction: true,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      CupertinoIcons.pencil_circle_fill,
+                      color: CupertinoColors.activeBlue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Edit Task',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               if (!isImpossible)
                 CupertinoActionSheetAction(
@@ -697,12 +1115,43 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
                       });
                     });
                   },
-                  child: const Text('Reschedule Other Tasks'),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        CupertinoIcons.arrow_2_circlepath_circle_fill,
+                        color: CupertinoColors.systemOrange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Reschedule Other Tasks',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
             ],
             cancelButton: CupertinoActionSheetAction(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.xmark_circle_fill,
+                    color: CupertinoColors.systemGrey,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Cancel',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
             ),
           ),
     );
@@ -737,19 +1186,63 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
       _loadTaskStatistics();
     });
 
-    // Show confirmation
+    // Show confirmation with modern styling
     showCupertinoDialog(
       context: context,
       builder:
           (context) => CupertinoAlertDialog(
-            title: const Text('Tasks Scheduled'),
-            content: Text(
-              '${_unscheduledTasksList.length} unscheduled tasks have been scheduled.',
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  CupertinoIcons.check_mark_circled_solid,
+                  color: CupertinoColors.activeGreen,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Tasks Scheduled',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+            content: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                '${_unscheduledTasksList.length} unscheduled tasks have been successfully added to your schedule.',
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.3,
+                  letterSpacing: -0.2,
+                ),
+              ),
             ),
             actions: [
               CupertinoDialogAction(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
+                isDefaultAction: true,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      CupertinoIcons.checkmark_circle_fill,
+                      color: CupertinoColors.activeBlue,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Done',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -757,56 +1250,109 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
   }
 }
 
-/// Card widget with iOS styling
+/// Card widget with iOS styling and glassmorphic effect
 class AnalyticsCard extends StatelessWidget {
   final String title;
   final Widget child;
+  final IconData? icon;
+  final Color? accentColor;
 
-  const AnalyticsCard({super.key, required this.title, required this.child});
+  const AnalyticsCard({
+    super.key,
+    required this.title,
+    required this.child,
+    this.icon,
+    this.accentColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final primaryColor = CupertinoTheme.of(context).primaryColor;
+    final resolvedAccentColor = accentColor ?? primaryColor;
+
+    // Glassmorphic effect colors
+    final backgroundColor =
+        isDarkMode
+            ? CupertinoColors.systemBackground.darkColor.withOpacity(0.7)
+            : CupertinoColors.systemBackground.withOpacity(0.7);
+    final borderColor =
+        isDarkMode
+            ? CupertinoColors.white.withOpacity(0.1)
+            : CupertinoColors.white.withOpacity(0.3);
+    final shadowColor =
+        isDarkMode
+            ? CupertinoColors.black.withOpacity(0.2)
+            : CupertinoColors.systemGrey.withOpacity(0.15);
 
     return Container(
       decoration: BoxDecoration(
-        color: CupertinoTheme.of(context).barBackgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color:
-                isDarkMode
-                    ? CupertinoColors.black.withOpacity(0.1)
-                    : CupertinoColors.systemGrey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: shadowColor,
+            blurRadius: 20,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
           ),
         ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            isDarkMode
+                ? CupertinoColors.systemBackground.darkColor.withOpacity(0.8)
+                : CupertinoColors.white.withOpacity(0.8),
+            isDarkMode
+                ? CupertinoColors.darkBackgroundGray.withOpacity(0.7)
+                : CupertinoColors.systemBackground.withOpacity(0.7),
+          ],
+        ),
       ),
-      margin: const EdgeInsets.symmetric(vertical: 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Text(
-              title,
-              style: CupertinoTheme.of(
-                context,
-              ).textTheme.navTitleTextStyle.copyWith(fontSize: 20),
-            ),
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: Row(
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, color: resolvedAccentColor, size: 22),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      title,
+                      style: CupertinoTheme.of(
+                        context,
+                      ).textTheme.navTitleTextStyle.copyWith(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: child,
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: child,
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Widget for displaying a statistic with an icon
+/// Widget for displaying a statistic with an icon in a modern, high-tech style
 class StatItem extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -823,36 +1369,68 @@ class StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
     final resolvedColor =
         color != null
             ? CupertinoDynamicColor.resolve(color!, context)
             : CupertinoTheme.of(context).primaryColor;
 
-    return Column(
-      children: [
-        Icon(icon, size: 28, color: resolvedColor),
-        const SizedBox(height: 8),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: CupertinoTheme.of(context).textTheme.textStyle.color,
+    // Glassmorphic effect colors
+    final containerColor =
+        isDarkMode
+            ? resolvedColor.withOpacity(0.15)
+            : resolvedColor.withOpacity(0.1);
+    final borderColor =
+        isDarkMode
+            ? resolvedColor.withOpacity(0.3)
+            : resolvedColor.withOpacity(0.2);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: containerColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: resolvedColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 24, color: resolvedColor),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: CupertinoTheme.of(
-            context,
-          ).textTheme.tabLabelTextStyle.copyWith(fontSize: 14),
-        ),
-      ],
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: CupertinoTheme.of(context).textTheme.textStyle.color,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color:
+                  CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// Widget for displaying a circular progress indicator
+/// Widget for displaying a circular progress indicator with modern styling
 class ProgressItem extends StatelessWidget {
   final double value;
   final String label;
@@ -869,52 +1447,93 @@ class ProgressItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
     final resolvedColor = CupertinoDynamicColor.resolve(color, context);
     final textColor = CupertinoTheme.of(context).textTheme.textStyle.color;
 
     // Ensure value is finite and between 0-100
     final safeValue = value.isFinite ? value.clamp(0.0, 100.0) : 0.0;
 
-    return Column(
-      children: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            SizedBox(
-              width: 80,
-              height: 80,
-              child: CircularProgressIndicator(
-                value: safeValue / 100,
-                backgroundColor: CupertinoColors.systemGrey5.resolveFrom(
-                  context,
+    // Glassmorphic effect colors
+    final containerColor =
+        isDarkMode
+            ? resolvedColor.withOpacity(0.15)
+            : resolvedColor.withOpacity(0.1);
+    final borderColor =
+        isDarkMode
+            ? resolvedColor.withOpacity(0.3)
+            : resolvedColor.withOpacity(0.2);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      decoration: BoxDecoration(
+        color: containerColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 1),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 100,
+                height: 100,
+                child: CircularProgressIndicator(
+                  value: safeValue / 100,
+                  backgroundColor:
+                      isDarkMode
+                          ? CupertinoColors.darkBackgroundGray.withOpacity(0.3)
+                          : CupertinoColors.systemGrey5.resolveFrom(context),
+                  valueColor: AlwaysStoppedAnimation<Color>(resolvedColor),
+                  strokeWidth: 10,
                 ),
-                valueColor: AlwaysStoppedAnimation<Color>(resolvedColor),
-                strokeWidth: 8,
               ),
-            ),
-            Text(
-              formatter.formatPercent(safeValue),
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: textColor,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    formatter.formatPercent(safeValue),
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  Text(
+                    'Complete',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: CupertinoColors.secondaryLabel.resolveFrom(
+                        context,
+                      ),
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: textColor,
+              letterSpacing: -0.2,
             ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: CupertinoTheme.of(
-            context,
-          ).textTheme.tabLabelTextStyle.copyWith(fontSize: 14),
-        ),
-      ],
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
 
-/// Card for displaying AI suggestions
+/// Card for displaying AI suggestions with modern styling
 class AiSuggestionsCard extends StatelessWidget {
   final List<String> suggestions;
 
@@ -922,39 +1541,79 @@ class AiSuggestionsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accentColor = CupertinoColors.systemYellow.resolveFrom(context);
+
     return AnalyticsCard(
-      title: 'AI Suggestions',
+      title: 'AI Insights',
+      icon: CupertinoIcons.lightbulb_fill,
+      accentColor: accentColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children:
-            suggestions.map((suggestion) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      CupertinoIcons.lightbulb,
-                      color: CupertinoColors.systemYellow.resolveFrom(context),
-                      size: 20,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: Text(
+              "Here are some personalized suggestions based on your task patterns:",
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ),
+          ...suggestions.map((suggestion) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: accentColor.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: accentColor.withOpacity(0.2),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        suggestion,
-                        style: CupertinoTheme.of(context).textTheme.textStyle,
+                    child: Icon(
+                      CupertinoIcons.lightbulb_fill,
+                      color: accentColor,
+                      size: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      suggestion,
+                      style: TextStyle(
+                        fontSize: 15,
+                        height: 1.3,
+                        letterSpacing: -0.2,
+                        color:
+                            CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle.color,
                       ),
                     ),
-                  ],
-                ),
-              );
-            }).toList(),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
       ),
     );
   }
 }
 
-/// Card for displaying efficiency score
+/// Card for displaying efficiency score with modern styling
 class EfficiencyScoreCard extends StatelessWidget {
   final double score;
   final AnalyticsFormatter formatter;
@@ -967,40 +1626,100 @@ class EfficiencyScoreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
     final textColor = CupertinoTheme.of(context).textTheme.textStyle.color;
+
+    // Determine color based on score
+    Color scoreColor;
+    if (score >= 80) {
+      scoreColor = CupertinoColors.systemGreen.resolveFrom(context);
+    } else if (score >= 60) {
+      scoreColor = CupertinoColors.systemBlue.resolveFrom(context);
+    } else if (score >= 40) {
+      scoreColor = CupertinoColors.systemOrange.resolveFrom(context);
+    } else {
+      scoreColor = CupertinoColors.systemRed.resolveFrom(context);
+    }
 
     return AnalyticsCard(
       title: 'Efficiency Score',
+      icon: CupertinoIcons.chart_bar_fill,
+      accentColor: scoreColor,
       child: Column(
         children: [
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                score.toStringAsFixed(1),
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: CupertinoColors.activeBlue.resolveFrom(context),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: scoreColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(color: scoreColor.withOpacity(0.3), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: scoreColor.withOpacity(0.2),
+                  blurRadius: 15,
+                  spreadRadius: 1,
                 ),
-              ),
-              Text(
-                '/100',
-                style: TextStyle(
-                  fontSize: 24,
-                  color: CupertinoColors.systemGrey.resolveFrom(context),
+              ],
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      score.toStringAsFixed(1),
+                      style: TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                        color: scoreColor,
+                        letterSpacing: -1.0,
+                      ),
+                    ),
+                    Text(
+                      '/100',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
+                        color:
+                            isDarkMode
+                                ? CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                )
+                                : CupertinoColors.systemGrey2.resolveFrom(
+                                  context,
+                                ),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: scoreColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: scoreColor.withOpacity(0.2), width: 1),
+            ),
+            child: Text(
+              formatter.getEfficiencyMessage(score),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: textColor,
+                height: 1.3,
+                letterSpacing: -0.3,
               ),
-            ],
+              textAlign: TextAlign.center,
+            ),
           ),
           const SizedBox(height: 16),
-          Text(
-            formatter.getEfficiencyMessage(score),
-            style: CupertinoTheme.of(context).textTheme.textStyle,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
         ],
       ),
     );
