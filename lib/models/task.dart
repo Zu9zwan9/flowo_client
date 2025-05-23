@@ -260,7 +260,7 @@ class Task extends HiveObject {
       return 'Much faster than estimated';
     } else if (ratio >= 0.5 && ratio < 0.7) {
       return 'Slower than estimated';
-    } else {
+    } else {                                                                                                                                                     
       return 'Much slower than estimated';
     }
   }

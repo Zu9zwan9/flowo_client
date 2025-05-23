@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
 
 import '../../blocs/tasks_controller/task_manager_cubit.dart';
 import '../../models/task.dart';
@@ -923,12 +925,10 @@ class _SessionsWidgetState extends State<SessionsWidget> {
     super.initState();
     _loadSessions();
 
-    // Set up a timer to refresh the UI every second if there's an active session
+    // Refresh UI every second if there's an active session
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (widget.task.activeSession != null) {
-        setState(() {
-          // Just trigger a rebuild to update the duration
-        });
+      if (widget.task.activeSession != null && mounted) {
+        setState(() {});
       }
     });
   }
@@ -940,11 +940,14 @@ class _SessionsWidgetState extends State<SessionsWidget> {
   }
 
   void _loadSessions() {
-    setState(() {
-      _sessions = widget.taskManagerCubit.getTaskSessions(widget.task);
-      // Sort sessions by start time (newest first)
-      _sessions.sort((a, b) => b.startTime.compareTo(a.startTime));
-    });
+    // Load sessions directly from the task to ensure consistency
+    _sessions = List<TaskSession>.from(widget.task.sessions);
+    // Sort by start time (newest first)
+    _sessions.sort((a, b) => b.startTime.compareTo(a.startTime));
+    // Debug output to verify loaded sessions
+    print(
+      'Loaded ${_sessions.length} sessions: ${_sessions.map((s) => "ID: ${s.id}, Start: ${s.startTime}, End: ${s.endTime}, Duration: ${s.duration}").toList()}',
+    );
   }
 
   String _formatDuration(int milliseconds) {
@@ -997,7 +1000,16 @@ class _SessionsWidgetState extends State<SessionsWidget> {
 
   // Calculate session statistics
   Map<String, dynamic> _calculateSessionStats() {
-    if (_sessions.isEmpty) {
+    // Use the latest task data from Hive to ensure consistency
+    final task = Hive.box<Task>('tasks').get(widget.task.id) ?? widget.task;
+    final sessions = task.sessions;
+
+    // Debug output to verify sessions used for stats
+    print(
+      'Calculating stats for ${sessions.length} sessions: ${sessions.map((s) => "ID: ${s.id}, Start: ${s.startTime}, End: ${s.endTime}, Duration: ${s.duration}").toList()}',
+    );
+
+    if (sessions.isEmpty) {
       return {
         'avgDuration': 0,
         'mostProductiveHour': 0,
@@ -1008,9 +1020,10 @@ class _SessionsWidgetState extends State<SessionsWidget> {
       };
     }
 
-    // Calculate average duration
-    final completedSessions =
-        _sessions.where((s) => s.endTime != null).toList();
+    // Filter completed sessions (with endTime)
+    final completedSessions = sessions.where((s) => s.endTime != null).toList();
+
+    // Calculate average duration for completed sessions
     final avgDuration =
         completedSessions.isEmpty
             ? 0
@@ -1020,9 +1033,9 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                 ) ~/
                 completedSessions.length;
 
-    // Find most productive hour (hour with most sessions)
+    // Find most productive hour based on session start times
     final hourCounts = <int, int>{};
-    for (var session in _sessions) {
+    for (var session in sessions) {
       final hour = session.startTime.hour;
       hourCounts[hour] = (hourCounts[hour] ?? 0) + 1;
     }
@@ -1036,16 +1049,22 @@ class _SessionsWidgetState extends State<SessionsWidget> {
       }
     });
 
-    // Get time efficiency ratio
-    final timeEfficiencyRatio = widget.task.getTimeEfficiencyRatio();
-    final timeEfficiencyDescription =
-        widget.task.getTimeEfficiencyDescription();
+    // Calculate time efficiency only for completed tasks
+    double? timeEfficiencyRatio;
+    String timeEfficiencyDescription;
+    if (task.isDone) {
+      timeEfficiencyRatio = task.getTimeEfficiencyRatio();
+      timeEfficiencyDescription = task.getTimeEfficiencyDescription();
+    } else {
+      timeEfficiencyRatio = null;
+      timeEfficiencyDescription = 'Task not completed';
+    }
 
     return {
       'avgDuration': avgDuration,
       'mostProductiveHour': mostProductiveHour,
       'completedSessions': completedSessions.length,
-      'totalSessions': _sessions.length,
+      'totalSessions': sessions.length,
       'timeEfficiencyRatio': timeEfficiencyRatio,
       'timeEfficiencyDescription': timeEfficiencyDescription,
     };
@@ -1053,389 +1072,341 @@ class _SessionsWidgetState extends State<SessionsWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = CupertinoTheme.of(context);
-    final totalDuration = widget.taskManagerCubit.getTotalDuration(widget.task);
-    final activeSession = widget.task.activeSession;
-    final sessionStats = _calculateSessionStats();
+    return ValueListenableBuilder<Box<Task>>(
+      valueListenable: Hive.box<Task>('tasks').listenable(),
+      builder: (context, box, _) {
+        // Get the latest task from the box to ensure up-to-date data
+        final task = box.get(widget.task.id) ?? widget.task;
+        _loadSessions(); // Update sessions list based on the latest task data
 
-    return Container(
-      padding: const EdgeInsets.all(TaskPageConstants.padding),
-      decoration: BoxDecoration(
-        color: CupertinoColors.systemBackground.resolveFrom(context),
-        borderRadius: BorderRadius.circular(TaskPageConstants.cornerRadius),
-        boxShadow: [
-          BoxShadow(
-            color: CupertinoColors.black.withOpacity(0.1),
-            blurRadius: TaskPageConstants.shadowBlurRadius,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                CupertinoIcons.clock,
-                size: 20,
-                color: CupertinoColors.activeBlue.resolveFrom(context),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Sessions',
-                style: theme.textTheme.navTitleTextStyle.copyWith(fontSize: 18),
-              ),
-              const Spacer(),
-              Text(
-                'Total: ${_formatDuration(totalDuration)}',
-                style: TextStyle(
-                  color: CupertinoColors.secondaryLabel.resolveFrom(context),
-                  fontWeight: FontWeight.bold,
-                ),
+        final theme = CupertinoTheme.of(context);
+        final totalDuration = widget.taskManagerCubit.getTotalDuration(task);
+        final activeSession = task.activeSession;
+        final sessionStats = _calculateSessionStats();
+
+        return Container(
+          padding: const EdgeInsets.all(TaskPageConstants.padding),
+          decoration: BoxDecoration(
+            color: CupertinoColors.systemBackground.resolveFrom(context),
+            borderRadius: BorderRadius.circular(TaskPageConstants.cornerRadius),
+            boxShadow: [
+              BoxShadow(
+                color: CupertinoColors.black.withOpacity(0.1),
+                blurRadius: TaskPageConstants.shadowBlurRadius,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-
-          // Session statistics
-          if (_sessions.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: CupertinoColors.systemFill.resolveFrom(context),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
                 children: [
+                  Icon(
+                    CupertinoIcons.clock,
+                    size: 20,
+                    color: CupertinoColors.activeBlue.resolveFrom(context),
+                  ),
+                  const SizedBox(width: 8),
                   Text(
-                    'Session Statistics',
+                    'Sessions',
+                    style: theme.textTheme.navTitleTextStyle.copyWith(fontSize: 18),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Total: ${_formatDuration(totalDuration)}',
                     style: TextStyle(
+                      color: CupertinoColors.secondaryLabel.resolveFrom(context),
                       fontWeight: FontWeight.bold,
-                      color: CupertinoColors.label.resolveFrom(context),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatItem(
-                          context,
-                          icon: CupertinoIcons.time,
-                          label: 'Avg. Duration',
-                          value: _formatDuration(sessionStats['avgDuration']),
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildStatItem(
-                          context,
-                          icon: CupertinoIcons.chart_bar,
-                          label: 'Most Productive',
-                          value: '${sessionStats['mostProductiveHour']}:00',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatItem(
-                          context,
-                          icon: CupertinoIcons.checkmark_circle,
-                          label: 'Completed',
-                          value:
-                              '${sessionStats['completedSessions']}/${sessionStats['totalSessions']}',
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildStatItem(
-                          context,
-                          icon: CupertinoIcons.calendar,
-                          label: 'First Session',
-                          value:
-                              _sessions.isNotEmpty
-                                  ? '${_sessions.last.startTime.day}/${_sessions.last.startTime.month}'
-                                  : 'N/A',
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatItem(
-                          context,
-                          icon: CupertinoIcons.chart_pie,
-                          label: 'Time Efficiency',
-                          value:
-                              sessionStats['timeEfficiencyRatio'] != null
-                                  ? '${(sessionStats['timeEfficiencyRatio'] * 100).toStringAsFixed(0)}%'
-                                  : 'N/A',
-                        ),
-                      ),
-                      Expanded(
-                        child: _buildStatItem(
-                          context,
-                          icon: CupertinoIcons.info_circle,
-                          label: 'Estimation',
-                          value: sessionStats['timeEfficiencyDescription'],
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 8),
 
-          // Session controls
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildControlButton(
-                context,
-                icon: CupertinoIcons.play_fill,
-                label: 'Start',
-                color: CupertinoColors.activeGreen,
-                onPressed:
-                    widget.task.isDone || widget.task.isInProgress
-                        ? null
-                        : () {
-                          widget.taskManagerCubit.startTask(widget.task);
-                          setState(() {});
-                        },
-              ),
-              _buildControlButton(
-                context,
-                icon: CupertinoIcons.pause_fill,
-                label: 'Pause',
-                color: CupertinoColors.systemOrange,
-                onPressed:
-                    widget.task.isInProgress
-                        ? () {
-                          widget.taskManagerCubit.pauseTask(widget.task);
-                          setState(() {});
-                        }
-                        : null,
-              ),
-              _buildControlButton(
-                context,
-                icon: CupertinoIcons.stop_fill,
-                label: 'Stop',
-                color: CupertinoColors.destructiveRed,
-                onPressed:
-                    widget.task.isInProgress || widget.task.isPaused
-                        ? () {
-                          widget.taskManagerCubit.stopTask(widget.task);
-                          setState(() {});
-                        }
-                        : null,
-              ),
-            ],
-          ),
-
-          // Active session indicator
-          if (activeSession != null) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: CupertinoColors.activeGreen
-                    .resolveFrom(context)
-                    .withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: CupertinoColors.activeGreen
-                      .resolveFrom(context)
-                      .withOpacity(0.3),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        CupertinoIcons.timer,
-                        color: CupertinoColors.activeGreen.resolveFrom(context),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Session in progress',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: CupertinoColors.activeGreen.resolveFrom(
-                                  context,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              'Started at ${activeSession.startTime.hour.toString().padLeft(2, '0')}:${activeSession.startTime.minute.toString().padLeft(2, '0')}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: CupertinoColors.secondaryLabel
-                                    .resolveFrom(context),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        _formatDuration(activeSession.duration),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: CupertinoColors.activeGreen.resolveFrom(
-                            context,
-                          ),
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
+              // Session statistics
+              if (_sessions.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.systemFill.resolveFrom(context),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(height: 12),
-
-                  // Progress indicator
-                  Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Progress',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(
-                                context,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            '${((activeSession.duration / widget.task.estimatedTime) * 100).clamp(0, 100).toInt()}%',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: CupertinoColors.activeGreen.resolveFrom(
-                                context,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Session Statistics',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: CupertinoColors.label.resolveFrom(context),
+                        ),
                       ),
-                      const SizedBox(height: 4),
-                      Stack(
+                      const SizedBox(height: 8),
+                      Row(
                         children: [
-                          // Background
-                          Container(
-                            height: 8,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: CupertinoColors.systemFill.resolveFrom(
-                                context,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
+                          Expanded(
+                            child: _buildStatItem(
+                              context,
+                              icon: CupertinoIcons.time,
+                              label: 'Avg. Duration',
+                              value: _formatDuration(sessionStats['avgDuration']),
                             ),
                           ),
-                          // Progress
-                          Container(
-                            height: 8,
-                            width:
-                                (MediaQuery.of(context).size.width - 64) *
-                                (activeSession.duration /
-                                        widget.task.estimatedTime)
-                                    .clamp(0, 1),
-                            decoration: BoxDecoration(
-                              color: CupertinoColors.activeGreen.resolveFrom(
-                                context,
-                              ),
-                              borderRadius: BorderRadius.circular(4),
+                          Expanded(
+                            child: _buildStatItem(
+                              context,
+                              icon: CupertinoIcons.chart_bar,
+                              label: 'Most Productive',
+                              value: '${sessionStats['mostProductiveHour']}:00',
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Elapsed: ${_formatDuration(activeSession.duration)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(
-                                context,
-                              ),
+                          Expanded(
+                            child: _buildStatItem(
+                              context,
+                              icon: CupertinoIcons.checkmark_circle,
+                              label: 'Completed',
+                              value:
+                              '${sessionStats['completedSessions']}/${sessionStats['totalSessions']}',
                             ),
                           ),
-                          Text(
-                            'Estimated: ${_formatDuration(widget.task.estimatedTime)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(
-                                context,
-                              ),
+                          Expanded(
+                            child: _buildStatItem(
+                              context,
+                              icon: CupertinoIcons.calendar,
+                              label: 'First Session',
+                              value: _sessions.isNotEmpty
+                                  ? '${_sessions.last.startTime.day}/${_sessions.last.startTime.month}'
+                                  : 'N/A',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatItem(
+                              context,
+                              icon: CupertinoIcons.chart_pie,
+                              label: 'Time Efficiency',
+                              value: sessionStats['timeEfficiencyRatio'] != null
+                                  ? '${(sessionStats['timeEfficiencyRatio'] * 100).toStringAsFixed(0)}%'
+                                  : 'N/A',
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildStatItem(
+                              context,
+                              icon: CupertinoIcons.info_circle,
+                              label: 'Estimation',
+                              value: sessionStats['timeEfficiencyDescription'],
                             ),
                           ),
                         ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-          ],
+                ),
+                const SizedBox(height: 16),
+              ],
 
-          // Sessions list
-          if (_sessions.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-            const SizedBox(height: 8),
-            Text(
-              'Recent Sessions',
-              style: theme.textTheme.textStyle.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            ...(_sessions
-                .take(5)
-                .map((session) => _buildSessionItem(context, session))),
-            if (_sessions.length > 5) ...[
-              const SizedBox(height: 8),
-              Center(
-                child: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: Text(
-                    'View all ${_sessions.length} sessions',
-                    style: theme.textTheme.textStyle.copyWith(
-                      color: CupertinoColors.activeBlue,
+              // Session controls
+              _buildControlButtons(context),
+
+              // Active session indicator
+              if (activeSession != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: CupertinoColors.activeGreen
+                        .resolveFrom(context)
+                        .withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: CupertinoColors.activeGreen
+                          .resolveFrom(context)
+                          .withOpacity(0.3),
                     ),
                   ),
-                  onPressed: () => _showAllSessions(context),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            CupertinoIcons.timer,
+                            color: CupertinoColors.activeGreen.resolveFrom(context),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Session in progress',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: CupertinoColors.activeGreen
+                                        .resolveFrom(context),
+                                  ),
+                                ),
+                                Text(
+                                  'Started at ${activeSession.startTime.hour.toString().padLeft(2, '0')}:${activeSession.startTime.minute.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: CupertinoColors.secondaryLabel
+                                        .resolveFrom(context),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            _formatDuration(activeSession.duration),
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: CupertinoColors.activeGreen
+                                  .resolveFrom(context),
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Progress',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: CupertinoColors.secondaryLabel
+                                      .resolveFrom(context),
+                                ),
+                              ),
+                              Text(
+                                '${((activeSession.duration / widget.task.estimatedTime) * 100).clamp(0, 100).toInt()}%',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: CupertinoColors.activeGreen
+                                      .resolveFrom(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Stack(
+                            children: [
+                              Container(
+                                height: 8,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: CupertinoColors.systemFill
+                                      .resolveFrom(context),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              Container(
+                                height: 8,
+                                width: (MediaQuery.of(context).size.width - 64) *
+                                    (activeSession.duration /
+                                        widget.task.estimatedTime)
+                                        .clamp(0, 1),
+                                decoration: BoxDecoration(
+                                  color: CupertinoColors.activeGreen
+                                      .resolveFrom(context),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Elapsed: ${_formatDuration(activeSession.duration)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: CupertinoColors.secondaryLabel
+                                      .resolveFrom(context),
+                                ),
+                              ),
+                              Text(
+                                'Estimated: ${_formatDuration(widget.task.estimatedTime)}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: CupertinoColors.secondaryLabel
+                                      .resolveFrom(context),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
+
+              // Sessions list
+              if (_sessions.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                Text(
+                  'Recent Sessions',
+                  style: theme.textTheme.textStyle.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                ...(_sessions
+                    .take(5)
+                    .map((session) => _buildSessionItem(context, session))),
+                if (_sessions.length > 5) ...[
+                  const SizedBox(height: 8),
+                  Center(
+                    child: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: Text(
+                        'View all ${_sessions.length} sessions',
+                        style: theme.textTheme.textStyle.copyWith(
+                          color: CupertinoColors.activeBlue,
+                        ),
+                      ),
+                      onPressed: () => _showAllSessions(context),
+                    ),
+                  ),
+                ],
+              ] else ...[
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'No sessions yet',
+                    style: theme.textTheme.textStyle.copyWith(
+                      color: CupertinoColors.systemGrey,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ] else ...[
-            const SizedBox(height: 16),
-            Center(
-              child: Text(
-                'No sessions yet',
-                style: theme.textTheme.textStyle.copyWith(
-                  color: CupertinoColors.systemGrey,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -1547,7 +1518,6 @@ class _SessionsWidgetState extends State<SessionsWidget> {
     final startDate = session.startTime;
     final endDate = session.endTime;
 
-    // Calculate session completion percentage if there's an estimated time
     final completionPercentage =
         widget.task.estimatedTime > 0
             ? (session.duration / widget.task.estimatedTime * 100)
@@ -1580,26 +1550,6 @@ class _SessionsWidgetState extends State<SessionsWidget> {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: (isActive
-                          ? CupertinoColors.activeGreen
-                          : CupertinoColors.systemGrey)
-                      .resolveFrom(context)
-                      .withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Icon(
-                  isActive ? CupertinoIcons.timer : CupertinoIcons.clock,
-                  size: 14,
-                  color: (isActive
-                          ? CupertinoColors.activeGreen
-                          : CupertinoColors.systemGrey)
-                      .resolveFrom(context),
-                ),
-              ),
-              const SizedBox(width: 8),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1624,6 +1574,29 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                   ],
                 ),
               ),
+              // Edit and Delete buttons for completed sessions
+              if (!isActive) ...[
+                CupertinoButton(
+                  padding: const EdgeInsets.all(0),
+                  child: Icon(
+                    CupertinoIcons.pencil,
+                    size: 18,
+                    color: CupertinoColors.systemBlue.resolveFrom(context),
+                  ),
+                  onPressed: () => _showEditSessionDialog(context, session),
+                ),
+                const SizedBox(width: 8),
+                CupertinoButton(
+                  padding: const EdgeInsets.all(0),
+                  child: Icon(
+                    CupertinoIcons.trash,
+                    size: 18,
+                    color: CupertinoColors.destructiveRed.resolveFrom(context),
+                  ),
+                  onPressed: () => _showDeleteSessionDialog(context, session),
+                ),
+                const SizedBox(width: 8),
+              ],
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -1648,120 +1621,381 @@ class _SessionsWidgetState extends State<SessionsWidget> {
               ),
             ],
           ),
-
-          // Show progress bar for completed sessions if we have estimated time
-          if (!isActive && completionPercentage != null) ...[
+          if (completionPercentage != null) ...[
             const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: Stack(
-                    children: [
-                      // Background
-                      Container(
-                        height: 4,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: CupertinoColors.systemFill.resolveFrom(
-                            context,
-                          ),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      // Progress
-                      Container(
-                        height: 4,
-                        width:
-                            (MediaQuery.of(context).size.width - 64) *
-                            (session.duration / widget.task.estimatedTime)
-                                .clamp(0, 1),
-                        decoration: BoxDecoration(
-                          color: CupertinoColors.systemGrey.resolveFrom(
-                            context,
-                          ),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '$completionPercentage%',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: CupertinoColors.secondaryLabel.resolveFrom(context),
-                  ),
-                ),
-              ],
+            LinearProgressIndicator(
+              value: completionPercentage / 100,
+              backgroundColor: CupertinoColors.systemGrey5.resolveFrom(context),
+              valueColor: AlwaysStoppedAnimation(
+                isActive
+                    ? CupertinoColors.activeGreen.resolveFrom(context)
+                    : CupertinoColors.activeBlue.resolveFrom(context),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '$completionPercentage% of estimated time',
+              style: TextStyle(
+                fontSize: 12,
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+              ),
             ),
           ],
-
-          // Session notes section
-          if (session.notes?.isNotEmpty == true || !isActive) ...[
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  CupertinoIcons.doc_text,
-                  size: 16,
-                  color: CupertinoColors.systemGrey.resolveFrom(context),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child:
-                      session.notes?.isNotEmpty == true
-                          ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Notes:',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.bold,
-                                  color: CupertinoColors.secondaryLabel
-                                      .resolveFrom(context),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                session.notes!,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: CupertinoColors.label.resolveFrom(
-                                    context,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          )
-                          : Text(
-                            'No notes for this session',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontStyle: FontStyle.italic,
-                              color: CupertinoColors.secondaryLabel.resolveFrom(
-                                context,
-                              ),
-                            ),
-                          ),
-                ),
-                if (!isActive)
-                  CupertinoButton(
-                    padding: const EdgeInsets.all(0),
-                    child: Icon(
-                      CupertinoIcons.pencil,
-                      size: 18,
-                      color: CupertinoColors.systemBlue.resolveFrom(context),
-                    ),
-                    onPressed: () => _showEditNotesDialog(context, session),
-                  ),
-              ],
+          if (session.notes != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              session.notes!,
+              style: TextStyle(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: CupertinoColors.secondaryLabel.resolveFrom(context),
+              ),
             ),
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildControlButtons(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildControlButton(
+          context,
+          icon: CupertinoIcons.play_fill,
+          label: 'Start',
+          color: CupertinoColors.activeGreen,
+          onPressed:
+              widget.task.isDone || widget.task.isInProgress
+                  ? null
+                  : () {
+                    widget.taskManagerCubit.startTask(widget.task);
+                    setState(() {});
+                  },
+        ),
+        _buildControlButton(
+          context,
+          icon: CupertinoIcons.pause_fill,
+          label: 'Pause',
+          color: CupertinoColors.systemOrange,
+          onPressed:
+              widget.task.isInProgress
+                  ? () {
+                    widget.taskManagerCubit.pauseTask(widget.task);
+                    setState(() {});
+                  }
+                  : null,
+        ),
+        _buildControlButton(
+          context,
+          icon: CupertinoIcons.stop_fill,
+          label: 'Stop',
+          color: CupertinoColors.destructiveRed,
+          onPressed:
+              widget.task.isInProgress || widget.task.isPaused
+                  ? () {
+                    widget.taskManagerCubit.stopTask(widget.task);
+                    setState(() {});
+                  }
+                  : null,
+        ),
+        _buildControlButton(
+          context,
+          icon: CupertinoIcons.add,
+          label: 'Add Session',
+          color: CupertinoColors.systemBlue,
+          onPressed: () => _showAddSessionDialog(context),
+        ),
+      ],
+    );
+  }
+
+  void _showEditSessionDialog(BuildContext context, TaskSession session) {
+    DateTime startTime = session.startTime;
+    DateTime? endTime = session.endTime;
+    final notesController = TextEditingController(text: session.notes);
+
+    showCupertinoDialog(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setState) => CupertinoAlertDialog(
+                  title: const Text('Edit Session'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () {
+                          showCupertinoModalPopup(
+                            context: context,
+                            builder:
+                                (context) => Container(
+                                  height: 216,
+                                  color: CupertinoColors.systemBackground
+                                      .resolveFrom(context),
+                                  child: CupertinoDatePicker(
+                                    mode: CupertinoDatePickerMode.dateAndTime,
+                                    initialDateTime: startTime,
+                                    maximumDate: endTime ?? DateTime.now(),
+                                    onDateTimeChanged: (DateTime newDate) {
+                                      setState(() => startTime = newDate);
+                                    },
+                                  ),
+                                ),
+                          );
+                        },
+                        child: Text(
+                          'Start: ${startTime.toLocal().toString().split('.')[0]}',
+                          style: TextStyle(
+                            color: CupertinoColors.label.resolveFrom(context),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap:
+                            session.endTime != null
+                                ? () {
+                                  showCupertinoModalPopup(
+                                    context: context,
+                                    builder:
+                                        (context) => Container(
+                                          height: 216,
+                                          color: CupertinoColors
+                                              .systemBackground
+                                              .resolveFrom(context),
+                                          child: CupertinoDatePicker(
+                                            mode:
+                                                CupertinoDatePickerMode
+                                                    .dateAndTime,
+                                            initialDateTime: endTime,
+                                            minimumDate: startTime,
+                                            maximumDate: DateTime.now(),
+                                            onDateTimeChanged: (
+                                              DateTime newDate,
+                                            ) {
+                                              setState(() => endTime = newDate);
+                                            },
+                                          ),
+                                        ),
+                                  );
+                                }
+                                : null,
+                        child: Text(
+                          'End: ${endTime?.toLocal().toString().split('.')[0] ?? 'Not ended'}',
+                          style: TextStyle(
+                            color:
+                                endTime == null
+                                    ? CupertinoColors.systemGrey.resolveFrom(
+                                      context,
+                                    )
+                                    : CupertinoColors.label.resolveFrom(
+                                      context,
+                                    ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      CupertinoTextField(
+                        controller: notesController,
+                        placeholder: 'Add session notes',
+                        maxLines: 3,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoDialogAction(
+                      isDefaultAction: true,
+                      child: const Text('Save'),
+                      onPressed: () {
+                        // Update session data
+                        session.startTime = startTime;
+                        session.endTime = endTime;
+                        session.notes =
+                            notesController.text.trim().isEmpty
+                                ? null
+                                : notesController.text.trim();
+                        // Recalculate totalDuration for the task
+                        widget.task.totalDuration = widget.task.sessions
+                            .fold<int>(
+                              0,
+                              (sum, s) =>
+                                  sum + (s.endTime != null ? s.duration : 0),
+                            );
+                        widget.task.save(); // Save changes to Hive
+                        _loadSessions(); // Refresh session list
+                        setState(() {}); // Trigger UI update
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+          ),
+    );
+  }
+
+  void _showAddSessionDialog(BuildContext context) {
+    DateTime startTime = DateTime.now().subtract(const Duration(hours: 1));
+    DateTime endTime = DateTime.now();
+    final notesController = TextEditingController();
+
+    showCupertinoDialog(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setState) => CupertinoAlertDialog(
+                  title: const Text('Add Session'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () {
+                          showCupertinoModalPopup(
+                            context: context,
+                            builder:
+                                (context) => Container(
+                                  height: 216,
+                                  color: CupertinoColors.systemBackground
+                                      .resolveFrom(context),
+                                  child: CupertinoDatePicker(
+                                    mode: CupertinoDatePickerMode.dateAndTime,
+                                    initialDateTime: startTime,
+                                    maximumDate: endTime,
+                                    onDateTimeChanged: (DateTime newDate) {
+                                      setState(() => startTime = newDate);
+                                    },
+                                  ),
+                                ),
+                          );
+                        },
+                        child: Text(
+                          'Start: ${startTime.toLocal().toString().split('.')[0]}',
+                          style: TextStyle(
+                            color: CupertinoColors.label.resolveFrom(context),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () {
+                          showCupertinoModalPopup(
+                            context: context,
+                            builder:
+                                (context) => Container(
+                                  height: 216,
+                                  color: CupertinoColors.systemBackground
+                                      .resolveFrom(context),
+                                  child: CupertinoDatePicker(
+                                    mode: CupertinoDatePickerMode.dateAndTime,
+                                    initialDateTime: endTime,
+                                    minimumDate: startTime,
+                                    maximumDate: DateTime.now(),
+                                    onDateTimeChanged: (DateTime newDate) {
+                                      setState(() => endTime = newDate);
+                                    },
+                                  ),
+                                ),
+                          );
+                        },
+                        child: Text(
+                          'End: ${endTime.toLocal().toString().split('.')[0]}',
+                          style: TextStyle(
+                            color: CupertinoColors.label.resolveFrom(context),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      CupertinoTextField(
+                        controller: notesController,
+                        placeholder: 'Add session notes',
+                        maxLines: 3,
+                        padding: const EdgeInsets.all(12),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('Cancel'),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    CupertinoDialogAction(
+                      isDefaultAction: true,
+                      child: const Text('Add'),
+                      onPressed: () {
+                        // Create new session
+                        final newSession = TaskSession(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          taskId: widget.task.id,
+                          startTime: startTime,
+                          endTime: endTime,
+                          notes:
+                              notesController.text.trim().isEmpty
+                                  ? null
+                                  : notesController.text.trim(),
+                        );
+                        widget.task.sessions.add(newSession);
+                        // Recalculate totalDuration
+                        widget.task.totalDuration = widget.task.sessions
+                            .fold<int>(
+                              0,
+                              (sum, s) =>
+                                  sum + (s.endTime != null ? s.duration : 0),
+                            );
+                        widget.task.save(); // Save changes to Hive
+                        _loadSessions(); // Refresh session list
+                        setState(() {}); // Trigger UI update
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+          ),
+    );
+  }
+
+  void _showDeleteSessionDialog(BuildContext context, TaskSession session) {
+    showCupertinoDialog(
+      context: context,
+      builder:
+          (context) => CupertinoAlertDialog(
+            title: const Text('Delete Session'),
+            content: Text(
+              'Are you sure you want to delete this session from ${session.startTime.toLocal().toString().split('.')[0]}?',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.pop(context),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                child: const Text('Delete'),
+                onPressed: () {
+                  // Remove session from task
+                  widget.task.sessions.removeWhere((s) => s.id == session.id);
+                  // Recalculate totalDuration
+                  widget.task.totalDuration = widget.task.sessions.fold<int>(
+                    0,
+                    (sum, s) => sum + (s.endTime != null ? s.duration : 0),
+                  );
+                  widget.task.save(); // Save changes to Hive
+                  _loadSessions(); // Refresh session list
+                  setState(() {}); // Trigger UI update
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
     );
   }
 

@@ -19,7 +19,7 @@ class TaskSession extends Session {
   /// Start time of the session
   @HiveField(2)
   @override
-  final DateTime startTime;
+  DateTime startTime;
 
   /// End time of the session (null if session is still active)
   @HiveField(3)
