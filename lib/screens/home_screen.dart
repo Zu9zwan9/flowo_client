@@ -2,11 +2,11 @@ import 'dart:ui';
 
 import 'package:flowo_client/blocs/tasks_controller/tasks_controller_cubit.dart';
 import 'package:flowo_client/screens/add_item_screen.dart';
-import 'package:flowo_client/screens/analytics/analytics_screen.dart';
 import 'package:flowo_client/screens/calendar/daily_overview_screen.dart';
 import 'package:flowo_client/screens/profile/profile_screen.dart';
 import 'package:flowo_client/screens/settings/settings_screen.dart';
 import 'package:flowo_client/screens/task/task_list_screen.dart';
+import 'package:flowo_client/screens/unified_analytics_screen.dart';
 import 'package:flowo_client/screens/widgets/sidebar_menu_item.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -102,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen>
       accentColor: CupertinoColors.systemOrange,
     ),
     (
-      page: UnifiedAnalyticsScreen(),
+      page: const UnifiedAnalyticsScreen(),
       icon: CupertinoIcons.chart_bar_alt_fill,
       label: 'Analytics',
       accentColor: CupertinoColors.systemPurple,
