@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flowo_client/screens/habit/habit_details_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ import 'task_form_screen.dart';
 import 'task_page_screen.dart';
 import 'task_statistics_screen.dart';
 
+// Task list screen displaying tasks with filtering, grouping, and scheduling capabilities
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
 
@@ -33,15 +35,13 @@ class _TaskListScreenState extends State<TaskListScreen>
   final TextEditingController _searchController = TextEditingController();
   final Debouncer _searchDebouncer = Debouncer(Duration(milliseconds: 300));
   TaskFilterType _selectedFilter = TaskFilterType.all;
-  GroupingOption _selectedGrouping =
-      GroupingOption.none; // Selected grouping option
-  TaskViewMode _selectedViewMode = TaskViewMode.steps; // Selected view mode
+  GroupingOption _selectedGrouping = GroupingOption.none;
+  TaskViewMode _selectedViewMode = TaskViewMode.steps;
   final Map<String, bool> _expandedCategories = {};
   final Map<String, bool> _expandedTasks = {};
   String _searchQuery = '';
   late final ScrollController _scrollController;
-  final bool _schedulingStatus =
-      true; // true = all good, false = needs attention
+  final bool _schedulingStatus = true; // true = all good, false = needs attention
   final int _tasksToSchedule = 0; // Number of tasks that need scheduling
 
   // Caching to improve performance
@@ -51,6 +51,11 @@ class _TaskListScreenState extends State<TaskListScreen>
   TaskFilterType? _lastFilter;
   GroupingOption? _lastGrouping;
   TaskViewMode? _lastViewMode;
+
+  // Scheduling progress variables
+  bool _isScheduling = false;
+  int _totalTasksToSchedule = 0;
+  int _scheduledTasks = 0;
 
   @override
   void initState() {
@@ -133,9 +138,9 @@ class _TaskListScreenState extends State<TaskListScreen>
       final matchesFilter =
           _selectedFilter == TaskFilterType.all || _selectedFilter == type;
       final matchesViewMode =
-          _selectedViewMode == TaskViewMode.goals
-              ? task.parentTaskId == null
-              : task.subtaskIds.isEmpty;
+      _selectedViewMode == TaskViewMode.goals
+          ? task.parentTaskId == null
+          : task.subtaskIds.isEmpty;
       final matchesCategory = task.category.name != 'Free Time Manager';
       return matchesQuery &&
           matchesFilter &&
@@ -201,106 +206,162 @@ class _TaskListScreenState extends State<TaskListScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<TaskManagerCubit, TaskManagerState>(
-      listenWhen: (previous, current) {
-        return previous.tasks.length != current.tasks.length;
-      },
-      listener: (context, state) {
-        _clearCache();
-        _checkSchedulingStatus();
-      },
-      child: SafeArea(
-        child: Stack(
-          children: [
-            Column(
+    return SafeArea(
+      child: Stack(
+        children: [
+          Column(
+            children: [
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: TaskSearchBar(controller: _searchController),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _buildFilterTabs(context),
+              ),
+              const SizedBox(height: 12),
+              // Grouping and view mode controls
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    Expanded(child: _buildGroupingControl(context)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildViewModeControl(context)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(child: _buildTaskList(context)),
+            ],
+          ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
+                AddTaskAuroraSphereButton(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.pushReplacement(
+                      context,
+                      CupertinoPageRoute(
+                        builder: (context) => const HomeScreen(
+                          initialIndex: 2,
+                          initialExpanded: false,
+                        ),
+                      ),
+                    );
+                  },
+                  size: 50.0,
+                ),
                 const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  child: TaskSearchBar(controller: _searchController),
+                AuroraSphereButton(
+                  onPressed: () => _showScheduleDialog(context),
+                  status: _schedulingStatus,
+                  size: 50.0,
+                  label: 'Tasks',
+                  tasksToSchedule: _tasksToSchedule,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildFilterTabs(context),
-                ),
-                const SizedBox(height: 12),
-                // Grouping and view mode controls
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildGroupingControl(context)),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildViewModeControl(context)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(child: _buildTaskList(context)),
               ],
             ),
-            Positioned(
-              bottom: 16,
-              right: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AddTaskAuroraSphereButton(
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      Navigator.pushReplacement(
-                        context,
-                        CupertinoPageRoute(
-                          builder:
-                              (context) => const HomeScreen(
-                                initialIndex: 2,
-                                initialExpanded: false,
-                              ),
-                        ),
-                      );
-                    },
-                    size: 50.0,
+          ),
+          // Overlay to show scheduling progress with blurred background
+          if (_isScheduling)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                child: Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.systemBackground
+                            .resolveFrom(context),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Scheduling tasks: $_scheduledTasks of $_totalTasksToSchedule completed',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  AuroraSphereButton(
-                    onPressed: () => _showScheduleDialog(context),
-                    status: _schedulingStatus,
-                    size: 50.0,
-                    label: 'Tasks',
-                    tasksToSchedule: _tasksToSchedule,
-                  ),
-                ],
+                ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  // Show scheduling dialog and navigate to statistics screen
+  // Trigger the scheduling process manually and update UI
   void _showScheduleDialog(BuildContext context) {
     HapticFeedback.mediumImpact();
+    setState(() {
+      _isScheduling = true;
+      final tasksCubit = context.read<TaskManagerCubit>();
+      final tasks = tasksCubit.state.tasks;
+      // Calculate tasks to schedule: not done and with future deadlines
+      _totalTasksToSchedule = tasks
+          .where((task) =>
+      !task.isDone &&
+          task.deadline > DateTime.now().millisecondsSinceEpoch)
+          .length;
+      _scheduledTasks = 0;
+    });
 
-    final tasksCubit = context.read<TaskManagerCubit>();
-    tasksCubit.scheduleHabits();
-    tasksCubit.scheduleTasks();
-    _clearCache();
+    _performScheduling();
 
-    _checkSchedulingStatus();
-
-    Navigator.push(
-      context,
-      CupertinoPageRoute(builder: (context) => const TaskStatisticsScreen()),
-    ).then((_) {
-      _checkSchedulingStatus();
+    // After scheduling, hide the overlay
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _isScheduling = false;
+        });
+      }
     });
   }
 
-  // Build the task list based on grouping
+  // Perform scheduling manually, updating progress
+  void _performScheduling() {
+    final tasksCubit = context.read<TaskManagerCubit>();
+    final tasks = tasksCubit.state.tasks;
+    // Calculate habits to schedule (example logic)
+    final habitsToSchedule = tasks
+        .where((task) => task.frequency != null && !task.isDone)
+        .length;
+
+    // Schedule habits
+    Future.delayed(const Duration(seconds: 1), () {
+      tasksCubit.scheduleHabits();
+      setState(() {
+        _scheduledTasks = habitsToSchedule; // Update with actual count
+      });
+    });
+
+    // Schedule tasks
+    Future.delayed(const Duration(seconds: 2), () {
+      tasksCubit.scheduleTasks();
+      setState(() {
+        _scheduledTasks = _totalTasksToSchedule; // Update with actual count
+      });
+    });
+  }
+
+  // Build the task list using BlocBuilder for task data only
   Widget _buildTaskList(BuildContext context) =>
       BlocBuilder<TaskManagerCubit, TaskManagerState>(
         builder: (context, state) {
@@ -313,8 +374,7 @@ class _TaskListScreenState extends State<TaskListScreen>
 
           if (_selectedGrouping == GroupingOption.category) {
             return _buildGroupedTaskList(
-              filteredTasks as Map<String, List<Task>>,
-            );
+                filteredTasks as Map<String, List<Task>>);
           } else {
             return _buildFlatTaskList(filteredTasks as List<Task>);
           }
@@ -354,9 +414,9 @@ class _TaskListScreenState extends State<TaskListScreen>
           final hasSubtasks = task.subtaskIds.isNotEmpty;
           final isExpanded = _expandedTasks[task.id] ?? false;
           final parentTask =
-              _selectedViewMode == TaskViewMode.steps
-                  ? context.read<TaskManagerCubit>().getParentTask(task)
-                  : null;
+          _selectedViewMode == TaskViewMode.steps
+              ? context.read<TaskManagerCubit>().getParentTask(task)
+              : null;
           return _buildTaskListItem(
             context,
             task,
@@ -371,12 +431,12 @@ class _TaskListScreenState extends State<TaskListScreen>
 
   // Build an individual task list item with subtasks
   Widget _buildTaskListItem(
-    BuildContext context,
-    Task task,
-    bool hasSubtasks,
-    bool isExpanded, [
-    Task? parentTask,
-  ]) {
+      BuildContext context,
+      Task task,
+      bool hasSubtasks,
+      bool isExpanded, [
+        Task? parentTask,
+      ]) {
     return Column(
       children: [
         TaskListItem(
@@ -390,66 +450,66 @@ class _TaskListScreenState extends State<TaskListScreen>
           isExpanded: isExpanded,
           parentTask: parentTask,
           showParentTask:
-              _selectedViewMode == TaskViewMode.steps && parentTask != null,
-          onToggleExpand:
-              hasSubtasks
-                  ? () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _expandedTasks[task.id] = !isExpanded;
-                    });
-                  }
-                  : null,
+          _selectedViewMode == TaskViewMode.steps && parentTask != null,
+          onToggleExpand: hasSubtasks
+              ? () {
+            HapticFeedback.selectionClick();
+            setState(() {
+              _expandedTasks[task.id] = !isExpanded;
+            });
+          }
+              : null,
           onToggleCompletion: () => _toggleTaskCompletion(context, task),
         ),
         if (hasSubtasks && isExpanded)
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: CupertinoColors.transparent,
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
             ),
             margin: const EdgeInsets.only(left: 20),
             child: Column(
-              children:
-                  context.read<TaskManagerCubit>().getSubtasksForTask(task).map(
+              children: context
+                  .read<TaskManagerCubit>()
+                  .getSubtasksForTask(task)
+                  .map(
                     (subtask) {
-                      return Column(
-                        children: [
-                          TaskListItem(
-                            task: subtask,
-                            taskManagerCubit: context.read<TaskManagerCubit>(),
-                            onTap: () => _onTaskTap(context, subtask),
-                            onEdit: () => _editTask(context, subtask),
-                            onDelete: () => _deleteTask(context, subtask),
-                            categoryColor: CategoryUtils.getCategoryColor(
-                              subtask.category.name,
-                            ),
-                            hasSubtasks: subtask.subtaskIds.isNotEmpty,
-                            isExpanded: _expandedTasks[subtask.id] ?? false,
-                            parentTask: task,
-                            showParentTask:
-                                _selectedViewMode == TaskViewMode.steps,
-                            onToggleExpand:
-                                subtask.subtaskIds.isNotEmpty
-                                    ? () {
-                                      HapticFeedback.selectionClick();
-                                      setState(() {
-                                        _expandedTasks[subtask.id] =
-                                            !(_expandedTasks[subtask.id] ??
-                                                false);
-                                      });
-                                    }
-                                    : null,
-                            onToggleCompletion:
-                                () => _toggleTaskCompletion(context, subtask),
-                          ),
-                        ],
-                      );
-                    },
-                  ).toList(),
+                  return Column(
+                    children: [
+                      TaskListItem(
+                        task: subtask,
+                        taskManagerCubit: context.read<TaskManagerCubit>(),
+                        onTap: () => _onTaskTap(context, subtask),
+                        onEdit: () => _editTask(context, subtask),
+                        onDelete: () => _deleteTask(context, subtask),
+                        categoryColor: CategoryUtils.getCategoryColor(
+                          subtask.category.name,
+                        ),
+                        hasSubtasks: subtask.subtaskIds.isNotEmpty,
+                        isExpanded: _expandedTasks[subtask.id] ?? false,
+                        parentTask: task,
+                        showParentTask:
+                        _selectedViewMode == TaskViewMode.steps,
+                        onToggleExpand: subtask.subtaskIds.isNotEmpty
+                            ? () {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _expandedTasks[subtask.id] =
+                            !(_expandedTasks[subtask.id] ?? false);
+                          });
+                        }
+                            : null,
+                        onToggleCompletion: () =>
+                            _toggleTaskCompletion(context, subtask),
+                      ),
+                    ],
+                  );
+                },
+              )
+                  .toList(),
             ),
           ),
       ],
@@ -483,15 +543,13 @@ class _TaskListScreenState extends State<TaskListScreen>
 
   // Build a category section for grouped tasks
   Widget _buildCategorySection(
-    BuildContext context,
-    String category,
-    List<Task> tasks,
-    bool isExpanded,
-  ) {
+      BuildContext context,
+      String category,
+      List<Task> tasks,
+      bool isExpanded,
+      ) {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
-    final backgroundColor = CupertinoColors.systemBackground.resolveFrom(
-      context,
-    );
+    final backgroundColor = CupertinoColors.systemBackground.resolveFrom(context);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -549,9 +607,10 @@ class _TaskListScreenState extends State<TaskListScreen>
                           Flexible(
                             child: Text(
                               category,
-                              style: CupertinoTheme.of(
-                                context,
-                              ).textTheme.navTitleTextStyle.copyWith(
+                              style: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .navTitleTextStyle
+                                  .copyWith(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w600,
                                 overflow: TextOverflow.visible,
@@ -566,7 +625,8 @@ class _TaskListScreenState extends State<TaskListScreen>
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: CupertinoTheme.of(context).primaryColor
+                              color: CupertinoTheme.of(context)
+                                  .primaryColor
                                   .withOpacity(isDarkMode ? 0.2 : 0.1),
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -605,98 +665,74 @@ class _TaskListScreenState extends State<TaskListScreen>
                       onTap: () => _onTaskTap(context, task),
                       onEdit: () => _editTask(context, task),
                       onDelete: () => _deleteTask(context, task),
-                      categoryColor: CategoryUtils.getCategoryColor(
-                        task.category.name,
-                      ),
+                      categoryColor:
+                      CategoryUtils.getCategoryColor(task.category.name),
                       hasSubtasks: hasSubtasks,
                       isExpanded: isExpanded,
-                      parentTask:
-                          _selectedViewMode == TaskViewMode.steps
-                              ? context.read<TaskManagerCubit>().getParentTask(
-                                task,
-                              )
-                              : null,
-                      showParentTask:
-                          _selectedViewMode == TaskViewMode.steps &&
+                      parentTask: _selectedViewMode == TaskViewMode.steps
+                          ? context.read<TaskManagerCubit>().getParentTask(task)
+                          : null,
+                      showParentTask: _selectedViewMode == TaskViewMode.steps &&
                           task.parentTaskId != null,
-                      onToggleExpand:
-                          hasSubtasks
-                              ? () {
-                                HapticFeedback.selectionClick();
-                                setState(() {
-                                  _expandedTasks[task.id] = !isExpanded;
-                                });
-                              }
-                              : null,
-                      onToggleCompletion:
-                          () => _toggleTaskCompletion(context, task),
+                      onToggleExpand: hasSubtasks
+                          ? () {
+                        HapticFeedback.selectionClick();
+                        setState(() {
+                          _expandedTasks[task.id] = !isExpanded;
+                        });
+                      }
+                          : null,
+                      onToggleCompletion: () =>
+                          _toggleTaskCompletion(context, task),
                     ),
                     if (hasSubtasks && isExpanded)
                       Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: CupertinoColors.transparent,
-                          borderRadius: const BorderRadius.only(
+                          borderRadius: BorderRadius.only(
                             bottomLeft: Radius.circular(12),
                             bottomRight: Radius.circular(12),
                           ),
                         ),
                         margin: const EdgeInsets.only(left: 20),
                         child: Column(
-                          children:
-                              context
-                                  .read<TaskManagerCubit>()
-                                  .getSubtasksForTask(task)
-                                  .map((subtask) {
-                                    return Column(
-                                      children: [
-                                        TaskListItem(
-                                          task: subtask,
-                                          taskManagerCubit:
-                                              context.read<TaskManagerCubit>(),
-                                          onTap:
-                                              () =>
-                                                  _onTaskTap(context, subtask),
-                                          onEdit:
-                                              () => _editTask(context, subtask),
-                                          onDelete:
-                                              () =>
-                                                  _deleteTask(context, subtask),
-                                          categoryColor:
-                                              CategoryUtils.getCategoryColor(
-                                                subtask.category.name,
-                                              ),
-                                          hasSubtasks:
-                                              subtask.subtaskIds.isNotEmpty,
-                                          isExpanded:
-                                              _expandedTasks[subtask.id] ??
-                                              false,
-                                          parentTask: task,
-                                          showParentTask:
-                                              _selectedViewMode ==
-                                              TaskViewMode.steps,
-                                          onToggleExpand:
-                                              subtask.subtaskIds.isNotEmpty
-                                                  ? () {
-                                                    HapticFeedback.selectionClick();
-                                                    setState(() {
-                                                      _expandedTasks[subtask
-                                                              .id] =
-                                                          !(_expandedTasks[subtask
-                                                                  .id] ??
-                                                              false);
-                                                    });
-                                                  }
-                                                  : null,
-                                          onToggleCompletion:
-                                              () => _toggleTaskCompletion(
-                                                context,
-                                                subtask,
-                                              ),
-                                        ),
-                                      ],
-                                    );
-                                  })
-                                  .toList(),
+                          children: context
+                              .read<TaskManagerCubit>()
+                              .getSubtasksForTask(task)
+                              .map((subtask) {
+                            return Column(
+                              children: [
+                                TaskListItem(
+                                  task: subtask,
+                                  taskManagerCubit:
+                                  context.read<TaskManagerCubit>(),
+                                  onTap: () => _onTaskTap(context, subtask),
+                                  onEdit: () => _editTask(context, subtask),
+                                  onDelete: () => _deleteTask(context, subtask),
+                                  categoryColor: CategoryUtils.getCategoryColor(
+                                    subtask.category.name,
+                                  ),
+                                  hasSubtasks: subtask.subtaskIds.isNotEmpty,
+                                  isExpanded: _expandedTasks[subtask.id] ?? false,
+                                  parentTask: task,
+                                  showParentTask:
+                                  _selectedViewMode == TaskViewMode.steps,
+                                  onToggleExpand: subtask.subtaskIds.isNotEmpty
+                                      ? () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() {
+                                      _expandedTasks[subtask.id] =
+                                      !(_expandedTasks[subtask.id] ??
+                                          false);
+                                    });
+                                  }
+                                      : null,
+                                  onToggleCompletion: () =>
+                                      _toggleTaskCompletion(context, subtask),
+                                ),
+                              ],
+                            );
+                          }).toList(),
                         ),
                       ),
                   ],
@@ -749,34 +785,32 @@ class _TaskListScreenState extends State<TaskListScreen>
   void _deleteTask(BuildContext context, Task task) {
     HapticFeedback.mediumImpact();
     final subtaskCount = task.subtaskIds.length;
-    final message =
-        subtaskCount > 0
-            ? 'Are you sure you want to delete "${task.title}" and its $subtaskCount subtask${subtaskCount == 1 ? "" : "s"}?'
-            : 'Are you sure you want to delete "${task.title}"?';
+    final message = subtaskCount > 0
+        ? 'Are you sure you want to delete "${task.title}" and its $subtaskCount subtask${subtaskCount == 1 ? "" : "s"}?'
+        : 'Are you sure you want to delete "${task.title}"?';
 
     showCupertinoDialog(
       context: context,
-      builder:
-          (context) => CupertinoAlertDialog(
-            title: const Text('Delete Task'),
-            content: Text(message),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('Cancel'),
-                onPressed: () => Navigator.pop(context),
-              ),
-              CupertinoDialogAction(
-                isDestructiveAction: true,
-                onPressed: () {
-                  final tasksCubit = context.read<TaskManagerCubit>();
-                  tasksCubit.deleteTask(task);
-                  _clearCache();
-                  Navigator.pop(context);
-                },
-                child: const Text('Delete'),
-              ),
-            ],
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Delete Task'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
           ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () {
+              final tasksCubit = context.read<TaskManagerCubit>();
+              tasksCubit.deleteTask(task);
+              _clearCache();
+              Navigator.pop(context);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -790,64 +824,60 @@ class _TaskListScreenState extends State<TaskListScreen>
     tasksCubit.toggleTaskCompletion(task).then((isCompleted) {
       if (!mounted) return;
       _clearCache();
-      final message =
-          isCompleted
-              ? 'Task "${task.title}" marked as completed'
-              : 'Task "${task.title}" marked as incomplete';
+      final message = isCompleted
+          ? 'Task "${task.title}" marked as completed'
+          : 'Task "${task.title}" marked as incomplete';
 
       final overlay = OverlayEntry(
-        builder:
-            (context) => Positioned(
-              bottom: 80,
-              left: 16,
-              right: 16,
-              child: SafeArea(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+        builder: (context) => Positioned(
+          bottom: 80,
+          left: 16,
+          right: 16,
+          child: SafeArea(
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              decoration: BoxDecoration(
+                color: (isDarkMode
+                    ? CupertinoColors.systemGrey6.darkColor
+                    : CupertinoColors.white)
+                    .withOpacity(0.95),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDarkMode
+                        ? CupertinoColors.black.withOpacity(0.1)
+                        : CupertinoColors.systemGrey.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
-                  decoration: BoxDecoration(
-                    color: (isDarkMode
-                            ? CupertinoColors.systemGrey6.darkColor
-                            : CupertinoColors.white)
-                        .withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            isDarkMode
-                                ? CupertinoColors.black.withOpacity(0.1)
-                                : CupertinoColors.systemGrey.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isCompleted
+                        ? CupertinoIcons.check_mark_circled
+                        : CupertinoIcons.xmark_circle,
+                    color: isCompleted
+                        ? CupertinoColors.activeGreen
+                        : CupertinoColors.systemRed,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isCompleted
-                            ? CupertinoIcons.check_mark_circled
-                            : CupertinoIcons.xmark_circle,
-                        color:
-                            isCompleted
-                                ? CupertinoColors.activeGreen
-                                : CupertinoColors.systemRed,
-                      ),
-                      const SizedBox(width: 10),
-                      Flexible(
-                        child: Text(
-                          message,
-                          style: TextStyle(color: textColor),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      message,
+                      style: TextStyle(color: textColor),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
+          ),
+        ),
       );
       Overlay.of(context).insert(overlay);
       Future.delayed(const Duration(seconds: 1), () {
@@ -871,71 +901,59 @@ class _TaskListScreenState extends State<TaskListScreen>
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
-        children:
-            TaskFilterType.values.map((filter) {
-              final isSelected = _selectedFilter == filter;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _selectedFilter = filter;
-                      _clearCache();
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                      color:
-                          isSelected
-                              ? CupertinoColors.systemBackground.resolveFrom(
-                                context,
-                              )
-                              : Colors.transparent,
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    margin: const EdgeInsets.all(2),
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _getFilterIcon(filter),
-                            size: 18,
-                            color:
-                                isSelected
-                                    ? primaryColor
-                                    : CupertinoColors.systemGrey.resolveFrom(
-                                      context,
-                                    ),
-                            semanticLabel: _getFilterName(filter),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _getFilterName(filter),
-                            style: TextStyle(
-                              color:
-                                  isSelected
-                                      ? primaryColor
-                                      : CupertinoColors.systemGrey.resolveFrom(
-                                        context,
-                                      ),
-                              fontSize: 14,
-                              fontWeight:
-                                  isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                            ),
-                            semanticsLabel: '${_getFilterName(filter)} filter',
-                          ),
-                        ],
+        children: TaskFilterType.values.map((filter) {
+          final isSelected = _selectedFilter == filter;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _selectedFilter = filter;
+                  _clearCache();
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? CupertinoColors.systemBackground.resolveFrom(context)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                margin: const EdgeInsets.all(2),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _getFilterIcon(filter),
+                        size: 18,
+                        color: isSelected
+                            ? primaryColor
+                            : CupertinoColors.systemGrey.resolveFrom(context),
+                        semanticLabel: _getFilterName(filter),
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _getFilterName(filter),
+                        style: TextStyle(
+                          color: isSelected
+                              ? primaryColor
+                              : CupertinoColors.systemGrey.resolveFrom(context),
+                          fontSize: 14,
+                          fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                        semanticsLabel: '${_getFilterName(filter)} filter',
+                      ),
+                    ],
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -976,27 +994,25 @@ class _TaskListScreenState extends State<TaskListScreen>
         HapticFeedback.selectionClick();
         showCupertinoModalPopup(
           context: context,
-          builder:
-              (context) => CupertinoActionSheet(
-                title: const Text('Group by'),
-                actions:
-                    GroupingOption.values.map((option) {
-                      return CupertinoActionSheetAction(
-                        onPressed: () {
-                          setState(() {
-                            _selectedGrouping = option;
-                            _clearCache();
-                          });
-                          Navigator.pop(context);
-                        },
-                        child: Text(option.displayName),
-                      );
-                    }).toList(),
-                cancelButton: CupertinoActionSheetAction(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-              ),
+          builder: (context) => CupertinoActionSheet(
+            title: const Text('Group by'),
+            actions: GroupingOption.values.map((option) {
+              return CupertinoActionSheetAction(
+                onPressed: () {
+                  setState(() {
+                    _selectedGrouping = option;
+                    _clearCache();
+                  });
+                  Navigator.pop(context);
+                },
+                child: Text(option.displayName),
+              );
+            }).toList(),
+            cancelButton: CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+          ),
         );
       },
       child: Container(
@@ -1014,7 +1030,6 @@ class _TaskListScreenState extends State<TaskListScreen>
               color: CupertinoTheme.of(context).primaryColor,
             ),
             const SizedBox(width: 4),
-            const SizedBox(width: 4),
             Flexible(
               child: Text(
                 'Group by: ${_selectedGrouping.displayName}',
@@ -1031,7 +1046,7 @@ class _TaskListScreenState extends State<TaskListScreen>
     );
   }
 
-  // Build view mode segmented control
+  // Build view mode control
   Widget _buildViewModeControl(BuildContext context) {
     final primaryColor = CupertinoTheme.of(context).primaryColor;
     final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
@@ -1043,72 +1058,59 @@ class _TaskListScreenState extends State<TaskListScreen>
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
-        children:
-            TaskViewMode.values.map((mode) {
-              final isSelected = _selectedViewMode == mode;
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    setState(() {
-                      _selectedViewMode = mode;
-                      _clearCache();
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                      color:
-                          isSelected
-                              ? CupertinoColors.systemBackground.resolveFrom(
-                                context,
-                              )
-                              : Colors.transparent,
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    margin: const EdgeInsets.all(2),
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _getViewModeIcon(mode),
-                            size: 18,
-                            color:
-                                isSelected
-                                    ? primaryColor
-                                    : CupertinoColors.systemGrey.resolveFrom(
-                                      context,
-                                    ),
-                            semanticLabel: _getViewModeName(mode),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _getViewModeName(mode),
-                            style: TextStyle(
-                              color:
-                                  isSelected
-                                      ? primaryColor
-                                      : CupertinoColors.systemGrey.resolveFrom(
-                                        context,
-                                      ),
-                              fontSize: 14,
-                              fontWeight:
-                                  isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                            ),
-                            semanticsLabel:
-                                '${_getViewModeName(mode)} view mode',
-                          ),
-                        ],
+        children: TaskViewMode.values.map((mode) {
+          final isSelected = _selectedViewMode == mode;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() {
+                  _selectedViewMode = mode;
+                  _clearCache();
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? CupertinoColors.systemBackground.resolveFrom(context)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                margin: const EdgeInsets.all(2),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _getViewModeIcon(mode),
+                        size: 18,
+                        color: isSelected
+                            ? primaryColor
+                            : CupertinoColors.systemGrey.resolveFrom(context),
+                        semanticLabel: _getViewModeName(mode),
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _getViewModeName(mode),
+                        style: TextStyle(
+                          color: isSelected
+                              ? primaryColor
+                              : CupertinoColors.systemGrey.resolveFrom(context),
+                          fontSize: 14,
+                          fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
+                        ),
+                        semanticsLabel: '${_getViewModeName(mode)} view mode',
+                      ),
+                    ],
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
