@@ -1250,7 +1250,8 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
   }
 }
 
-/// Card widget with iOS styling and glassmorphic effect
+/// Card widget with modern iOS styling and enhanced glassmorphic effect
+/// following Apple Human Interface Guidelines
 class AnalyticsCard extends StatelessWidget {
   final String title;
   final Widget child;
@@ -1271,31 +1272,45 @@ class AnalyticsCard extends StatelessWidget {
     final primaryColor = CupertinoTheme.of(context).primaryColor;
     final resolvedAccentColor = accentColor ?? primaryColor;
 
-    // Glassmorphic effect colors
+    // Enhanced glassmorphic effect colors
     final backgroundColor =
         isDarkMode
-            ? CupertinoColors.systemBackground.darkColor.withOpacity(0.7)
-            : CupertinoColors.systemBackground.withOpacity(0.7);
+            ? CupertinoColors.systemBackground.darkColor.withOpacity(0.65)
+            : CupertinoColors.systemBackground.withOpacity(0.65);
+
     final borderColor =
         isDarkMode
-            ? CupertinoColors.white.withOpacity(0.1)
-            : CupertinoColors.white.withOpacity(0.3);
+            ? CupertinoColors.white.withOpacity(0.15)
+            : CupertinoColors.white.withOpacity(0.35);
+
     final shadowColor =
         isDarkMode
-            ? CupertinoColors.black.withOpacity(0.2)
-            : CupertinoColors.systemGrey.withOpacity(0.15);
+            ? CupertinoColors.black.withOpacity(0.25)
+            : CupertinoColors.systemGrey.withOpacity(0.2);
 
-    return Container(
+    // Subtle accent gradient
+    final accentGradientStart = resolvedAccentColor.withOpacity(0.05);
+    final accentGradientEnd = resolvedAccentColor.withOpacity(0.02);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor, width: 1.5),
         boxShadow: [
           BoxShadow(
             color: shadowColor,
-            blurRadius: 20,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
+            blurRadius: 24,
+            spreadRadius: 1,
+            offset: const Offset(0, 6),
+          ),
+          // Subtle inner glow
+          BoxShadow(
+            color: resolvedAccentColor.withOpacity(0.08),
+            blurRadius: 15,
+            spreadRadius: -2,
+            offset: const Offset(0, 0),
           ),
         ],
         gradient: LinearGradient(
@@ -1303,48 +1318,79 @@ class AnalyticsCard extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             isDarkMode
-                ? CupertinoColors.systemBackground.darkColor.withOpacity(0.8)
-                : CupertinoColors.white.withOpacity(0.8),
+                ? CupertinoColors.systemBackground.darkColor
+                    .withOpacity(0.75)
+                    .withAlpha((backgroundColor.alpha * 0.95).round())
+                : CupertinoColors.white.withOpacity(0.85),
             isDarkMode
-                ? CupertinoColors.darkBackgroundGray.withOpacity(0.7)
-                : CupertinoColors.systemBackground.withOpacity(0.7),
+                ? CupertinoColors.darkBackgroundGray
+                    .withOpacity(0.65)
+                    .withAlpha((backgroundColor.alpha * 0.9).round())
+                : CupertinoColors.systemBackground.withOpacity(0.65),
           ],
+          stops: const [0.0, 1.0],
         ),
       ),
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 12),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Row(
-                  children: [
-                    if (icon != null) ...[
-                      Icon(icon, color: resolvedAccentColor, size: 22),
-                      const SizedBox(width: 8),
-                    ],
-                    Text(
-                      title,
-                      style: CupertinoTheme.of(
-                        context,
-                      ).textTheme.navTitleTextStyle.copyWith(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.5,
+          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+          child: Container(
+            decoration: BoxDecoration(
+              // Subtle accent gradient overlay
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [accentGradientStart, accentGradientEnd],
+                stops: const [0.0, 1.0],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                  child: Row(
+                    children: [
+                      if (icon != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: resolvedAccentColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            icon,
+                            color: resolvedAccentColor,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
+                      Text(
+                        title,
+                        style: CupertinoTheme.of(
+                          context,
+                        ).textTheme.navTitleTextStyle.copyWith(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.5,
+                          color:
+                              isDarkMode
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: child,
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: child,
+                ),
+              ],
+            ),
           ),
         ),
       ),
