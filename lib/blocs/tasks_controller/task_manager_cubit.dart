@@ -346,30 +346,12 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   void updateTaskOrder(Task parentTask, List<Task> subtasks) {
     for (var i = 0; i < subtasks.length; i++) {
       final subtask = subtasks[i];
-      editTask(
-        task: subtask,
-        title: subtask.title,
-        priority: subtask.priority,
-        estimatedTime: subtask.estimatedTime,
-        deadline: subtask.deadline,
-        category: subtask.category,
-        parentTask: parentTask,
-        notes: subtask.notes,
-        color: subtask.color,
-        order: i + 1,
-        frequency: subtask.frequency,
-        optimisticTime: subtask.optimisticTime,
-        realisticTime: subtask.realisticTime,
-        pessimisticTime: subtask.pessimisticTime,
-        firstNotification: subtask.firstNotification,
-        secondNotification: subtask.secondNotification,
-      );
+      editTask(task: subtask, order: i + 1);
     }
-
     final subtaskIds = subtasks.map((subtask) => subtask.id).toList();
     parentTask.subtaskIds = subtaskIds;
     taskManager.tasksDB.put(parentTask.id, parentTask);
-
+    taskManager.manageTasks();
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
