@@ -1001,6 +1001,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
                     Navigator.pop(context);
                     task.isDone = !task.isDone;
                     context.read<CalendarCubit>().updateTask(task);
+                    setState(() {});
                   },
                   child: Text(
                     task.isDone ? 'Mark as Undone' : 'Mark as Done',

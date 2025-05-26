@@ -30,7 +30,9 @@ class _SessionsWidgetState extends State<SessionsWidget> {
     super.initState();
     _loadSessions();
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (widget.task.activeSession != null && mounted) setState(() {});
+      if ((widget.task.activeSession != null || widget.task.isPaused) &&
+          mounted)
+        setState(() {});
     });
   }
 
@@ -333,55 +335,6 @@ class _SessionsWidgetState extends State<SessionsWidget> {
         ],
       ),
     );
-  }
-
-  void _showEditNotesDialog(BuildContext context, TaskSession session) {
-    final TextEditingController notesController = TextEditingController(
-      text: session.notes,
-    );
-
-    showCupertinoDialog(
-      context: context,
-      builder:
-          (context) => CupertinoAlertDialog(
-            title: const Text('Session Notes'),
-            content: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: CupertinoTextField(
-                controller: notesController,
-                placeholder: 'What did you accomplish in this session?',
-                maxLines: 5,
-                minLines: 3,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: CupertinoColors.systemBackground.resolveFrom(context),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: CupertinoColors.systemGrey4.resolveFrom(context),
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('Cancel'),
-                onPressed: () => Navigator.pop(context),
-              ),
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('Save'),
-                onPressed: () {
-                  session.notes = notesController.text.trim();
-                  if (session.isInBox) {
-                    session.save();
-                  }
-                  _loadSessions();
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-    ).then((_) => notesController.dispose());
   }
 
   void _showEditSessionDialog(BuildContext context, TaskSession session) {
@@ -1426,63 +1379,6 @@ class _SessionsWidgetState extends State<SessionsWidget> {
     );
   }
 
-  Widget _buildControlButtons(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildControlButton(
-            context,
-            icon: CupertinoIcons.play_fill,
-            label: 'Start',
-            color: CupertinoColors.activeGreen,
-            onPressed:
-                widget.task.isDone || widget.task.isInProgress
-                    ? null
-                    : () {
-                      widget.taskManagerCubit.startTask(widget.task);
-                      setState(() {});
-                    },
-          ),
-          _buildControlButton(
-            context,
-            icon: CupertinoIcons.pause_fill,
-            label: 'Pause',
-            color: CupertinoColors.systemOrange,
-            onPressed:
-                widget.task.isInProgress
-                    ? () {
-                      widget.taskManagerCubit.pauseTask(widget.task);
-                      setState(() {});
-                    }
-                    : null,
-          ),
-          _buildControlButton(
-            context,
-            icon: CupertinoIcons.stop_fill,
-            label: 'Stop',
-            color: CupertinoColors.destructiveRed,
-            onPressed:
-                widget.task.isInProgress || widget.task.isPaused
-                    ? () {
-                      widget.taskManagerCubit.stopTask(widget.task);
-                      setState(() {});
-                    }
-                    : null,
-          ),
-          _buildControlButton(
-            context,
-            icon: CupertinoIcons.add,
-            label: 'Add Session',
-            color: CupertinoColors.systemBlue,
-            onPressed: () => _showAddSessionDialog(context),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Box<Task>>(
@@ -1492,7 +1388,23 @@ class _SessionsWidgetState extends State<SessionsWidget> {
         _loadSessions();
         final totalDuration = widget.taskManagerCubit.getTotalDuration(task);
         final activeSession = task.activeSession;
+        final isPaused = task.isPaused;
         final sessionStats = _calculateSessionStats();
+
+        // Filter out active or paused sessions from the recent sessions list
+        final filteredSessions =
+            _sessions
+                .where(
+                  (session) =>
+                      !session.isActive &&
+                      (isPaused
+                          ? session.id !=
+                              task.sessions
+                                  .lastWhere((s) => true, orElse: () => session)
+                                  .id
+                          : true),
+                )
+                .toList();
 
         return Container(
           padding: const EdgeInsets.all(16.0),
@@ -1537,7 +1449,7 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                 ],
               ),
               const SizedBox(height: 8),
-              if (_sessions.isNotEmpty)
+              if (task.sessions.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
@@ -1595,8 +1507,8 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                               icon: CupertinoIcons.calendar,
                               label: 'First Session',
                               value:
-                                  _sessions.isNotEmpty
-                                      ? '${_sessions.last.startTime.day}/${_sessions.last.startTime.month}'
+                                  task.sessions.isNotEmpty
+                                      ? '${task.sessions.last.startTime.day}/${task.sessions.last.startTime.month}'
                                       : 'N/A',
                             ),
                           ),
@@ -1629,17 +1541,21 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                     ],
                   ),
                 ),
-              if (activeSession != null) ...[
+              if (isPaused || activeSession != null) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: CupertinoColors.activeGreen
+                    color: (isPaused
+                            ? CupertinoColors.systemYellow
+                            : CupertinoColors.activeGreen)
                         .resolveFrom(context)
                         .withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: CupertinoColors.activeGreen
+                      color: (isPaused
+                              ? CupertinoColors.systemYellow
+                              : CupertinoColors.activeGreen)
                           .resolveFrom(context)
                           .withOpacity(0.3),
                     ),
@@ -1650,10 +1566,13 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                       Row(
                         children: [
                           Icon(
-                            CupertinoIcons.timer,
-                            color: CupertinoColors.activeGreen.resolveFrom(
-                              context,
-                            ),
+                            isPaused
+                                ? CupertinoIcons.pause
+                                : CupertinoIcons.timer,
+                            color: (isPaused
+                                    ? CupertinoColors.systemYellow
+                                    : CupertinoColors.activeGreen)
+                                .resolveFrom(context),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -1661,15 +1580,21 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Session in progress',
+                                  isPaused
+                                      ? 'Session paused'
+                                      : 'Session in progress',
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color: CupertinoColors.activeGreen
+                                    color: (isPaused
+                                            ? CupertinoColors.systemYellow
+                                            : CupertinoColors.activeGreen)
                                         .resolveFrom(context),
                                   ),
                                 ),
                                 Text(
-                                  'Started at ${activeSession.startTime.hour.toString().padLeft(2, '0')}:${activeSession.startTime.minute.toString().padLeft(2, '0')}',
+                                  isPaused
+                                      ? 'Paused at ${task.sessions.last.startTime.hour.toString().padLeft(2, '0')}:${task.sessions.last.startTime.minute.toString().padLeft(2, '0')}'
+                                      : 'Started at ${activeSession!.startTime.hour.toString().padLeft(2, '0')}:${activeSession.startTime.minute.toString().padLeft(2, '0')}',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: CupertinoColors.secondaryLabel
@@ -1680,12 +1605,15 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                             ),
                           ),
                           Text(
-                            _formatDuration(activeSession.duration),
+                            isPaused
+                                ? _formatDuration(task.sessions.last.duration)
+                                : _formatDuration(activeSession!.duration),
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: CupertinoColors.activeGreen.resolveFrom(
-                                context,
-                              ),
+                              color: (isPaused
+                                      ? CupertinoColors.systemYellow
+                                      : CupertinoColors.activeGreen)
+                                  .resolveFrom(context),
                               fontSize: 18,
                             ),
                           ),
@@ -1707,11 +1635,13 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                                 ),
                               ),
                               Text(
-                                '${((activeSession.duration / widget.task.estimatedTime) * 100).clamp(0, 100).toInt()}%',
+                                '${(((isPaused ? task.sessions.last.duration : activeSession!.duration) / widget.task.estimatedTime) * 100).clamp(0, 100).toInt()}%',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,
-                                  color: CupertinoColors.activeGreen
+                                  color: (isPaused
+                                          ? CupertinoColors.systemYellow
+                                          : CupertinoColors.activeGreen)
                                       .resolveFrom(context),
                                 ),
                               ),
@@ -1734,11 +1664,15 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                                 height: 8,
                                 width:
                                     (MediaQuery.of(context).size.width - 64) *
-                                    (activeSession.duration /
+                                    ((isPaused
+                                                ? task.sessions.last.duration
+                                                : activeSession!.duration) /
                                             widget.task.estimatedTime)
                                         .clamp(0, 1),
                                 decoration: BoxDecoration(
-                                  color: CupertinoColors.activeGreen
+                                  color: (isPaused
+                                          ? CupertinoColors.systemYellow
+                                          : CupertinoColors.activeGreen)
                                       .resolveFrom(context),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
@@ -1750,7 +1684,7 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Elapsed: ${_formatDuration(activeSession.duration)}',
+                                'Elapsed: ${_formatDuration(isPaused ? task.sessions.last.duration : activeSession!.duration)}',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: CupertinoColors.secondaryLabel
@@ -1774,7 +1708,7 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                 ),
               ],
               _buildControlButtons(context),
-              if (_sessions.isNotEmpty) ...[
+              if (filteredSessions.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 const Divider(height: 1),
                 const SizedBox(height: 8),
@@ -1785,16 +1719,16 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                   ).textTheme.textStyle.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
-                ...(_sessions
+                ...(filteredSessions
                     .take(5)
                     .map((session) => _buildSessionItem(context, session))),
-                if (_sessions.length > 5) ...[
+                if (filteredSessions.length > 5) ...[
                   const SizedBox(height: 8),
                   Center(
                     child: CupertinoButton(
                       padding: EdgeInsets.zero,
                       child: Text(
-                        'View all ${_sessions.length} sessions',
+                        'View all ${filteredSessions.length} sessions',
                         style: CupertinoTheme.of(context).textTheme.textStyle
                             .copyWith(color: CupertinoColors.activeBlue),
                       ),
@@ -1802,7 +1736,7 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                     ),
                   ),
                 ],
-              ] else ...[
+              ] else if (_sessions.isEmpty) ...[
                 const SizedBox(height: 16),
                 Center(
                   child: Text(
@@ -1820,6 +1754,69 @@ class _SessionsWidgetState extends State<SessionsWidget> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildControlButtons(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildControlButton(
+            context,
+            icon: CupertinoIcons.play_fill,
+            // Change label from "Start" to "Continue" when paused
+            label: widget.task.isPaused ? 'Continue' : 'Start',
+            color: CupertinoColors.activeGreen,
+            onPressed:
+                widget.task.isDone || widget.task.isInProgress
+                    ? null
+                    : () {
+                      // If task is paused, resume it instead of starting
+                      if (widget.task.isPaused) {
+                        widget.taskManagerCubit.resumeTask(widget.task);
+                      } else {
+                        widget.taskManagerCubit.startTask(widget.task);
+                      }
+                      setState(() {});
+                    },
+          ),
+          _buildControlButton(
+            context,
+            icon: CupertinoIcons.pause_fill,
+            label: 'Pause',
+            color: CupertinoColors.systemOrange,
+            onPressed:
+                widget.task.isInProgress
+                    ? () {
+                      widget.taskManagerCubit.pauseTask(widget.task);
+                      setState(() {});
+                    }
+                    : null,
+          ),
+          _buildControlButton(
+            context,
+            icon: CupertinoIcons.stop_fill,
+            label: 'Stop',
+            color: CupertinoColors.destructiveRed,
+            onPressed:
+                widget.task.isInProgress || widget.task.isPaused
+                    ? () {
+                      widget.taskManagerCubit.stopTask(widget.task);
+                      setState(() {});
+                    }
+                    : null,
+          ),
+          _buildControlButton(
+            context,
+            icon: CupertinoIcons.add,
+            label: 'Add Session',
+            color: CupertinoColors.systemBlue,
+            onPressed: () => _showAddSessionDialog(context),
+          ),
+        ],
+      ),
     );
   }
 }

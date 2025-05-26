@@ -582,6 +582,62 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     return result;
   }
 
+  /// Resumes a task that was previously paused
+  /// Returns true if the task was resumed successfully, false otherwise
+  bool resumeTask(Task task) {
+    logInfo('Resuming task: ${task.title}');
+
+    if (task.status != 'paused') {
+      logInfo('Cannot resume task "${task.title}" as it is not paused');
+      return false;
+    }
+
+    try {
+      // Find the last session (which should be the paused one)
+      if (task.sessions.isNotEmpty) {
+        final lastSession = task.sessions.last;
+
+        // Calculate duration accumulated so far
+        final durationSoFar = lastSession.endTime != null
+            ? lastSession.endTime!.difference(lastSession.startTime).inMilliseconds
+            : 0;
+
+        // Set a new session with the same ID but adjusted times
+        // to continue where we left off
+        TaskSession continuedSession = TaskSession(
+          id: lastSession.id, // Keep the same ID
+          taskId: task.id,
+          startTime: DateTime.now().subtract(Duration(milliseconds: durationSoFar)), // Adjust start time
+          endTime: null, // No end time since it's active
+          notes: lastSession.notes, // Keep any notes
+        );
+
+        // Remove the old session and add the continued one
+        task.sessions.removeLast();
+        task.sessions.add(continuedSession);
+      } else {
+        // Just in case there's no session to resume, create a new one
+        final session = TaskSession(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          taskId: task.id,
+          startTime: DateTime.now(),
+        );
+        task.sessions.add(session);
+      }
+
+      // Update status
+      task.status = 'in_progress';
+      task.save();
+
+      emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+      logInfo('Task "${task.title}" resumed successfully');
+      return true;
+    } catch (e) {
+      logError('Error resuming task: $e');
+      return false;
+    }
+  }
+
   /// Stops a task that's in progress or paused
   /// Returns true if the task was stopped successfully, false otherwise
   bool stopTask(Task task) {

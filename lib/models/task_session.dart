@@ -30,6 +30,16 @@ class TaskSession extends Session {
   @HiveField(4)
   String? notes;
 
+  TaskSession clone() {
+    return TaskSession(
+      id: id,
+      taskId: taskId,
+      startTime: startTime,
+      endTime: endTime,
+      notes: notes,
+    );
+  }
+
   /// Creates a new task session
   ///
   /// @param id Unique identifier for the session
