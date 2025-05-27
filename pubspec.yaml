@@ -34,7 +34,7 @@ dependencies:
   cupertino_sidebar: ^1.0.1
   flutter_local_notifications: ^19.0.0
   http: ^1.2.0
-  intl: ^0.19.0
+  intl: ^0.20.2
   # Video and audio packages for ambient feature
   video_player: ^2.8.2
   chewie: ^1.7.5
