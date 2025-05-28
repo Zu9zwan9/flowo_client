@@ -6,8 +6,9 @@ import 'package:flowo_client/screens/calendar/daily_overview_screen.dart';
 import 'package:flowo_client/screens/profile/profile_screen.dart';
 import 'package:flowo_client/screens/settings/settings_screen.dart';
 import 'package:flowo_client/screens/task/task_list_screen.dart';
-import 'package:flowo_client/screens/unified_analytics_screen.dart';
+import 'package:flowo_client/screens/analytics/unified_analytics_screen.dart';
 import 'package:flowo_client/screens/widgets/sidebar_menu_item.dart';
+import 'package:flowo_client/screens/widgets/task_tracking_widget.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -72,10 +73,10 @@ class _HomeScreenState extends State<HomeScreen>
   final List<({Widget page, IconData icon, String label, Color accentColor})>
   _pageData = [
     (
-      page: DailyOverviewScreen(),
-      icon: CupertinoIcons.home,
-      label: 'Today',
-      accentColor: CupertinoColors.systemBlue,
+    page: DailyOverviewScreen(),
+    icon: CupertinoIcons.home,
+    label: 'Today',
+    accentColor: CupertinoColors.systemBlue,
     ),
     // (
     //   page: CalendarScreen(),
@@ -84,34 +85,34 @@ class _HomeScreenState extends State<HomeScreen>
     //   accentColor: CupertinoColors.systemPink,
     // ),
     (
-      page: TaskListScreen(),
-      icon: CupertinoIcons.list_bullet,
-      label: 'Tasks',
-      accentColor: CupertinoColors.systemGreen,
+    page: TaskListScreen(),
+    icon: CupertinoIcons.list_bullet,
+    label: 'Tasks',
+    accentColor: CupertinoColors.systemGreen,
     ),
     (
-      page: AddItemScreen(),
-      icon: CupertinoIcons.add_circled,
-      label: 'Create',
-      accentColor: CupertinoColors.systemIndigo,
+    page: AddItemScreen(),
+    icon: CupertinoIcons.add_circled,
+    label: 'Create',
+    accentColor: CupertinoColors.systemIndigo,
     ),
     (
-      page: ProfileScreen(),
-      icon: CupertinoIcons.person,
-      label: 'Profile',
-      accentColor: CupertinoColors.systemOrange,
+    page: ProfileScreen(),
+    icon: CupertinoIcons.person,
+    label: 'Profile',
+    accentColor: CupertinoColors.systemOrange,
     ),
     (
-      page: const UnifiedAnalyticsScreen(),
-      icon: CupertinoIcons.chart_bar_alt_fill,
-      label: 'Analytics',
-      accentColor: CupertinoColors.systemPurple,
+    page: const UnifiedAnalyticsScreen(),
+    icon: CupertinoIcons.chart_bar_alt_fill,
+    label: 'Analytics',
+    accentColor: CupertinoColors.systemPurple,
     ),
     (
-      page: SettingsScreen(),
-      icon: CupertinoIcons.settings,
-      label: 'Settings',
-      accentColor: CupertinoColors.systemGrey,
+    page: SettingsScreen(),
+    icon: CupertinoIcons.settings,
+    label: 'Settings',
+    accentColor: CupertinoColors.systemGrey,
     ),
   ];
 
@@ -183,9 +184,9 @@ class _HomeScreenState extends State<HomeScreen>
                       builder: (context, child) {
                         return Opacity(
                           opacity:
-                              index == _selectedIndex
-                                  ? _fadeAnimation.value
-                                  : 1.0 - _fadeAnimation.value,
+                          index == _selectedIndex
+                              ? _fadeAnimation.value
+                              : 1.0 - _fadeAnimation.value,
                           child: child,
                         );
                       },
@@ -203,9 +204,9 @@ class _HomeScreenState extends State<HomeScreen>
                     filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
                     child: Container(
                       color:
-                          isDarkMode
-                              ? CupertinoColors.black.withOpacity(0.5)
-                              : CupertinoColors.white.withOpacity(0.5),
+                      isDarkMode
+                          ? CupertinoColors.black.withOpacity(0.5)
+                          : CupertinoColors.white.withOpacity(0.5),
                     ),
                   ),
                 ),
@@ -235,122 +236,125 @@ class _HomeScreenState extends State<HomeScreen>
                     ],
                   ),
                   child: SafeArea(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 16,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border(
-                                bottom: BorderSide(
-                                  color:
-                                      isDarkMode
-                                          ? CupertinoColors.darkBackgroundGray
-                                              .withOpacity(0.3)
-                                          : CupertinoColors.systemGrey5,
-                                  width: 0.5,
-                                ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // App header
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color:
+                                isDarkMode
+                                    ? CupertinoColors.darkBackgroundGray
+                                    .withOpacity(0.3)
+                                    : CupertinoColors.systemGrey5,
+                                width: 0.5,
                               ),
                             ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: CupertinoColors.systemIndigo,
-                                    borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: CupertinoColors.systemIndigo,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    CupertinoIcons.calendar_today,
+                                    color: CupertinoColors.white,
+                                    size: 20,
                                   ),
-                                  child: const Center(
-                                    child: Icon(
-                                      CupertinoIcons.calendar_today,
-                                      color: CupertinoColors.white,
-                                      size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Flowo',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color:
+                                        isDarkMode
+                                            ? CupertinoColors.white
+                                            : CupertinoColors.black,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Flexible(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        'Flowo',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color:
-                                              isDarkMode
-                                                  ? CupertinoColors.white
-                                                  : CupertinoColors.black,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
+                                    Text(
+                                      'Productivity App',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color:
+                                        isDarkMode
+                                            ? CupertinoColors.systemGrey
+                                            : CupertinoColors.systemGrey,
                                       ),
-                                      Text(
-                                        'Productivity App',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color:
-                                              isDarkMode
-                                                  ? CupertinoColors.systemGrey
-                                                  : CupertinoColors.systemGrey,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
-                          Flexible(
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              itemCount: _pageData.length,
-                              itemBuilder: (context, index) {
-                                final item = _pageData[index];
-                                final isSelected = index == _selectedIndex;
-
-                                return SidebarMenuItem(
-                                  icon: item.icon,
-                                  label: item.label,
-                                  accentColor: item.accentColor,
-                                  isSelected: isSelected,
-                                  onTap: () => _navigateToPage(index),
-                                  textColor:
-                                      isDarkMode
-                                          ? CupertinoColors.white
-                                          : CupertinoColors.black,
-                                );
-                              },
-                            ),
-                          ),
-                          Flexible(
-                            fit: FlexFit.loose,
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              child: Text(
-                                'FLOWO 1.0.0',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color:
-                                      isDarkMode
-                                          ? CupertinoColors.systemGrey
-                                          : CupertinoColors.systemGrey,
-                                ),
-                                textAlign: TextAlign.center,
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+
+                        // Navigation menu
+                        Expanded(
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            itemCount: _pageData.length,
+                            itemBuilder: (context, index) {
+                              final item = _pageData[index];
+                              final isSelected = index == _selectedIndex;
+
+                              return SidebarMenuItem(
+                                icon: item.icon,
+                                label: item.label,
+                                accentColor: item.accentColor,
+                                isSelected: isSelected,
+                                onTap: () => _navigateToPage(index),
+                                textColor:
+                                isDarkMode
+                                    ? CupertinoColors.white
+                                    : CupertinoColors.black,
+                              );
+                            },
+                          ),
+                        ),
+
+                        // Task tracking widget - shows current active task tracking
+                        const TaskTrackingWidget(),
+
+                        // App version
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          child: Text(
+                            'FLOWO 1.0.0',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color:
+                              isDarkMode
+                                  ? CupertinoColors.systemGrey
+                                  : CupertinoColors.systemGrey,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

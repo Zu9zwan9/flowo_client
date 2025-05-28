@@ -20,7 +20,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// Formatter for analytics data
 abstract class AnalyticsFormatter {
   String formatNumber(num value);
+
   String formatPercent(double value);
+
   String getEfficiencyMessage(double score);
 }
 
@@ -98,19 +100,19 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
         scheduledTasks
             .where(
               (task) =>
-          task.type == ScheduledTaskType.defaultType ||
-              task.type == ScheduledTaskType.timeSensitive,
-        )
+                  task.type == ScheduledTaskType.defaultType ||
+                  task.type == ScheduledTaskType.timeSensitive,
+            )
             .length;
     _completedTasks = tasks.where((task) => task.isDone).length;
     _overdueTasks =
         tasks
             .where(
               (task) =>
-          !task.isDone &&
-              task.deadline < DateTime.now().millisecondsSinceEpoch &&
-              _canTaskBeOverdue(task),
-        )
+                  !task.isDone &&
+                  task.deadline < DateTime.now().millisecondsSinceEpoch &&
+                  _canTaskBeOverdue(task),
+            )
             .length;
     _upcomingTasks = _totalScheduledTasks - _completedTasks - _overdueTasks;
 
@@ -145,7 +147,7 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
     }
 
     _averageDuration =
-    _tasksWithDuration > 0 ? (_totalDuration ~/ _tasksWithDuration) : 0;
+        _tasksWithDuration > 0 ? (_totalDuration ~/ _tasksWithDuration) : 0;
   }
 
   bool _canTaskBeOverdue(Task task) {
@@ -169,9 +171,9 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
   }
 
   void _analyzeTaskUrgency(
-      List<Task> tasks,
-      List<ScheduledTask> scheduledTasks,
-      ) {
+    List<Task> tasks,
+    List<ScheduledTask> scheduledTasks,
+  ) {
     _impossibleTasks = [];
     _needsReschedulingTasks = [];
 
@@ -188,7 +190,7 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
           timeLeft - _taskManagerCubit.getBusyTime(task.deadline);
       final timeCoefficient =
           (trueTimeLeft - task.estimatedTime) *
-              (trueTimeLeft + task.estimatedTime);
+          (trueTimeLeft + task.estimatedTime);
 
       if (timeCoefficient < 0) {
         if (timeLeft - task.estimatedTime < 0) {
@@ -206,11 +208,11 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
     return tasks
         .where(
           (task) =>
-      !task.isDone &&
-          task.scheduledTasks.isEmpty &&
-          task.deadline > now &&
-          _canTaskBeOverdue(task),
-    )
+              !task.isDone &&
+              task.scheduledTasks.isEmpty &&
+              task.deadline > now &&
+              _canTaskBeOverdue(task),
+        )
         .toList();
   }
 
@@ -219,34 +221,6 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
 
     return CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(
-        backgroundColor:
-        isDarkMode
-            ? CupertinoColors.systemBackground.darkColor.withOpacity(0.8)
-            : CupertinoColors.systemBackground.withOpacity(0.8),
-        border: const Border(
-          bottom: BorderSide(color: CupertinoColors.separator, width: 0.0),
-        ),
-        middle: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              CupertinoIcons.chart_bar_alt_fill,
-              color: CupertinoColors.systemIndigo.resolveFrom(context),
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Analytics Dashboard',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
       child: SafeArea(
         child: MultiBlocListener(
           listeners: [
@@ -319,12 +293,12 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
   }
 
   Widget _buildAnalyticsContent(
-      BuildContext context,
-      AnalyticsData analyticsData,
-      ) {
+    BuildContext context,
+    AnalyticsData analyticsData,
+  ) {
     final formatter = DefaultAnalyticsFormatter();
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
         _buildSummaryCard(analyticsData),
         const SizedBox(height: 20),
@@ -470,18 +444,18 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
                 StatItem(
                   icon: CupertinoIcons.time_solid,
                   value:
-                  Duration(milliseconds: _totalDuration).inHours > 0
-                      ? '${Duration(milliseconds: _totalDuration).inHours}h ${Duration(milliseconds: _totalDuration).inMinutes.remainder(60)}m'
-                      : '${Duration(milliseconds: _totalDuration).inMinutes}m',
+                      Duration(milliseconds: _totalDuration).inHours > 0
+                          ? '${Duration(milliseconds: _totalDuration).inHours}h ${Duration(milliseconds: _totalDuration).inMinutes.remainder(60)}m'
+                          : '${Duration(milliseconds: _totalDuration).inMinutes}m',
                   label: 'Total Time',
                   color: CupertinoColors.activeBlue,
                 ),
                 StatItem(
                   icon: CupertinoIcons.timer_fill,
                   value:
-                  Duration(milliseconds: _averageDuration).inHours > 0
-                      ? '${Duration(milliseconds: _averageDuration).inHours}h ${Duration(milliseconds: _averageDuration).inMinutes.remainder(60)}m'
-                      : '${Duration(milliseconds: _averageDuration).inMinutes}m',
+                      Duration(milliseconds: _averageDuration).inHours > 0
+                          ? '${Duration(milliseconds: _averageDuration).inHours}h ${Duration(milliseconds: _averageDuration).inMinutes.remainder(60)}m'
+                          : '${Duration(milliseconds: _averageDuration).inMinutes}m',
                   label: 'Average Time',
                   color: CupertinoColors.systemPurple,
                 ),
@@ -523,9 +497,9 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color:
-                          CupertinoTheme.of(
-                            context,
-                          ).textTheme.textStyle.color,
+                              CupertinoTheme.of(
+                                context,
+                              ).textTheme.textStyle.color,
                           letterSpacing: -0.3,
                         ),
                       ),
@@ -538,7 +512,7 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
                       fontSize: 17,
                       fontWeight: FontWeight.w500,
                       color:
-                      CupertinoTheme.of(context).textTheme.textStyle.color,
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
                       letterSpacing: -0.2,
                     ),
                   ),
@@ -601,7 +575,7 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
                     'These tasks cannot be completed before their deadlines due to time constraints:',
                     style: TextStyle(
                       color:
-                      CupertinoTheme.of(context).textTheme.textStyle.color,
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: -0.2,
@@ -626,9 +600,9 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
 
     // Choose color based on task type
     final accentColor =
-    isImpossible
-        ? CupertinoColors.systemRed.resolveFrom(context)
-        : CupertinoColors.systemOrange.resolveFrom(context);
+        isImpossible
+            ? CupertinoColors.systemRed.resolveFrom(context)
+            : CupertinoColors.systemOrange.resolveFrom(context);
 
     return CupertinoButton(
       padding: EdgeInsets.zero,
@@ -809,7 +783,7 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
                     'These tasks need to be rescheduled to ensure they can be completed on time:',
                     style: TextStyle(
                       color:
-                      CupertinoTheme.of(context).textTheme.textStyle.color,
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: -0.2,
@@ -822,7 +796,7 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
           ),
           const SizedBox(height: 16),
           ..._needsReschedulingTasks.map(
-                (task) => _buildTaskListItem(task, false),
+            (task) => _buildTaskListItem(task, false),
           ),
         ],
       ),
@@ -859,7 +833,7 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
                     'Optimize your schedule with these quick actions:',
                     style: TextStyle(
                       color:
-                      CupertinoTheme.of(context).textTheme.textStyle.color,
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                       letterSpacing: -0.2,
@@ -997,21 +971,21 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
     );
 
     final accentColor =
-    isImpossible
-        ? CupertinoColors.systemRed.resolveFrom(context)
-        : CupertinoColors.systemOrange.resolveFrom(context);
+        isImpossible
+            ? CupertinoColors.systemRed.resolveFrom(context)
+            : CupertinoColors.systemOrange.resolveFrom(context);
 
     String message;
     IconData messageIcon;
     if (isImpossible) {
       message =
-      'This task is impossible to complete before the deadline. '
+          'This task is impossible to complete before the deadline. '
           'You need ${timeNeeded.inHours}h ${timeNeeded.inMinutes.remainder(60)}m '
           'more time than available before the deadline.';
       messageIcon = CupertinoIcons.exclamationmark_octagon_fill;
     } else {
       message =
-      'This task is possible to complete if you reschedule some other tasks. '
+          'This task is possible to complete if you reschedule some other tasks. '
           'You need ${timeNeeded.inHours}h ${timeNeeded.inMinutes.remainder(60)}m '
           'more time to complete this task before the deadline.';
       messageIcon = CupertinoIcons.arrow_2_circlepath_circle_fill;
@@ -1021,139 +995,139 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
       context: context,
       builder:
           (context) => CupertinoActionSheet(
-        title: Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(messageIcon, color: accentColor, size: 20),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  task.title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color:
-                    CupertinoTheme.of(
-                      context,
-                    ).textTheme.textStyle.color,
-                    letterSpacing: -0.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
-          ),
-        ),
-        message: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: accentColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: accentColor.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: Text(
-            message,
-            style: TextStyle(
-              fontSize: 14,
-              color: CupertinoTheme.of(context).textTheme.textStyle.color,
-              height: 1.3,
-              letterSpacing: -0.2,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-        actions: [
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.pop(context);
-              _editTask(task);
-            },
-            isDefaultAction: true,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  CupertinoIcons.pencil_circle_fill,
-                  color: CupertinoColors.activeBlue,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  'Edit Task',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!isImpossible)
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.pop(context);
-                // Navigate to the task reschedule screen
-                Navigator.push(
-                  context,
-                  CupertinoPageRoute(
-                    builder:
-                        (context) => TaskRescheduleScreen(
-                      targetTask: task,
-                      timeNeeded: timeNeeded,
-                    ),
-                  ),
-                ).then((_) {
-                  // Refresh the statistics when returning from the reschedule screen
-                  setState(() {
-                    _loadTaskStatistics();
-                  });
-                });
-              },
+            title: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    CupertinoIcons.arrow_2_circlepath_circle_fill,
-                    color: CupertinoColors.systemOrange,
-                    size: 20,
-                  ),
+                  Icon(messageIcon, color: accentColor, size: 20),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Reschedule Other Tasks',
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      task.title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color:
+                            CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle.color,
+                        letterSpacing: -0.5,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ],
               ),
             ),
-        ],
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                CupertinoIcons.xmark_circle_fill,
-                color: CupertinoColors.systemGrey,
-                size: 20,
+            message: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: accentColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: accentColor.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
-              const SizedBox(width: 8),
-              const Text(
-                'Cancel',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+              child: Text(
+                message,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                  height: 1.3,
+                  letterSpacing: -0.2,
+                ),
+                textAlign: TextAlign.center,
               ),
+            ),
+            actions: [
+              CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _editTask(task);
+                },
+                isDefaultAction: true,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      CupertinoIcons.pencil_circle_fill,
+                      color: CupertinoColors.activeBlue,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Edit Task',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isImpossible)
+                CupertinoActionSheetAction(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // Navigate to the task reschedule screen
+                    Navigator.push(
+                      context,
+                      CupertinoPageRoute(
+                        builder:
+                            (context) => TaskRescheduleScreen(
+                              targetTask: task,
+                              timeNeeded: timeNeeded,
+                            ),
+                      ),
+                    ).then((_) {
+                      // Refresh the statistics when returning from the reschedule screen
+                      setState(() {
+                        _loadTaskStatistics();
+                      });
+                    });
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        CupertinoIcons.arrow_2_circlepath_circle_fill,
+                        color: CupertinoColors.systemOrange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Reschedule Other Tasks',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
+            cancelButton: CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.xmark_circle_fill,
+                    color: CupertinoColors.systemGrey,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Cancel',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -1191,61 +1165,61 @@ class _UnifiedAnalyticsScreenState extends State<UnifiedAnalyticsScreen> {
       context: context,
       builder:
           (context) => CupertinoAlertDialog(
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              CupertinoIcons.check_mark_circled_solid,
-              color: CupertinoColors.activeGreen,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Tasks Scheduled',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-        content: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Text(
-            '${_unscheduledTasksList.length} unscheduled tasks have been successfully added to your schedule.',
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.3,
-              letterSpacing: -0.2,
-            ),
-          ),
-        ),
-        actions: [
-          CupertinoDialogAction(
-            onPressed: () => Navigator.pop(context),
-            isDefaultAction: true,
-            child: Row(
+            title: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  CupertinoIcons.checkmark_circle_fill,
-                  color: CupertinoColors.activeBlue,
-                  size: 18,
+                  CupertinoIcons.check_mark_circled_solid,
+                  color: CupertinoColors.activeGreen,
+                  size: 20,
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 const Text(
-                  'Done',
+                  'Tasks Scheduled',
                   style: TextStyle(
                     fontSize: 17,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: -0.5,
                   ),
                 ),
               ],
             ),
+            content: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                '${_unscheduledTasksList.length} unscheduled tasks have been successfully added to your schedule.',
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.3,
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(context),
+                isDefaultAction: true,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      CupertinoIcons.checkmark_circle_fill,
+                      color: CupertinoColors.activeBlue,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Done',
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }
@@ -1274,19 +1248,19 @@ class AnalyticsCard extends StatelessWidget {
 
     // Enhanced glassmorphic effect colors
     final backgroundColor =
-    isDarkMode
-        ? CupertinoColors.systemBackground.darkColor.withOpacity(0.65)
-        : CupertinoColors.systemBackground.withOpacity(0.65);
+        isDarkMode
+            ? CupertinoColors.systemBackground.darkColor.withOpacity(0.65)
+            : CupertinoColors.systemBackground.withOpacity(0.65);
 
     final borderColor =
-    isDarkMode
-        ? CupertinoColors.white.withOpacity(0.15)
-        : CupertinoColors.white.withOpacity(0.35);
+        isDarkMode
+            ? CupertinoColors.white.withOpacity(0.15)
+            : CupertinoColors.white.withOpacity(0.35);
 
     final shadowColor =
-    isDarkMode
-        ? CupertinoColors.black.withOpacity(0.25)
-        : CupertinoColors.systemGrey.withOpacity(0.2);
+        isDarkMode
+            ? CupertinoColors.black.withOpacity(0.25)
+            : CupertinoColors.systemGrey.withOpacity(0.2);
 
     // Subtle accent gradient
     final accentGradientStart = resolvedAccentColor.withOpacity(0.05);
@@ -1319,13 +1293,13 @@ class AnalyticsCard extends StatelessWidget {
           colors: [
             isDarkMode
                 ? CupertinoColors.systemBackground.darkColor
-                .withOpacity(0.75)
-                .withAlpha((backgroundColor.alpha * 0.95).round())
+                    .withOpacity(0.75)
+                    .withAlpha((backgroundColor.alpha * 0.95).round())
                 : CupertinoColors.white.withOpacity(0.85),
             isDarkMode
                 ? CupertinoColors.darkBackgroundGray
-                .withOpacity(0.65)
-                .withAlpha((backgroundColor.alpha * 0.9).round())
+                    .withOpacity(0.65)
+                    .withAlpha((backgroundColor.alpha * 0.9).round())
                 : CupertinoColors.systemBackground.withOpacity(0.65),
           ],
           stops: const [0.0, 1.0],
@@ -1377,9 +1351,9 @@ class AnalyticsCard extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           letterSpacing: -0.5,
                           color:
-                          isDarkMode
-                              ? CupertinoColors.white
-                              : CupertinoColors.black,
+                              isDarkMode
+                                  ? CupertinoColors.white
+                                  : CupertinoColors.black,
                         ),
                       ),
                     ],
@@ -1417,19 +1391,19 @@ class StatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
     final resolvedColor =
-    color != null
-        ? CupertinoDynamicColor.resolve(color!, context)
-        : CupertinoTheme.of(context).primaryColor;
+        color != null
+            ? CupertinoDynamicColor.resolve(color!, context)
+            : CupertinoTheme.of(context).primaryColor;
 
     // Glassmorphic effect colors
     final containerColor =
-    isDarkMode
-        ? resolvedColor.withOpacity(0.15)
-        : resolvedColor.withOpacity(0.1);
+        isDarkMode
+            ? resolvedColor.withOpacity(0.15)
+            : resolvedColor.withOpacity(0.1);
     final borderColor =
-    isDarkMode
-        ? resolvedColor.withOpacity(0.3)
-        : resolvedColor.withOpacity(0.2);
+        isDarkMode
+            ? resolvedColor.withOpacity(0.3)
+            : resolvedColor.withOpacity(0.2);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -1466,7 +1440,7 @@ class StatItem extends StatelessWidget {
               fontSize: 14,
               fontWeight: FontWeight.w500,
               color:
-              CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color,
+                  CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color,
               letterSpacing: -0.2,
             ),
           ),
@@ -1502,13 +1476,13 @@ class ProgressItem extends StatelessWidget {
 
     // Glassmorphic effect colors
     final containerColor =
-    isDarkMode
-        ? resolvedColor.withOpacity(0.15)
-        : resolvedColor.withOpacity(0.1);
+        isDarkMode
+            ? resolvedColor.withOpacity(0.15)
+            : resolvedColor.withOpacity(0.1);
     final borderColor =
-    isDarkMode
-        ? resolvedColor.withOpacity(0.3)
-        : resolvedColor.withOpacity(0.2);
+        isDarkMode
+            ? resolvedColor.withOpacity(0.3)
+            : resolvedColor.withOpacity(0.2);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
@@ -1529,9 +1503,9 @@ class ProgressItem extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: safeValue / 100,
                   backgroundColor:
-                  isDarkMode
-                      ? CupertinoColors.darkBackgroundGray.withOpacity(0.3)
-                      : CupertinoColors.systemGrey5.resolveFrom(context),
+                      isDarkMode
+                          ? CupertinoColors.darkBackgroundGray.withOpacity(0.3)
+                          : CupertinoColors.systemGrey5.resolveFrom(context),
                   valueColor: AlwaysStoppedAnimation<Color>(resolvedColor),
                   strokeWidth: 10,
                 ),
@@ -1643,9 +1617,9 @@ class AiSuggestionsCard extends StatelessWidget {
                         height: 1.3,
                         letterSpacing: -0.2,
                         color:
-                        CupertinoTheme.of(
-                          context,
-                        ).textTheme.textStyle.color,
+                            CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle.color,
                       ),
                     ),
                   ),
@@ -1730,13 +1704,13 @@ class EfficiencyScoreCard extends StatelessWidget {
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
                         color:
-                        isDarkMode
-                            ? CupertinoColors.systemGrey.resolveFrom(
-                          context,
-                        )
-                            : CupertinoColors.systemGrey2.resolveFrom(
-                          context,
-                        ),
+                            isDarkMode
+                                ? CupertinoColors.systemGrey.resolveFrom(
+                                  context,
+                                )
+                                : CupertinoColors.systemGrey2.resolveFrom(
+                                  context,
+                                ),
                         letterSpacing: -0.5,
                       ),
                     ),
