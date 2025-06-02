@@ -12,7 +12,7 @@ class AddSubtaskDialog {
   static void show(
     BuildContext context,
     Task parentTask,
-    Function(String, int, int, int, int, int?, int?) onAdd,
+    Function(String, int, int, int, int, int?, int?, bool) onAdd,
   ) {
     showCupertinoModalPopup(
       context: context,
@@ -24,7 +24,7 @@ class AddSubtaskDialog {
 
 class _AddSubtaskDialogWidget extends StatefulWidget {
   final Task parentTask;
-  final Function(String, int, int, int, int, int?, int?) onAdd;
+  final Function(String, int, int, int, int, int?, int?, bool) onAdd;
 
   const _AddSubtaskDialogWidget({
     required this.parentTask,
@@ -84,6 +84,100 @@ class _AddSubtaskDialogWidgetState extends State<_AddSubtaskDialogWidget> {
   void dispose() {
     titleController.dispose();
     super.dispose();
+  }
+
+  // Check if adding this subtask would exceed parent's estimated time
+  bool _wouldExceedParentTime() {
+    // Calculate total estimated time of existing subtasks
+    int totalSubtasksTime = 0;
+    final existingSubtasks = context
+        .read<TaskManagerCubit>()
+        .getSubtasksForTask(widget.parentTask);
+
+    for (final subtask in existingSubtasks) {
+      totalSubtasksTime += subtask.estimatedTime;
+    }
+
+    // Add the new subtask's estimated time
+    final newTotalTime = totalSubtasksTime + estimatedTime;
+
+    // Check if it exceeds parent task's estimated time
+    return newTotalTime > widget.parentTask.estimatedTime;
+  }
+
+  // Format time duration for display
+  String _formatTimeDuration(int milliseconds) {
+    final hours = milliseconds ~/ 3600000;
+    final minutes = (milliseconds % 3600000) ~/ 60000;
+
+    if (hours > 0) {
+      return minutes > 0 ? '$hours hr $minutes min' : '$hours hr';
+    } else {
+      return '$minutes min';
+    }
+  }
+
+  // Show confirmation dialog when estimated time exceeds parent task's time
+  void _showExceedsTimeConfirmation() {
+    final existingSubtasks = context
+        .read<TaskManagerCubit>()
+        .getSubtasksForTask(widget.parentTask);
+
+    int totalSubtasksTime = 0;
+    for (final subtask in existingSubtasks) {
+      totalSubtasksTime += subtask.estimatedTime;
+    }
+
+    final newTotalTime = totalSubtasksTime + estimatedTime;
+    final parentTime = widget.parentTask.estimatedTime;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          title: const Text('Estimated Time Exceeds Parent Task'),
+          message: Text(
+            'The total estimated time of all subtasks (${_formatTimeDuration(newTotalTime)}) '
+            'would exceed the parent task\'s estimated time (${_formatTimeDuration(parentTime)}).\n\n'
+            'What would you like to do?',
+          ),
+          actions: [
+            CupertinoActionSheetAction(
+              child: const Text('Update Parent Task Time'),
+              onPressed: () {
+                Navigator.pop(context); // Close action sheet
+                Navigator.pop(context); // Close dialog
+
+                // Add the subtask and update parent task's time
+                widget.onAdd(
+                  titleController.text.trim(),
+                  estimatedTime,
+                  priority,
+                  deadline,
+                  order,
+                  firstNotification,
+                  secondNotification,
+                  true, // Update parent task flag
+                );
+              },
+            ),
+            CupertinoActionSheetAction(
+              child: const Text('Modify Subtask Time'),
+              onPressed: () {
+                Navigator.pop(context); // Close the action sheet only
+                // User will adjust the time in the dialog
+              },
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+        );
+      },
+    );
   }
 
   String _getOrderLabel(int order, List<Task> sortedSubtasks) {
@@ -253,6 +347,7 @@ class _AddSubtaskDialogWidgetState extends State<_AddSubtaskDialogWidget> {
                     ),
                   ),
                   onPressed: () {
+                    // Validate title first
                     if (titleController.text.trim().isEmpty) {
                       showCupertinoDialog(
                         context: context,
@@ -271,10 +366,14 @@ class _AddSubtaskDialogWidgetState extends State<_AddSubtaskDialogWidget> {
                       return;
                     }
 
-                    // First close the dialog
-                    Navigator.pop(context);
+                    // Check if the total estimated time would exceed parent task's time
+                    if (_wouldExceedParentTime()) {
+                      _showExceedsTimeConfirmation();
+                      return;
+                    }
 
-                    // Then add the subtask with the specified order
+                    // If validation passes, add the subtask
+                    Navigator.pop(context);
                     widget.onAdd(
                       titleController.text.trim(),
                       estimatedTime,
@@ -283,6 +382,7 @@ class _AddSubtaskDialogWidgetState extends State<_AddSubtaskDialogWidget> {
                       order,
                       firstNotification,
                       secondNotification,
+                      false, // Don't update parent task
                     );
                   },
                 ),

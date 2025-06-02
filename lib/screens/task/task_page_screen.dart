@@ -302,6 +302,7 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
     int order,
     int? firstNotification,
     int? secondNotification,
+    bool updateParentTime,
   ) {
     final existingSubtasks = List<Task>.from(
       _taskManagerCubit.getSubtasksForTask(_task),
@@ -349,6 +350,18 @@ class _TaskPageScreenState extends State<TaskPageScreen> {
       }
 
       _taskManagerCubit.updateTaskOrder(_task, allSubtasks);
+    }
+
+    // Update parent task's estimated time if needed
+    if (updateParentTime) {
+      // Calculate total estimated time of all subtasks
+      int totalSubtasksTime = 0;
+      for (final subtask in allSubtasks) {
+        totalSubtasksTime += subtask.estimatedTime;
+      }
+
+      // Update the task in the database
+      _taskManagerCubit.editTask(task: _task, estimatedTime: totalSubtasksTime);
     }
 
     setState(() {
