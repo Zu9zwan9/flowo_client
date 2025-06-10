@@ -11,6 +11,7 @@ import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
+import '../models/day_schedule.dart';
 import '../models/time_frame.dart';
 import '../services/notification/notification_service.dart';
 
@@ -210,6 +211,8 @@ class Scheduler {
     }
   }
 
+  // Update these methods in the Scheduler class
+
   bool _isActiveDay(String dateKey) {
     final date = DateTime.parse('$dateKey 00:00:00');
     final weekdayNames = [
@@ -223,14 +226,144 @@ class Scheduler {
     ];
     final dayName = weekdayNames[date.weekday - 1];
 
-    // Check day-specific schedule first
+    // First look in the new schedules list
+    for (final schedule in userSettings.schedules) {
+      if (schedule.day.contains(dayName)) {
+        return schedule.isActive;
+      }
+    }
+
+    // Fall back to the old daySchedules map
     final daySchedule = userSettings.daySchedules[dayName];
     if (daySchedule != null) {
       return daySchedule.isActive;
     }
 
-    // Fall back to global active days
+    // Finally fall back to global active days
     return userSettings.activeDays?[dayName] ?? true;
+  }
+
+  void _addPredefinedTimeBlocks(Day day) {
+    logDebug('Adding predefined blocks for ${day.day}');
+    final date = DateTime.parse('${day.day} 00:00:00');
+
+    // Get the day of the week (Monday, Tuesday, etc.)
+    final weekdayNames = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ];
+    final dayName = weekdayNames[date.weekday - 1];
+
+    // First, check if this day is assigned to any schedule in the new model
+    DaySchedule? scheduleForDay;
+    for (final schedule in userSettings.schedules) {
+      if (schedule.day.any((d) => d.toLowerCase() == dayName.toLowerCase())) {
+        scheduleForDay = schedule;
+        break;
+      }
+    }
+
+    if (scheduleForDay != null) {
+      // Found a schedule in the new model
+      logDebug('Using schedule "${scheduleForDay.name}" for $dayName');
+
+      // Add meal breaks
+      for (var timeFrame in scheduleForDay.mealBreaks) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.mealBreak,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.mealBreak,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
+        }
+      }
+
+      // Add free times
+      for (var timeFrame in scheduleForDay.freeTimes) {
+        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
+            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: timeFrame.startTime,
+              endTime: const TimeOfDay(hour: 23, minute: 59),
+            ),
+            ScheduledTaskType.rest,
+            date,
+          );
+          _addTimeBlock(
+            day,
+            TimeFrame(
+              startTime: const TimeOfDay(hour: 0, minute: 0),
+              endTime: timeFrame.endTime,
+            ),
+            ScheduledTaskType.rest,
+            date,
+          );
+        } else {
+          _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
+        }
+      }
+
+      // Add sleep time
+      final sleepTime = scheduleForDay.sleepTime;
+      if (sleepTime.endTime.hour * 60 + sleepTime.endTime.minute <
+          sleepTime.startTime.hour * 60 + sleepTime.startTime.minute) {
+        _addTimeBlock(
+          day,
+          TimeFrame(
+            startTime: sleepTime.startTime,
+            endTime: const TimeOfDay(hour: 23, minute: 59),
+          ),
+          ScheduledTaskType.sleep,
+          date,
+        );
+        _addTimeBlock(
+          day,
+          TimeFrame(
+            startTime: const TimeOfDay(hour: 0, minute: 0),
+            endTime: sleepTime.endTime,
+          ),
+          ScheduledTaskType.sleep,
+          date,
+        );
+      } else {
+        _addTimeBlock(day, sleepTime, ScheduledTaskType.sleep, date);
+      }
+
+      return; // Exit early if we found a schedule
+    }
+
+    // If no schedule found in the new model, continue with the fallback to old model
+    final daySchedule = userSettings.daySchedules[dayName];
+
+    if (daySchedule != null && daySchedule.isActive) {
+      logDebug('Using legacy day-specific schedule for $dayName');
+    } else {
+      // Use global schedule
+      logDebug('Using global schedule for $dayName');
+    }
   }
 
   List<ScheduledTask> _findAllAvailableTimeSlots(
@@ -430,195 +563,6 @@ class Scheduler {
     }
   }
 
-  void _addPredefinedTimeBlocks(Day day) {
-    logDebug('Adding predefined blocks for ${day.day}');
-    final date = DateTime.parse('${day.day} 00:00:00');
-
-    // Get the day of the week (Monday, Tuesday, etc.)
-    final weekdayNames = [
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday',
-      'Sunday',
-    ];
-    final dayName = weekdayNames[date.weekday - 1];
-
-    // Check if we have a day-specific schedule
-    final daySchedule = userSettings.daySchedules[dayName];
-
-    if (daySchedule != null && daySchedule.isActive) {
-      // Use day-specific schedule
-      logDebug('Using day-specific schedule for $dayName');
-
-      // Add meal breaks
-      for (var timeFrame in daySchedule.mealBreaks) {
-        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-          _addTimeBlock(
-            day,
-            TimeFrame(
-              startTime: timeFrame.startTime,
-              endTime: const TimeOfDay(hour: 23, minute: 59),
-            ),
-            ScheduledTaskType.mealBreak,
-            date,
-          );
-          _addTimeBlock(
-            day,
-            TimeFrame(
-              startTime: const TimeOfDay(hour: 0, minute: 0),
-              endTime: timeFrame.endTime,
-            ),
-            ScheduledTaskType.mealBreak,
-            date,
-          );
-        } else {
-          _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
-        }
-      }
-
-      // Add free times
-      for (var timeFrame in daySchedule.freeTimes) {
-        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-          _addTimeBlock(
-            day,
-            TimeFrame(
-              startTime: timeFrame.startTime,
-              endTime: const TimeOfDay(hour: 23, minute: 59),
-            ),
-            ScheduledTaskType.rest,
-            date,
-          );
-          _addTimeBlock(
-            day,
-            TimeFrame(
-              startTime: const TimeOfDay(hour: 0, minute: 0),
-              endTime: timeFrame.endTime,
-            ),
-            ScheduledTaskType.rest,
-            date,
-          );
-        } else {
-          _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
-        }
-      }
-
-      // Add sleep time
-      final sleepTime = daySchedule.sleepTime;
-      if (sleepTime.endTime.hour * 60 + sleepTime.endTime.minute <
-          sleepTime.startTime.hour * 60 + sleepTime.startTime.minute) {
-        _addTimeBlock(
-          day,
-          TimeFrame(
-            startTime: sleepTime.startTime,
-            endTime: const TimeOfDay(hour: 23, minute: 59),
-          ),
-          ScheduledTaskType.sleep,
-          date,
-        );
-        _addTimeBlock(
-          day,
-          TimeFrame(
-            startTime: const TimeOfDay(hour: 0, minute: 0),
-            endTime: sleepTime.endTime,
-          ),
-          ScheduledTaskType.sleep,
-          date,
-        );
-      } else {
-        _addTimeBlock(day, sleepTime, ScheduledTaskType.sleep, date);
-      }
-    } else {
-      // Use global schedule
-      logDebug('Using global schedule for $dayName');
-
-      // Add meal breaks
-      for (var timeFrame in userSettings.mealBreaks) {
-        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-          _addTimeBlock(
-            day,
-            TimeFrame(
-              startTime: timeFrame.startTime,
-              endTime: const TimeOfDay(hour: 23, minute: 59),
-            ),
-            ScheduledTaskType.mealBreak,
-            date,
-          );
-          _addTimeBlock(
-            day,
-            TimeFrame(
-              startTime: const TimeOfDay(hour: 0, minute: 0),
-              endTime: timeFrame.endTime,
-            ),
-            ScheduledTaskType.mealBreak,
-            date,
-          );
-        } else {
-          _addTimeBlock(day, timeFrame, ScheduledTaskType.mealBreak, date);
-        }
-      }
-
-      // Add free times
-      for (var timeFrame in userSettings.freeTime) {
-        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-          _addTimeBlock(
-            day,
-            TimeFrame(
-              startTime: timeFrame.startTime,
-              endTime: const TimeOfDay(hour: 23, minute: 59),
-            ),
-            ScheduledTaskType.rest,
-            date,
-          );
-          _addTimeBlock(
-            day,
-            TimeFrame(
-              startTime: const TimeOfDay(hour: 0, minute: 0),
-              endTime: timeFrame.endTime,
-            ),
-            ScheduledTaskType.rest,
-            date,
-          );
-        } else {
-          _addTimeBlock(day, timeFrame, ScheduledTaskType.rest, date);
-        }
-      }
-
-      // Add sleep time
-      for (var timeFrame in userSettings.sleepTime) {
-        if (timeFrame.endTime.hour * 60 + timeFrame.endTime.minute <
-            timeFrame.startTime.hour * 60 + timeFrame.startTime.minute) {
-          _addTimeBlock(
-            day,
-            TimeFrame(
-              startTime: timeFrame.startTime,
-              endTime: const TimeOfDay(hour: 23, minute: 59),
-            ),
-            ScheduledTaskType.sleep,
-            date,
-          );
-          _addTimeBlock(
-            day,
-            TimeFrame(
-              startTime: const TimeOfDay(hour: 0, minute: 0),
-              endTime: timeFrame.endTime,
-            ),
-            ScheduledTaskType.sleep,
-            date,
-          );
-        } else {
-          _addTimeBlock(day, timeFrame, ScheduledTaskType.sleep, date);
-        }
-      }
-    }
-  }
-
   void _addTimeBlock(
     Day day,
     TimeFrame timeFrame,
@@ -736,27 +680,27 @@ class Scheduler {
       id: notificationKey,
       title: task.title,
       body:
-      notificationTime != 0
-          ? (notificationTime == 1
-              ? 'Will start in 1 minute'
-              : notificationTime == 5
+          notificationTime != 0
+              ? (notificationTime == 1
+                  ? 'Will start in 1 minute'
+                  : notificationTime == 5
                   ? 'Will start in 5 minutes'
                   : notificationTime == 15
-                      ? 'Will start in 15 minutes'
-                      : notificationTime == 30
-                          ? 'Will start in 30 minutes'
-                          : notificationTime == 60
-                              ? 'Will start in 1 hour'
-                              : notificationTime == 120
-                                  ? 'Will start in 2 hours'
-                                  : notificationTime == 1440
-                                      ? 'Will start in 1 day'
-                                      : notificationTime == 2880
-                                          ? 'Will start in 2 days'
-                                          : notificationTime == 10080
-                                              ? 'Will start in 1 week'
-                                              : 'Will start in $notificationTime minutes')
-          : 'Will start now',
+                  ? 'Will start in 15 minutes'
+                  : notificationTime == 30
+                  ? 'Will start in 30 minutes'
+                  : notificationTime == 60
+                  ? 'Will start in 1 hour'
+                  : notificationTime == 120
+                  ? 'Will start in 2 hours'
+                  : notificationTime == 1440
+                  ? 'Will start in 1 day'
+                  : notificationTime == 2880
+                  ? 'Will start in 2 days'
+                  : notificationTime == 10080
+                  ? 'Will start in 1 week'
+                  : 'Will start in $notificationTime minutes')
+              : 'Will start now',
       year: notificationDate.year,
       month: notificationDate.month,
       day: notificationDate.day,

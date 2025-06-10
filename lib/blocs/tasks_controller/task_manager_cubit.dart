@@ -367,8 +367,12 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }
 
   void updateUserSettings(UserSettings userSettings) {
+    // Delete all days to ensure clean slate
     _deleteAllDays();
+
+    // Update user settings in the task manager
     taskManager.updateUserSettings(userSettings);
+
     try {
       final settingsBox = Hive.box<UserSettings>('user_settings');
       settingsBox.put('current', userSettings);
@@ -376,10 +380,18 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     } catch (e) {
       logError('Failed to save user settings: $e');
     }
+
+    // Force scheduler to recreate days with updated schedules
+    taskManager.scheduler.createDaysUntil(
+      DateTime(DateTime.now().year, DateTime.now().month + 3),
+    );
+
+    // These will force recreation of events and tasks
     taskManager.manageEvents();
     scheduleTasks();
     scheduleHabits();
 
+    // Refresh the UI state
     emit(
       state.copyWith(
         tasks: taskManager.tasksDB.values.toList(),
@@ -598,17 +610,25 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
         final lastSession = task.sessions.last;
 
         // Calculate duration accumulated so far
-        final durationSoFar = lastSession.endTime != null
-            ? lastSession.endTime!.difference(lastSession.startTime).inMilliseconds
-            : 0;
+        final durationSoFar =
+            lastSession.endTime != null
+                ? lastSession.endTime!
+                    .difference(lastSession.startTime)
+                    .inMilliseconds
+                : 0;
 
         // Set a new session with the same ID but adjusted times
         // to continue where we left off
         TaskSession continuedSession = TaskSession(
-          id: lastSession.id, // Keep the same ID
+          id: lastSession.id,
+          // Keep the same ID
           taskId: task.id,
-          startTime: DateTime.now().subtract(Duration(milliseconds: durationSoFar)), // Adjust start time
-          endTime: null, // No end time since it's active
+          startTime: DateTime.now().subtract(
+            Duration(milliseconds: durationSoFar),
+          ),
+          // Adjust start time
+          endTime: null,
+          // No end time since it's active
           notes: lastSession.notes, // Keep any notes
         );
 
@@ -718,18 +738,18 @@ extension TrackingFunctions on TaskManagerCubit {
       // Return the most recently paused task
       final activeTask = pausedTasks.first;
       return (
-      task: activeTask,
-      elapsed: _calculateElapsedTime(activeTask),
-      isRunning: false,
+        task: activeTask,
+        elapsed: _calculateElapsedTime(activeTask),
+        isRunning: false,
       );
     }
 
     // Return the most recently started task if multiple are in progress
     final activeTask = activeTasks.first;
     return (
-    task: activeTask,
-    elapsed: _calculateElapsedTime(activeTask),
-    isRunning: true,
+      task: activeTask,
+      elapsed: _calculateElapsedTime(activeTask),
+      isRunning: true,
     );
   }
 
@@ -774,7 +794,8 @@ extension TrackingFunctions on TaskManagerCubit {
     // Calculate total time from completed sessions
     for (final session in task.sessions) {
       if (session.endTime != null) {
-        totalMs += session.endTime!.difference(session.startTime).inMilliseconds;
+        totalMs +=
+            session.endTime!.difference(session.startTime).inMilliseconds;
       }
     }
 
@@ -782,7 +803,8 @@ extension TrackingFunctions on TaskManagerCubit {
     if (task.status == 'in_progress' && task.sessions.isNotEmpty) {
       final lastSession = task.sessions.last;
       if (lastSession.endTime == null) {
-        totalMs += DateTime.now().difference(lastSession.startTime).inMilliseconds;
+        totalMs +=
+            DateTime.now().difference(lastSession.startTime).inMilliseconds;
       }
     }
 
@@ -806,12 +828,15 @@ extension TrackingFunctions on TaskManagerCubit {
     final tasks = taskManager.tasksDB.values.toList();
 
     // Filter to tasks with sessions
-    final trackedTasks = tasks.where((task) => task.sessions.isNotEmpty).toList();
+    final trackedTasks =
+        tasks.where((task) => task.sessions.isNotEmpty).toList();
 
     // Sort by most recent session
     trackedTasks.sort((a, b) {
-      final aLastSession = a.sessions.isNotEmpty ? a.sessions.last.startTime : DateTime(1970);
-      final bLastSession = b.sessions.isNotEmpty ? b.sessions.last.startTime : DateTime(1970);
+      final aLastSession =
+          a.sessions.isNotEmpty ? a.sessions.last.startTime : DateTime(1970);
+      final bLastSession =
+          b.sessions.isNotEmpty ? b.sessions.last.startTime : DateTime(1970);
       return bLastSession.compareTo(aLastSession); // Descending order
     });
 
@@ -829,14 +854,15 @@ extension TrackingFunctions on TaskManagerCubit {
       for (final session in task.sessions) {
         // Check if session is from today
         final sessionDate = DateTime(
-            session.startTime.year,
-            session.startTime.month,
-            session.startTime.day
+          session.startTime.year,
+          session.startTime.month,
+          session.startTime.day,
         );
 
         if (sessionDate == today) {
           if (session.endTime != null) {
-            totalMs += session.endTime!.difference(session.startTime).inMilliseconds;
+            totalMs +=
+                session.endTime!.difference(session.startTime).inMilliseconds;
           } else if (task.status == 'in_progress') {
             // Active session
             totalMs += now.difference(session.startTime).inMilliseconds;
@@ -846,5 +872,14 @@ extension TrackingFunctions on TaskManagerCubit {
     }
 
     return Duration(milliseconds: totalMs);
+  }
+
+  void refreshState() {
+    emit(
+      state.copyWith(
+        tasks: taskManager.tasksDB.values.toList(),
+        userSettings: taskManager.userSettings,
+      ),
+    );
   }
 }

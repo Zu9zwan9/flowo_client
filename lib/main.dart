@@ -136,8 +136,12 @@ void main() async {
     required List<TimeFrame> mealBreaks,
     required List<TimeFrame> freeTimes,
   }) {
+    // Updated to match the new constructor signature with name and list of days
     return DaySchedule(
-      day: day,
+      name: "$day Schedule",
+      // Add a name parameter
+      day: [day],
+      // Change to a List<String> instead of String
       isActive: true,
       sleepTime: sleepTime,
       mealBreaks: mealBreaks,
@@ -158,7 +162,6 @@ void main() async {
                 endTime: const TimeOfDay(hour: 7, minute: 0),
               ),
             ],
-
             activeDays: {
               'Monday': true,
               'Tuesday': true,
@@ -213,6 +216,69 @@ void main() async {
                 ),
             },
             defaultNotificationType: NotificationType.push,
+            // Initialize the new schedules property with default values
+            schedules: [
+              // Weekday schedule
+              DaySchedule(
+                name: "Weekday Schedule",
+                day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 22, minute: 0),
+                  endTime: const TimeOfDay(hour: 7, minute: 0),
+                ),
+                mealBreaks: [
+                  TimeFrame(
+                    startTime: const TimeOfDay(hour: 8, minute: 0),
+                    endTime: const TimeOfDay(hour: 8, minute: 30),
+                  ),
+                  TimeFrame(
+                    startTime: const TimeOfDay(hour: 12, minute: 0),
+                    endTime: const TimeOfDay(hour: 13, minute: 0),
+                  ),
+                  TimeFrame(
+                    startTime: const TimeOfDay(hour: 18, minute: 0),
+                    endTime: const TimeOfDay(hour: 19, minute: 0),
+                  ),
+                ],
+                freeTimes: [
+                  TimeFrame(
+                    startTime: const TimeOfDay(hour: 19, minute: 0),
+                    endTime: const TimeOfDay(hour: 22, minute: 0),
+                  ),
+                ],
+              ),
+              // Weekend schedule
+              DaySchedule(
+                name: "Weekend Schedule",
+                day: ['Saturday', 'Sunday'],
+                isActive: true,
+                sleepTime: TimeFrame(
+                  startTime: const TimeOfDay(hour: 23, minute: 0),
+                  endTime: const TimeOfDay(hour: 9, minute: 0),
+                ),
+                mealBreaks: [
+                  TimeFrame(
+                    startTime: const TimeOfDay(hour: 9, minute: 30),
+                    endTime: const TimeOfDay(hour: 10, minute: 30),
+                  ),
+                  TimeFrame(
+                    startTime: const TimeOfDay(hour: 13, minute: 0),
+                    endTime: const TimeOfDay(hour: 14, minute: 0),
+                  ),
+                  TimeFrame(
+                    startTime: const TimeOfDay(hour: 19, minute: 0),
+                    endTime: const TimeOfDay(hour: 20, minute: 0),
+                  ),
+                ],
+                freeTimes: [
+                  TimeFrame(
+                    startTime: const TimeOfDay(hour: 20, minute: 0),
+                    endTime: const TimeOfDay(hour: 23, minute: 0),
+                  ),
+                ],
+              ),
+            ],
           );
 
   // Get API key with fallback to empty string if environment initialization failed

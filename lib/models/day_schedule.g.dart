@@ -17,27 +17,30 @@ class DayScheduleAdapter extends TypeAdapter<DaySchedule> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return DaySchedule(
-      day: fields[0] as String,
-      isActive: fields[1] as bool,
-      sleepTime: fields[2] as TimeFrame,
-      mealBreaks: (fields[3] as List?)?.cast<TimeFrame>(),
-      freeTimes: (fields[4] as List?)?.cast<TimeFrame>(),
+      name: fields[0] as String,
+      day: (fields[1] as List).cast<String>(),
+      isActive: fields[2] as bool,
+      sleepTime: fields[3] as TimeFrame,
+      mealBreaks: (fields[4] as List?)?.cast<TimeFrame>(),
+      freeTimes: (fields[5] as List?)?.cast<TimeFrame>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, DaySchedule obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
-      ..write(obj.day)
+      ..write(obj.name)
       ..writeByte(1)
-      ..write(obj.isActive)
+      ..write(obj.day)
       ..writeByte(2)
-      ..write(obj.sleepTime)
+      ..write(obj.isActive)
       ..writeByte(3)
-      ..write(obj.mealBreaks)
+      ..write(obj.sleepTime)
       ..writeByte(4)
+      ..write(obj.mealBreaks)
+      ..writeByte(5)
       ..write(obj.freeTimes);
   }
 

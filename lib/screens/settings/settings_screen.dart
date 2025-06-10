@@ -1,6 +1,5 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/user_settings.dart';
-import 'package:flowo_client/screens/settings/day_schedule_screen.dart';
 import 'package:flowo_client/screens/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -8,10 +7,10 @@ import 'package:provider/provider.dart';
 
 import '../../design/cupertino_form_theme.dart';
 import '../../models/app_theme.dart';
-import '../../models/time_frame.dart';
 import '../../theme/theme_notifier.dart';
 import '../../utils/logger.dart';
 import '../tutorial/tutorial_launcher.dart';
+import 'schedule_templates_section.dart';
 
 abstract class ThemeSelectionStrategy {
   Widget buildThemeSelector(
@@ -193,12 +192,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late TimeOfDay _sleepTime;
-  late TimeOfDay _wakeupTime;
   late int _minSessionDuration;
-  late List<TimeFrame> _mealTimes;
-  late List<TimeFrame> _freeTimes;
-  late Map<String, bool> _activeDays;
   late String _dateFormat;
   late String _monthFormat;
   late bool _is24HourFormat;
@@ -893,27 +887,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             SettingsSection(
-              title: 'Day-Specific Schedules',
+              title: 'Schedule Templates',
               footerText:
-                  'Configure different schedules for different days of the week.',
-              children: [
-                SettingsItem(
-                  label: 'Day Schedules',
-                  subtitle:
-                      'Set different sleep, meal, and free times for each day',
-                  leading: const Icon(
-                    CupertinoIcons.calendar,
-                    color: CupertinoColors.systemBlue,
-                  ),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (context) => const DayScheduleScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
+                  'Create and manage schedule templates for different days.',
+              customContent: const ScheduleTemplatesSection(),
+              children: const [],
             ),
             SettingsSection(
               title: 'Session Duration',
