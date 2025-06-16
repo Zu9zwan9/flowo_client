@@ -17,37 +17,45 @@ class DayScheduleAdapter extends TypeAdapter<DaySchedule> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
 
-    // Handle the case where fields[1] is a boolean instead of a List
-    List<String> dayList;
-    if (fields[1] is List) {
-      dayList = (fields[1] as List).cast<String>();
-    } else if (fields[1] is bool) {
-      // Convert boolean to a default list with a single day
-      dayList = ['Monday']; // Default to Monday if it's a boolean
+    // Handle the case where day field might be a bool (old format) or List (new format)
+    List<String> dayValue;
+    if (fields[1] is bool) {
+      // Convert old bool format to a list with a single day
+      // This is a migration fix for existing data
+      dayValue = ['Default'];
+    } else if (fields[1] is List) {
+      dayValue = (fields[1] as List).cast<String>();
     } else {
-      // Fallback for any other unexpected type
-      dayList = [];
+      // Fallback to a default value if the field is neither bool nor List
+      dayValue = ['Default'];
+    }
+    // Migrate mealBreaks field (old format might be bool)
+    List<TimeFrame> mealBreaksValue;
+    if (fields[4] is bool) {
+      mealBreaksValue = [];
+    } else if (fields[4] is List) {
+      mealBreaksValue = (fields[4] as List).cast<TimeFrame>();
+    } else {
+      mealBreaksValue = [];
+    }
+    // Migrate freeTimes field (old format might be bool)
+    List<TimeFrame> freeTimesValue;
+    if (fields[5] is bool) {
+      freeTimesValue = [];
+    } else if (fields[5] is List) {
+      freeTimesValue = (fields[5] as List).cast<TimeFrame>();
+    } else {
+      freeTimesValue = [];
     }
 
-    // Handle the case where fields[3] is a bool instead of a TimeFrame
-    TimeFrame sleepTimeValue;
-    if (fields[3] is TimeFrame) {
-      sleepTimeValue = fields[3] as TimeFrame;
-    } else {
-      // Create a default TimeFrame if the field is not of the expected type
-      sleepTimeValue = TimeFrame(
-        startTime: TimeOfDay(hour: 22, minute: 0),
-        endTime: TimeOfDay(hour: 7, minute: 0),
-      );
-    }
-
+    // Use migration values for mealBreaks and freeTimes
     return DaySchedule(
       name: fields[0] as String,
-      day: dayList,
+      day: dayValue,
       isActive: fields[2] as bool,
-      sleepTime: sleepTimeValue,
-      mealBreaks: (fields[4] as List?)?.cast<TimeFrame>(),
-      freeTimes: (fields[5] as List?)?.cast<TimeFrame>(),
+      sleepTime: fields[3] as TimeFrame,
+      mealBreaks: mealBreaksValue,
+      freeTimes: freeTimesValue,
     );
   }
 

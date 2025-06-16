@@ -14,7 +14,7 @@ import 'package:flowo_client/services/security_service.dart';
 import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/utils/task_manager.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -46,7 +46,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EnvConfig.initialize();
 
-  if (!kIsWeb) {
+  if (!kIsWeb && !kDebugMode) {
     final securityService = SecurityService(
       // For Android
       onRootDetected: () => exit(0),
