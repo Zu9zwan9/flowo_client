@@ -16,11 +16,36 @@ class DayScheduleAdapter extends TypeAdapter<DaySchedule> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+
+    // Handle the case where fields[1] is a boolean instead of a List
+    List<String> dayList;
+    if (fields[1] is List) {
+      dayList = (fields[1] as List).cast<String>();
+    } else if (fields[1] is bool) {
+      // Convert boolean to a default list with a single day
+      dayList = ['Monday']; // Default to Monday if it's a boolean
+    } else {
+      // Fallback for any other unexpected type
+      dayList = [];
+    }
+
+    // Handle the case where fields[3] is a bool instead of a TimeFrame
+    TimeFrame sleepTimeValue;
+    if (fields[3] is TimeFrame) {
+      sleepTimeValue = fields[3] as TimeFrame;
+    } else {
+      // Create a default TimeFrame if the field is not of the expected type
+      sleepTimeValue = TimeFrame(
+        startTime: TimeOfDay(hour: 22, minute: 0),
+        endTime: TimeOfDay(hour: 7, minute: 0),
+      );
+    }
+
     return DaySchedule(
       name: fields[0] as String,
-      day: (fields[1] as List).cast<String>(),
+      day: dayList,
       isActive: fields[2] as bool,
-      sleepTime: fields[3] as TimeFrame,
+      sleepTime: sleepTimeValue,
       mealBreaks: (fields[4] as List?)?.cast<TimeFrame>(),
       freeTimes: (fields[5] as List?)?.cast<TimeFrame>(),
     );

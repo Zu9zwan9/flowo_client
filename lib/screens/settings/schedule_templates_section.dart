@@ -10,7 +10,8 @@ class ScheduleTemplatesSection extends StatefulWidget {
   const ScheduleTemplatesSection({super.key});
 
   @override
-  State<ScheduleTemplatesSection> createState() => _ScheduleTemplatesSectionState();
+  State<ScheduleTemplatesSection> createState() =>
+      _ScheduleTemplatesSectionState();
 }
 
 class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
@@ -29,10 +30,7 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
             children: [
               const Text(
                 'Schedule Templates',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               CupertinoButton(
                 padding: EdgeInsets.zero,
@@ -51,7 +49,9 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
 
                   final result = await Navigator.of(context).push(
                     CupertinoPageRoute(
-                      builder: (context) => const DayScheduleScreen(isNewSchedule: true),
+                      builder:
+                          (context) =>
+                              const DayScheduleScreen(isNewSchedule: true),
                     ),
                   );
 
@@ -100,26 +100,46 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
   }
 
   Widget _buildScheduleCard(DaySchedule schedule) {
-    final is24Hour = context.read<TaskManagerCubit>().taskManager.userSettings.is24HourFormat;
+    final is24Hour =
+        context
+            .read<TaskManagerCubit>()
+            .taskManager
+            .userSettings
+            .is24HourFormat;
 
     String formatTime(TimeOfDay time) {
-      final hour = is24Hour ? time.hour.toString().padLeft(2, '0') :
-      (time.hour > 12 ? time.hour - 12 : (time.hour == 0 ? 12 : time.hour)).toString();
+      final hour =
+          is24Hour
+              ? time.hour.toString().padLeft(2, '0')
+              : (time.hour > 12
+                      ? time.hour - 12
+                      : (time.hour == 0 ? 12 : time.hour))
+                  .toString();
       final minute = time.minute.toString().padLeft(2, '0');
       final period = time.hour >= 12 ? 'PM' : 'AM';
 
       return is24Hour ? '$hour:$minute' : '$hour:$minute $period';
     }
 
-    final timeText = '${formatTime(schedule.sleepTime.startTime!)} - ${formatTime(schedule.sleepTime.endTime!)}';
+    final timeText =
+        '${formatTime(schedule.sleepTime.startTime!)} - ${formatTime(schedule.sleepTime.endTime!)}';
 
     // Format days display
-    final days = schedule.day.map((dayName) =>
-    dayName[0].toUpperCase() + dayName.substring(1)
-    ).toList();
+    final days =
+        schedule.day
+            .map((dayName) => dayName[0].toUpperCase() + dayName.substring(1))
+            .toList();
 
     days.sort((a, b) {
-      final order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      final order = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ];
       return order.indexOf(a) - order.indexOf(b);
     });
 
@@ -173,7 +193,8 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
             onTap: () async {
               final result = await Navigator.of(context).push(
                 CupertinoPageRoute(
-                  builder: (context) => DayScheduleScreen(initialSchedule: schedule),
+                  builder:
+                      (context) => DayScheduleScreen(initialSchedule: schedule),
                 ),
               );
 
@@ -193,7 +214,7 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
                     fontSize: 16,
                   ),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.visible,
                 ),
                 const SizedBox(height: 4),
                 // Show the days
@@ -204,7 +225,7 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
                     color: CupertinoColors.systemGrey,
                   ),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  overflow: TextOverflow.visible,
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -259,11 +280,7 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 12,
-            color: color,
-          ),
+          Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
           Text(
             count.toString(),
@@ -280,12 +297,21 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
 
   void _showDeleteConfirmation(DaySchedule schedule) {
     // Format days for display
-    final days = schedule.day.map((dayName) =>
-    dayName[0].toUpperCase() + dayName.substring(1)
-    ).toList();
+    final days =
+        schedule.day
+            .map((dayName) => dayName[0].toUpperCase() + dayName.substring(1))
+            .toList();
 
     days.sort((a, b) {
-      final order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      final order = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ];
       return order.indexOf(a) - order.indexOf(b);
     });
 
@@ -302,63 +328,69 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
 
     showCupertinoDialog(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: const Text('Delete Schedule'),
-        content: Text(
-            'Are you sure you want to delete this schedule for $daysText? '
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.pop(dialogContext),
+      builder:
+          (dialogContext) => CupertinoAlertDialog(
+            title: const Text('Delete Schedule'),
+            content: Text(
+              'Are you sure you want to delete this schedule for $daysText? ',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('Cancel'),
+                onPressed: () => Navigator.pop(dialogContext),
+              ),
+              CupertinoDialogAction(
+                isDestructiveAction: true,
+                child: const Text('Delete'),
+                onPressed: () async {
+                  final taskManagerCubit = context.read<TaskManagerCubit>();
+                  final userSettings =
+                      taskManagerCubit.taskManager.userSettings;
+
+                  // Remove this schedule from the list
+                  final updatedSchedules =
+                      userSettings.schedules
+                          .where((s) => s != schedule)
+                          .toList();
+
+                  // Update settings
+                  final updatedSettings = userSettings.copyWith(
+                    schedules: updatedSchedules,
+                  );
+
+                  // Save changes
+                  taskManagerCubit.updateUserSettings(updatedSettings);
+
+                  Navigator.pop(dialogContext);
+
+                  // Force rebuild
+                  if (mounted) {
+                    setState(() {});
+                  }
+                },
+              ),
+            ],
           ),
-          CupertinoDialogAction(
-            isDestructiveAction: true,
-            child: const Text('Delete'),
-            onPressed: () async {
-              final taskManagerCubit = context.read<TaskManagerCubit>();
-              final userSettings = taskManagerCubit.taskManager.userSettings;
-
-              // Remove this schedule from the list
-              final updatedSchedules = userSettings.schedules
-                  .where((s) => s != schedule)
-                  .toList();
-
-              // Update settings
-              final updatedSettings = userSettings.copyWith(
-                schedules: updatedSchedules,
-              );
-
-              // Save changes
-              taskManagerCubit.updateUserSettings(updatedSettings);
-
-              Navigator.pop(dialogContext);
-
-              // Force rebuild
-              if (mounted) {
-                setState(() {});
-              }
-            },
-          ),
-        ],
-      ),
     );
   }
 
   void _showMaxTemplatesAlert() {
     showCupertinoDialog(
       context: context,
-      builder: (dialogContext) => CupertinoAlertDialog(
-        title: const Text('Maximum Templates Reached'),
-        content: const Text('You can create up to 7 schedule templates. Please delete an existing template to create a new one.'),
-        actions: [
-          CupertinoDialogAction(
-            isDefaultAction: true,
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(dialogContext),
+      builder:
+          (dialogContext) => CupertinoAlertDialog(
+            title: const Text('Maximum Templates Reached'),
+            content: const Text(
+              'You can create up to 7 schedule templates. Please delete an existing template to create a new one.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                isDefaultAction: true,
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(dialogContext),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }
