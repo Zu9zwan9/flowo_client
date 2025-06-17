@@ -307,7 +307,6 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
   }
 
   // Check for conflicts between selected days and other schedules
-  // Check for conflicts between selected days and other schedules
   List<Map<String, dynamic>> _checkDayConflicts(UserSettings userSettings) {
     final conflicts = <Map<String, dynamic>>[];
     final existingSchedules = userSettings.schedules;
@@ -385,72 +384,86 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
   // Dialog for selecting days of the week for this schedule
   // No conflict checking during selection - it's handled at save time
   void _showEditDaysDialog() {
-    // Copy current selections for dialog state
-    final selectedDays = Set<String>.from(_schedule.day);
+    // Use a case-insensitive comparison when creating the initial selection set
+    // This solves the issue where default schedule days don't show as selected
+    final selectedDays = Set<String>();
+
+    // Create normalized set of days (capitalized first letter) from current schedule
+    for (final day in _schedule.day) {
+      if (day.isNotEmpty) {
+        // Convert to proper case (Monday, Tuesday, etc.)
+        final properCaseDay = day[0].toUpperCase() + day.substring(1).toLowerCase();
+        selectedDays.add(properCaseDay);
+      }
+    }
+
+    // Log for debugging
+    logDebug('Initial selected days: ${selectedDays.join(', ')}');
 
     showCupertinoModalPopup(
       context: context,
-      builder:
-          (_) => StatefulBuilder(
-            builder:
-                (context, setDialogState) => CupertinoActionSheet(
-                  title: const Text('Assign Days'),
-                  message: const Text('Choose days for this schedule template'),
-                  actions:
-                      WeekDay.values.map((day) {
-                          final dayName =
-                              day.name[0].toUpperCase() + day.name.substring(1);
-                          final dayKey = day.name.toLowerCase();
-                          final isSelected = selectedDays.contains(dayKey);
+      builder: (_) => StatefulBuilder(
+        builder: (context, setDialogState) => CupertinoActionSheet(
+          title: const Text('Assign Days'),
+          message: const Text('Choose days for this schedule template'),
+          actions: WeekDay.values.map((day) {
+            // Properly format day name with first letter capitalized
+            final dayName = day.name[0].toUpperCase() + day.name.substring(1).toLowerCase();
 
-                          return CupertinoActionSheetAction(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(dayName),
-                                if (isSelected)
-                                  const Icon(
-                                    CupertinoIcons.checkmark,
-                                    color: CupertinoColors.systemBlue,
-                                  ),
-                              ],
-                            ),
-                            onPressed: () {
-                              if (isSelected) {
-                                // Remove from selection
-                                setDialogState(() {
-                                  selectedDays.remove(dayKey);
-                                });
-                              } else {
-                                // Add to selection - no conflict checking
-                                setDialogState(() {
-                                  selectedDays.add(dayKey);
-                                });
-                              }
-                            },
-                          );
-                        }).toList()
-                        ..add(
-                          CupertinoActionSheetAction(
-                            isDefaultAction: true,
-                            child: const Text('Apply'),
-                            onPressed: () {
-                              setState(() {
-                                _schedule = _schedule.copyWith(
-                                  day: selectedDays.toList(),
-                                );
-                                _hasChanges = true;
-                              });
-                              Navigator.pop(context);
-                            },
-                          ),
-                        ),
-                  cancelButton: CupertinoActionSheetAction(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                ),
+            // Check if this day is selected (case-insensitive)
+            final isSelected = selectedDays.contains(dayName);
+
+            logDebug('Day $dayName isSelected: $isSelected');
+
+            return CupertinoActionSheetAction(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(dayName),
+                  if (isSelected)
+                    const Icon(CupertinoIcons.checkmark, color: CupertinoColors.systemBlue),
+                ],
+              ),
+              onPressed: () {
+                if (isSelected) {
+                  // Remove from selection
+                  setDialogState(() {
+                    selectedDays.remove(dayName);
+                    logDebug('Removed $dayName, now: ${selectedDays.join(', ')}');
+                  });
+                } else {
+                  // Add to selection with proper capitalization
+                  setDialogState(() {
+                    selectedDays.add(dayName);
+                    logDebug('Added $dayName, now: ${selectedDays.join(', ')}');
+                  });
+                }
+              },
+            );
+          }).toList()
+            ..add(
+              CupertinoActionSheetAction(
+                isDefaultAction: true,
+                child: const Text('Apply'),
+                onPressed: () {
+                  setState(() {
+                    // Convert to consistent format when applying
+                    final days = selectedDays.toList();
+                    logDebug('Final selected days: ${days.join(', ')}');
+
+                    _schedule = _schedule.copyWith(day: days);
+                    _hasChanges = true;
+                  });
+                  Navigator.pop(context);
+                },
+              ),
+            ),
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
+        ),
+      ),
     );
   }
 

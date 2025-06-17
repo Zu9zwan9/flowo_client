@@ -219,26 +219,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _saveSettings() {
-    // Get the current theme settings from ThemeNotifier
+    // Get current settings to preserve existing values
+    final taskManagerCubit = context.read<TaskManagerCubit>();
+    final currentSettings = taskManagerCubit.taskManager.userSettings;
+
+    // Use copyWith to update only the changed settings while preserving schedules
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-
-    // Get the current user settings to preserve day-specific schedules
-    final currentSettings =
-        context.read<TaskManagerCubit>().taskManager.userSettings;
-
-    final userSettings = UserSettings(
-      name: 'Default',
+    final updatedSettings = currentSettings.copyWith(
       minSession: _minSessionDuration * 60 * 1000,
-      // Preserve existing values for removed UI elements
-      sleepTime: currentSettings.sleepTime,
-      mealBreaks: currentSettings.mealBreaks,
-      freeTime: currentSettings.freeTime,
-      activeDays: currentSettings.activeDays,
-      daySchedules: currentSettings.daySchedules,
       dateFormat: _dateFormat,
       monthFormat: _monthFormat,
       is24HourFormat: _is24HourFormat,
-      // Include theme-related settings
+      // Theme settings
       themeMode: themeNotifier.themeMode,
       customColorValue:
           themeNotifier.customColor.r.toInt() << 16 |
@@ -246,10 +238,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           themeNotifier.customColor.b.toInt(),
       colorIntensity: themeNotifier.colorIntensity,
       noiseLevel: themeNotifier.noiseLevel,
+      // schedules is automatically preserved since we're using copyWith
     );
 
-    context.read<TaskManagerCubit>().updateUserSettings(userSettings);
-    logInfo('Settings saved with theme preferences');
+    // Update the settings
+    taskManagerCubit.updateUserSettings(updatedSettings);
+    logInfo(
+      'Settings saved with theme preferences, preserved ${updatedSettings.schedules.length} schedules',
+    );
 
     showCupertinoDialog(
       context: context,
