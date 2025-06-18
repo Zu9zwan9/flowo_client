@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flowo_client/screens/habit/habit_details_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,7 @@ import 'task_form_screen.dart';
 import 'task_page_screen.dart';
 import 'task_statistics_screen.dart';
 
+// Task list screen displaying tasks with filtering, grouping, and scheduling capabilities
 class TaskListScreen extends StatefulWidget {
   const TaskListScreen({super.key});
 
@@ -33,9 +35,8 @@ class _TaskListScreenState extends State<TaskListScreen>
   final TextEditingController _searchController = TextEditingController();
   final Debouncer _searchDebouncer = Debouncer(Duration(milliseconds: 300));
   TaskFilterType _selectedFilter = TaskFilterType.all;
-  GroupingOption _selectedGrouping =
-      GroupingOption.none; // Selected grouping option
-  TaskViewMode _selectedViewMode = TaskViewMode.steps; // Selected view mode
+  GroupingOption _selectedGrouping = GroupingOption.none;
+  TaskViewMode _selectedViewMode = TaskViewMode.steps;
   final Map<String, bool> _expandedCategories = {};
   final Map<String, bool> _expandedTasks = {};
   String _searchQuery = '';
@@ -51,6 +52,11 @@ class _TaskListScreenState extends State<TaskListScreen>
   TaskFilterType? _lastFilter;
   GroupingOption? _lastGrouping;
   TaskViewMode? _lastViewMode;
+
+  // Scheduling progress variables
+  bool _isScheduling = false;
+  int _totalTasksToSchedule = 0;
+  int _scheduledTasks = 0;
 
   @override
   void initState() {
@@ -201,106 +207,166 @@ class _TaskListScreenState extends State<TaskListScreen>
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<TaskManagerCubit, TaskManagerState>(
-      listenWhen: (previous, current) {
-        return previous.tasks.length != current.tasks.length;
-      },
-      listener: (context, state) {
-        _clearCache();
-        _checkSchedulingStatus();
-      },
-      child: SafeArea(
-        child: Stack(
-          children: [
-            Column(
+    return SafeArea(
+      child: Stack(
+        children: [
+          Column(
+            children: [
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8.0,
+                ),
+                child: TaskSearchBar(controller: _searchController),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _buildFilterTabs(context),
+              ),
+              const SizedBox(height: 12),
+              // Grouping and view mode controls
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    Expanded(child: _buildGroupingControl(context)),
+                    const SizedBox(width: 8),
+                    Expanded(child: _buildViewModeControl(context)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Expanded(child: _buildTaskList(context)),
+            ],
+          ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
+                AddTaskAuroraSphereButton(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    Navigator.pushReplacement(
+                      context,
+                      CupertinoPageRoute(
+                        builder:
+                            (context) => const HomeScreen(
+                              initialIndex: 2,
+                              initialExpanded: false,
+                            ),
+                      ),
+                    );
+                  },
+                  size: 50.0,
+                ),
                 const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
-                  ),
-                  child: TaskSearchBar(controller: _searchController),
+                AuroraSphereButton(
+                  onPressed: () => _showScheduleDialog(context),
+                  status: _schedulingStatus,
+                  size: 50.0,
+                  label: 'Tasks',
+                  tasksToSchedule: _tasksToSchedule,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildFilterTabs(context),
-                ),
-                const SizedBox(height: 12),
-                // Grouping and view mode controls
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      Expanded(child: _buildGroupingControl(context)),
-                      const SizedBox(width: 8),
-                      Expanded(child: _buildViewModeControl(context)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(child: _buildTaskList(context)),
               ],
             ),
-            Positioned(
-              bottom: 16,
-              right: 16,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AddTaskAuroraSphereButton(
-                    onPressed: () {
-                      HapticFeedback.mediumImpact();
-                      Navigator.pushReplacement(
-                        context,
-                        CupertinoPageRoute(
-                          builder:
-                              (context) => const HomeScreen(
-                                initialIndex: 2,
-                                initialExpanded: false,
-                              ),
+          ),
+          // Overlay to show scheduling progress with blurred background
+          if (_isScheduling)
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                child: Container(
+                  color: Colors.black.withOpacity(0.3),
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: CupertinoColors.systemBackground.resolveFrom(
+                          context,
                         ),
-                      );
-                    },
-                    size: 50.0,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Scheduling tasks: $_scheduledTasks of $_totalTasksToSchedule completed',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  AuroraSphereButton(
-                    onPressed: () => _showScheduleDialog(context),
-                    status: _schedulingStatus,
-                    size: 50.0,
-                    label: 'Tasks',
-                    tasksToSchedule: _tasksToSchedule,
-                  ),
-                ],
+                ),
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  // Show scheduling dialog and navigate to statistics screen
+  // Trigger the scheduling process manually and update UI
   void _showScheduleDialog(BuildContext context) {
     HapticFeedback.mediumImpact();
+    setState(() {
+      _isScheduling = true;
+      final tasksCubit = context.read<TaskManagerCubit>();
+      final tasks = tasksCubit.state.tasks;
+      // Calculate tasks to schedule: not done and with future deadlines
+      _totalTasksToSchedule =
+          tasks
+              .where(
+                (task) =>
+                    !task.isDone &&
+                    task.deadline > DateTime.now().millisecondsSinceEpoch,
+              )
+              .length;
+      _scheduledTasks = 0;
+    });
 
-    final tasksCubit = context.read<TaskManagerCubit>();
-    tasksCubit.scheduleHabits();
-    tasksCubit.scheduleTasks();
-    _clearCache();
+    _performScheduling();
 
-    _checkSchedulingStatus();
-
-    Navigator.push(
-      context,
-      CupertinoPageRoute(builder: (context) => const TaskStatisticsScreen()),
-    ).then((_) {
-      _checkSchedulingStatus();
+    // After scheduling, hide the overlay
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _isScheduling = false;
+        });
+      }
     });
   }
 
-  // Build the task list based on grouping
+  // Perform scheduling manually, updating progress
+  void _performScheduling() {
+    final tasksCubit = context.read<TaskManagerCubit>();
+    final tasks = tasksCubit.state.tasks;
+    // Calculate habits to schedule (example logic)
+    final habitsToSchedule =
+        tasks.where((task) => task.frequency != null && !task.isDone).length;
+
+    // Schedule habits
+    Future.delayed(const Duration(seconds: 1), () {
+      tasksCubit.scheduleHabits();
+      setState(() {
+        _scheduledTasks = habitsToSchedule; // Update with actual count
+      });
+    });
+
+    // Schedule tasks
+    Future.delayed(const Duration(seconds: 2), () {
+      tasksCubit.scheduleTasks();
+      setState(() {
+        _scheduledTasks = _totalTasksToSchedule; // Update with actual count
+      });
+    });
+  }
+
+  // Build the task list using BlocBuilder for task data only
   Widget _buildTaskList(BuildContext context) =>
       BlocBuilder<TaskManagerCubit, TaskManagerState>(
         builder: (context, state) {
@@ -404,9 +470,9 @@ class _TaskListScreenState extends State<TaskListScreen>
         ),
         if (hasSubtasks && isExpanded)
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: CupertinoColors.transparent,
-              borderRadius: const BorderRadius.only(
+              borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
@@ -633,9 +699,9 @@ class _TaskListScreenState extends State<TaskListScreen>
                     ),
                     if (hasSubtasks && isExpanded)
                       Container(
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: CupertinoColors.transparent,
-                          borderRadius: const BorderRadius.only(
+                          borderRadius: BorderRadius.only(
                             bottomLeft: Radius.circular(12),
                             bottomRight: Radius.circular(12),
                           ),
@@ -858,7 +924,6 @@ class _TaskListScreenState extends State<TaskListScreen>
     });
   }
 
-  // Build filter tabs for task types
   Widget _buildFilterTabs(BuildContext context) {
     final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
     final primaryColor = CupertinoTheme.of(context).primaryColor;
@@ -1014,7 +1079,6 @@ class _TaskListScreenState extends State<TaskListScreen>
               color: CupertinoTheme.of(context).primaryColor,
             ),
             const SizedBox(width: 4),
-            const SizedBox(width: 4),
             Flexible(
               child: Text(
                 'Group by: ${_selectedGrouping.displayName}',
@@ -1031,7 +1095,6 @@ class _TaskListScreenState extends State<TaskListScreen>
     );
   }
 
-  // Build view mode segmented control
   Widget _buildViewModeControl(BuildContext context) {
     final primaryColor = CupertinoTheme.of(context).primaryColor;
     final backgroundColor = CupertinoColors.systemGrey6.resolveFrom(context);
@@ -1151,7 +1214,6 @@ extension GroupingOptionExtension on GroupingOption {
 // Enum for task view modes
 enum TaskViewMode { goals, steps }
 
-// Enum for task filter types
 enum TaskFilterType { all, task, event, habit }
 
 extension TaskFilterTypeExtension on TaskFilterType {

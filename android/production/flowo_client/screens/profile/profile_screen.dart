@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flowo_client/models/user_profile.dart';
-import 'package:flowo_client/screens/analytics/analytics_screen.dart';
+import 'package:flowo_client/screens/analytics/unified_analytics_screen.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/profile/profile_manager.dart';
 import 'package:flowo_client/utils/logger.dart';
@@ -637,7 +637,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.push(
                         context,
                         CupertinoPageRoute(
-                          builder: (context) => const AnalyticsScreen(),
+                          builder: (context) => const UnifiedAnalyticsScreen(),
                         ),
                       );
                     },

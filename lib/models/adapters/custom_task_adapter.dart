@@ -1,12 +1,13 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+import 'package:hive/hive.dart';
+import 'package:flowo_client/models/task.dart';
+import 'package:flowo_client/models/category.dart';
+import 'package:flowo_client/models/coordinates.dart';
+import 'package:flowo_client/models/repeat_rule.dart';
+import 'package:flowo_client/models/scheduled_task.dart';
+import 'package:flowo_client/models/task_session.dart';
 
-part of 'task.dart';
-
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
-
-class TaskAdapter extends TypeAdapter<Task> {
+/// A custom adapter for Task that handles null values for the status and totalDuration fields
+class CustomTaskAdapter extends TypeAdapter<Task> {
   @override
   final int typeId = 0;
 
@@ -16,6 +17,13 @@ class TaskAdapter extends TypeAdapter<Task> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+
+    // Handle null status by providing the default value
+    final status = fields[22] as String? ?? 'not_started';
+
+    // Handle null totalDuration by providing the default value
+    final totalDuration = fields[23] as int? ?? 0;
+
     return Task(
       id: fields[0] as String,
       title: fields[1] as String,
@@ -38,18 +46,16 @@ class TaskAdapter extends TypeAdapter<Task> {
       pessimisticTime: fields[19] as int?,
       firstNotification: fields[20] as int?,
       secondNotification: fields[21] as int?,
-      status: fields[22] as String,
-      totalDuration: fields[23] as int,
+      status: status,
+      totalDuration: totalDuration,
       sessions: (fields[24] as List?)?.cast<TaskSession>(),
-    )
-      ..parentTaskId = fields[11] as String?
-      ..pausedSession = fields[25] as TaskSession?;
+    )..parentTaskId = fields[11] as String?;
   }
 
   @override
   void write(BinaryWriter writer, Task obj) {
     writer
-      ..writeByte(26)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -99,9 +105,7 @@ class TaskAdapter extends TypeAdapter<Task> {
       ..writeByte(23)
       ..write(obj.totalDuration)
       ..writeByte(24)
-      ..write(obj.sessions)
-      ..writeByte(25)
-      ..write(obj.pausedSession);
+      ..write(obj.sessions);
   }
 
   @override
@@ -110,7 +114,7 @@ class TaskAdapter extends TypeAdapter<Task> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is TaskAdapter &&
+      other is CustomTaskAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

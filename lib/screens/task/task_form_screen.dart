@@ -30,20 +30,11 @@ class _TaskFormScreenState extends State<TaskFormScreen>
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
-
-  // Notification settings
   int? _firstNotification = 5;
   int? _secondNotification = 0;
-
-  // Task data model
   late final TaskFormData _formData;
-
-  // Hive box for storing categories
   late final Box<List<dynamic>> _categoriesBox;
-
   late UserSettings _userSettings;
-
-  // Available task options
   String _selectedCategory = '';
   List<String> _categoryOptions = [];
   final CategoryService _categoryService = CategoryService();
@@ -73,7 +64,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       _firstNotification = widget.task!.firstNotification;
       _secondNotification = widget.task!.secondNotification;
     } else {
-      // Initialize with default values
       final defaultDuration = 3600000; // 1 hour in milliseconds
 
       _formData = TaskFormData(
@@ -138,14 +128,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 if (!_userSettings.usePertMethod) {
                   HapticFeedback.selectionClick();
                   setState(() {
-                    // Update the user setting
                     _userSettings.usePertMethod = true;
                     _userSettings.save();
-
-                    // Switching to PERT method
-                    // Create a range based on current estimated time
-                    // Switching to PERT method
-                    // Create a range based on current estimated time
                     final currentTime =
                         _formData.estimatedTime > 0
                             ? _formData.estimatedTime
@@ -215,12 +199,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 if (_userSettings.usePertMethod) {
                   HapticFeedback.selectionClick();
                   setState(() {
-                    // Update the user setting
                     _userSettings.usePertMethod = false;
                     _userSettings.save();
-
-                    // Switching to simple duration
-                    // Keep the current estimated time or use a default if it's zero
                     final currentEstimatedTime =
                         _formData.estimatedTime > 0
                             ? _formData.estimatedTime
@@ -651,7 +631,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     BuildContext context,
     bool isFirstNotification,
   ) async {
-    // Define different notification time options for first and second alerts
     final List<int?> timeOptions = [
       null,
       0,
@@ -821,7 +800,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     BuildContext context,
     String timeType,
   ) async {
-    // Determine which time estimate to update
     int initialHours = 0;
     int initialMinutes = 0;
 

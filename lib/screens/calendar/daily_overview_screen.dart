@@ -1,4 +1,5 @@
 import 'package:easy_refresh/easy_refresh.dart';
+import 'package:flowo_client/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show TimeOfDay;
 import 'package:hive/hive.dart';
@@ -195,6 +196,67 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
         });
       });
     }
+  }
+
+  // Method that identifies visual groups of consecutive identical tasks
+  List<Map<String, dynamic>> _identifyTaskGroups(List<ScheduledTask> tasks) {
+    if (tasks.isEmpty) return [];
+
+    // Sort tasks by start time
+    final sortedTasks = List<ScheduledTask>.from(tasks);
+    sortedTasks.sort((a, b) {
+      final aStart = a.startTime.hour * 60 + a.startTime.minute;
+      final bStart = b.startTime.hour * 60 + b.startTime.minute;
+      return aStart.compareTo(bStart);
+    });
+
+    final List<Map<String, dynamic>> taskGroups = [];
+    List<ScheduledTask> currentGroup = [sortedTasks.first];
+
+    for (int i = 1; i < sortedTasks.length; i++) {
+      final currentTask = sortedTasks[i];
+      final previousTask = sortedTasks[i - 1];
+
+      // Log comparison details
+      logDebug(
+        '[TaskGroup] Comparing: '
+        'CurrentTask(id: ${currentTask.scheduledTaskId}, parent: ${currentTask.parentTaskId}, type: ${currentTask.type}, start: ${currentTask.startTime}, end: ${currentTask.endTime}) '
+        'with PreviousTask(id: ${previousTask.scheduledTaskId}, parent: ${previousTask.parentTaskId}, type: ${previousTask.type}, start: ${previousTask.startTime}, end: ${previousTask.endTime})',
+      );
+
+      final bool hasSameParentTask =
+          currentTask.parentTaskId == previousTask.parentTaskId;
+      final bool hasSameType = currentTask.type == previousTask.type;
+
+      logDebug(
+        '[TaskGroup] hasSameParentTask: $hasSameParentTask, '
+        'hasSameType: $hasSameType, '
+      );
+
+      if (hasSameParentTask && hasSameType) {
+        // Add to the current group
+        currentGroup.add(currentTask);
+      } else {
+        // Save the completed group and start a new one
+        taskGroups.add({
+          'tasks': currentGroup,
+          'startTime': currentGroup.first.startTime,
+          // These are already DateTime objects
+          'endTime': currentGroup.last.endTime,
+          // These are already DateTime objects
+        });
+        currentGroup = [currentTask];
+      }
+    }
+
+    // Add the final group
+    taskGroups.add({
+      'tasks': currentGroup,
+      'startTime': currentGroup.first.startTime,
+      'endTime': currentGroup.last.endTime,
+    });
+
+    return taskGroups;
   }
 
   @override
@@ -430,7 +492,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-      // Уменьшен верхний отступ
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -507,7 +568,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
           endTime,
         );
 
-        return _buildTaskSection(title, filteredTasks);
+        // Group consecutive identical tasks
+        final taskGroups = _identifyTaskGroups(filteredTasks);
+
+        return _buildTaskSection(title, taskGroups);
       },
     );
   }
@@ -595,7 +659,10 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
     );
   }
 
-  Widget _buildTaskSection(String title, List<ScheduledTask> tasks) {
+  Widget _buildTaskSection(
+    String title,
+    List<Map<String, dynamic>> taskGroups,
+  ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
       child: Column(
@@ -603,7 +670,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
         children: [
           _buildSectionHeader(title),
           const SizedBox(height: 10),
-          if (tasks.isEmpty)
+          if (taskGroups.isEmpty)
             Text(
               'No tasks scheduled for $title',
               style: TextStyle(
@@ -616,9 +683,339 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
               ),
             )
           else
-            ...tasks.map((task) => _buildTaskItem(task)),
+            ...taskGroups.map((group) => _buildTaskGroupItem(group)),
         ],
       ),
+    );
+  }
+
+  Widget _buildTaskGroupItem(Map<String, dynamic> group) {
+    final tasks = group['tasks'] as List<ScheduledTask>;
+    final startTime = group['startTime'] as DateTime;
+    final endTime = group['endTime'] as DateTime;
+
+    // Use the first task for rendering, but with the combined time range
+    final scheduledTask = tasks.first;
+    final calendarCubit = context.read<CalendarCubit>();
+    final task = calendarCubit.tasksDB.get(scheduledTask.parentTaskId);
+    if (task == null) return const SizedBox.shrink();
+
+    final formattedStartTime = DateTimeFormatter.formatTime(
+      startTime,
+      is24HourFormat: _userSettings.is24HourFormat,
+    );
+    final formattedEndTime = DateTimeFormatter.formatTime(
+      endTime,
+      is24HourFormat: _userSettings.is24HourFormat,
+    );
+
+    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
+
+    final isFreeTimeTask = [
+      ScheduledTaskType.sleep,
+      ScheduledTaskType.mealBreak,
+      ScheduledTaskType.rest,
+      ScheduledTaskType.freeTime,
+    ].contains(scheduledTask.type);
+
+    final freeTimeInfo =
+        isFreeTimeTask ? _getFreeTimeTaskInfo(scheduledTask.type) : null;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: GestureDetector(
+        onTap: () => _showTaskGroupDetails(task, tasks),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color:
+                    isDarkMode
+                        ? CupertinoColors.black.withOpacity(0.3)
+                        : CupertinoColors.systemGrey5.withOpacity(0.5),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            border: Border.all(
+              color:
+                  isDarkMode
+                      ? CupertinoColors.systemGrey4.withOpacity(0.2)
+                      : CupertinoColors.systemGrey5,
+              width: 0.5,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 4,
+                constraints: BoxConstraints(
+                  minHeight: 40,
+                  maxHeight: double.infinity,
+                ),
+                decoration: BoxDecoration(
+                  color:
+                      isFreeTimeTask
+                          ? (isDarkMode
+                              ? freeTimeInfo!['color'].darkColor
+                              : freeTimeInfo!['color'])
+                          : _getCategoryColor(task.category.name),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (!isFreeTimeTask &&
+                        (task.order != null ||
+                            task.parentTask?.title != null)) ...[
+                      Text(
+                        '${task.parentTask?.title ?? ""}${task.order != null ? ": step ${task.order}" : ""}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: CupertinoTheme.of(
+                            context,
+                          ).textTheme.tabLabelTextStyle.color?.withOpacity(0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                    ],
+                    Row(
+                      children: [
+                        if (isFreeTimeTask) ...[
+                          Icon(
+                            freeTimeInfo!['icon'],
+                            color:
+                                isDarkMode
+                                    ? freeTimeInfo['color'].darkColor
+                                    : freeTimeInfo['color'],
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Expanded(
+                          child: Text(
+                            isFreeTimeTask
+                                ? freeTimeInfo!['label']
+                                : getHabitName(scheduledTask) ?? task.title,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  CupertinoTheme.of(
+                                    context,
+                                  ).textTheme.textStyle.color,
+                            ),
+                            overflow: TextOverflow.visible,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$formattedStartTime - $formattedEndTime',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color:
+                            CupertinoTheme.of(
+                              context,
+                            ).textTheme.tabLabelTextStyle.color,
+                      ),
+                    ),
+                    // Show task count if there are multiple sessions
+                    if (tasks.length > 1)
+                      Text(
+                        '${tasks.length} consecutive sessions',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                          color: CupertinoTheme.of(
+                            context,
+                          ).textTheme.tabLabelTextStyle.color?.withOpacity(0.8),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              if (!isFreeTimeTask)
+                Icon(
+                  task.isDone
+                      ? CupertinoIcons.checkmark_circle_fill
+                      : CupertinoIcons.circle,
+                  color:
+                      task.isDone
+                          ? CupertinoColors.activeGreen
+                          : CupertinoTheme.of(
+                            context,
+                          ).textTheme.tabLabelTextStyle.color,
+                  size: 22,
+                  semanticLabel:
+                      task.isDone ? 'Task completed' : 'Task not completed',
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Show details for a group of tasks
+  void _showTaskGroupDetails(Task task, List<ScheduledTask> tasks) {
+    final scheduledTask = tasks.first; // Use first task for basic display
+    final startTime = tasks.first.startTime;
+    final endTime = tasks.last.endTime;
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final isFreeTimeTask = [
+      ScheduledTaskType.sleep,
+      ScheduledTaskType.mealBreak,
+      ScheduledTaskType.rest,
+      ScheduledTaskType.freeTime,
+    ].contains(scheduledTask.type);
+
+    final freeTimeInfo =
+        isFreeTimeTask ? _getFreeTimeTaskInfo(scheduledTask.type) : null;
+
+    showCupertinoModalPopup(
+      context: context,
+      builder:
+          (context) => CupertinoActionSheet(
+            title:
+                isFreeTimeTask
+                    ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          freeTimeInfo!['icon'],
+                          color:
+                              isDark
+                                  ? freeTimeInfo['color'].darkColor
+                                  : freeTimeInfo['color'],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(freeTimeInfo['label']),
+                      ],
+                    )
+                    : Text(getHabitName(scheduledTask) ?? task.title),
+            message: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                Text(
+                  '${DateTimeFormatter.formatTime(startTime, is24HourFormat: _userSettings.is24HourFormat)}'
+                  ' - ${DateTimeFormatter.formatTime(endTime, is24HourFormat: _userSettings.is24HourFormat)}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                  ),
+                ),
+                if (tasks.length > 1)
+                  Text(
+                    '${tasks.length} consecutive sessions',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color: CupertinoTheme.of(
+                        context,
+                      ).textTheme.tabLabelTextStyle.color?.withOpacity(0.8),
+                    ),
+                  ),
+                if (!isFreeTimeTask && task.notes?.isNotEmpty == true) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    task.notes!,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color:
+                          CupertinoTheme.of(context).textTheme.textStyle.color,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color:
+                            isFreeTimeTask
+                                ? (isDark
+                                    ? freeTimeInfo!['color'].darkColor
+                                    : freeTimeInfo?['color'])
+                                : _getCategoryColor(task.category.name),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      isFreeTimeTask
+                          ? 'Type: ${freeTimeInfo!['label']}'
+                          : 'Category: ${task.category.name}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color:
+                            CupertinoTheme.of(
+                              context,
+                            ).textTheme.textStyle.color,
+                      ),
+                    ),
+                  ],
+                ),
+                if (isFreeTimeTask) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'This is scheduled free time from your settings.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color:
+                          CupertinoTheme.of(
+                            context,
+                          ).textTheme.tabLabelTextStyle.color,
+                    ),
+                  ),
+                ],
+                if (!isFreeTimeTask) ...[
+                  const SizedBox(height: 16),
+                  Container(height: 1, color: CupertinoColors.separator),
+                  const SizedBox(height: 16),
+                  TaskTimerControls(task: task, isDarkMode: isDark),
+                ],
+              ],
+            ),
+            actions: [
+              if (!isFreeTimeTask)
+                CupertinoActionSheetAction(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    task.isDone = !task.isDone;
+                    context.read<CalendarCubit>().updateTask(task);
+                    setState(() {});
+                  },
+                  child: Text(
+                    task.isDone ? 'Mark as Undone' : 'Mark as Done',
+                    style: TextStyle(
+                      color: CupertinoTheme.of(context).primaryColor,
+                    ),
+                  ),
+                ),
+            ],
+            cancelButton: CupertinoActionSheetAction(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            ),
+          ),
     );
   }
 
@@ -673,158 +1070,6 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
           'color': CupertinoColors.systemBlue,
         };
     }
-  }
-
-  Widget _buildTaskItem(ScheduledTask scheduledTask) {
-    final calendarCubit = context.read<CalendarCubit>();
-    final task = calendarCubit.tasksDB.get(scheduledTask.parentTaskId);
-    if (task == null) return const SizedBox.shrink();
-
-    final startTime = DateTimeFormatter.formatTime(
-      scheduledTask.startTime,
-      is24HourFormat: _userSettings.is24HourFormat,
-    );
-    final endTime = DateTimeFormatter.formatTime(
-      scheduledTask.endTime,
-      is24HourFormat: _userSettings.is24HourFormat,
-    );
-    final isDarkMode = CupertinoTheme.of(context).brightness == Brightness.dark;
-
-    final isFreeTimeTask = [
-      ScheduledTaskType.sleep,
-      ScheduledTaskType.mealBreak,
-      ScheduledTaskType.rest,
-      ScheduledTaskType.freeTime,
-    ].contains(scheduledTask.type);
-
-    final freeTimeInfo =
-        isFreeTimeTask ? _getFreeTimeTaskInfo(scheduledTask.type) : null;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: GestureDetector(
-        onTap: () => _showTaskDetails(task, scheduledTask),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: CupertinoTheme.of(context).scaffoldBackgroundColor,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color:
-                    isDarkMode
-                        ? CupertinoColors.black.withOpacity(0.3)
-                        : CupertinoColors.systemGrey5.withOpacity(0.5),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-            border: Border.all(
-              color:
-                  isDarkMode
-                      ? CupertinoColors.systemGrey4.withOpacity(0.2)
-                      : CupertinoColors.systemGrey5,
-              width: 0.5,
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 4,
-                constraints: BoxConstraints(
-                  minHeight: 40,
-                  maxHeight: double.infinity,
-                ),
-                decoration: BoxDecoration(
-                  color:
-                      isFreeTimeTask
-                          ? (isDarkMode
-                              ? freeTimeInfo!['color'].darkColor
-                              : freeTimeInfo!['color'])
-                          : _getCategoryColor(task.category.name),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!isFreeTimeTask && (task.order != null || task.parentTask?.title != null)) ...[
-                      Text(
-                        '${task.parentTask?.title ?? ""}${task.order != null ? ": step ${task.order}" : ""}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: CupertinoTheme.of(context).textTheme.tabLabelTextStyle.color?.withOpacity(0.6),
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                    ],
-                    Row(
-                      children: [
-                        if (isFreeTimeTask) ...[
-                          Icon(
-                            freeTimeInfo!['icon'],
-                            color:
-                                isDarkMode
-                                    ? freeTimeInfo['color'].darkColor
-                                    : freeTimeInfo['color'],
-                            size: 18,
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Expanded(
-                          child: Text(
-                            isFreeTimeTask
-                                ? freeTimeInfo!['label']
-                                : getHabitName(scheduledTask) ?? task.title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: CupertinoTheme.of(context).textTheme.textStyle.color,
-                            ),
-                            overflow: TextOverflow.visible,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$startTime - $endTime',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color:
-                            CupertinoTheme.of(
-                              context,
-                            ).textTheme.tabLabelTextStyle.color,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!isFreeTimeTask)
-                Icon(
-                  task.isDone
-                      ? CupertinoIcons.checkmark_circle_fill
-                      : CupertinoIcons.circle,
-                  color:
-                      task.isDone
-                          ? CupertinoColors.activeGreen
-                          : CupertinoTheme.of(
-                            context,
-                          ).textTheme.tabLabelTextStyle.color,
-                  size: 22,
-                  semanticLabel:
-                      task.isDone ? 'Task completed' : 'Task not completed',
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   Color _getCategoryColor(String category) {

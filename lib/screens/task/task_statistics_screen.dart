@@ -104,7 +104,6 @@ class _TaskStatisticsScreenState extends State<TaskStatisticsScreen> {
         _tasksWithDuration > 0 ? (_totalDuration ~/ _tasksWithDuration) : 0;
   }
 
-  // Helper method to determine if a task can be overdue
   // Only tasks with subtasks or without can be overdue
   // Events, habits, and free time tasks can't be overdue
   bool _canTaskBeOverdue(Task task) {

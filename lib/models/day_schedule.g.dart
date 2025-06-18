@@ -16,28 +16,64 @@ class DayScheduleAdapter extends TypeAdapter<DaySchedule> {
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
+
+    // Handle the case where day field might be a bool (old format) or List (new format)
+    List<String> dayValue;
+    if (fields[1] is bool) {
+      // Convert old bool format to a list with a single day
+      // This is a migration fix for existing data
+      dayValue = ['Default'];
+    } else if (fields[1] is List) {
+      dayValue = (fields[1] as List).cast<String>();
+    } else {
+      // Fallback to a default value if the field is neither bool nor List
+      dayValue = ['Default'];
+    }
+    // Migrate mealBreaks field (old format might be bool)
+    List<TimeFrame> mealBreaksValue;
+    if (fields[4] is bool) {
+      mealBreaksValue = [];
+    } else if (fields[4] is List) {
+      mealBreaksValue = (fields[4] as List).cast<TimeFrame>();
+    } else {
+      mealBreaksValue = [];
+    }
+    // Migrate freeTimes field (old format might be bool)
+    List<TimeFrame> freeTimesValue;
+    if (fields[5] is bool) {
+      freeTimesValue = [];
+    } else if (fields[5] is List) {
+      freeTimesValue = (fields[5] as List).cast<TimeFrame>();
+    } else {
+      freeTimesValue = [];
+    }
+
+    // Use migration values for mealBreaks and freeTimes
     return DaySchedule(
-      day: fields[0] as String,
-      isActive: fields[1] as bool,
-      sleepTime: fields[2] as TimeFrame,
-      mealBreaks: (fields[3] as List?)?.cast<TimeFrame>(),
-      freeTimes: (fields[4] as List?)?.cast<TimeFrame>(),
+      name: fields[0] as String,
+      day: dayValue,
+      isActive: fields[2] as bool,
+      sleepTime: fields[3] as TimeFrame,
+      mealBreaks: mealBreaksValue,
+      freeTimes: freeTimesValue,
     );
   }
 
   @override
   void write(BinaryWriter writer, DaySchedule obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
-      ..write(obj.day)
+      ..write(obj.name)
       ..writeByte(1)
-      ..write(obj.isActive)
+      ..write(obj.day)
       ..writeByte(2)
-      ..write(obj.sleepTime)
+      ..write(obj.isActive)
       ..writeByte(3)
-      ..write(obj.mealBreaks)
+      ..write(obj.sleepTime)
       ..writeByte(4)
+      ..write(obj.mealBreaks)
+      ..writeByte(5)
       ..write(obj.freeTimes);
   }
 

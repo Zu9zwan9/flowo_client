@@ -5,7 +5,7 @@ import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/task.dart';
 
 /// A widget that displays timer controls for a task
-/// Allows users to start, pause, stop, and complete tasks
+/// Allows users to start, pause, and stop tasks
 class TaskTimerControls extends StatefulWidget {
   final Task task;
   final bool isDarkMode;
@@ -25,6 +25,7 @@ class _TaskTimerControlsState extends State<TaskTimerControls>
   late AnimationController _animationController;
   late Timer _timer;
   int _elapsedTime = 0;
+  int _currentSessionTime = 0;
 
   @override
   void initState() {
@@ -57,6 +58,15 @@ class _TaskTimerControlsState extends State<TaskTimerControls>
   void _updateElapsedTime() {
     final task = widget.task;
     _elapsedTime = task.getTotalDuration();
+
+    // Calculate current session time
+    if (task.activeSession != null) {
+      _currentSessionTime = task.activeSession!.duration;
+    } else if (task.isPaused && task.sessions.isNotEmpty) {
+      _currentSessionTime = task.sessions.last.duration;
+    } else {
+      _currentSessionTime = 0;
+    }
   }
 
   String _formatDuration(int milliseconds) {
@@ -77,27 +87,67 @@ class _TaskTimerControlsState extends State<TaskTimerControls>
     final task = widget.task;
     final primaryColor = CupertinoTheme.of(context).primaryColor;
 
+    final bool isActiveOrPaused = task.isInProgress || task.isPaused;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Timer display
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           decoration: BoxDecoration(
-            color:
-                widget.isDarkMode
-                    ? CupertinoColors.systemGrey6.darkColor
-                    : CupertinoColors.systemGrey6,
+            color: widget.isDarkMode
+                ? CupertinoColors.systemGrey6.darkColor
+                : CupertinoColors.systemGrey6,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Text(
-            _formatDuration(_elapsedTime),
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'SF Mono',
-              color: CupertinoTheme.of(context).textTheme.textStyle.color,
-            ),
+          child: Column(
+            children: [
+              // Current session time - shown larger
+              Text(
+                isActiveOrPaused
+                    ? _formatDuration(_currentSessionTime)
+                    : _formatDuration(_elapsedTime),
+                style: TextStyle(
+                  fontSize: 34,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'SF Mono',
+                  color: isActiveOrPaused && task.isPaused
+                      ? CupertinoColors.systemYellow
+                      : isActiveOrPaused
+                      ? CupertinoColors.activeGreen
+                      : CupertinoTheme.of(context).textTheme.textStyle.color,
+                ),
+              ),
+
+              // Total time - shown smaller below if there's an active session
+              if (isActiveOrPaused)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Total:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatDuration(_elapsedTime),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'SF Mono',
+                          color: CupertinoColors.secondaryLabel.resolveFrom(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
         ),
 
@@ -118,7 +168,7 @@ class _TaskTimerControlsState extends State<TaskTimerControls>
             else if (task.isPaused)
               _buildControlButton(
                 icon: CupertinoIcons.play_fill,
-                label: 'Resume',
+                label: 'Continue',
                 color: CupertinoColors.activeGreen,
                 onPressed: () => _startTask(task),
               )
@@ -130,21 +180,12 @@ class _TaskTimerControlsState extends State<TaskTimerControls>
                 onPressed: task.canStart ? () => _startTask(task) : null,
               ),
 
-            // Stop button
-            if (task.isInProgress || task.isPaused)
-              _buildControlButton(
-                icon: CupertinoIcons.stop_fill,
-                label: 'Stop',
-                color: CupertinoColors.systemRed,
-                onPressed: () => _stopTask(task),
-              ),
-
-            // Complete button
+            // Stop button - always displayed
             _buildControlButton(
-              icon: CupertinoIcons.check_mark_circled_solid,
-              label: 'Complete',
-              color: primaryColor,
-              onPressed: () => _completeTask(task),
+              icon: CupertinoIcons.stop_fill,
+              label: 'Stop',
+              color: CupertinoColors.systemRed,
+              onPressed: (task.isInProgress || task.isPaused) ? () => _stopTask(task) : null,
             ),
           ],
         ),
@@ -201,7 +242,11 @@ class _TaskTimerControlsState extends State<TaskTimerControls>
 
   void _startTask(Task task) {
     final tasksCubit = context.read<TaskManagerCubit>();
-    tasksCubit.startTask(task);
+    if (task.isPaused) {
+      tasksCubit.resumeTask(task);
+    } else {
+      tasksCubit.startTask(task);
+    }
   }
 
   void _pauseTask(Task task) {
@@ -212,11 +257,5 @@ class _TaskTimerControlsState extends State<TaskTimerControls>
   void _stopTask(Task task) {
     final tasksCubit = context.read<TaskManagerCubit>();
     tasksCubit.stopTask(task);
-  }
-
-  void _completeTask(Task task) {
-    final tasksCubit = context.read<TaskManagerCubit>();
-    tasksCubit.completeTask(task);
-    Navigator.pop(context); // Close the modal
   }
 }

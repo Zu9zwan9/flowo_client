@@ -346,30 +346,12 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   void updateTaskOrder(Task parentTask, List<Task> subtasks) {
     for (var i = 0; i < subtasks.length; i++) {
       final subtask = subtasks[i];
-      editTask(
-        task: subtask,
-        title: subtask.title,
-        priority: subtask.priority,
-        estimatedTime: subtask.estimatedTime,
-        deadline: subtask.deadline,
-        category: subtask.category,
-        parentTask: parentTask,
-        notes: subtask.notes,
-        color: subtask.color,
-        order: i + 1,
-        frequency: subtask.frequency,
-        optimisticTime: subtask.optimisticTime,
-        realisticTime: subtask.realisticTime,
-        pessimisticTime: subtask.pessimisticTime,
-        firstNotification: subtask.firstNotification,
-        secondNotification: subtask.secondNotification,
-      );
+      editTask(task: subtask, order: i + 1);
     }
-
     final subtaskIds = subtasks.map((subtask) => subtask.id).toList();
     parentTask.subtaskIds = subtaskIds;
     taskManager.tasksDB.put(parentTask.id, parentTask);
-
+    taskManager.manageTasks();
     emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
   }
 
@@ -385,8 +367,12 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
   }
 
   void updateUserSettings(UserSettings userSettings) {
+    // Delete all days to ensure clean slate
     _deleteAllDays();
+
+    // Update user settings in the task manager
     taskManager.updateUserSettings(userSettings);
+
     try {
       final settingsBox = Hive.box<UserSettings>('user_settings');
       settingsBox.put('current', userSettings);
@@ -394,10 +380,18 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     } catch (e) {
       logError('Failed to save user settings: $e');
     }
+
+    // Force scheduler to recreate days with updated schedules
+    taskManager.scheduler.createDaysUntil(
+      DateTime(DateTime.now().year, DateTime.now().month + 3),
+    );
+
+    // These will force recreation of events and tasks
     taskManager.manageEvents();
     scheduleTasks();
     scheduleHabits();
 
+    // Refresh the UI state
     emit(
       state.copyWith(
         tasks: taskManager.tasksDB.values.toList(),
@@ -600,6 +594,70 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
     return result;
   }
 
+  /// Resumes a task that was previously paused
+  /// Returns true if the task was resumed successfully, false otherwise
+  bool resumeTask(Task task) {
+    logInfo('Resuming task: ${task.title}');
+
+    if (task.status != 'paused') {
+      logInfo('Cannot resume task "${task.title}" as it is not paused');
+      return false;
+    }
+
+    try {
+      // Find the last session (which should be the paused one)
+      if (task.sessions.isNotEmpty) {
+        final lastSession = task.sessions.last;
+
+        // Calculate duration accumulated so far
+        final durationSoFar =
+            lastSession.endTime != null
+                ? lastSession.endTime!
+                    .difference(lastSession.startTime)
+                    .inMilliseconds
+                : 0;
+
+        // Set a new session with the same ID but adjusted times
+        // to continue where we left off
+        TaskSession continuedSession = TaskSession(
+          id: lastSession.id,
+          // Keep the same ID
+          taskId: task.id,
+          startTime: DateTime.now().subtract(
+            Duration(milliseconds: durationSoFar),
+          ),
+          // Adjust start time
+          endTime: null,
+          // No end time since it's active
+          notes: lastSession.notes, // Keep any notes
+        );
+
+        // Remove the old session and add the continued one
+        task.sessions.removeLast();
+        task.sessions.add(continuedSession);
+      } else {
+        // Just in case there's no session to resume, create a new one
+        final session = TaskSession(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          taskId: task.id,
+          startTime: DateTime.now(),
+        );
+        task.sessions.add(session);
+      }
+
+      // Update status
+      task.status = 'in_progress';
+      task.save();
+
+      emit(state.copyWith(tasks: taskManager.tasksDB.values.toList()));
+      logInfo('Task "${task.title}" resumed successfully');
+      return true;
+    } catch (e) {
+      logError('Error resuming task: $e');
+      return false;
+    }
+  }
+
   /// Stops a task that's in progress or paused
   /// Returns true if the task was stopped successfully, false otherwise
   bool stopTask(Task task) {
@@ -664,4 +722,164 @@ class TaskWithSchedules {
   final List<ScheduledTask> scheduledTasks;
 
   TaskWithSchedules(this.task, this.scheduledTasks);
+}
+
+extension TrackingFunctions on TaskManagerCubit {
+  /// Returns the current tracking state including the active task, elapsed time, and running status
+  ({Task? task, Duration? elapsed, bool isRunning}) getCurrentTracking() {
+    // Find any task that's currently in progress
+    final activeTasks = getTasksInProgress();
+    if (activeTasks.isEmpty) {
+      // Check for paused tasks if no in-progress tasks
+      final pausedTasks = getPausedTasks();
+      if (pausedTasks.isEmpty) {
+        return (task: null, elapsed: null, isRunning: false);
+      }
+      // Return the most recently paused task
+      final activeTask = pausedTasks.first;
+      return (
+        task: activeTask,
+        elapsed: _calculateElapsedTime(activeTask),
+        isRunning: false,
+      );
+    }
+
+    // Return the most recently started task if multiple are in progress
+    final activeTask = activeTasks.first;
+    return (
+      task: activeTask,
+      elapsed: _calculateElapsedTime(activeTask),
+      isRunning: true,
+    );
+  }
+
+  /// Pause the current tracking session
+  void pauseTaskTracking() {
+    // Find the active task and pause it
+    final activeTasks = getTasksInProgress();
+    if (activeTasks.isNotEmpty) {
+      pauseTask(activeTasks.first);
+    }
+  }
+
+  /// Resume the paused tracking session
+  void resumeTaskTracking() {
+    // Find the paused task and resume it
+    final pausedTasks = getPausedTasks();
+    if (pausedTasks.isNotEmpty) {
+      resumeTask(pausedTasks.first);
+    }
+  }
+
+  /// Stop and save the current tracking session
+  void stopTaskTracking() {
+    // Check for in-progress tasks first
+    final activeTasks = getTasksInProgress();
+    if (activeTasks.isNotEmpty) {
+      stopTask(activeTasks.first);
+      return;
+    }
+
+    // Check for paused tasks if no in-progress tasks
+    final pausedTasks = getPausedTasks();
+    if (pausedTasks.isNotEmpty) {
+      stopTask(pausedTasks.first);
+    }
+  }
+
+  /// Calculate the elapsed time for a task based on its sessions
+  Duration _calculateElapsedTime(Task task) {
+    int totalMs = 0;
+
+    // Calculate total time from completed sessions
+    for (final session in task.sessions) {
+      if (session.endTime != null) {
+        totalMs +=
+            session.endTime!.difference(session.startTime).inMilliseconds;
+      }
+    }
+
+    // Add time from active session if there is one
+    if (task.status == 'in_progress' && task.sessions.isNotEmpty) {
+      final lastSession = task.sessions.last;
+      if (lastSession.endTime == null) {
+        totalMs +=
+            DateTime.now().difference(lastSession.startTime).inMilliseconds;
+      }
+    }
+
+    return Duration(milliseconds: totalMs);
+  }
+
+  /// Start tracking a specified task
+  void startTaskTracking(Task task) {
+    // Stop any current tracking first
+    final currentTracking = getCurrentTracking();
+    if (currentTracking.task != null) {
+      stopTaskTracking();
+    }
+
+    // Now start the new task
+    startTask(task);
+  }
+
+  /// Get a list of recently tracked tasks
+  List<Task> getRecentlyTrackedTasks({int limit = 5}) {
+    final tasks = taskManager.tasksDB.values.toList();
+
+    // Filter to tasks with sessions
+    final trackedTasks =
+        tasks.where((task) => task.sessions.isNotEmpty).toList();
+
+    // Sort by most recent session
+    trackedTasks.sort((a, b) {
+      final aLastSession =
+          a.sessions.isNotEmpty ? a.sessions.last.startTime : DateTime(1970);
+      final bLastSession =
+          b.sessions.isNotEmpty ? b.sessions.last.startTime : DateTime(1970);
+      return bLastSession.compareTo(aLastSession); // Descending order
+    });
+
+    // Return limited number
+    return trackedTasks.take(limit).toList();
+  }
+
+  /// Get the total tracked time for today
+  Duration getTodayTrackedTime() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    int totalMs = 0;
+
+    for (final task in taskManager.tasksDB.values) {
+      for (final session in task.sessions) {
+        // Check if session is from today
+        final sessionDate = DateTime(
+          session.startTime.year,
+          session.startTime.month,
+          session.startTime.day,
+        );
+
+        if (sessionDate == today) {
+          if (session.endTime != null) {
+            totalMs +=
+                session.endTime!.difference(session.startTime).inMilliseconds;
+          } else if (task.status == 'in_progress') {
+            // Active session
+            totalMs += now.difference(session.startTime).inMilliseconds;
+          }
+        }
+      }
+    }
+
+    return Duration(milliseconds: totalMs);
+  }
+
+  void refreshState() {
+    emit(
+      state.copyWith(
+        tasks: taskManager.tasksDB.values.toList(),
+        userSettings: taskManager.userSettings,
+      ),
+    );
+  }
 }

@@ -8,6 +8,7 @@ class SettingsSection extends StatelessWidget {
   final bool showDivider;
   final String? footerText;
   final Widget? customFooter;
+  final Widget? customContent;
   final bool useRoundedCorners;
   final double cornerRadius;
   final Color? backgroundColor;
@@ -21,6 +22,7 @@ class SettingsSection extends StatelessWidget {
     this.showDivider = true,
     this.footerText,
     this.customFooter,
+    this.customContent,
     this.useRoundedCorners = true,
     this.cornerRadius = 10.0,
     this.backgroundColor,
@@ -75,7 +77,14 @@ class SettingsSection extends StatelessWidget {
                         ]
                         : null,
               ),
-              child: Column(children: children),
+              child: Column(
+                children: [
+                  // Include regular children
+                  ...children,
+                  // Include custom content if provided
+                  if (customContent != null) customContent!,
+                ],
+              ),
             ),
           ),
 

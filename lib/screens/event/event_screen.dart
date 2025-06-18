@@ -1,12 +1,12 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
 import 'package:flowo_client/models/task.dart';
-import 'package:flowo_client/screens/task/task_page_screen.dart'; // For reused widgets
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../widgets/task_page/category_tag.dart';
+import '../widgets/task_page/task_description.dart';
 import 'event_form_screen.dart';
 
-// Constants from TaskPageScreen (assumed available)
 class TaskPageConstants {
   static const double padding = 16.0;
   static const double cornerRadius = 12.0;
@@ -17,7 +17,6 @@ class TaskPageConstants {
   );
 }
 
-// Utility for formatting dates and times (moved from original event_screen.dart)
 class EventDateTimeFormatter {
   static String formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year}';
@@ -263,7 +262,6 @@ class EventDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = CupertinoTheme.of(context);
-    // Assume Coordinates has toString() or properties like latitude/longitude
     final locationString =
         event.location != null
             ? event.location.toString()
