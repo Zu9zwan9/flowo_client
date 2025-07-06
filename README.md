@@ -109,3 +109,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📞 Support
 
 If you encounter any problems or have any questions, please open an issue on GitHub or contact the development team.
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/Zu9zwan9/flowo_client)
