@@ -47,13 +47,27 @@ class DayScheduleAdapter extends TypeAdapter<DaySchedule> {
     } else {
       freeTimesValue = [];
     }
+    // Determine isActive and sleepTime with migration for old data formats
+    bool isActiveValue;
+    TimeFrame sleepTimeValue;
+    if (fields[2] is bool) {
+      isActiveValue = fields[2] as bool;
+      sleepTimeValue = fields[3] as TimeFrame;
+    } else if (fields[2] is TimeFrame) {
+      // Old format: field 2 was sleepTime
+      isActiveValue = true;
+      sleepTimeValue = fields[2] as TimeFrame;
+    } else {
+      isActiveValue = true;
+      sleepTimeValue = fields[3] as TimeFrame;
+    }
 
     // Use migration values for mealBreaks and freeTimes
     return DaySchedule(
       name: fields[0] as String,
       day: dayValue,
-      isActive: fields[2] as bool,
-      sleepTime: fields[3] as TimeFrame,
+      isActive: isActiveValue,
+      sleepTime: sleepTimeValue,
       mealBreaks: mealBreaksValue,
       freeTimes: freeTimesValue,
     );
