@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flowo_client/models/user_profile.dart';
 import 'package:flowo_client/screens/analytics/unified_analytics_screen.dart';
+import 'package:flowo_client/screens/home_screen.dart';
 import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
 import 'package:flowo_client/services/profile/profile_manager.dart';
 import 'package:flowo_client/utils/logger.dart';
@@ -634,10 +635,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     padding: const EdgeInsets.all(16),
                     onPressed: () {
                       HapticFeedback.selectionClick();
-                      Navigator.push(
+                      Navigator.pushReplacement(
                         context,
                         CupertinoPageRoute(
-                          builder: (context) => const UnifiedAnalyticsScreen(),
+                          builder:
+                              (context) => const HomeScreen(initialIndex: 4),
                         ),
                       );
                     },

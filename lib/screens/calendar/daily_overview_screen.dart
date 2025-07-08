@@ -502,7 +502,7 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
               fontWeight: FontWeight.bold,
               color: textTheme.textTheme.textStyle.color,
             ),
-            overflow: TextOverflow.ellipsis,
+            overflow: TextOverflow.visible,
           ),
           const SizedBox(height: 15),
           Row(

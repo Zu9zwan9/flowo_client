@@ -1311,29 +1311,20 @@ class HabitFormScreenState extends State<HabitFormScreen>
       context: context,
       title: 'Notification Settings',
       children: [
-        Text(
-          'Set when you want to be notified before the habit',
-          style: theme.helperTextStyle,
-        ),
-        const SizedBox(height: 12.0),
         CupertinoFormWidgets.selectionButton(
           context: context,
           label: 'Alert',
           value: _formatNotificationTime(_firstNotification),
           onTap: () => _showNotificationTimePicker(context, true),
-          color: theme.secondaryColor,
-          icon: CupertinoIcons.bell,
-          iconSize: 20.0,
+          icon: CupertinoIcons.bell_fill,
         ),
-        const SizedBox(height: 12.0),
+        SizedBox(height: CupertinoFormTheme.elementSpacing),
         CupertinoFormWidgets.selectionButton(
           context: context,
           label: 'Second Alert',
           value: _formatNotificationTime(_secondNotification),
           onTap: () => _showNotificationTimePicker(context, false),
-          color: theme.accentColor,
-          icon: CupertinoIcons.bell_fill,
-          iconSize: 20.0,
+          icon: CupertinoIcons.bell,
         ),
       ],
     );

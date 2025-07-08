@@ -64,7 +64,11 @@ void showCupertinoNotification({
                   if (actionText != null)
                     CupertinoButton(
                       padding: EdgeInsets.zero,
-                      minSize: 0,
+                      onPressed: () {
+                        if (onActionTap != null) {
+                          onActionTap();
+                        }
+                      }, minimumSize: Size(0, 0),
                       child: Text(
                         actionText,
                         style: TextStyle(
@@ -72,11 +76,6 @@ void showCupertinoNotification({
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      onPressed: () {
-                        if (onActionTap != null) {
-                          onActionTap();
-                        }
-                      },
                     ),
                 ],
               ),

@@ -1626,7 +1626,7 @@ class AiSuggestionsCard extends StatelessWidget {
                 ],
               ),
             );
-          }).toList(),
+          }),
         ],
       ),
     );

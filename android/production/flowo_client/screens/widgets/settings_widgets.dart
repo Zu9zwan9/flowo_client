@@ -880,8 +880,7 @@ class _SettingsButtonState extends State<SettingsButton>
               padding: widget.padding,
               color: widget.isPrimary ? buttonColor : null,
               borderRadius: effectiveBorderRadius,
-              minSize: widget.minSize,
-              onPressed: widget.enabled ? widget.onPressed : null,
+              onPressed: widget.enabled ? widget.onPressed : null, minimumSize: Size(widget.minSize, widget.minSize),
               child: Row(
                 mainAxisSize: widget.mainAxisSize,
                 mainAxisAlignment: widget.alignment,

@@ -386,7 +386,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
   void _showEditDaysDialog() {
     // Use a case-insensitive comparison when creating the initial selection set
     // This solves the issue where default schedule days don't show as selected
-    final selectedDays = Set<String>();
+    final selectedDays = <String>{};
 
     // Create normalized set of days (capitalized first letter) from current schedule
     for (final day in _schedule.day) {
@@ -773,8 +773,8 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
         ),
         trailing: CupertinoButton(
           padding: EdgeInsets.zero,
-          child: const Text('Save'),
           onPressed: _saveSettings,
+          child: const Text('Save'),
         ),
       ),
       child: SafeArea(
@@ -833,7 +833,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
               children: [
                 SettingsTimePickerItem(
                   label: 'Bedtime',
-                  time: _schedule.sleepTime.startTime!,
+                  time: _schedule.sleepTime.startTime,
                   onTimeSelected: (time) => _updateSleepTime(time, null),
                   leading: const Icon(
                     CupertinoIcons.moon_fill,
@@ -843,7 +843,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
                 ),
                 SettingsTimePickerItem(
                   label: 'Wake Up',
-                  time: _schedule.sleepTime.endTime!,
+                  time: _schedule.sleepTime.endTime,
                   onTimeSelected: (time) => _updateSleepTime(null, time),
                   leading: const Icon(
                     CupertinoIcons.sunrise_fill,
@@ -862,7 +862,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
                 ..._schedule.freeTimes.asMap().entries.map(
                   (entry) => SettingsItem(
                     label:
-                        'Break ${_formatTimeOfDay(entry.value.startTime!)} - ${_formatTimeOfDay(entry.value.endTime!)}',
+                        'Break ${_formatTimeOfDay(entry.value.startTime)} - ${_formatTimeOfDay(entry.value.endTime)}',
                     leading: const Icon(
                       CupertinoIcons.clock,
                       color: CupertinoColors.systemGreen,
@@ -898,7 +898,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
                 ..._schedule.mealBreaks.asMap().entries.map(
                   (entry) => SettingsItem(
                     label:
-                        'Meal ${_formatTimeOfDay(entry.value.startTime!)} - ${_formatTimeOfDay(entry.value.endTime!)}',
+                        'Meal ${_formatTimeOfDay(entry.value.startTime)} - ${_formatTimeOfDay(entry.value.endTime)}',
                     leading: const Icon(
                       CupertinoIcons.clock,
                       color: CupertinoColors.systemOrange,

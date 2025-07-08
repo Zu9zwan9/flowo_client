@@ -31,8 +31,9 @@ class _SessionsWidgetState extends State<SessionsWidget> {
     _loadSessions();
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if ((widget.task.activeSession != null || widget.task.isPaused) &&
-          mounted)
+          mounted) {
         setState(() {});
+      }
     });
   }
 
@@ -536,7 +537,7 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              '${startTime.toLocal().toString().split('.')[0]}',
+                                              startTime.toLocal().toString().split('.')[0],
                                               style: TextStyle(
                                                 color: CupertinoColors.label
                                                     .resolveFrom(context),
@@ -1043,7 +1044,7 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              '${startTime.toLocal().toString().split('.')[0]}',
+                                              startTime.toLocal().toString().split('.')[0],
                                               style: TextStyle(
                                                 color: CupertinoColors.label
                                                     .resolveFrom(context),
@@ -1177,7 +1178,7 @@ class _SessionsWidgetState extends State<SessionsWidget> {
                                               MainAxisAlignment.spaceBetween,
                                           children: [
                                             Text(
-                                              '${endTime.toLocal().toString().split('.')[0]}',
+                                              endTime.toLocal().toString().split('.')[0],
                                               style: TextStyle(
                                                 color: CupertinoColors.label
                                                     .resolveFrom(context),

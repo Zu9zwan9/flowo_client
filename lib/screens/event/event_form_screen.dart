@@ -284,7 +284,7 @@ class EventFormScreenState extends State<EventFormScreen>
                       label: 'Alert',
                       value: _formatNotificationTime(_firstNotification),
                       onTap: () => _showNotificationTimePicker(context, true),
-                      icon: CupertinoIcons.time,
+                      icon: CupertinoIcons.bell_fill,
                     ),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
                     CupertinoFormWidgets.selectionButton(
@@ -292,7 +292,7 @@ class EventFormScreenState extends State<EventFormScreen>
                       label: 'Second Alert',
                       value: _formatNotificationTime(_secondNotification),
                       onTap: () => _showNotificationTimePicker(context, false),
-                      icon: CupertinoIcons.time,
+                      icon: CupertinoIcons.bell,
                     ),
                   ],
                 ),

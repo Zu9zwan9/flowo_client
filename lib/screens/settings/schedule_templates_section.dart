@@ -1,4 +1,4 @@
- import 'package:flutter/cupertino.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -25,45 +25,6 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Schedule Templates',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                child: const Row(
-                  children: [
-                    Icon(CupertinoIcons.add, size: 16),
-                    SizedBox(width: 4),
-                    Text('New'),
-                  ],
-                ),
-                onPressed: () async {
-                  if (schedules.length >= 7) {
-                    _showMaxTemplatesAlert();
-                    return;
-                  }
-
-                  final result = await Navigator.of(context).push(
-                    CupertinoPageRoute(
-                      builder:
-                          (context) =>
-                              const DayScheduleScreen(isNewSchedule: true),
-                    ),
-                  );
-
-                  // Force rebuild if we got a result
-                  if (result != null && mounted) {
-                    setState(() {});
-                  }
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
           if (schedules.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24.0),
@@ -94,6 +55,33 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
                 return _buildScheduleCard(schedule);
               },
             ),
+          const SizedBox(height: 12),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            child: const Row(
+              children: [
+                Icon(CupertinoIcons.add, size: 16),
+                SizedBox(width: 4),
+                Text('New'),
+              ],
+            ),
+            onPressed: () async {
+              if (schedules.length >= 7) {
+                _showMaxTemplatesAlert();
+                return;
+              }
+
+              final result = await Navigator.of(context).push(
+                CupertinoPageRoute(
+                  builder: (context) => const DayScheduleScreen(isNewSchedule: true),
+                ),
+              );
+
+              if (result != null && mounted) {
+                setState(() {});
+              }
+            },
+          ),
         ],
       ),
     );
@@ -122,7 +110,7 @@ class _ScheduleTemplatesSectionState extends State<ScheduleTemplatesSection> {
     }
 
     final timeText =
-        '${formatTime(schedule.sleepTime.startTime!)} - ${formatTime(schedule.sleepTime.endTime!)}';
+        '${formatTime(schedule.sleepTime.startTime)} - ${formatTime(schedule.sleepTime.endTime)}';
 
     // Format days display
     final days =
