@@ -476,7 +476,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
         setState(() {
           final breakTime = TimeFrame(startTime: startTime, endTime: endTime);
           _schedule = _schedule.copyWith(
-            mealBreaks: [..._schedule.mealBreaks, breakTime],
+            freeTimes: [..._schedule.freeTimes, breakTime],
           );
           _hasChanges = true;
         });
@@ -486,7 +486,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
 
   // Edit an existing break time slot
   void _editBreakTime(int index) {
-    final breakTime = _schedule.mealBreaks[index];
+    final breakTime = _schedule.freeTimes[index];
 
     _showTimeSlotDialog(
       title: 'Edit Break Time',
@@ -499,10 +499,10 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
             startTime: startTime,
             endTime: endTime,
           );
-          final updatedBreaks = List<TimeFrame>.from(_schedule.mealBreaks);
+          final updatedBreaks = List<TimeFrame>.from(_schedule.freeTimes);
           updatedBreaks[index] = updatedBreakTime;
 
-          _schedule = _schedule.copyWith(mealBreaks: updatedBreaks);
+          _schedule = _schedule.copyWith(freeTimes: updatedBreaks);
           _hasChanges = true;
         });
       },
@@ -512,10 +512,10 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
   // Remove a break time slot
   void _removeBreakTime(int index) {
     setState(() {
-      final updatedBreaks = List<TimeFrame>.from(_schedule.mealBreaks);
+      final updatedBreaks = List<TimeFrame>.from(_schedule.freeTimes);
       updatedBreaks.removeAt(index);
 
-      _schedule = _schedule.copyWith(mealBreaks: updatedBreaks);
+      _schedule = _schedule.copyWith(freeTimes: updatedBreaks);
       _hasChanges = true;
     });
   }
@@ -531,7 +531,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
         setState(() {
           final mealTime = TimeFrame(startTime: startTime, endTime: endTime);
           _schedule = _schedule.copyWith(
-            freeTimes: [..._schedule.freeTimes, mealTime],
+            mealBreaks: [..._schedule.mealBreaks, mealTime],
           );
           _hasChanges = true;
         });
@@ -541,7 +541,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
 
   // Edit an existing meal time slot
   void _editMealTime(int index) {
-    final mealTime = _schedule.freeTimes[index];
+    final mealTime = _schedule.mealBreaks[index];
 
     _showTimeSlotDialog(
       title: 'Edit Meal Time',
@@ -554,10 +554,10 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
             startTime: startTime,
             endTime: endTime,
           );
-          final updatedMeals = List<TimeFrame>.from(_schedule.freeTimes);
+          final updatedMeals = List<TimeFrame>.from(_schedule.mealBreaks);
           updatedMeals[index] = updatedMealTime;
 
-          _schedule = _schedule.copyWith(freeTimes: updatedMeals);
+          _schedule = _schedule.copyWith(mealBreaks: updatedMeals);
           _hasChanges = true;
         });
       },
@@ -567,10 +567,10 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
   // Remove a meal time slot
   void _removeMealTime(int index) {
     setState(() {
-      final updatedMeals = List<TimeFrame>.from(_schedule.freeTimes);
+      final updatedMeals = List<TimeFrame>.from(_schedule.mealBreaks);
       updatedMeals.removeAt(index);
 
-      _schedule = _schedule.copyWith(freeTimes: updatedMeals);
+      _schedule = _schedule.copyWith(mealBreaks: updatedMeals);
       _hasChanges = true;
     });
   }
@@ -859,7 +859,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
               title: 'Break Times',
               footerText: 'Set your break times for this schedule.',
               children: [
-                ..._schedule.mealBreaks.asMap().entries.map(
+                ..._schedule.freeTimes.asMap().entries.map(
                   (entry) => SettingsItem(
                     label:
                         'Break ${_formatTimeOfDay(entry.value.startTime!)} - ${_formatTimeOfDay(entry.value.endTime!)}',
@@ -895,7 +895,7 @@ class _DayScheduleScreenState extends State<DayScheduleScreen> {
               title: 'Meal Times',
               footerText: 'Set your meal times for this schedule.',
               children: [
-                ..._schedule.freeTimes.asMap().entries.map(
+                ..._schedule.mealBreaks.asMap().entries.map(
                   (entry) => SettingsItem(
                     label:
                         'Meal ${_formatTimeOfDay(entry.value.startTime!)} - ${_formatTimeOfDay(entry.value.endTime!)}',

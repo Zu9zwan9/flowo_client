@@ -508,7 +508,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 _buildCategorySection(context, theme),
                 const SizedBox(height: 24.0),
                 _buildNotificationSection(context, theme),
-                const SizedBox(height: 48.0),
+                const SizedBox(height: 36.0),
                 ScaleTransition(
                   scale: _buttonScaleAnimation,
                   child: CupertinoFormWidgets.primaryButton(
@@ -1742,7 +1742,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 padding: const EdgeInsets.all(10),
                 decoration: theme.inputDecoration,
                 style: const TextStyle(fontSize: 16.0),
-                autofocus: true,
+                autofocus: false,
               ),
             ),
             actions: [
@@ -1999,7 +1999,7 @@ class HabitFormScreenState extends State<HabitFormScreen>
                 padding: const EdgeInsets.all(10),
                 decoration: theme.inputDecoration,
                 style: const TextStyle(fontSize: 16.0),
-                autofocus: true,
+                autofocus: false,
               ),
             ),
             actions: [

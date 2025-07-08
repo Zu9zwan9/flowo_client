@@ -292,7 +292,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                     form.textField(
                       controller: _titleController,
                       placeholder: 'Task Name *',
-                      autofocus: true,
+                      autofocus: false,
                       validator:
                           (value) => value?.isEmpty == true ? 'Required' : null,
                     ),
@@ -396,8 +396,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                   ],
                 ),
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing),
-
-                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
                 form.sectionTitle('Priority'),
                 form.formGroup(
                   children: [
@@ -468,7 +466,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                   ],
                 ),
 
-                const SizedBox(height: CupertinoTaskForm.sectionSpacing * 2),
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing * 1.5),
 
                 // Save Button with Dropdown
                 Center(
@@ -1046,7 +1044,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 padding: const EdgeInsets.all(10),
                 decoration: theme.inputDecoration,
                 style: const TextStyle(fontSize: 16.0),
-                autofocus: true,
+                autofocus: false,
               ),
             ),
             actions: [
@@ -1144,7 +1142,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 padding: const EdgeInsets.all(10),
                 decoration: theme.inputDecoration,
                 style: const TextStyle(fontSize: 16.0),
-                autofocus: true,
+                autofocus: false,
               ),
             ),
             actions: [
