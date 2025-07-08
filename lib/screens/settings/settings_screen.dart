@@ -43,7 +43,11 @@ class _ThemeTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentTheme = themeNotifier.themeMode.toString().split('.').last;
+    // Determine effective theme: if system, resolve by brightness
+    final effectiveThemeMode = themeNotifier.themeMode == AppTheme.system
+        ? (themeNotifier.brightness == Brightness.dark ? AppTheme.dark : AppTheme.light)
+        : themeNotifier.themeMode;
+    final currentTheme = effectiveThemeMode.toString().split('.').last;
     const themes = {'light': 'Light', 'dark': 'Dark'};
 
     return Padding(
