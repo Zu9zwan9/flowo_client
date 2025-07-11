@@ -6,10 +6,10 @@ import 'package:flowo_client/models/repeat_rule.dart';
 import 'package:flowo_client/models/repeat_rule_instance.dart';
 import 'package:flowo_client/models/task.dart';
 import 'package:flowo_client/models/task_session.dart';
-import 'package:flowo_client/screens/onboarding/name_input_screen.dart';
+import 'package:flowo_client/screens/onboarding/enhanced/welcome_screen.dart';
 import 'package:flowo_client/services/ambient/ambient_service.dart';
 import 'package:flowo_client/services/analytics/analytics_service.dart';
-import 'package:flowo_client/services/onboarding/onboarding_service.dart';
+import 'package:flowo_client/services/onboarding/enhanced_onboarding_service.dart';
 import 'package:flowo_client/services/security_service.dart';
 import 'package:flowo_client/services/web_theme_bridge.dart';
 import 'package:flowo_client/utils/task_manager.dart';
@@ -406,18 +406,19 @@ class MyApp extends StatelessWidget {
       }
     }
 
-    // Create onboarding service
+    // Create enhanced onboarding service
     final userProfileBox = Provider.of<Box<UserProfile>>(context);
-    final onboardingService = OnboardingService(userProfileBox);
+    final enhancedOnboardingService = EnhancedOnboardingService(userProfileBox);
 
     // Check if onboarding is completed
-    final isOnboardingCompleted = onboardingService.isOnboardingCompleted();
+    final isOnboardingCompleted =
+        enhancedOnboardingService.isOnboardingCompleted();
 
     return Consumer<ThemeNotifier>(
       builder: (context, themeNotifier, child) {
         final brightness = themeNotifier.currentTheme.brightness;
-        return Provider<OnboardingService>.value(
-          value: onboardingService,
+        return Provider<EnhancedOnboardingService>.value(
+          value: enhancedOnboardingService,
           child: CupertinoApp(
             debugShowCheckedModeBanner: false,
             theme: themeNotifier.currentTheme,
@@ -431,7 +432,7 @@ class MyApp extends StatelessWidget {
             home:
                 isOnboardingCompleted
                     ? const HomeScreen(initialExpanded: false)
-                    : const NameInputScreen(),
+                    : const EnhancedWelcomeScreen(),
           ),
         );
       },

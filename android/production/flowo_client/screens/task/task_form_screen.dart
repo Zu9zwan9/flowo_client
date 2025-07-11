@@ -30,24 +30,11 @@ class _TaskFormScreenState extends State<TaskFormScreen>
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _notesController = TextEditingController();
-
-  // Notification settings
   int? _firstNotification = 5;
   int? _secondNotification = 0;
-
-  // Task data model
   late final TaskFormData _formData;
-
-  // Hive box for storing categories
   late final Box<List<dynamic>> _categoriesBox;
-
-  // Animation for button feedback
-  late final AnimationController _animationController;
-  late final Animation<double> _buttonScaleAnimation;
-
   late UserSettings _userSettings;
-
-  // Available task options
   String _selectedCategory = '';
   List<String> _categoryOptions = [];
   final CategoryService _categoryService = CategoryService();
@@ -77,7 +64,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       _firstNotification = widget.task!.firstNotification;
       _secondNotification = widget.task!.secondNotification;
     } else {
-      // Initialize with default values
       final defaultDuration = 3600000; // 1 hour in milliseconds
 
       _formData = TaskFormData(
@@ -102,14 +88,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
       }
     }
 
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 200),
-      vsync: this,
-    );
-    _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
-
     _loadCategories();
   }
 
@@ -127,7 +105,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
   void dispose() {
     _titleController.dispose();
     _notesController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -151,14 +128,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 if (!_userSettings.usePertMethod) {
                   HapticFeedback.selectionClick();
                   setState(() {
-                    // Update the user setting
                     _userSettings.usePertMethod = true;
                     _userSettings.save();
-
-                    // Switching to PERT method
-                    // Create a range based on current estimated time
-                    // Switching to PERT method
-                    // Create a range based on current estimated time
                     final currentTime =
                         _formData.estimatedTime > 0
                             ? _formData.estimatedTime
@@ -228,12 +199,8 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 if (_userSettings.usePertMethod) {
                   HapticFeedback.selectionClick();
                   setState(() {
-                    // Update the user setting
                     _userSettings.usePertMethod = false;
                     _userSettings.save();
-
-                    // Switching to simple duration
-                    // Keep the current estimated time or use a default if it's zero
                     final currentEstimatedTime =
                         _formData.estimatedTime > 0
                             ? _formData.estimatedTime
@@ -325,7 +292,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                     form.textField(
                       controller: _titleController,
                       placeholder: 'Task Name *',
-                      autofocus: true,
+                      autofocus: false,
                       validator:
                           (value) => value?.isEmpty == true ? 'Required' : null,
                     ),
@@ -429,8 +396,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                   ],
                 ),
                 const SizedBox(height: CupertinoTaskForm.sectionSpacing),
-
-                const SizedBox(height: CupertinoTaskForm.sectionSpacing),
                 form.sectionTitle('Priority'),
                 form.formGroup(
                   children: [
@@ -489,136 +454,113 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                       label: 'Alert',
                       value: _formatNotificationTime(_firstNotification),
                       onTap: () => _showNotificationTimePicker(context, true),
-                      icon: CupertinoIcons.time,
+                      icon: CupertinoIcons.bell_fill,
                     ),
                     form.divider(),
                     form.selectionButton(
                       label: 'Second Alert',
                       value: _formatNotificationTime(_secondNotification),
                       onTap: () => _showNotificationTimePicker(context, false),
-                      icon: CupertinoIcons.time,
+                      icon: CupertinoIcons.bell,
                     ),
                   ],
                 ),
 
-                const SizedBox(height: CupertinoTaskForm.sectionSpacing * 2),
+                const SizedBox(height: CupertinoTaskForm.sectionSpacing * 1.5),
 
                 // Save Button with Dropdown
                 Center(
-                  child: ScaleTransition(
-                    scale: _buttonScaleAnimation,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: CupertinoTheme.of(context).primaryColor,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CupertinoButton(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'Save',
-                              style: TextStyle(color: CupertinoColors.white),
-                            ),
-                            onPressed: () {
-                              _saveTaskWithAnimation(context);
-                            },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: CupertinoTheme.of(context).primaryColor,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CupertinoButton(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'Save',
+                            style: TextStyle(color: CupertinoColors.white),
                           ),
-                          Container(
-                            width: 1,
-                            color: CupertinoColors.white.withOpacity(0.5),
+                          onPressed: () {
+                            _saveTask(context, false);
+                          },
+                        ),
+                        Container(
+                          width: 1,
+                          color: CupertinoColors.white.withOpacity(0.5),
+                        ),
+                        CupertinoButton(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Icon(
+                            CupertinoIcons.plus,
+                            size: 20,
+                            color: CupertinoColors.white,
                           ),
-                          CupertinoButton(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Icon(
-                              CupertinoIcons.plus,
-                              size: 20,
-                              color: CupertinoColors.white,
-                            ),
-                            onPressed: () {
-                              showCupertinoModalPopup(
-                                context: context,
-                                builder:
-                                    (context) => CupertinoActionSheet(
-                                      title: const Text('Save Options'),
-                                      actions: [
-                                        CupertinoActionSheetAction(
-                                          child: const Text('Save Task'),
-                                          onPressed: () {
-                                            final validationError =
-                                                _validateForm();
-                                            if (validationError != null) {
-                                              Navigator.pop(
-                                                context,
-                                              ); // Close the modal
-                                              showCupertinoDialog(
-                                                context: context,
-                                                builder:
-                                                    (
-                                                      context,
-                                                    ) => CupertinoAlertDialog(
-                                                      title: const Text(
-                                                        'Validation Error',
-                                                      ),
-                                                      content: Text(
-                                                        validationError,
-                                                      ),
-                                                      actions: [
-                                                        CupertinoDialogAction(
-                                                          child: const Text(
-                                                            'OK',
-                                                          ),
-                                                          onPressed:
-                                                              () =>
-                                                                  Navigator.pop(
-                                                                    context,
-                                                                  ),
-                                                        ),
-                                                      ],
+                          onPressed: () {
+                            showCupertinoModalPopup(
+                              context: context,
+                              builder:
+                                  (context) => CupertinoActionSheet(
+                                    title: const Text('Save Options'),
+                                    actions: [
+                                      CupertinoActionSheetAction(
+                                        child: const Text('Save Task'),
+                                        onPressed: () {
+                                          final validationError =
+                                              _validateForm();
+                                          if (validationError != null) {
+                                            Navigator.pop(
+                                              context,
+                                            ); // Close the modal
+                                            showCupertinoDialog(
+                                              context: context,
+                                              builder:
+                                                  (
+                                                    context,
+                                                  ) => CupertinoAlertDialog(
+                                                    title: const Text(
+                                                      'Validation Error',
                                                     ),
-                                              );
-                                            } else {
-                                              _saveTaskWithAnimation(context);
-                                              if (Navigator.canPop(context)) {
-                                                Navigator.pop(context);
-                                              } else {
-                                                Navigator.pushReplacement(
-                                                  context,
-                                                  CupertinoPageRoute(
-                                                    builder:
-                                                        (_) => HomeScreen(
-                                                          initialIndex: 1,
-                                                        ),
+                                                    content: Text(
+                                                      validationError,
+                                                    ),
+                                                    actions: [
+                                                      CupertinoDialogAction(
+                                                        child: const Text('OK'),
+                                                        onPressed:
+                                                            () => Navigator.pop(
+                                                              context,
+                                                            ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                );
-                                              }
-                                            }
-                                          },
-                                        ),
-                                        CupertinoActionSheetAction(
-                                          child: const Text(
-                                            'Save and Schedule',
-                                          ),
-                                          onPressed: () {
+                                            );
+                                          } else {
                                             Navigator.pop(context);
-                                            _saveTaskWithAnimation(context);
-                                            context
-                                                .read<TaskManagerCubit>()
-                                                .scheduleTasks();
-                                          },
-                                        ),
-                                      ],
-                                      cancelButton: CupertinoActionSheetAction(
-                                        child: const Text('Cancel'),
-                                        onPressed: () => Navigator.pop(context),
+                                            _saveTask(context, false);
+                                          }
+                                        },
                                       ),
+                                      CupertinoActionSheetAction(
+                                        child: const Text('Save and Schedule'),
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          _saveTask(context, true);
+                                        },
+                                      ),
+                                    ],
+                                    cancelButton: CupertinoActionSheetAction(
+                                      child: const Text('Cancel'),
+                                      onPressed: () => Navigator.pop(context),
                                     ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                                  ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -687,7 +629,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     BuildContext context,
     bool isFirstNotification,
   ) async {
-    // Define different notification time options for first and second alerts
     final List<int?> timeOptions = [
       null,
       0,
@@ -775,14 +716,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     }
   }
 
-  void _saveTaskWithAnimation(BuildContext context) {
-    // Play button animation
-    _animationController.forward().then((_) => _animationController.reverse());
-
-    // Execute save operation
-    _saveTask(context);
-  }
-
   Future<void> _showDateTimePicker(BuildContext context) async {
     final now = _roundToNearestFiveMinutes(DateTime.now());
     final initialDateTime =
@@ -865,7 +798,6 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     BuildContext context,
     String timeType,
   ) async {
-    // Determine which time estimate to update
     int initialHours = 0;
     int initialMinutes = 0;
 
@@ -1112,7 +1044,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 padding: const EdgeInsets.all(10),
                 decoration: theme.inputDecoration,
                 style: const TextStyle(fontSize: 16.0),
-                autofocus: true,
+                autofocus: false,
               ),
             ),
             actions: [
@@ -1210,7 +1142,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
                 padding: const EdgeInsets.all(10),
                 decoration: theme.inputDecoration,
                 style: const TextStyle(fontSize: 16.0),
-                autofocus: true,
+                autofocus: false,
               ),
             ),
             actions: [
@@ -1290,7 +1222,7 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     return null;
   }
 
-  void _saveTask(BuildContext context) {
+  void _saveTask(BuildContext context, bool saveAndSchedule) {
     final validationError = _validateForm();
 
     if (validationError != null) {
@@ -1387,12 +1319,23 @@ class _TaskFormScreenState extends State<TaskFormScreen>
     logInfo(
       'Task ${widget.task == null ? "Created" : "Updated"}: ${_titleController.text}',
     );
+
+    if (saveAndSchedule) {
+      taskManagerCubit.scheduleTasks();
+    }
+
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
       Navigator.pushReplacement(
         context,
-        CupertinoPageRoute(builder: (_) => const HomeScreen()),
+        CupertinoPageRoute(
+          builder:
+              (_) =>
+                  saveAndSchedule
+                      ? const HomeScreen()
+                      : const HomeScreen(initialIndex: 1),
+        ),
       );
     }
   }

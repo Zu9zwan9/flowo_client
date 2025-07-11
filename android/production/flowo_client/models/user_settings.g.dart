@@ -41,13 +41,14 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       gradientStartAlignment: fields[21] as String?,
       gradientEndAlignment: fields[22] as String?,
       usePertMethod: fields[23] as bool,
+      schedules: (fields[24] as List?)?.cast<DaySchedule>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, UserSettings obj) {
     writer
-      ..writeByte(24)
+      ..writeByte(25)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -95,7 +96,9 @@ class UserSettingsAdapter extends TypeAdapter<UserSettings> {
       ..writeByte(22)
       ..write(obj.gradientEndAlignment)
       ..writeByte(23)
-      ..write(obj.usePertMethod);
+      ..write(obj.usePertMethod)
+      ..writeByte(24)
+      ..write(obj.schedules);
   }
 
   @override

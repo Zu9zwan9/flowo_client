@@ -19,7 +19,7 @@ class TaskSession extends Session {
   /// Start time of the session
   @HiveField(2)
   @override
-  final DateTime startTime;
+  DateTime startTime;
 
   /// End time of the session (null if session is still active)
   @HiveField(3)
@@ -29,6 +29,16 @@ class TaskSession extends Session {
   /// Notes about what was accomplished during this session
   @HiveField(4)
   String? notes;
+
+  TaskSession clone() {
+    return TaskSession(
+      id: id,
+      taskId: taskId,
+      startTime: startTime,
+      endTime: endTime,
+      notes: notes,
+    );
+  }
 
   /// Creates a new task session
   ///

@@ -1,6 +1,4 @@
 import 'package:flowo_client/blocs/tasks_controller/task_manager_cubit.dart';
-import 'package:flowo_client/models/user_settings.dart';
-import 'package:flowo_client/screens/settings/day_schedule_screen.dart';
 import 'package:flowo_client/screens/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -8,10 +6,10 @@ import 'package:provider/provider.dart';
 
 import '../../design/cupertino_form_theme.dart';
 import '../../models/app_theme.dart';
-import '../../models/time_frame.dart';
 import '../../theme/theme_notifier.dart';
 import '../../utils/logger.dart';
 import '../tutorial/tutorial_launcher.dart';
+import 'schedule_templates_section.dart';
 
 abstract class ThemeSelectionStrategy {
   Widget buildThemeSelector(
@@ -45,7 +43,11 @@ class _ThemeTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentTheme = themeNotifier.themeMode.toString().split('.').last;
+    // Determine effective theme: if system, resolve by brightness
+    final effectiveThemeMode = themeNotifier.themeMode == AppTheme.system
+        ? (themeNotifier.brightness == Brightness.dark ? AppTheme.dark : AppTheme.light)
+        : themeNotifier.themeMode;
+    final currentTheme = effectiveThemeMode.toString().split('.').last;
     const themes = {'light': 'Light', 'dark': 'Dark'};
 
     return Padding(
@@ -193,12 +195,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late TimeOfDay _sleepTime;
-  late TimeOfDay _wakeupTime;
   late int _minSessionDuration;
-  late List<TimeFrame> _mealTimes;
-  late List<TimeFrame> _freeTimes;
-  late Map<String, bool> _activeDays;
   late String _dateFormat;
   late String _monthFormat;
   late bool _is24HourFormat;
@@ -225,26 +222,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _saveSettings() {
-    // Get the current theme settings from ThemeNotifier
+    // Get current settings to preserve existing values
+    final taskManagerCubit = context.read<TaskManagerCubit>();
+    final currentSettings = taskManagerCubit.taskManager.userSettings;
+
+    // Use copyWith to update only the changed settings while preserving schedules
     final themeNotifier = Provider.of<ThemeNotifier>(context, listen: false);
-
-    // Get the current user settings to preserve day-specific schedules
-    final currentSettings =
-        context.read<TaskManagerCubit>().taskManager.userSettings;
-
-    final userSettings = UserSettings(
-      name: 'Default',
+    final updatedSettings = currentSettings.copyWith(
       minSession: _minSessionDuration * 60 * 1000,
-      // Preserve existing values for removed UI elements
-      sleepTime: currentSettings.sleepTime,
-      mealBreaks: currentSettings.mealBreaks,
-      freeTime: currentSettings.freeTime,
-      activeDays: currentSettings.activeDays,
-      daySchedules: currentSettings.daySchedules,
       dateFormat: _dateFormat,
       monthFormat: _monthFormat,
       is24HourFormat: _is24HourFormat,
-      // Include theme-related settings
+      // Theme settings
       themeMode: themeNotifier.themeMode,
       customColorValue:
           themeNotifier.customColor.r.toInt() << 16 |
@@ -252,10 +241,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           themeNotifier.customColor.b.toInt(),
       colorIntensity: themeNotifier.colorIntensity,
       noiseLevel: themeNotifier.noiseLevel,
+      // schedules is automatically preserved since we're using copyWith
     );
 
-    context.read<TaskManagerCubit>().updateUserSettings(userSettings);
-    logInfo('Settings saved with theme preferences');
+    // Update the settings
+    taskManagerCubit.updateUserSettings(updatedSettings);
+    logInfo(
+      'Settings saved with theme preferences, preserved ${updatedSettings.schedules.length} schedules',
+    );
 
     showCupertinoDialog(
       context: context,
@@ -893,27 +886,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
             SettingsSection(
-              title: 'Day-Specific Schedules',
+              title: 'Schedule Templates',
               footerText:
-                  'Configure different schedules for different days of the week.',
-              children: [
-                SettingsItem(
-                  label: 'Day Schedules',
-                  subtitle:
-                      'Set different sleep, meal, and free times for each day',
-                  leading: const Icon(
-                    CupertinoIcons.calendar,
-                    color: CupertinoColors.systemBlue,
-                  ),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      CupertinoPageRoute(
-                        builder: (context) => const DayScheduleScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ],
+                  'Create and manage schedule templates for different days.',
+              customContent: const ScheduleTemplatesSection(),
+              children: const [],
             ),
             SettingsSection(
               title: 'Session Duration',

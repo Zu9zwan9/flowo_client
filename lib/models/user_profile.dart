@@ -19,11 +19,15 @@ class UserProfile extends HiveObject {
   @HiveField(4)
   bool onboardingCompleted;
 
+  @HiveField(5)
+  Map<String, dynamic>? metadata;
+
   UserProfile({
     required this.name,
     required this.email,
     this.avatarPath,
     this.goal,
     this.onboardingCompleted = false,
+    this.metadata,
   });
 }

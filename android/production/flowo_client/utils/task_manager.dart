@@ -517,8 +517,12 @@ class TaskManager {
 
   void removeScheduledTasks() {
     for (var day in daysDB.values) {
-      // final dayDate = DateTime.parse(day.day); //TODO: update this later
-      // if (dayDate.isBefore(now)) continue;
+      final dayDate = DateTime.parse(day.day);
+      if (dayDate.year < DateTime.now().year ||
+          (dayDate.year == DateTime.now().year && dayDate.month < DateTime.now().month) ||
+          (dayDate.year == DateTime.now().year && dayDate.month == DateTime.now().month && dayDate.day < DateTime.now().day)) {
+        continue;
+      }
 
       final toRemove =
           day.scheduledTasks
@@ -531,6 +535,9 @@ class TaskManager {
         'Removing ${toRemove.length} scheduled tasks from day ${day.day}',
       );
       for (var scheduledTask in toRemove) {
+        // Check if the scheduled task is in the past
+        if (scheduledTask.endTime.isBefore(DateTime.now())) continue;
+
         day.scheduledTasks.removeWhere(
           (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
         );
@@ -548,6 +555,15 @@ class TaskManager {
 
         for (var notificationId in scheduledTask.notificationIds) {
           scheduler.notiService.cancelNotification(notificationId);
+        }
+
+        if (task != null && scheduledTask.startTime.isBefore(DateTime.now())) {
+          scheduler.createScheduledTask(
+            task: task,
+            start: scheduledTask.startTime,
+            end: DateTime.now(),
+            dateKey: day.day,
+          );
         }
       }
       daysDB.put(day.day, day);

@@ -12,11 +12,14 @@ import androidx.annotation.RequiresApi
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import android.os.Environment
+import android.net.Uri
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
 
 class MainActivity : FlutterActivity() {
+    private val dataDeletionChannel = "com.flowo.dataDeletion"
     private val securityChannel = "com.flowo.security"
     private val notificationsChannel = "flutter_local_notifications"
 
@@ -55,6 +58,27 @@ class MainActivity : FlutterActivity() {
                         }
                     } else {
                         result.success(true) // No special permission needed below Android 12
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // Data deletion permission channel
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, dataDeletionChannel).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "requestManageAllFilesAccess" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        if (Environment.isExternalStorageManager()) {
+                            result.success(true)
+                        } else {
+                            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                            intent.data = Uri.parse("package:$packageName")
+                            startActivity(intent)
+                            result.success(false)
+                        }
+                    } else {
+                        result.success(true)
                     }
                 }
                 else -> result.notImplemented()

@@ -88,6 +88,10 @@ class Task extends HiveObject {
   @HiveField(24)
   List<TaskSession> sessions = [];
 
+  /// Add this property to the Task class
+  @HiveField(25)
+  TaskSession? pausedSession;
+
   /// Current active session (null if no active session)
   TaskSession? get activeSession {
     if (sessions.isEmpty) return null;
@@ -154,20 +158,48 @@ class Task extends HiveObject {
     save();
   }
 
-  /// Pauses the task
-  /// Ends the current session and updates the task status
+  int remainingWorkTime() {
+    int workedTime = 0;
+    for (var scheduledTask in scheduledTasks) {
+      workedTime +=
+          scheduledTask.endTime.difference(scheduledTask.startTime).inMilliseconds;
+    }
+    return estimatedTime - workedTime;
+  }
+
+  /// Modify the pause() method in Task class
   void pause() {
     if (!isInProgress) return; // Can only pause a task that's in progress
 
     // End the current session
     final currentSession = activeSession;
     if (currentSession != null) {
+      // Store the session before ending it
+      pausedSession = currentSession.clone();
       currentSession.end();
       totalDuration += currentSession.duration;
     }
 
     // Update status
     status = 'paused';
+    save();
+  }
+
+  /// Add this resume() method to the Task class
+  void resume() {
+    if (status != 'paused') return; // Can only resume a paused task
+
+    // Create a new session
+    final session = TaskSession(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      taskId: id,
+      startTime: DateTime.now(),
+    );
+    sessions.add(session);
+    pausedSession = null; // Clear the paused session
+
+    // Update status
+    status = 'in_progress';
     save();
   }
 
@@ -251,7 +283,7 @@ class Task extends HiveObject {
       return 'Much faster than estimated';
     } else if (ratio >= 0.5 && ratio < 0.7) {
       return 'Slower than estimated';
-    } else {
+    } else {                                                                                                                                                     
       return 'Much slower than estimated';
     }
   }

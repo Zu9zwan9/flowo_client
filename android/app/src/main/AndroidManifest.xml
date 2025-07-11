@@ -1,4 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.u7wells.flowo_client">
+
     <!-- Required for Android 13+ to show notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
@@ -16,11 +18,17 @@
     <!-- Required for camera access -->
     <uses-permission android:name="android.permission.CAMERA"/>
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
+    <!-- Permissions for deleting app data -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE"/>
+
     <application
             android:enableOnBackInvokedCallback="true"
-            android:label="Flowo"
-            android:name="${applicationName}"
-            android:icon="@mipmap/launcher_icon">
+            android:requestLegacyExternalStorage="true"
+            android:label="flowo_client"
+            android:icon="@mipmap/ic_launcher">
         <activity
                 android:name=".MainActivity"
                 android:exported="true"
@@ -48,6 +56,13 @@
         <meta-data
                 android:name="flutterEmbedding"
                 android:value="2"/>
+
+        <!-- Required for MANAGE_EXTERNAL_STORAGE permission -->
+        <meta-data
+                android:name="android.content.pm.required_full_storage_permission"
+                android:value="true" />
+
+        <!-- Handles showing scheduled notifications -->
 
         <!-- Handles showing scheduled notifications -->
         <receiver

@@ -56,6 +56,18 @@ UNUserNotificationCenter.current().requestAuthorization(
       }
     }
 
+    // Data deletion permission channel (iOS sandbox always allows file deletion)
+    let dataDeletionChannel = FlutterMethodChannel(name: "com.flowo.dataDeletion", binaryMessenger: controller.binaryMessenger)
+    dataDeletionChannel.setMethodCallHandler { call, result in
+      switch call.method {
+      case "requestManageAllFilesAccess":
+        // iOS doesn't require special permission for sandbox file deletion
+        result(true)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

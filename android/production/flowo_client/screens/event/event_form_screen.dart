@@ -155,14 +155,14 @@ class EventFormScreenState extends State<EventFormScreen>
                       context: context,
                       controller: _notesController,
                       placeholder: 'Notes',
-                      maxLines: 5,
+                      maxLines: 3,
                     ),
-                    SizedBox(height: CupertinoFormTheme.elementSpacing),
-                    CupertinoFormWidgets.textField(
-                      context: context,
-                      controller: _locationController,
-                      placeholder: 'Location',
-                    ),
+                    //SizedBox(height: CupertinoFormTheme.elementSpacing),
+                    //CupertinoFormWidgets.textField(
+                    //  context: context,
+                    //  controller: _locationController,
+                    //  placeholder: 'Location',
+                    //),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
                   ],
                 ),
@@ -220,61 +220,61 @@ class EventFormScreenState extends State<EventFormScreen>
                   ],
                 ),
                 SizedBox(height: CupertinoFormTheme.sectionSpacing),
-                CupertinoFormWidgets.formGroup(
-                  context: context,
-                  title: 'Traveling Time',
-                  children: [
-                    Text(
-                      'Optional time needed for travel to the event location',
-                      style: theme.helperTextStyle,
-                    ),
-                    SizedBox(height: CupertinoFormTheme.smallSpacing),
-                    CupertinoFormWidgets.selectionButton(
-                      context: context,
-                      label: 'Duration',
-                      value:
-                          '${(_travelingTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_travelingTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
-                      onTap: () async {
-                        final duration =
-                            await CupertinoFormWidgets.showDurationPicker(
-                              context: context,
-                              initialHours: _travelingTime ~/ 3600000,
-                              initialMinutes:
-                                  (_travelingTime % 3600000) ~/ 60000,
-                              maxHours: 12,
-                            );
-                        if (mounted) {
-                          setState(() {
-                            _travelingTime = duration;
-                            // Immediate validation after changing traveling time
-                            final error = _validateForm();
-                            if (error != null && error.contains('Traveling')) {
-                              showCupertinoDialog(
-                                context: context,
-                                builder:
-                                    (context) => CupertinoAlertDialog(
-                                      title: const Text('Traveling Time Error'),
-                                      content: Text(error),
-                                      actions: [
-                                        CupertinoDialogAction(
-                                          child: const Text('OK'),
-                                          onPressed:
-                                              () => Navigator.pop(context),
-                                        ),
-                                      ],
-                                    ),
-                              );
-                              _travelingTime = 0; // Reset if invalid
-                            }
-                          });
-                        }
-                      },
-                      color: theme.accentColor,
-                      icon: CupertinoIcons.timer,
-                    ),
-                  ],
-                ),
-                SizedBox(height: CupertinoFormTheme.sectionSpacing),
+                //CupertinoFormWidgets.formGroup(
+                //  context: context,
+                //  title: 'Traveling Time',
+                //  children: [
+                //    Text(
+                //      'Optional time needed for travel to the event location',
+                //      style: theme.helperTextStyle,
+                //    ),
+                //    SizedBox(height: CupertinoFormTheme.smallSpacing),
+                //    CupertinoFormWidgets.selectionButton(
+                //      context: context,
+                //      label: 'Duration',
+                //      value:
+                //          '${(_travelingTime ~/ 3600000).toString().padLeft(2, '0')}h ${((_travelingTime % 3600000) ~/ 60000).toString().padLeft(2, '0')}m',
+                //      onTap: () async {
+                //        final duration =
+                //            await CupertinoFormWidgets.showDurationPicker(
+                //              context: context,
+                //              initialHours: _travelingTime ~/ 3600000,
+                //              initialMinutes:
+                //                  (_travelingTime % 3600000) ~/ 60000,
+                //              maxHours: 12,
+                //            );
+                //        if (mounted) {
+                //          setState(() {
+                //            _travelingTime = duration;
+                //            // Immediate validation after changing traveling time
+                //            final error = _validateForm();
+                //            if (error != null && error.contains('Traveling')) {
+                //              showCupertinoDialog(
+                //                context: context,
+                //                builder:
+                //                    (context) => CupertinoAlertDialog(
+                //                      title: const Text('Traveling Time Error'),
+                //                      content: Text(error),
+                //                      actions: [
+                //                        CupertinoDialogAction(
+                //                          child: const Text('OK'),
+                //                          onPressed:
+                //                              () => Navigator.pop(context),
+                //                        ),
+                //                      ],
+                //                    ),
+                //              );
+                //              _travelingTime = 0; // Reset if invalid
+                //            }
+                //          });
+                //        }
+                //      },
+                //      color: theme.accentColor,
+                //      icon: CupertinoIcons.timer,
+                //    ),
+                //  ],
+                //),
+                //SizedBox(height: CupertinoFormTheme.sectionSpacing),
                 CupertinoFormWidgets.formGroup(
                   context: context,
                   title: 'Notification Settings',
@@ -284,7 +284,7 @@ class EventFormScreenState extends State<EventFormScreen>
                       label: 'Alert',
                       value: _formatNotificationTime(_firstNotification),
                       onTap: () => _showNotificationTimePicker(context, true),
-                      icon: CupertinoIcons.time,
+                      icon: CupertinoIcons.bell_fill,
                     ),
                     SizedBox(height: CupertinoFormTheme.elementSpacing),
                     CupertinoFormWidgets.selectionButton(
@@ -292,7 +292,7 @@ class EventFormScreenState extends State<EventFormScreen>
                       label: 'Second Alert',
                       value: _formatNotificationTime(_secondNotification),
                       onTap: () => _showNotificationTimePicker(context, false),
-                      icon: CupertinoIcons.time,
+                      icon: CupertinoIcons.bell,
                     ),
                   ],
                 ),

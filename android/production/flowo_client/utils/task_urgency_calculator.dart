@@ -1,4 +1,3 @@
-
 import 'package:flowo_client/models/day.dart';
 import 'package:flowo_client/models/scheduled_task_type.dart';
 import 'package:flowo_client/models/task.dart';
@@ -23,8 +22,8 @@ class TaskUrgencyCalculator {
       final trueTimeLeft =
           timeLeft - busyTime(task.deadline, justScheduledTasks);
       final timeCoefficient =
-          (trueTimeLeft - task.estimatedTime) *
-          (trueTimeLeft + task.estimatedTime);
+          (trueTimeLeft - task.remainingWorkTime()) *
+          (trueTimeLeft + task.remainingWorkTime());
       double urgency = task.priority / timeCoefficient;
 
       if (urgency < 0) {
@@ -39,7 +38,7 @@ class TaskUrgencyCalculator {
 
   void _negativeUrgencyHandler(Task task, int trueTimeLeft) {
     final timeLeft = task.deadline - DateTime.now().millisecondsSinceEpoch;
-    if (timeLeft - task.estimatedTime < 0) {
+    if (timeLeft - task.remainingWorkTime() < 0) {
       logWarning(
         'Task ${task.title} is impossible to complete in time, estimated time: ${task.estimatedTime}, time left until deadline: $timeLeft',
       );
