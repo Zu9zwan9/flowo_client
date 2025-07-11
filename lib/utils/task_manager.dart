@@ -557,7 +557,8 @@ class TaskManager {
           scheduler.notiService.cancelNotification(notificationId);
         }
 
-        if (task != null && scheduledTask.startTime.isBefore(DateTime.now())) {
+        if (task != null && scheduledTask.startTime.isBefore(DateTime.now()) &&
+            DateTime.now().difference(scheduledTask.startTime).inMinutes > 1) {
           scheduler.createScheduledTask(
             task: task,
             start: scheduledTask.startTime,
