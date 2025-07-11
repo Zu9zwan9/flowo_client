@@ -1,4 +1,5 @@
 import 'package:flowo_client/screens/onboarding/enhanced/name_input_screen.dart';
+import 'package:flowo_client/screens/onboarding/enhanced/task_intro_screen.dart';
 import 'package:flowo_client/services/onboarding/enhanced_onboarding_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -6,7 +7,8 @@ import 'package:provider/provider.dart';
 
 /// Enhanced welcome screen for the onboarding process
 class EnhancedWelcomeScreen extends StatefulWidget {
-  const EnhancedWelcomeScreen({super.key});
+  final bool skipNameGoal;
+  const EnhancedWelcomeScreen({super.key, this.skipNameGoal = false});
 
   @override
   State<EnhancedWelcomeScreen> createState() => _EnhancedWelcomeScreenState();
@@ -41,10 +43,12 @@ class _EnhancedWelcomeScreenState extends State<EnhancedWelcomeScreen> {
       HapticFeedback.mediumImpact();
 
       if (mounted) {
-        // Navigate to the name input screen
+        // Navigate to next screen: skip name and goal if flag is set
         Navigator.of(context).push(
           CupertinoPageRoute(
-            builder: (context) => const EnhancedNameInputScreen(),
+            builder: (context) => widget.skipNameGoal
+                ? const TaskIntroScreen()
+                : const EnhancedNameInputScreen(),
           ),
         );
       }

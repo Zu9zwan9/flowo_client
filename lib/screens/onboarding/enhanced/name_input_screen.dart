@@ -123,7 +123,7 @@ class _EnhancedNameInputScreenState extends State<EnhancedNameInputScreen> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: CupertinoColors.systemGrey.withOpacity(0.2),
+                          color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey, context).withOpacity(0.2),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -152,7 +152,7 @@ class _EnhancedNameInputScreenState extends State<EnhancedNameInputScreen> {
                   'We\'ll use your name to personalize your experience and make the app feel more welcoming.',
                   style: theme.textTheme.textStyle.copyWith(
                     fontSize: 16,
-                    color: CupertinoColors.systemGrey,
+                    color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey, context),
                     height: 1.4,
                   ),
                 ),
@@ -173,9 +173,11 @@ class _EnhancedNameInputScreenState extends State<EnhancedNameInputScreen> {
                       width: 1.0,
                     ),
                   ),
-                  style: theme.textTheme.textStyle,
+                  style: theme.textTheme.textStyle.copyWith(
+                    color: CupertinoDynamicColor.resolve(CupertinoColors.label, context),
+                  ),
                   placeholderStyle: theme.textTheme.textStyle.copyWith(
-                    color: CupertinoColors.systemGrey,
+                    color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey, context),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -286,10 +288,9 @@ class _EnhancedNameInputScreenState extends State<EnhancedNameInputScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color:
-                            index <= 1
-                                ? CupertinoColors.activeBlue
-                                : CupertinoColors.systemGrey4,
+                        color: index <= 1
+                            ? CupertinoDynamicColor.resolve(CupertinoColors.activeBlue, context)
+                            : CupertinoDynamicColor.resolve(CupertinoColors.systemGrey4, context),
                       ),
                     ),
                   ),

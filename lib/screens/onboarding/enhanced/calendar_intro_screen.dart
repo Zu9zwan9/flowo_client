@@ -259,8 +259,8 @@ class _CalendarIntroScreenState extends State<CalendarIntroScreen> {
                         shape: BoxShape.circle,
                         color:
                             index <= 4
-                                ? CupertinoColors.activeBlue
-                                : CupertinoColors.systemGrey4,
+                                ? CupertinoDynamicColor.resolve(CupertinoColors.activeBlue, context)
+                                : CupertinoDynamicColor.resolve(CupertinoColors.systemGrey4, context),
                       ),
                     ),
                   ),
@@ -333,7 +333,7 @@ class _CalendarIntroScreenState extends State<CalendarIntroScreen> {
                 description,
                 style: theme.textTheme.textStyle.copyWith(
                   fontSize: 14,
-                  color: CupertinoColors.systemGrey,
+                  color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey, context),
                   height: 1.4,
                 ),
               ),
@@ -393,7 +393,7 @@ class _CalendarIntroScreenState extends State<CalendarIntroScreen> {
                         day,
                         style: theme.textTheme.textStyle.copyWith(
                           fontSize: 12,
-                          color: CupertinoColors.systemGrey,
+                          color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey, context),
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -498,7 +498,7 @@ class _CalendarIntroScreenState extends State<CalendarIntroScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: CupertinoDynamicColor.resolve(CupertinoColors.white, context),
+        color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey6, context),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: CupertinoDynamicColor.resolve(
@@ -541,7 +541,7 @@ class _CalendarIntroScreenState extends State<CalendarIntroScreen> {
                   location,
                   style: theme.textTheme.textStyle.copyWith(
                     fontSize: 12,
-                    color: CupertinoColors.systemGrey,
+                    color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey, context),
                   ),
                 ),
               ],

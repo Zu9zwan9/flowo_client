@@ -228,10 +228,9 @@ class _AnalyticsIntroScreenState extends State<AnalyticsIntroScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 4),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color:
-                            index <= 5
-                                ? CupertinoColors.activeBlue
-                                : CupertinoColors.systemGrey4,
+                        color: index == 5
+                            ? CupertinoDynamicColor.resolve(CupertinoColors.systemPurple, context)
+                            : CupertinoDynamicColor.resolve(CupertinoColors.systemGrey4, context),
                       ),
                     ),
                   ),
@@ -304,7 +303,7 @@ class _AnalyticsIntroScreenState extends State<AnalyticsIntroScreen> {
                 description,
                 style: theme.textTheme.textStyle.copyWith(
                   fontSize: 14,
-                  color: CupertinoColors.systemGrey,
+                  color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey, context),
                   height: 1.4,
                 ),
               ),
@@ -470,7 +469,7 @@ class _AnalyticsIntroScreenState extends State<AnalyticsIntroScreen> {
       height: 130,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: CupertinoDynamicColor.resolve(CupertinoColors.white, context),
+        color: CupertinoDynamicColor.resolve(CupertinoColors.systemGrey6, context),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: CupertinoDynamicColor.resolve(
