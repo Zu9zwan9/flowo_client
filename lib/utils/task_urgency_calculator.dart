@@ -95,7 +95,8 @@ class TaskUrgencyCalculator {
 
     if (justScheduledTasks != null) {
       for (var scheduledTask in justScheduledTasks) {
-        if (scheduledTask.endTime.millisecondsSinceEpoch <= deadline) {
+     ///TODO: does this check needed  {scheduledTask.startTime.millisecondsSinceEpoch >= now}
+           if (scheduledTask.endTime.millisecondsSinceEpoch <= deadline) {
           busyTime +=
               scheduledTask.endTime
                   .difference(scheduledTask.startTime)
