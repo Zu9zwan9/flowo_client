@@ -407,11 +407,35 @@ class TaskManagerCubit extends Cubit<TaskManagerState> {
 
   void _deleteAllDays() {
     final existingDayKeys = taskManager.daysDB.keys.cast<String>().toList();
+
     for (var dateKey in existingDayKeys) {
-      taskManager.daysDB.delete(dateKey);
-      logDebug('Deleted day: $dateKey');
+      final day = taskManager.daysDB.get(dateKey);
+      if (day != null) {
+        // Remove all scheduledTasks from tasks associated with this day
+        for (var scheduledTask in day.scheduledTasks) {
+          final task = taskManager.tasksDB.get(scheduledTask.parentTaskId);
+          if (task != null) {
+            task.scheduledTasks.removeWhere(
+                  (st) => st.scheduledTaskId == scheduledTask.scheduledTaskId,
+            );
+            taskManager.tasksDB.put(task.id, task);
+            logDebug('Removed scheduled task ${scheduledTask.scheduledTaskId} from task ${task.title}');
+
+            // Cancel notifications related to this scheduled task
+            for (var notificationId in scheduledTask.notificationIds) {
+              taskManager.scheduler.notiService.cancelNotification(notificationId);
+            }
+          } else {
+            logWarning('Task with id ${scheduledTask.parentTaskId} not found');
+          }
+        }
+        // Remove the day from daysDB
+        taskManager.daysDB.delete(dateKey);
+        logDebug('Deleted day: $dateKey');
+      }
     }
-    logInfo('All days deleted');
+
+    logInfo('All days and their scheduled tasks deleted');
   }
 
   int getBusyTime(int deadline) {

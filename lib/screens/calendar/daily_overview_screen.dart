@@ -226,11 +226,14 @@ class _DailyOverviewScreenState extends State<DailyOverviewScreen>
 
       final bool hasSameParentTask =
           currentTask.parentTaskId == previousTask.parentTaskId;
-      final bool hasSameType = currentTask.type == previousTask.type;
+      final bool hasSameType =
+          currentTask.type == previousTask.type &&
+              currentTask.type == ScheduledTaskType.timeSensitive ||
+          currentTask.type == ScheduledTaskType.defaultType;
 
       logDebug(
         '[TaskGroup] hasSameParentTask: $hasSameParentTask, '
-        'hasSameType: $hasSameType, '
+        'hasSameType: $hasSameType, ',
       );
 
       if (hasSameParentTask && hasSameType) {

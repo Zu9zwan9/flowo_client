@@ -57,3 +57,4 @@ app.*.map.json
 *.env
 /docs/
 firebase.json
+/ios/

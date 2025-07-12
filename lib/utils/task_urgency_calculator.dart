@@ -31,6 +31,13 @@ class TaskUrgencyCalculator {
       } else {
         taskUrgencyMap[task] = urgency;
       }
+
+      logInfo(
+        'Task ${task.title} has urgency: $urgency,'
+        ' time left: ${Duration(milliseconds: timeLeft).inHours}h ${Duration(milliseconds: timeLeft).inMinutes.remainder(60)}m,'
+        ' true time left: ${Duration(milliseconds: trueTimeLeft).inHours}h ${Duration(milliseconds: trueTimeLeft).inMinutes.remainder(60)}m'
+        ' busy time: ${Duration(milliseconds: busyTime(task.deadline, justScheduledTasks)).inHours}h ${Duration(milliseconds: busyTime(task.deadline, justScheduledTasks)).inMinutes.remainder(60)}m',
+      );
     }
 
     return taskUrgencyMap;
@@ -88,8 +95,7 @@ class TaskUrgencyCalculator {
 
     if (justScheduledTasks != null) {
       for (var scheduledTask in justScheduledTasks) {
-        if (scheduledTask.startTime.millisecondsSinceEpoch >= now &&
-            scheduledTask.endTime.millisecondsSinceEpoch <= deadline) {
+        if (scheduledTask.endTime.millisecondsSinceEpoch <= deadline) {
           busyTime +=
               scheduledTask.endTime
                   .difference(scheduledTask.startTime)
